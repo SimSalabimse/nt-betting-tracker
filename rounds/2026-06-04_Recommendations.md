@@ -18,5 +18,16 @@
 - This was the conservative transition round.
 - **From next round onward: Moderate acceleration rules apply (15-25 NOK flat stakes).**
 
+**✅ Got it. Moderate acceleration confirmed.**
+Thank you for manually fixing `playbook.md` on GitHub — that’s now the authoritative version.
+### Moderate Acceleration Rules (Now Active)
+Effective immediately:
+- **Flat 15-25 NOK** per high-conviction single (or system equivalent, always meeting the 10 NOK per leg/row minimum).
+- Allow **4-6 bets per round** when there are multiple good +EV opportunities (instead of max 3).
+- Daily portfolio risk target: **~60-100 NOK** max initially.
+- Strict daily loss caps + full review if hit still apply.
+- We stay in Phase 1 (Protect & Validate) but with this slightly faster ramp. Once bankroll hits ~1000 NOK and we have solid data (positive ROI over 20-40 bets), we accelerate further.
+The 3 bets you placed today at 10 NOK each were the transition round. From the next round onward we use the new 15-25 NOK range.
+
 ## Status
 Bets placed by user. Awaiting settlement for full post-mortem and playbook update.
