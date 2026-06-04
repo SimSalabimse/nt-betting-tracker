@@ -11,6 +11,18 @@ This repository tracks our Norsk Tipping Oddsen betting system.
 ## Current Bankroll
 500 NOK (as of 2026-06-04)
 
+## Moderate Acceleration Rules (Active)
+**✅ Got it. Moderate acceleration confirmed.**
+
+Effective immediately:
+- **Flat 15-25 NOK** per high-conviction single (or system equivalent, always meeting the 10 NOK per leg/row minimum).
+- Allow **4-6 bets per round** when there are multiple good +EV opportunities (instead of max 3).
+- Daily portfolio risk target: **~60-100 NOK** max initially.
+- Strict daily loss caps + full review if hit still apply.
+- We stay in Phase 1 (Protect & Validate) but with this slightly faster ramp. Once bankroll hits ~1000 NOK and we have solid data (positive ROI over 20-40 bets), we accelerate further.
+
+The 3 bets you placed today at 10 NOK each were the transition round. From the next round onward we use the new 15-25 NOK range.
+
 ## Quick Start
 1. Read `playbook.md` for full rules and strategy
 2. Check `rounds/` folder for daily recommendations and results
