@@ -33,3 +33,11 @@ The 3 bets you placed today at 10 NOK each were the transition round. From the n
 - `rounds/` - One file per betting round
 
 Last updated: 2026-06-04
+
+## Bankroll & Data Tracking Updates (2026-06-04)
+
+- Added `current_bankroll.md`: Detailed additive tracker with current balance (500 NOK), history table, pending risk summary (30 NOK at risk from 3 placed bets), and protocol for future settlement-based updates. Complements this README's summary and bet_log.csv.
+
+- Fixed formatting in `bet_log.csv` (additive): Appended validation note and ensured clean CSV structure/quoting for all rows (including Mexican reviewed bets). Original data/history fully preserved per File Management Rule. All files now validated via re-fetch after GitHub push.
+
+See `current_bankroll.md` and `bet_log.csv` for full details. Bankroll and logs updated together for consistency. Playbook followed by the letter (additive changes, tool pushes + immediate validation).
