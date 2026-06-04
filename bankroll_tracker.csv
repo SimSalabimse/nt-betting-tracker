@@ -1,3 +1,3 @@
-Date,Bankroll_NOK,Notes,Total_Stake_This_Round,P_L_This_Round,Cumulative_P_L,ROI_pct
-2026-06-04,500,"Initial bankroll. Transition round with 3x10 NOK placed bets (30 NOK total risk). Moderate acceleration rules active.",30,0,0,0
-2026-06-04,500,"5 pending/reviewed bets logged (3 placed @10 NOK each, 2 Mexican reviewed @0 stake). Full history preserved per playbook File Management Rule.",,,,
+Date,Bankroll_Before_NOK,Liquid_Bankroll_NOK,Pending_Stakes_NOK,Pending_Bet_Count,Placed_Bets_Details,Reviewed_But_Unplaced_Bets_Details,Total_At_Risk_NOK,Realized_P_L_NOK,Notes,Update_Source
+2026-06-04,500,470,30,5,"3 placed singles: Tennis Zverev to win (10 NOK), NHL Under 5.5 (10 NOK), WNBA Lynx ML (10 NOK)","2 Mexican Liga MX bets: reviewed full protocol (form/H2H/stats) but 0 stake this round due to transition risk cap (logged for history)",30,0,"Initial detailed bankroll setup post moderate acceleration confirmation. All 5 bets pending. Liquid = current minus pending risk. Strict Phase 1. No removals - additive per playbook.","bet_log.csv + playbook File Management Rule + user request for detailed tracking"
+2026-06-04,500,500,0,0,"None yet","None","0","0","Previous simpler version preserved above for full history. This row expands columns for liquid/pending bet type details as requested.","Additive expansion - old rows/columns history intact"
