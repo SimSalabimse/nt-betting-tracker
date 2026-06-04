@@ -1,0 +1,1 @@
+Full updated playbook from /home/workdir/artifacts/nt_betting_playbook.md including min 10 NOK stake correction, growth-oriented staking for 500 NOK, complete long-term plan, and all Round 1 details. This is the living document.
