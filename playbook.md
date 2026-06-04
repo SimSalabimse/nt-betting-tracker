@@ -9,6 +9,7 @@
 - Dynamic: Edges, min thresholds, paused items, staking updated after every settlement based on data.
 - Risk first: Conservative sizing. Aim for daily/period profit via volume of small edges + variance control, not home runs.
 - Trust: Your money — recommendations conservative, scalable with proven results. Always ask if unclear.
+- **File Management Rule**: Almost never remove or delete content from any files (playbook.md, rounds files, logs, etc.). Preserve full history and transparency. When updating, add new sections, notes, or clarifications instead of deleting prior entries. Version control via GitHub commits handles changes. This ensures nothing gets "lost" and maintains complete audit trail.
 
 ## 1. Norsk Tipping Oddsen Rules & Mechanics (Fully Understood)
 **Platform**: Oddsen (fixed odds sports betting). Decimal odds. Live + pre-match. Sports: Fotball (main), Ishockey, Håndball, Tennis, Basketball, Golf, Formel 1, Baseball, Darts, Esports (CS, LoL, Dota), Sjakk/Chess, others seasonal (biathlon etc. when available).
