@@ -1,6 +1,6 @@
 Date,Match,Selection,Market,Odds,Est_Prob,EV_pct,Stake_NOK,Bet_Type,Result,P_L_NOK,Notes
-2026-06-04,"Mensik vs Zverev (RG SF)","Zverev to win",Moneyline,1.25,0.83,4,10,Single,Pending,,Transition round - start of moderate acceleration; experience + H2H + fatigue edge on Mensik
-2026-06-04,"Hurricanes vs Golden Knights (SCF G2)","Under 5.5 Total Goals",Totals,~1.95,0.54,3,10,Single,Pending,,Defensive tightening expected after G1; public over on over
-2026-06-04,"Minnesota Lynx vs Golden State Valkyries","Lynx ML",Moneyline,Check platform,0.55,4,10,Single,Pending,,Stronger recent form and defense for Lynx
-2026-06-04,Mexican Liga MX Bet 1,[Selection details],,Odds from file,,EV,0,Reviewed/Pending,,Two Mexican bets reviewed per playbook full research protocol - logged as pending for transparency (not placed in transition round due to strict risk cap)
-2026-06-04,Mexican Liga MX Bet 2,[Selection details],,Odds from file,,EV,0,Reviewed/Pending,,Two Mexican bets reviewed per playbook full research protocol - logged as pending for transparency (not placed in transition round due to strict risk cap)
+2026-06-04,"Mensik vs Zverev (RG SF)","Zverev to win",Moneyline,1.25,0.83,4,10,Single,Pending,,"Transition round - start of moderate acceleration; experience + H2H + fatigue edge on Mensik"
+2026-06-04,"Hurricanes vs Golden Knights (SCF G2)","Under 5.5 Total Goals",Totals,~1.95,0.54,3,10,Single,Pending,,"Defensive tightening expected after G1; public over on over"
+2026-06-04,"Minnesota Lynx vs Golden State Valkyries","Lynx ML",Moneyline,"Check platform",0.55,4,10,Single,Pending,,"Stronger recent form and defense for Lynx"
+2026-06-04,"Mexican Liga MX Bet 1","[Selection details]",,"Odds from file",,EV,0,"Reviewed/Pending",,"Two Mexican bets reviewed per playbook full research protocol - logged as pending for transparency (not placed in transition round due to strict risk cap)"
+2026-06-04,"Mexican Liga MX Bet 2","[Selection details]",,"Odds from file",,EV,0,"Reviewed/Pending",,"Two Mexican bets reviewed per playbook full research protocol - logged as pending for transparency (not placed in transition round due to strict risk cap)"
