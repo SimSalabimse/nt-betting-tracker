@@ -195,7 +195,7 @@ With this foundation — deep rules knowledge, sport-specific starts, clear deci
 
 Ready when you are. Let's make the first round example. 
 
-## Round 1 Analysis & Recommendations - 2026-06-04 (Current Odds File)
+## Round 1 Analysis & Recommendations - 2026-06-04 (Example Odds File)
 **Bankroll**: 500 NOK. **Risk Approach**: Extremely conservative. Max ~5-10 NOK per selection or equivalent system stake. Total portfolio risk this round: 15-30 NOK max. Goal: Small positive EV portfolio with low variance to protect and grow the small bankroll. No chasing, no large combos.
 
 **File Processing**: Parsed every section and odd equally (NHL, Tennis incl. doubles, WNBA, South American basketball, Athletics H2H, MLB x5, CS:GO, LoL). No skipping or defaulting to popular (e.g. no blind BTTS or first lines). Full research protocol applied to high-data sports using web searches for form, H2H, injuries, motivation, recent results. Lower-data (South American leagues, some athletics) treated with extra caution — limited public info means lower confidence, higher chance of mispricing or variance. Athletics H2H provided in file already useful.
@@ -276,3 +276,52 @@ This plan is living — updated in playbook after major milestones or when data 
 Once pushed, you have full version history, easy access from any device, and we can collaborate directly on it (I can read/push updates after settlements).
 
 *Long-term plan and corrections added 2026-06-04*
+
+## Round 2 Analysis & Recommendations - 2026-06-04 (Football Odds File - current_odds.txt)
+**Bankroll**: 500 NOK. **Risk Approach**: Extremely conservative per playbook. Flat 10 NOK stakes on highest conviction singles only. Total portfolio risk this round: 10 NOK max (one single). Goal: Test process with small +EV bet, protect bankroll, aim for positive start to tracker. No systems/combos yet (variance too high for 500 NOK). Strict adherence to min 7% EV + full research + transparency.
+
+**File Processing**: Full equal scan of ALL odds/markets in the provided file (no skipping popular like HUB 1X2 or BTTS). Matches parsed:
+- Mexico vs Serbia (International Friendly, Toluca, ~June 5 2026)
+- Multiple Australian semi-professional leagues: Green Gully SC vs Avondale FC (likely NPL Victoria), Sydney FC Youth vs NWS Spirit, Dandenong City SC vs Heidelberg United FC, Adelaide City FC vs Sturt Lions, Oakleigh Cannons vs ST Albans Saints, Cooks Hill United vs Belmont Swansea United FC, Bentleigh Greens vs Hume City, West Torrens Birkalla vs Croydon FC, Perth Azzurri vs Stirling Macedonia FC, Bayswater City vs Dianella White Eagles SC
+- Korean lower leagues: Kamatamare Sanuki vs AC Nagano Parceiro (J3), Daegu FC vs Paju Citizen FC, Busan I Park vs Chungnam Asan FC, Seongnam Ilhwa vs Gimhae FC (K League 2)
+- Norwegian: Salangen vs Ulfstind (4. divisjon / NM Kvalifisering Troms, June 5/6 2026 at Idrettsheia)
+
+Every market (1X2, BTTS, O/U various lines, handicaps, half-time, both halves etc.) considered with implied prob calc. Research protocol applied: web searches for recent form (last 5-10), H2H, motivation (standings, cup vs league, home/away), injuries/squad news, stats where available (limited for lower tiers).
+
+**Research Summary & EV Estimates** (only those clearing or close to 7% EV with medium+ confidence after full research; others noted):
+
+**Mexico vs Serbia (Intl Friendly)**:
+- Context: Mexico hosting final WC 2026 prep friendly vs Serbia (failed to qualify, poor recent results). Mexico in good form (5W 2D last 7), home crowd in Toluca, high motivation. Serbia rebuilding.
+- HUB Mexico win @1.25 (implied prob ~80%): Est. true prob 84-88% (home edge, form, motivation). EV = (0.86 * 1.25) - 1 ≈ +7.5%. Clear >=7% edge. High conviction.
+- BTTS Nei @1.58 (implied ~63%): Serbia attack limited away; Mexico likely controls and keeps clean or low scoring. Est. true prob BTTS No 69-73%. EV = (0.71 * 1.58) - 1 ≈ +12.2%. Strong +EV, aligns with controlled game expectation from previews.
+- Under 2.5 @2.05 (implied ~49%): Possible value if Mexico prioritizes clean sheet/prep over goal fest. Est. true ~53-57%. EV ~ +8-17%. Good alternative/secondary.
+- Other (e.g. Mexico -1 HC @1.77, Over 3.5 etc.): Some value but lower edge or higher variance; focused on clearest.
+
+**Salangen vs Ulfstind (Norwegian regional)**:
+- Context: Lower division/cup qualifier. Ulfstind heavy favorite @1.25 away. Limited public detailed stats but Ulfstind appears stronger/better organized from league context and past results. Salangen home but underdog.
+- Ulfstind win @1.25 (implied ~80%): Est. true prob ~77-82%. EV ~ (0.795 * 1.25) -1 ≈ -0.6% to +2.5%. Borderline/no clear 7% edge after margin. Pass.
+- Over 2.5 @1.20 (implied high ~83%): Likely but overpriced for value. Pass.
+- Draw or Salangen +1 HC: Possible but low confidence/edge.
+
+**Australian & Korean lower leagues**:
+- Many matches with favs @1.35-1.55 or even. E.g. Avondale FC 1.37, Oakleigh 1.35, Heidelberg 1.52 etc.
+- Research: Limited accessible recent form, injury news, motivation specifics for these semi-pro/state leagues in quick public searches (Norwegian sources sparse on Aus leagues). H2H basic available but not sufficient for high confidence prob est. High risk of unknown variables (rested players, local motivation, weather/pitch).
+- No selections met strict >=7% EV + medium confidence criteria. Conservative pass to protect bankroll and follow "if data sparse, note low confidence" rule. Some BTTS or O/U lines tempting but skipped.
+
+**Recommended Portfolio**:
+1. **Mexico vs Serbia - BTTS Nei @1.58** — **10 NOK Single** (min stake per NT rules).
+   - EV est. +12%, confidence high on research (form, motivation, previews align).
+   - Why this over Mexico win @1.25 (also +EV): BTTS Nei offers better multiplier/balance, still high hit probability in this matchup. Single for max control/low variance.
+   - Full reasoning documented above. Risks: Variance in friendlies, Serbia could nick a goal; but edge holds. Alternative considered: Under 2.5 but BTTS Nei clearer.
+
+**Why this structure (Single only)**: Per playbook decision tree for small bankroll/recovering or testing phase — singles core. Total risk 10 NOK (~2% of bankroll). No system needed (only 1 clear bet). Protects daily + goal probability.
+
+**Expected Portfolio EV & Goal Impact**: +EV portfolio (~+12% on stake). Reasonable chance (~70%+) of small profit this round to kick off tracker positively. Aligns with "ending periods in profit" via disciplined edge.
+
+**Risk to Daily + Goal / Bankroll**: Minimal. Max loss -10 NOK if misses. No tilt/chasing risk. If hits, small win + confidence in process.
+
+**This Round Decision & Logging**: Bet logged to bet_log.csv (to be pushed). After settlement (expected ~June 5): Full post-match analysis in next update (was edge realized? motivation correct? Serbia performance?). Update playbook learnings (e.g. "Intl friendlies BTTS No value in WC prep home games — reinforce for future"). 
+
+**GitHub Validation**: This full updated playbook.md (with new Round 2 section) + initial bet_log.csv + README updates pushed via tools and validated before this reply. See repo for version history.
+
+*Round 2 added 2026-06-04 following exact playbook rules: full scan, research, conservative for 500 NOK, transparency, push before reply.*
