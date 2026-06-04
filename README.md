@@ -1,21 +1,24 @@
-# Norsk Tipping Value Betting Tracker
+# NT Betting Tracker
 
-**For Simen Jacobsen (SimSalabimse)**
-Maintained with Grok.
+This repository tracks our Norsk Tipping Oddsen betting system.
 
 ## Purpose
-Transparent, versioned, fail-proof system for +EV betting on Norsk Tipping.
-Focus: End most days/periods in profit, grow bankroll from 500 NOK with discipline, and continuous learning.
+- Living playbook with all rules, sport edges, and decision logic
+- Versioned bet logs and post-mortems
+- Transparent tracking of bankroll, ROI, and lessons learned
+- Moderate acceleration: 15-25 NOK flat stakes on high-conviction bets (4-6 bets/round allowed)
 
-## Files
-- `playbook.md`: Full living rules, sport analysis, long-term plan, all updates.
-- `rounds/`: Dated recommendation and analysis files with tables.
-- Future: bet_log.csv, performance stats, scripts.
+## Current Bankroll
+500 NOK (as of 2026-06-04)
 
-## Process
-Odds file → Full equal analysis of every odd + research → Clear recommendations in tables with EV/reasoning → Log here → Post-settlement update playbook + log.
+## Quick Start
+1. Read `playbook.md` for full rules and strategy
+2. Check `rounds/` folder for daily recommendations and results
+3. Update after every settlement
 
-Min stake: 10 NOK enforced.
-Bankroll growth plan: Phase 1 (protect/validate) → scale with proven edges.
+## Structure
+- `playbook.md` - Single source of truth (updated after every round)
+- `rounds/` - One file per betting round with recommendations + post-mortem
+- `bet_log.csv` - Master tracking sheet (to be added)
 
-See playbook for complete details and long-term vision.
+Last updated: 2026-06-04
