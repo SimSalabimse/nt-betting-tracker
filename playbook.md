@@ -277,3 +277,19 @@ This plan is living — updated in playbook after major milestones or when data 
 Once pushed, you have full version history, easy access from any device, and we can collaborate directly on it (I can read/push updates after settlements).
 
 *Long-term plan and corrections added 2026-06-04*
+
+## File Maintenance & Update Rules (Added/Expanded 2026-06-04 per user feedback)
+
+**Core Directive on File Updates**: You should almost never remove or delete anything from the files in this repository. 
+
+When updating any file (playbook.md, rounds/*.md recommendation/post-mortem files, README.md, bet_log.csv/xlsx, or other trackers):
+- **Prefer additive changes only**: Append new dated sections, expand existing tables by adding rows (never overwrite or truncate existing data), add new subsections for additional analysis/recommendations/lessons, or insert explanatory notes with clear dates and context.
+- **Preserve full history**: All past recommendations, EV calculations, reasoning, bet details (including any specific leagues/matches like Mexican Liga MX selections or other reviewed but not placed bets), notes, and analyses must remain intact in the file. Historical context is invaluable for learning loops, post-mortems, audits, and maintaining trust.
+- **No destructive or overwriting edits**: Do not rewrite or replace large portions of file content in a way that removes prior material. Use GitHub's version history for diffs; the working files should grow with knowledge, not shrink. If archiving old rounds is ever needed, move to a dedicated archive/ folder with a clear pointer/summary left in the main file.
+- **Justification and transparency for any rare removal**: The only exception is correcting demonstrably false, harmful, or completely superseded information. In such cases: (1) Add a prominent, dated correction note in a new visible section explaining exactly what was changed and why, (2) Provide the accurate replacement or updated data right alongside it, (3) Document thoroughly in the Git commit message. Never silently delete or overwrite without trace.
+- **Mandatory tool-based process + validation**: All updates must be performed exclusively via the connected GitHub tools (create_or_update_file with full current+new content, or push_files). After every single push, immediately validate by re-fetching the file contents (using github___get_file_contents) to confirm the new material is present, no unintended content was lost, and the file remains complete. Only then confirm the update to the user.
+- **Addressing 'deleting things' feedback**: Previous full-content updates (e.g., when incorporating moderate acceleration rules or fixing round files) were done to ensure the entire document stayed consistent, complete, and included all prior text + new additions in one clean state. This was a practical method to avoid fragmented or conflicting partial edits and to follow the 'living document' approach. It was never about being 'happy with deleting' — the intent was preservation through reconstruction. However, this new explicit, detailed rule now takes precedence and will be followed by the letter going forward: strictly additive, non-destructive updates only.
+
+This expanded rule directly strengthens the existing short **File Management Rule** in Core Principles and aligns perfectly with the playbook's own directives on **Full transparency**, **No shortcuts**, **Dynamic** updates, **New Rules/Learnings: Add to playbook**, and **Playbook Updates: This file edited with new sections/learnings. Versioned.** It ensures the repository (and all its files) remains a trustworthy, complete historical record of our betting journey, analyses, and growth.
+
+*Rule expanded and detailed 2026-06-04 in direct response to user instruction on file handling. The playbook is the single source of truth and will continue to be updated additively and validated via tools.*
