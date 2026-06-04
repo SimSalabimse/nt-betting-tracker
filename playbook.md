@@ -293,3 +293,26 @@ When updating any file (playbook.md, rounds/*.md recommendation/post-mortem file
 This expanded rule directly strengthens the existing short **File Management Rule** in Core Principles and aligns perfectly with the playbook's own directives on **Full transparency**, **No shortcuts**, **Dynamic** updates, **New Rules/Learnings: Add to playbook**, and **Playbook Updates: This file edited with new sections/learnings. Versioned.** It ensures the repository (and all its files) remains a trustworthy, complete historical record of our betting journey, analyses, and growth.
 
 *Rule expanded and detailed 2026-06-04 in direct response to user instruction on file handling. The playbook is the single source of truth and will continue to be updated additively and validated via tools.*
+
+## bet_log.csv Strict Format Rule (Added 2026-06-05 per user feedback)
+
+**No # comment lines (or any comments) are allowed in bet_log.csv (or any CSV-based tracker files).**
+
+# lines break CSV parsing in tools like Excel, Google Sheets, Python's csv module, pandas, etc. They make the file look messy, unprofessional, and unparseable as pure data. This violates the clean, professional standard required for the master bet log.
+
+**Going forward (non-negotiable):**
+- bet_log.csv must contain **ONLY**:
+  - The exact header row: Date,Match,Selection,Market,Odds,Est_Prob,EV_pct,Stake_NOK,Bet_Type,Result,P_L_NOK,Notes
+  - Pure data rows in that format.
+- No # comments, no explanatory text, no audit notes, no "CORRECTED" sections, no version history inside the CSV itself.
+- All explanations, corrections, reasoning, audit history, or notes must be placed in:
+  - current_bankroll.md (or dedicated .md trackers)
+  - playbook.md (new rules or learnings sections)
+  - Git commit messages (detailed)
+  - rounds/*.md post-mortem files
+- If existing rows need correction or update: Append new corrected data rows (with updated Notes column if needed) or perform a clean full replace only when user explicitly permits for accuracy — but **never** add # lines.
+- This rule directly supports the File Management Rule (clean history via Git + external notes) and Fail-Proof Bankroll & Bet Tracking (pristine, auto-computable CSV log).
+
+**Violation consequence**: Any future update that adds # lines to bet_log.csv will be considered a breach of this rule and must be immediately corrected by clean replace (user-permitted) or additive append of fixed rows.
+
+This ban ensures bet_log.csv stays clean, professional, and fully functional as the single source of truth for all bet data. The current clean state (header + exactly 5 data rows, no #) is the required format going forward.
