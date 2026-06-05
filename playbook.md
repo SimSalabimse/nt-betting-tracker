@@ -399,3 +399,71 @@ These learnings are logged here for dynamic updates. Will be reviewed before eve
 - This clarification was pushed via tool and validated before this reply.
 
 *This section added 2026-06-05 following your query on stake uniformity. Playbook maintained as living document per all rules by the letter.*
+
+## Learnings from Round 2 Settlements (2026-06-05) - Added after user-reported results (Wade, Varhaug, Cobolli, KTP, Haka, Team Liquid)
+
+**Post-settlement analysis** for the 6 settled bets from the moderate acceleration round (all 20 NOK flat singles). Full playbook protocol applied: edge hypothesis vs outcome, variance vs misread factors, specific adjustments for future.
+
+### 1. James Wade to win (Darts) - Win, payout 27.40 NOK (+7.40 profit)
+- **Edge hypothesis**: Veteran consistency and experience edge vs Razma aggression; best balance among available darts options. Moderate conviction.
+- **Outcome**: Win materialized cleanly.
+- **Analysis**: Edge held. Veteran form/experience proved reliable in this matchup. Payout verified exact (20 × 1.37 = 27.40).
+- **Learning & Adjustment**:
+  - Darts selections based on veteran consistency vs aggressive styles can be +EV when researched. Continue volume in darts when clear edges appear (good for daily stability).
+  - Reinforces avoiding heavy favorites with poor EV; focus on balanced 1.35-1.50 range where public may undervalue experience.
+
+### 2. Varhaug to win (Norwegian lower division) - Loss (drew 2-2), -20 NOK
+- **Edge hypothesis**: Clear home favorite with strong home advantage + motivation patterns in low-level Norwegian football.
+- **Outcome**: Draw. Variance hit.
+- **Analysis**: Even 'clear' home favorites in very low divisions carry higher draw risk than anticipated from limited data. Home advantage exists but not as dominant in amateur contexts.
+- **Learning & Adjustment**:
+  - **New filter for very low-level Norwegian football (e.g. lower divisions beyond OBOS)**: Treat 'clear favorite' win bets with extra caution or lower EV/stake. Prefer alternative markets like BTTS Yes, Over 2.5, or Asian HC if available for better value capture. Or skip ultra-low data leagues unless strong additional indicators (weather, motivation spikes, recent clean form).
+  - Track ROI specifically on "Norwegian lower division home favorites" category. If negative over 10-15 bets, pause or micro-stake only.
+
+### 3. Flavio Cobolli to win (Roland Garros SF) - Canceled, stake returned 20 NOK (P/L 0)
+- **Edge hypothesis**: Cobolli fresher, higher ranked, stronger recent clay form vs Arnaldi fatigue; H2H edge.
+- **Outcome**: Match canceled (likely withdrawal/injury).
+- **Analysis**: Cancellation is pure variance event outside edge control. Bankroll protected (no loss).
+- **Learning & Adjustment**:
+  - Tennis cancellations happen; always note in risk assessment for tennis bets (esp. best-of-5 late rounds where physical toll high). No adjustment to edge methodology needed, but perhaps slight preference for earlier round or best-of-3 where fatigue less extreme.
+  - Good that it was single stake; no portfolio damage.
+
+### 4. FC KTP Kotka to win (Ykkösliiga) - Win, payout 29.40 NOK (+9.40 profit)
+- **Edge hypothesis**: Top table team + dominant recent H2H vs mid-table opponent; strong form/motivation.
+- **Outcome**: Win realized strongly.
+- **Analysis**: Thesis held excellently. Table position + H2H dominance translated to result. Payout exact (20 × 1.47 = 29.40).
+- **Learning & Adjustment**:
+  - **Strong validation for Finnish lower leagues (Ykkösliiga)**: Top teams with H2H edge vs weaker sides offer reliable value. Continue allocation here when data supports (similar to Norwegian domestic).
+  - Domestic Nordic lower leagues (NO/FI) remain high-priority for edges due to less efficiency. Good hit for moderate acceleration round.
+
+### 5. Haka to win (Ykkösliiga) - Loss, -20 NOK
+- **Edge hypothesis**: Strong home form (unbeaten recent), good attack, favorable H2H vs poor recent form opponent.
+- **Outcome**: Loss. Variance realized.
+- **Analysis**: Strong thesis but result went against — possible opponent motivation spike, tactical mismatch, or just variance in lower league. Similar to Varhaug case.
+- **Learning & Adjustment**:
+  - Combined with Varhaug: Nordic lower leagues (Ykkösliiga + Norwegian lower) show higher variance for even strong home favorites than higher divisions. **Portfolio adjustment**: Reduce concentration in very low leagues or pair with correlated markets (e.g. BTTS or totals) for hedge. Or apply stricter "recent unbeaten + goal difference" filters.
+  - Monitor combined ROI for "Nordic lower league home win favorites" over next 15-20 bets.
+
+### 6. Team Liquid to win (CS2) - Loss (2-0 maps dominated), -20 NOK
+- **Edge hypothesis**: Established roster/experience vs inconsistent opponent; good map pool/recent form; slight fav value from public bias.
+- **Outcome**: Heavy loss (dominated 2-0).
+- **Analysis**: Edge did not hold; opponent had strong day/meta advantage or Liquid underperformed. High variance esports fully realized as pre-warned in round notes.
+- **Learning & Adjustment**:
+  - **Esports (CS2) caution reinforced**: Even "good" slight favorites can be dominated. Future CS2 singles: Require stronger evidence (recent map win % >60-65%, head-to-head map record, no major roster issues) or raise min EV threshold to 8-9%+. Consider small systems or skip if only moderate conviction.
+  - Diversification benefit still valid (uncorrelated to football/darts), but size esports allocation conservatively within daily risk.
+  - Added explicit esports filter note to Sport-by-Sport section (will expand in next update if more data).
+
+**Overall Round 2 Portfolio Takeaways**:
+- **Positive**: 2 wins (Wade + KTP) delivered +16.80 profit. Cobolli cancel protected bankroll. Darts and Finnish top-team selection validated well.
+- **Variance hit**: 3 losses (-60) + cancel (0) = net -43.20 NOK for the round's 6 settled bets. Moderate acceleration volume exposed to variance but process transparent.
+- **Key Adjustments**:
+  - **Lower leagues (NO/FI)**: Higher draw/upset risk for favorites → new caution filter or alternative markets preference. Track ROI separately.
+  - **Esports CS2**: Raise bar for singles; stricter recent form/map stats required. Good learning from dominated loss.
+  - **Darts**: Reliable when veteran edge clear; continue selective volume.
+  - **Tennis cancellations**: Accept as variance; no methodology change needed.
+- **Bankroll impact**: Updated to ~479.10 NOK liquid post-settlements (see current_bankroll.md). Still within Phase 1 conservative growth. One bet (JS Saoura) remains open.
+- **Next Actions**: Await JS Saoura settlement. Track per-sport ROI (esp. lower leagues, esports, darts). Update Sport-by-Sport section with refined filters if patterns continue over 10+ bets. Review before next round. Full transparency maintained via GitHub tools + validation.
+
+These learnings are added strictly per File Management Rule (additive new section). Will be reviewed dynamically before future rounds and used to refine edges/staking. Moderate acceleration continues for remaining open bet and future rounds where justified by data.
+
+*Section added 2026-06-05 after user settlements and tool-based push/validation. Playbook is living document followed by the letter.*
