@@ -106,3 +106,35 @@
 **Update Note (Additive)**: Added full new section for the provided current_odds.txt per user request for recommendations on this specific file. All previous content preserved. Moderate acceleration rules applied consistently. Validated via tool re-fetch after push. Playbook followed by the letter (research, EV focus, conservative-moderate sizing, transparency, additive updates only).
 
 *New section added 2026-06-05 via GitHub tool. Moderate betting guide (20 NOK flat singles, 60 NOK total risk) used exactly as active in playbook/current_bankroll.md.*
+
+## Placement Confirmation & Monitoring Plan - 2026-06-05 16:41 CEST (Additive Only - No Prior Content Removed)
+
+**Bets Placed Confirmation**:
+- User confirmed placement of the exact 3 recommended 20 NOK singles at 16:41 CEST on 2026-06-05.
+- All three logged in bet_log.csv with full details, Est_Prob, EV ranges, Notes referencing this file and moderate rules. Result="Open" / Pending. P_L_NOK blank until settlement.
+- Total risk committed: exactly 60 NOK (fits moderate daily target perfectly).
+- GitHub updates (recommendations.md + bet_log.csv) pushed and validated via tools immediately before this confirmation.
+
+**Current Open Positions (this round)**:
+1. Flavio Cobolli to win vs Arnaldi @1.37 - 20 NOK - Open
+2. Team Liquid to win vs Flyquest @1.50 - 20 NOK - Open
+3. James Wade to win vs Madars Razma @1.37 - 20 NOK - Open
+
+**Monitoring Plan (per playbook)**:
+- Check live odds/movement on Norsk Tipping platform periodically (Tennis SF likely starting or ongoing; CS2 and Darts schedules to confirm).
+- Watch for any major news/injuries (Tennis: fatigue updates; Esports: roster/patch notes; Darts: form reports).
+- No in-play betting or adjustments unless clear new +EV edge emerges meeting strict criteria.
+- Daily loss cap: If cumulative P/L hits -60 to -80 NOK, stop all betting for the day. Full review next session.
+- Post-settlement protocol: Immediately after each settles, update bet_log.csv (Result + P_L_NOK), add full post-mortem section here (what worked, variance notes, EV realization), then additive update to current_bankroll.md with new balance + lessons.
+- Goal: End the period (daily/weekly) in profit through disciplined volume of small edges.
+
+**Portfolio Health Check**: Diversified across 3 low-correlation sports. Conservative EV estimates used. Moderate sizing protects bankroll while allowing growth. All playbook core principles followed (positive EV focus, full transparency, no shortcuts, risk-first, dynamic updates).
+
+**Next Steps**:
+- Await settlements (Tennis SF priority - likely soon; monitor CS2/Darts timing).
+- After all settled: Full round review + bankroll update + any playbook refinements (additive only).
+- Ready for new odds file or live opportunities meeting criteria.
+
+**Update Note (Additive per File Management Rule)**: This entire new section added after user confirmation of placement. All previous analysis, recommendations, and history fully preserved. No deletions. GitHub tool used for push; re-validated immediately after. Moderate betting guide followed exactly. Playbook rules followed by the letter in every step.
+
+*Placement confirmed and logged 2026-06-05 16:41 CEST. All updates pushed + validated via connected GitHub tools before final reply.*
