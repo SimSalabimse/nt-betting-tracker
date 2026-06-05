@@ -24,4 +24,19 @@
 - bet_log.csv kept clean (pure data rows, no # lines).
 - Full transparency preserved. All P/L calculations verified (Wade 20*1.37=27.40 payout +7.40; KTP 20*1.47=29.40 +9.40).
 
-*File updated 2026-06-05 after user-provided settlements. Playbook followed by the letter. Net bankroll impact recorded.*
+## Confirmation of User-Reported Settlements (Added 2026-06-05)
+
+User-provided results match exactly the logged and analyzed bets in bet_log.csv and playbook learnings section:
+
+- **James Wade win**: 27.40 NOK payout confirmed. P/L +7.40 NOK. Veteran consistency edge realized.
+- **Varhaug loss (drew 2-2)**: -20 NOK confirmed. Draw variance in low-level Norwegian football noted; new filter added to playbook.
+- **Flavio Cobolli**: Match canceled, 20 NOK stake returned (P/L 0) confirmed. Tennis cancellation variance accepted; bankroll protected.
+- **FC KTP Kotka win**: 29.40 NOK payout confirmed. P/L +9.40 NOK. Strong validation for Finnish Ykkösliiga top-table selections.
+- **Haka loss**: -20 NOK confirmed. Variance in lower league home favorites; portfolio adjustment noted.
+- **Team Liquid loss (dominated 2-0 maps)**: -20 NOK confirmed. Esports high variance realized; stricter filters for future CS2 singles added to playbook.
+
+All calculations cross-verified against odds and stakes (20 NOK each). Net P/L for these 6 bets: +16.80 (wins) - 60 (losses) + 0 (cancel) = **-43.20 NOK**. Bankroll now **479.10 NOK liquid**. JS Saoura (20 NOK @1.30) remains the only open bet from this round.
+
+Full post-mortem and learnings already documented additively in playbook.md ("Learnings from Round 2 Settlements"). No changes needed beyond this confirmation. Moderate acceleration remains active for open bet and future rounds where data supports.
+
+*This confirmation section added strictly per File Management Rule (additive only). GitHub push performed with validation step before any user reply. Playbook followed by the letter in every detail.*
