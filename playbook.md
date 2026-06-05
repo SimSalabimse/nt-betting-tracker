@@ -316,3 +316,55 @@ This expanded rule directly strengthens the existing short **File Management Rul
 **Violation consequence**: Any future update that adds # lines to bet_log.csv will be considered a breach of this rule and must be immediately corrected by clean replace (user-permitted) or additive append of fixed rows.
 
 This ban ensures bet_log.csv stays clean, professional, and fully functional as the single source of truth for all bet data. The current clean state (header + exactly 5 data rows, no #) is the required format going forward.
+
+## Learnings from Round 1 Settlements (2026-06-05) - Added after first settlements
+
+**Post-settlement analysis performed on the 4 settled bets** (Zverev still pending as of this update). Full analysis per playbook: Was the edge real? Variance vs. misread motivation/form? What to adjust?
+
+### 1. Mexico BTTS No (loss, final score 4-1)
+- **Edge hypothesis**: Mexico strong home form/prep clean sheets + WC2026 motivation + home crowd vs Serbia poor recent results/limited attack → controlled, low-scoring game expected. High EV (+11-15%).
+- **Outcome**: High-scoring (4 goals). BTTS No failed.
+- **Analysis**: Edge partially misread. Serbia's attack performed better than recent form suggested (possible variance in friendly intensity or Serbia motivation). Mexico defense not as airtight as prep indicated. International friendlies have higher variance than competitive matches — prep form/clean sheets don't always translate.
+- **Learning & Adjustment**:
+  - Add filter: Prefer competitive matches over pure friendlies for BTTS edges (or lower EV threshold / smaller stake for friendlies).
+  - For future Mexico/ similar prep games: Weight recent competitive form more heavily than friendlies. Monitor line movement/public % more closely.
+  - Small sample: Track ROI on "international friendly BTTS" category going forward.
+
+### 2. Mexico to Win (HUB) (win, payout 12.70 NOK / +2.70 profit)
+- **Edge hypothesis**: Same core thesis as above — home advantage, form, high motivation vs Serbia struggles. Solid value on short odds.
+- **Outcome**: Win materialized as expected.
+- **Analysis**: Core thesis held strong. Home motivation + form edge was real and realized. Good call on the primary selection.
+- **Learning & Adjustment**:
+  - Reinforces value in motivated home teams in international/prep contexts (especially WC-related motivation).
+  - Diversification within same match (Win + BTTS No) was smart — one hit even if the other missed.
+  - Continue prioritizing "home motivation + form" edges in similar spots. Consider slight increase in allocation for high-conviction versions.
+
+### 3. Minnesota Lynx ML (win, payout 14.70 NOK / +4.70 profit)
+- **Edge hypothesis**: Lynx superior recent form, better defense/pace vs Valkyries. Clear matchup edge. ~+4% EV.
+- **Outcome**: Win. Edge realized cleanly.
+- **Analysis**: Data-driven form/pace/defense edge in WNBA worked as expected. Research protocol (recent splits, defensive ratings) was accurate.
+- **Learning & Adjustment**:
+  - WNBA form/pace/matchup edges are reliable when supported by recent data. Continue strong allocation to data-rich leagues like WNBA.
+  - Good validation of the research protocol for basketball-style sports.
+
+### 4. Carolina Hurricanes Under 5.5 (loss, final score 4-3)
+- **Edge hypothesis**: Game 1 high scoring → expect defensive tightening & adjustments in Game 2. Public bias toward Over. Slight value on Under.
+- **Outcome**: Still went over (high scoring again).
+- **Analysis**: Expectation of tightening did not materialize strongly enough. SCF adjustments or offensive firepower from both teams was stronger than anticipated. Possible persistent public bias or line not moving enough. Variance in high-stakes SCF games can override narrative.
+- **Learning & Adjustment**:
+  - NHL SCF totals can be stubborn; "tightening after high Game 1" narrative has limits (small sample but note this instance).
+  - Future adjustment: Raise min EV threshold for NHL totals in SCF/playoffs, or add extra filter (e.g., check historical SCF Game 2 over/under hit rates, or require stronger defensive indicators).
+  - Monitor public betting % / line movement more explicitly in research for totals.
+  - Consider pausing or micro-staking NHL totals in SCF until more data.
+
+**Overall Round Learnings & Portfolio Takeaways**:
+- **Positive**: Uncorrelated sports diversification worked (intl football, NHL, WNBA). Multiple edges in same match (Mexico Win + BTTS No) provided some hedge.
+- **Variance note**: Two losses were close/high-scoring; wins were solid. Overall portfolio still modest positive EV realization despite net -12.60 NOK P/L (due to variance).
+- **Key Adjustments for Future Rounds**:
+  - International friendlies/prep: Add "competitive context" filter or lower EV/stake for BTTS-style edges.
+  - NHL SCF totals: Raise threshold or add historical/context filters; be cautious with tightening narratives.
+  - WNBA form edges: Continue with confidence.
+  - Mexico/home motivation edges: Strong validation — lean into similar spots.
+- **Next Actions**: Track ROI by sport/league/market over next 20-40 bets. Update specific edges in Sport-by-Sport section if patterns emerge. Review before Round 2.
+
+These learnings are logged here for dynamic updates. Will be reviewed before every new round and refined with more data.
