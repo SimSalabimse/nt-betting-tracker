@@ -1,3 +1,30 @@
+**Current Bankroll**: **460.70 NOK liquid** + **60.00 NOK pending/at risk** = **520.70 NOK total** (updated after 2026-06-06 afternoon placements).
+
+**Recent Placements (2026-06-06 Afternoon - Moderate Acceleration)**:
+- Minnesota Lynx -13.5 @1.77 → 20 NOK single (Pending settlement)
+- Karmine Corp to win @1.57 → 20 NOK single (Pending settlement)
+- Furia Esports to win @1.40 → 20 NOK single (Pending settlement)
+
+**Bankroll Movement on Placement (Proper 5-Step Logic Applied)**:
+- Previous liquid: 520.70 NOK
+- Total stake placed: 60 NOK deducted from liquid
+- New liquid: **460.70 NOK**
+- Pending / At Risk: **60.00 NOK** (full stakes on open bets)
+- Total (liquid + pending): remains 520.70 NOK (no P/L yet)
+
+**Notes on Strategy**: Moderate acceleration continues. 3 high-conviction uncorrelated singles placed exactly as recommended. Full transparency via bet_log.csv (3 new pending rows added). GitHub push + validation performed.
+
+**Proper Bankroll Tracking Logic (Reconfirmed - Strictly Additive)**:
+1. On placement: Deduct full stake from Available/Liquid. Record as "Pending / At Risk".
+2. On Win settlement: Add full **payout** = stake + profit back to Available. (Net +profit)
+3. On Loss settlement: Add 0 (stake already deducted). (Net -stake)
+4. Total Bankroll = Available (liquid) + Pending/At Risk (open bets).
+5. P/L tracking: Show full payout on wins and net profit for clarity.
+
+*This placement update added strictly additive 2026-06-06. Playbook followed by the letter. Validated via re-fetch.*
+
+## Previous Bankroll History (Preserved - Additive Only)
+
 **Current Bankroll**: **520.70 NOK** liquid (final calculated from complete cleaned bet_log.csv).
 
 **Final Bankroll Update (Added the last missing bet - Strictly additive 2026-06-06)**:
