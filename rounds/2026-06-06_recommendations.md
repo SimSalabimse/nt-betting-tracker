@@ -37,3 +37,19 @@
 **Expected Portfolio EV**: Blended +9-12% positive. Good chance of daily + with 1-2 hits. Variance controlled.
 
 *Round recommendations prepared and pushed via GitHub tools per user instruction and playbook File Management + validation rules. Additive only.*
+
+## PLACEMENT CONFIRMATION (Added strictly additive 2026-06-06)
+**User confirmed**: Both recommended bets placed on 2026-06-06.
+
+**Bets Now Pending Settlement**:
+1. Urawa Red Diamonds to win vs Fagiano Okayama @1.87 – 20 NOK single (Logged in bet_log.csv)
+2. Over 2.5 Goals Tokyo Verdy vs Gamba Osaka @2.35 – 20 NOK single (Logged in bet_log.csv)
+
+**Action Taken**:
+- bet_log.csv updated with pending rows (strict format, no # comments).
+- current_bankroll.md updated with placement confirmation and full open bets list (additive).
+- GitHub push + validation performed before reply.
+
+**Next**: Await settlements. Will pull results, run full post-mortem (was edge real? variance analysis, adjustments to filters), add learnings section here and in playbook.md (additive), update bankroll with P/L. Moderate acceleration continues for future rounds.
+
+*All per playbook by the letter. Ready for results.*
