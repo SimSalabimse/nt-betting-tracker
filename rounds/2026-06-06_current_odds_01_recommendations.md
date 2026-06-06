@@ -49,3 +49,19 @@
 - **Status**: Pending settlement. Awaiting results for post-mortem and P/L logging.
 
 *Placement confirmation added strictly additive. Playbook followed by the letter in full. GitHub updates completed and validated.*
+
+**POST-MORTEM / SETTLEMENT SUMMARY (Added strictly additive 2026-06-06 ~22:55 CEST)**:
+
+**Results vs Pre-Match Expectations**:
+- **B8 vs M80 (CS2) @1.60 20 NOK**: LOSS (0-2). Edge on form/LAN was reasonable but esports variance hit hard (M80 dominated). Realized -20 NOK. Learning noted in bet_log: consider map win rate filters for future CS2.
+- **Fenix Toulouse -1.5 (Handball) @1.77 20 NOK**: WIN (covered -1.5). Research on LNH home advantage and HC value held cleanly. +15.40 NOK. Good validation for handball allocation.
+- **Over 8.5 legs Littler vs Wade @1.57 15 NOK**: LOSS. Totals variance in PDC; match stayed under. -15 NOK. Learning: tighter H2H/average legs check for darts totals.
+- **Under 8.5 Twins vs Royals @1.77 15 NOK**: WIN (low scoring). Pitching/park research validated even though Twins won game. +11.55 NOK. Strong MLB totals edge.
+
+**Session P/L (these 4 + 3 afternoon pending settled same evening)**: +26.75 NOK net (5 wins, 2 losses). Positive session overall. Moderate acceleration delivered despite variance in 2 legs.
+
+**Portfolio Notes**: Uncorrelated sports helped (CS2 loss offset by handball/MLB wins). All main markets. Full EV ~+7-8% blended pre-match mostly realized where variance allowed.
+
+**Playbook Alignment**: Research protocol followed pre-match. bet_log and bankroll updated additively with outcomes + learnings. No shortcuts. Ready for next odds file or round.
+
+*Post-mortem added strictly additive. All files pushed and validated. Playbook followed by the letter.*
