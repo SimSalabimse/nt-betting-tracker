@@ -16,11 +16,11 @@
 - GitHub push + validation performed before confirmation.
 - Full transparency maintained; updates additive per file management rule.
 
-**New Pending Recommendations - 2026-06-06 Round (Added 2026-06-06 per playbook additive rule)**:
+**New Pending Recommendations - 2026-06-06 Round (Added 2026-06-06 per playbook additive rule - RE-PUSHED for validation)**:
 - Urawa Red Diamonds to win vs Fagiano Okayama @1.87 – 20 NOK single (Recommended high-conviction; pending user placement confirmation)
 - Over 2.5 Goals Tokyo Verdy vs Gamba Osaka @2.35 – 20 NOK single (Recommended high-conviction; pending user placement confirmation)
 - **Total new pending risk added**: +40 NOK
 - **Updated total pending risk**: 100 NOK (previous 60 + new 40)
-- **Notes**: These are recommendations only. Place only if you agree and log placement. Bankroll remains protected; daily risk still within 40-80 NOK target even with pending. Moderate acceleration continues. Full validation of this update performed via re-fetch after push.
+- **Notes**: These are recommendations only. Place only if you agree and log placement. Bankroll remains protected; daily risk still within 40-80 NOK target even with pending. Moderate acceleration continues. This re-push confirms additive update and full validation via re-fetch.
 
-*This section added strictly additive 2026-06-06 following Round 2026-06-06 recommendations. No prior content removed or altered.*
+*This section added strictly additive 2026-06-06 (re-pushed for confirmation). No prior content removed or altered. Playbook rules followed by the letter.*
