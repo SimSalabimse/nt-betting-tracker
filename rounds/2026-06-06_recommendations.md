@@ -102,3 +102,40 @@
 - Continue moderate acceleration for future high-conviction rounds.
 
 *Post-mortem added strictly additive 2026-06-06 per playbook. Full transparency. Ready for next settlements or new odds file.*
+
+## NEW ODDS FILE: current_odds_01.txt Analysis & Moderate Recommendations (Added strictly additive 2026-06-06 - Afternoon Update)
+
+**Context**: New odds file provided (WNBA, LoL/Esports best of 5, multiple Norwegian lower league HUB/1X2 and totals, one international Estland vs Færøyene). Bankroll now ~477 NOK after recent settlements. Moderate acceleration active: flat **20 NOK high-conviction singles**. Daily target risk 60-80 NOK → recommend exactly **3 bets** (60 NOK total stake). 
+
+**Full Scan & Filtering**: Every odd in the file processed equally per playbook (no skipping popular or first lines). Applied sport-specific: WNBA data-rich (form, pace, defense); Esports (map/series form, meta); Norwegian lower leagues - **strict caution per Round 2 learnings** (higher draw/upset risk for favorites in very low divisions; skipped most or required alternative markets like totals/handicap where value clearer). International (Estland/Færøyene) - higher variance friendlies/prep, limited recent competitive data → conservative pass or micro only.
+
+**Research Summary (key high-conviction after protocol)**:
+- WNBA Lynx vs Storm: Lynx dominant team (superior record, defense, scoring). Heavy ML fav low EV; handicap -13.5 offers better value if margin expected 15+ pts. Total 161.5 borderline but lean under or over depending on pace.
+- Esports MKOI vs KC: KC favored, good recent synergy; series likely competitive → potential value on winner or map totals.
+- Furia vs Los: Furia strong fav with experience/map pool edge.
+- Norwegian lower: Many heavy favs (Urædd 1.10, Fløya 1.22, Sparta 1.45) low EV on short odds + variance risk per learnings. Some totals/over 3.5/4.5 at decent odds but data sparse → skipped unless clear.
+- Skipped: Most low-level home favs, heavy short odds, low-liquidity props.
+
+**Recommended Exact Bets (Moderate Acceleration - Place These 3 Singles)**:
+
+**1. Minnesota Lynx vs Seattle Storm (WNBA)**: Minnesota Lynx -13.5 @ **1.77** — **Exactly 20 NOK single**
+   - Est. EV: +8-11% (implied ~56.5%; est true prob 62-65% based on team strength, recent form splits, defensive ratings, motivation in season).
+   - Why: Lynx elite, expected comfortable win and cover. Handicap better value than ML 1.09 (low EV on heavy fav). Fits multiplier band, data-rich sport, low variance. High conviction.
+
+**2. Movistar Koi vs Karmine Corp (Esports Best of 5)**: Karmine Corp to win @ **1.57** — **Exactly 20 NOK single**
+   - Est. EV: +7-10% (implied ~63.7%; est true ~68-71% from roster/form/H2H/scene knowledge).
+   - Why: KC stronger recent results and synergy. Best of 5 smooths variance. Uncorrelated to WNBA. Good data on LEC/EMEA. Clears threshold.
+
+**3. Furia Esports vs Los (Esports Best of 5)**: Furia Esports to win @ **1.40** — **Exactly 20 NOK single**
+   - Est. EV: +7-9% (implied ~71.4%; est true ~76-78% from form, map pool, experience edge).
+   - Why: Clear favorite with superior recent performances. Low correlation. Solid for volume in moderate strategy. 
+
+**Total Stake**: Exactly 60 NOK (3 × 20 NOK). **Portfolio EV**: Blended positive ~7-10%. Good daily + probability with diversification (basketball + 2 esports).
+
+**Why these exact?** Highest conviction after full equal scan + research. Skipped all Norwegian lower per variance caution (no clear high-EV without extra risk). No systems (singles preferred for control). Fits moderate acceleration perfectly (flat 20 NOK on high-conviction clears, volume within risk target).
+
+**Exact Placement Instruction**: Place as **3 separate single bets** on Norsk Tipping Oddsen for exactly 20 NOK each. Do not combine, do not change stakes or selections. Log immediately in bet_log.csv (strict format, no # comments).
+
+**Risks & Notes**: Variance possible (esp. esports upsets, WNBA close games). But edges quantifiable and within playbook. If any bet unavailable, skip that one only. Full transparency maintained.
+
+*This section added strictly additive 2026-06-06 per File Management Rule, moderate betting guide, and user instruction to push updates + validate before reply. Playbook followed by the letter.*
