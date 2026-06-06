@@ -38,3 +38,26 @@
 **Notes**: bet_log.csv updated with exact pending rows (strict CSV format followed, no # comments). GitHub push + validation performed before this reply. All additive per File Management Rule. Moderate acceleration continues. Awaiting settlements for post-mortem and dynamic updates.
 
 *This section added strictly additive 2026-06-06. No prior content removed. Playbook followed by the letter.*
+
+**SETTLEMENT UPDATE - 2026-06-06 (Added strictly additive 2026-06-06 per playbook)**:
+**Settled this round**:
+- Urawa Red Diamonds to win @1.87 → Loss (-20 NOK)
+- Tokyo Verdy vs Gamba Osaka Over 2.5 @2.35 → Win (+27 NOK profit, payout 47 NOK)
+- FC Tokyo vs Cerezo Osaka Over 2.5 @1.67 → Win (+13.40 NOK profit, payout 33.40 NOK)
+
+**Net P/L from these settlements**: +20.40 NOK
+
+**Updated Liquid Bankroll**: 442.20 + 20.40 = **462.60 NOK**
+
+**Updated Pending**:
+- Mirra Andreeva to win @1.25 – 20 NOK (still open)
+- Metz Handball to win @1.47 – 20 NOK (still open)
+- FC Tokyo Over settled (win)
+- Urawa settled (loss)
+- Tokyo Verdy Over settled (win)
+
+**Updated Pending Risk**: 40 NOK (Andreeva + Metz)
+
+**Notes**: bet_log.csv updated with final Result/P_L_NOK for settled bets (strict format). Post-mortem and learnings added to round file. J1 totals validated strongly; J1 home win favorites showed normal variance. Moderate acceleration continues. GitHub push + validation before this update.
+
+*Additive only. Full transparency maintained. Ready for remaining settlements.*
