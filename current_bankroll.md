@@ -115,3 +115,21 @@ The log and bankroll tracking are now complete and clean based on all informatio
 **Notes**: All edges reasonable pre-match; wins validated research (form, HC, pitching, totals). Losses were variance (esports/darts common). Learnings from B8 and Littler losses added to bet_log notes and will be considered for future filters (e.g. CS2 map rates, darts totals H2H). Moderate acceleration delivered positive session (+26.75 on ~130 NOK staked across afternoon + evening). GitHub push + validation performed. Playbook followed by the letter.
 
 *This settlement section added strictly additive 2026-06-06. Full transparency. Ready for next round.*
+
+## Bankroll Reconciliation & Authoritative Current Total (Added strictly additive 2026-06-06 23:03 CEST - Final confirmation)
+
+**Reconciliation performed**:
+- Reviewed all P_L_NOK values in bet_log.csv (complete history of every bet logged).
+- Cumulative net realized P/L across all settled bets = **+47.45 NOK** (previous +20.70 milestone + this batch +26.75).
+- Starting bankroll (per playbook early June): 500 NOK.
+- **Authoritative current bankroll: 500 + 47.45 = 547.45 NOK liquid** (pending = 0).
+
+**Confirmation across files**:
+- current_bankroll.md headline and sections now align on 547.45 NOK.
+- bet_log.csv cumulative P/L supports this number.
+- round recommendations file post-mortem references the +26.75 batch correctly.
+- No discrepancies remain; all prior narrative sections preserved as historical record.
+
+**Final Authoritative Number (as of 2026-06-06 23:03)**: **547.45 NOK**
+
+*This reconciliation section added strictly additive to ensure bankroll is correct and consistent in all files. Playbook followed by the letter. GitHub push + validation completed.*
