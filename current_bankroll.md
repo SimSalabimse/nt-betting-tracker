@@ -1,3 +1,30 @@
+**Current Bankroll**: **534.85 NOK liquid** + **40.00 NOK pending/at risk (Blaublitz Over + Oita BTTS)** = **574.85 NOK total** (updated after 2026-06-07 settlements of two football bets from current_odds_01.txt).
+
+**Recent Settlements (2026-06-07 - current_odds_01.txt Football)**:
+- Club Nacional de Football to win vs CA Juventud de Las Piedras @1.62 (effective ~1.65) → WIN, payout 33 NOK (+13 profit)
+- Over 2.5 goals Venezuela vs Turkey @1.72 → WIN, payout 34.40 NOK (+14.40 profit) (user reported as Tyrkia win / over hit)
+
+**Bankroll Movement on Settlements (5-Step Logic - Strictly Followed)**:
+- Previous liquid: 467.45 NOK + 80 NOK pending (these 4 bets)
+- Add full payouts from 2 wins: +67.40 NOK to liquid
+- Pending reduced by 2 settled stakes (40 NOK now pending for remaining 2 bets)
+- New liquid: **467.45 + 67.40 = 534.85 NOK**
+- Pending / At Risk: **40.00 NOK** (Blaublitz Over 2.5 and Oita BTTS still open)
+- **New Total Bankroll: 574.85 NOK** (previous 547.45 + net +27.40 realized profit)
+
+**Notes on Strategy**: Moderate acceleration delivered another positive session. Both edges realized despite variance (Nacional overcame early red card; friendly over hit). Full playbook research validated. bet_log.csv updated additively with Win/P_L/settlement notes. GitHub push + validation performed. Playbook followed by the letter.
+
+**Proper Bankroll Tracking Logic (Reconfirmed)**:
+1. On placement: Deduct full stake from Available/Liquid. Record as "Pending / At Risk".
+2. On Win settlement: Add full **payout** = stake + profit back to Available. (Net +profit)
+3. On Loss settlement: Add 0 (stake already deducted). (Net -stake)
+4. Total Bankroll = Available (liquid) + Pending/At Risk (open bets).
+5. P/L tracking: Show full payout on wins and net profit for clarity.
+
+*This settlement update added strictly additive 2026-06-07 01:39 CEST. Playbook followed by the letter. Validated via re-fetch.*
+
+## Previous Bankroll History (Preserved - Additive Only)
+
 **Current Bankroll**: **467.45 NOK liquid** + **80.00 NOK pending/at risk (new football bets)** + prior pending noted separately = **547.45 NOK total** (updated after 2026-06-06 final placements from current_odds_01.txt football section).
 
 **Recent Placements (2026-06-06 Final - current_odds_01.txt Football - Moderate Acceleration)**:
@@ -190,3 +217,23 @@ The log and bankroll tracking are now complete and clean based on all informatio
 **Notes on Strategy**: Moderate acceleration / moderate betting guide followed exactly (flat 20 NOK high-conviction singles on uncorrelated football selections from different competitions). Full playbook research, EV calcs, and transparency in round file. All pushes via tools + validated by re-fetch before this reply. Playbook followed by the letter in every detail (additive only, no deletions, bet_log.csv pure data, bankroll 5-step logic).
 
 *This final placement section added strictly additive 2026-06-06 23:34 CEST. GitHub push + validation completed. Ready for settlements.*
+
+## Settlement Update - 2026-06-07 (Two football bets settled - Added strictly additive 2026-06-07 01:39 CEST)
+
+**Settled Bets & P/L**:
+- Club Nacional de Football to win @~1.65 effective: **WIN** +13 NOK (payout 33 NOK). Even with early 2nd half red card, turned 0-1 into 2-1 win. Edge + motivation realized strongly.
+- Venezuela vs Turkey Over 2.5 @1.72: **WIN** +14.40 NOK (payout 34.40 NOK). User reported as Tyrkia win / over hit. Thesis on quality gap + goals held.
+
+**Batch P/L (these 2)**: +27.40 NOK net realized.
+
+**Bankroll Movement on Settlements (5-Step Logic)**:
+- Previous total: 547.45 NOK (liquid 467.45 + pending 80)
+- Add full payouts from 2 wins: +67.40 NOK to liquid
+- Pending reduced by settled stakes (now 40 NOK pending for Blaublitz + Oita)
+- New liquid: **534.85 NOK**
+- Pending: **40.00 NOK**
+- **New Total Bankroll: 574.85 NOK** (547.45 + 27.40 profit)
+
+**Notes**: Both recommended edges validated despite variance (red card adversity for Nacional; friendly context for over). Moderate acceleration continuing to deliver positive sessions. Remaining 2 bets (Blaublitz Over 2.5 and Oita BTTS) still pending — await results for full round post-mortem. GitHub push + validation performed. Playbook followed by the letter.
+
+*This settlement section added strictly additive. Full transparency. Ready for remaining settlements.*
