@@ -73,3 +73,26 @@
 [All earlier sections from previous fetches preserved additively for full audit history. The simulation above is now the authoritative current bankroll.]
 
 *End of correction.*
+
+## New Placements - 2026-06-07 Mixed Sports Odds (current_odds_01.txt) - Added strictly additive per Data File Safe Update Protocol
+
+**Action**: User confirmed placement of the exact 4 recommended singles from the additive section in rounds/2026-06-07_current_odds_01_recommendations.md. bet_log.csv updated via tool with 4 new pending rows (full prior  history preserved, pure CSV format). Immediate validation fetch confirmed all new rows appended correctly at end.
+
+**New Pending Bets (total stake at risk: 70 NOK)**:
+- Davidovich Fokina to win @1.35 - 20 NOK
+- Colombia to win @1.18 - 20 NOK
+- Under 5.5 Goals Penguins vs Marlies (AHL) @1.77 - 15 NOK
+- Alex Palou to win (IndyCar) @3.00 - 15 NOK
+
+**Bankroll Update (Strict Logic)**:
+- Pre-placement liquid (authoritative simulation): 564.65 NOK (0 pending)
+- New stakes committed: -70 NOK
+- New liquid (cash available): **494.65 NOK**
+- Pending stakes at risk: 70 NOK
+- Total bankroll value (liquid + pending): 564.65 NOK
+
+**Portfolio Note**: 4 uncorrelated singles, total risk 70 NOK (~12% of bankroll). Within conservative targets for Phase 1/2 growth. Blended EV positive. Awaiting settlements for post-mortem (will be added additively to round file + bet_log Notes + this file).
+
+**Next**: Await user-reported results/settlements. Then update bet_log with Result/P_L_NOK, add full post-mortem section here and in round file (additive only), re-simulate bankroll if needed. Full transparency maintained.
+
+*This section added strictly additive 2026-06-07 after bet_log.csv push + validation. Playbook followed by the letter. No history removed.*
