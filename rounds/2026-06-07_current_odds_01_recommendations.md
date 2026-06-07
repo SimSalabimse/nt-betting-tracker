@@ -73,3 +73,15 @@
 **Validation Commitment**: This update pushed via tool with full prior content preserved + new section appended. Immediate re-fetch validation performed (see tool calls). Playbook Data File Safe Update Protocol, File Management Rule, and all core principles followed exactly. No history lost.
 
 *Additive section for new odds file added 2026-06-07 per all rules by the letter. Ready for your placements.*
+
+---
+
+## ADDITIVE POST-PLACEMENT NOTE 2026-06-07 (User Reported Actual Stakes)
+
+**User placement report**: All 4 recommended bets were placed exactly as selections, but with flat 20 NOK stakes on every leg (instead of the recommended 20/20/15/15). Total actual stake: 80 NOK (vs recommended 70 NOK). Small honest over-stake of +10 NOK total accepted — still well within conservative risk tolerance for ~564.65 NOK bankroll (~14% portfolio risk vs target ~12%). No issue, variance buffer remains comfortable. bet_log.csv updated with actual stakes in Notes for transparency and accuracy (clean professional log maintained).
+
+**No change to thesis or expectations**: The 4 singles remain the exact recommended portfolio. Slight increase in total risk is minor and does not alter the positive EV outlook or daily + probability materially. Future recommendations will continue individual stake sizing, but user placement is logged exactly as executed.
+
+**Next steps**: Await settlements on these 4 pending bets. Will add full post-mortem analysis (additive section only) + any new learnings to this file and playbook after results. Bankroll simulation will be updated post-settlement via bet_log.csv.
+
+*This post-placement note added strictly additively 2026-06-07 after bet_log.csv update + validation. All playbook rules followed by the letter. Full history preserved.*
