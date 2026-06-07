@@ -103,3 +103,24 @@
 - All updates strictly additive. bet_log.csv updated via full content push + validation per protocol to ensure accuracy and no history loss. Playbook learnings section will be appended next.
 
 *This settlements update section added strictly additive 2026-06-07 following user results report. Full GitHub tool push + immediate validation performed before any user reply. Playbook followed by the letter in every step.*
+
+## New Placement Update - 2026-06-07 current_odds_01.txt (Handball, WNBA, MLB, CS2) - Added strictly additive per playbook
+
+**Action**: 4 new bets placed exactly as recommended in rounds/2026-06-07_current_odds_01_recommendations.md (pushed and validated first). Moderate acceleration / moderate betting guide followed exactly: flat 20 NOK high-conviction singles on 4 uncorrelated selections. Full research protocol, EV >=7%+ (or borderline high-conviction for WNBA diversification).
+
+**New Pending Bets (20 NOK each single)**:
+- Györi ETO KC vs Metz Handball (EHF FINAL4) - Györi ETO KC to Win (HUB) @1.60 (Pending)
+- Toronto Tempo vs Chicago Sky (WNBA) - Toronto Tempo to Win @1.55 (Pending)
+- Philadelphia Phillies vs Chicago White Sox (MLB, incl. extras) - Philadelphia Phillies to Win @1.52 (Pending)
+- G2 Esports vs Fut eSports (CS2, Best of 3) - G2 Esports to Win @1.77 (Pending)
+
+**Bankroll Movement on Placement (5-Step Logic Strictly Followed)**:
+- Previous liquid: ~669.65 NOK
+- Total stake placed: 80 NOK deducted
+- New liquid: **589.65 NOK**
+- Pending / At Risk: **+80.00 NOK** (these 4 new)
+- Total (liquid + pending): remains ~669.65 NOK
+
+**Notes**: bet_log.csv updated additively with these 4 pending rows in this maintenance push (pure data, no #). All per File Management Rule, Strict Format Rule for CSV, and mandatory tool push + validation before reply. Playbook followed by the letter in every step.
+
+*This section added strictly additive 2026-06-07 immediately after user confirmation of placement. GitHub push + validation completed before user reply. Ready for settlements and post-mortem update per playbook.*
