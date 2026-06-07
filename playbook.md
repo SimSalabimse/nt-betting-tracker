@@ -467,3 +467,46 @@ These learnings are logged here for dynamic updates. Will be reviewed before eve
 These learnings are added strictly per File Management Rule (additive new section). Will be reviewed dynamically before future rounds and used to refine edges/staking. Moderate acceleration continues for remaining open bet and future rounds where justified by data.
 
 *Section added 2026-06-05 after user settlements and tool-based push/validation. Playbook is living document followed by the letter.*
+
+## Data File Safe Update Protocol (Added 2026-06-07 to prevent recurrence of history truncation)
+
+**Background/Lesson Learned**: In a recent update to bet_log.csv, a partial fetch of only the last rows was used to construct an append for new bets (to strictly avoid introducing # comments). This resulted in pushing a truncated version of the file, causing unintended deletion of earlier history in the working file on main (even though Git preserved it in prior commits). This violated the spirit and intent of the File Management Rule and bet_log.csv Strict Format Rule, despite good intentions to comply with pure-data requirements.
+
+**Mandatory Protocol Going Forward (Non-Negotiable)**:
+
+1. **Always Retrieve Full Current Content First**:
+   - Before any modification or push to any file (especially data files like bet_log.csv, current_bankroll.md, or log-style round files), invoke `github___get_file_contents` (with path, and ref/sha for the latest/main or specific commit as needed) to obtain the **complete, full text content** of the file.
+   - Do not rely on partial/summary fetches or last-N-rows for construction of updates.
+
+2. **Construct Updates Strictly Additively from Full Content**:
+   - Take the entire retrieved full content.
+   - For bet_log.csv and similar append-only logs: Append new valid data rows (pure CSV format, matching header exactly, no # or comments) directly at the end.
+   - For markdown files (playbook.md, rounds/*.md, etc.): Append new dated sections, notes, or clarifications at the logical end or appropriate location without removing, overwriting, or truncating any prior text.
+   - If corrections are needed: Append corrected rows or add correction notes/sections (per existing rules); only perform full replace if user explicitly permits and with full justification in commit message and notes.
+
+3. **Push the Complete Updated Content**:
+   - Use `github___push_files` or `github___create_or_update_file` with the **full reconstructed/updated content** as the new file body.
+   - Include detailed commit message referencing the protocol, what was added, and confirmation of full history preservation.
+
+4. **Mandatory Immediate Post-Push Validation**:
+   - Right after every push, immediately call `github___get_file_contents` again on the target file (using main or the new commit sha).
+   - Verify:
+     - The file is complete and intact.
+     - All expected prior content (e.g., earliest entries in bet_log.csv) is still present.
+     - New additions are at the end and correct.
+     - No unintended deletions or truncations occurred.
+     - For CSV: Header is present and first, all rows parseable, new bets logged properly.
+   - If any issue detected: Immediately address (e.g., revert or corrective push) and document in playbook.
+   - Confirm validation success in the round file or a dedicated note.
+
+5. **Edge Cases and Escalation**:
+   - If full content retrieval fails or is impractical for extremely large files: Use Git-based operations (e.g., revert bad commit then re-apply changes on top, or temporary branch for safe editing). Document the approach.
+   - Any deviation or incident: Add a learning section to this protocol and review in next round.
+
+**Prevention of Recurrence**: This protocol codifies the use of full-content retrieval + additive construction + double validation that successfully restored the file in the 2026-06-07 incident. It makes the existing "Mandatory tool-based process + validation" rule more explicit and actionable for data files.
+
+**Integration with Existing Rules**: This directly reinforces the File Management Rule (additive only, preserve full history), bet_log.csv Strict Format Rule (pure data, append for updates), and the requirement for post-push github___get_file_contents validation.
+
+Future updates will follow this protocol by the letter. The playbook and all files remain living documents updated additively.
+
+*This section added strictly additively on 2026-06-07 using full content retrieval and validation via GitHub tools. The bet_log.csv has been restored to full history + new bets using the same approach.*
