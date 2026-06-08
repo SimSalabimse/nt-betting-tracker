@@ -510,3 +510,71 @@ These learnings are added strictly per File Management Rule (additive new sectio
 Future updates will follow this protocol by the letter. The playbook and all files remain living documents updated additively.
 
 *This section added strictly additively on 2026-06-07 using full content retrieval and validation via GitHub tools. The bet_log.csv has been restored to full history + new bets using the same approach.*
+
+## Learnings from 2026-06-08 Settlements (Legacy -1.5, G2 Esports -1.5, Ugo Humbert, Betboom Team, Qinwen Zheng, Tommy Paul, Astralis) - Added after user-reported results
+
+**Post-settlement analysis** for the 7 settled bets from the 2026-06-08 round (uncorrelated singles on tennis and CS2 esports). Full playbook protocol applied: edge hypothesis vs outcome, variance vs misread factors, specific adjustments for future. All updates performed via full content retrieval + additive construction + immediate post-push validation per Data File Safe Update Protocol.
+
+### 1. Legacy -1.5 (CS2 Bo3) - WIN, payout 24.60 NOK (+12.60 profit)
+- **Edge hypothesis**: Legacy strong form/meta edge in favorable matchup; -1.5 maps at 2.05 offered solid +EV (~6.6% est) in preferred multiplier band. Good for volume in esports allocation.
+- **Outcome**: Handicap covered cleanly. Win materialized as expected.
+- **Analysis**: Edge realized strongly. Legacy delivered on map differential. Payout exact (12 × 2.05 = 24.60).
+- **Learning & Adjustment**:
+  - CS2 map handicaps (-1.5) on teams with clear researched edge in BO3 offer reliable value realization. Continue selective allocation to esports handicaps when data supports good edge and multiplier in 1.8-2.2 range. Reinforces diversification benefit of esports in daily portfolio.
+
+### 2. G2 Esports -1.5 (CS2 Bo3 vs Big) - WIN, payout 24.60 NOK (+12.60 profit)
+- **Edge hypothesis**: G2 strong roster/recent form edge; -1.5 at 2.05 good multiplier for map handicap cover.
+- **Outcome**: Win. Handicap hit.
+- **Analysis**: Edge held cleanly. Strong performance realization.
+- **Learning & Adjustment**:
+  - Same as Legacy: Validates CS2 -1.5 strategy for favorable spots. Good hit rate contributor when selected with full research.
+
+### 3. Ugo Humbert to win (Tennis vs Ymer) - WIN, payout 11.50 NOK (+1.50 profit)
+- **Edge hypothesis**: Strong short-odds favorite @1.15 (est true prob ~90%+); low-variance volume play for daily stability. Full playbook research (form, H2H, motivation, surface).
+- **Outcome**: Win as expected. Clean realization.
+- **Analysis**: Edge held. Good low-variance profit contributor. Payout exact (10 × 1.15 = 11.50).
+- **Learning & Adjustment**:
+  - Short-odds high-probability tennis favorites (1.10-1.20 range) are reliable for small steady profits and daily + probability when research supports. Excellent for portfolio stability and volume without high variance. Continue allocation as diversifier.
+
+### 4. Betboom Team to win (CS2 vs Monte) - WIN, payout 13.70 NOK (+3.70 profit)
+- **Edge hypothesis**: Value on Betboom at 1.37 with researched edge in matchup.
+- **Outcome**: Win realized.
+- **Analysis**: Edge held. Solid esports value selection.
+- **Learning & Adjustment**:
+  - Reinforces selective esports singles on good value spots. Good contributor to positive day.
+
+### 5. Qinwen Zheng to win (Tennis vs Cristian) - LOSS, -15 NOK
+- **Edge hypothesis**: Strong form/motivation edge @1.30; est true prob high enough for +EV.
+- **Outcome**: Loss (variance hit).
+- **Analysis**: No misread in pre-match research (form/H2H/motivation solid); pure outcome variance in WTA. Single leg contained.
+- **Learning & Adjustment**:
+  - Even strong, well-researched WTA favorites can lose on the day. Maintain strict EV thresholds and portfolio diversification; accept variance as normal in individual sports. No methodology change needed, but continue tracking ROI on WTA favorites separately.
+
+### 6. Tommy Paul to win (Tennis vs Mpetshi Perricard) - CANCELED, P/L 0 (stake returned 15 NOK)
+- **Edge hypothesis**: Solid lean @1.37 with research support.
+- **Outcome**: Match canceled (likely withdrawal/injury - common tennis variance late in tournaments).
+- **Analysis**: Pure variance event outside edge control. Bankroll fully protected (no loss).
+- **Learning & Adjustment**:
+  - Tennis cancellations happen, especially in best-of-3 or physical toll spots. Always note in risk assessment for tennis bets; no adjustment to edge methodology. Good that it was single stake - no portfolio damage. Slight preference for earlier rounds or best-of-5 where fatigue less extreme in future if similar spots.
+
+### 7. Astralis to win (CS2 vs Pain Gaming) - LOSS, -10 NOK
+- **Edge hypothesis**: Slight favorite @1.70 with researched edge (form/meta).
+- **Outcome**: Loss. Variance realized in esports.
+- **Analysis**: Edge hypothesis reasonable pre-match but opponent had strong day or meta advantage. High variance in CS2 fully realized as pre-warned.
+- **Learning & Adjustment**:
+  - **Esports (CS2) caution reinforced**: Even slight favorites with good research can miss due to variance or opponent pop-off. Future CS2 singles: Require stronger evidence (recent map win % >60-65%, head-to-head map record, no major roster issues) or raise min EV threshold to 9%+ for singles. Consider small systems or skip if only moderate conviction. Continue selective allocation but tighter filters.
+
+**Overall 2026-06-08 Portfolio Takeaways**:
+- **Positive**: Net +5.40 NOK for the round. Excellent realization on the two CS2 -1.5 map handicaps (+25.20 total profit) and solid small profits on tennis (Humbert) and esports (Betboom). Process delivered a positive day despite variance.
+- **Variance hit**: Qinwen Zheng loss (-15), Astralis loss (-10), and Tommy Paul cancel (0) contained well; net positive thanks to strong handicap hits.
+- **Key Adjustments for Future Rounds**:
+  - **CS2 Map Handicaps**: Strong validation - continue selective allocation when clear edge and good multiplier (1.8-2.2). Excellent for volume and realization.
+  - **Tennis Short-Odds Favorites**: Reliable low-variance volume for daily stability. Good diversifier.
+  - **Esports Singles**: Maintain or slightly raise bar (stricter recent map stats or min EV 9%+). Variance reminder but still viable with filters.
+  - **WTA Favorites**: Track ROI separately; accept variance; no change to selection criteria.
+- **Bankroll Impact**: Updated to ~479.40 NOK liquid (see current_bankroll.md for full additive log). Still healthy Phase 1/2 position. Pending: Boulter vs Fernandez and Siegemund vs Jones (left unchanged as not reported).
+- **Next Actions**: Await any remaining settlements. Track per-sport ROI (esp. CS2, tennis, esports). Update Sport-by-Sport section with refined filters if patterns emerge over more bets. Review before next round. Full transparency maintained via GitHub tools + validation per protocol.
+
+These learnings are added strictly per File Management Rule, Data File Safe Update Protocol, and playbook by the letter (additive new section only, full push + immediate validation before any reply). Will be reviewed dynamically before future rounds and used to refine edges/staking.
+
+*Section added strictly additive 2026-06-08 after full tool-based push and double validation of bet_log.csv and this playbook update. All rules followed exactly.*
