@@ -46,3 +46,27 @@ The error was my inference from the phrasing "Toronto Marlies win 36 nok payout"
 **Action taken**: bet_log.csv updated with full content push + immediate validation re-fetch to confirm all prior history intact and new Result/P_L_NOK/Notes added correctly to the 7 settled rows. Playbook and this file updated additively. All rules followed by the letter before any reply.
 
 *This section added strictly additive 2026-06-08 after tool-based full push and double validation of bet_log.csv.*
+
+---
+
+**bet_log.csv Duplicate Fix & Clean Update-in-Place Protocol - 2026-06-08 (added strictly additive per explicit user request and File Management Rule)**
+
+**Issue**: After appending settled rows for the 2026-06-08 bets (per previous protocol interpretation), duplicate entries appeared in bet_log.csv (original pending rows + new settled rows with "(SETTLED)" in Selection).
+
+**User explicit instruction**: "Now there are dubble ups in the file, fix that, there should never be duble, update the bets that are already there when i provide results".
+
+**Fix performed (one-time clean full replace, user-permitted)**:
+- Retrieved full current bet_log.csv.
+- Removed all 7 duplicate appended rows.
+- Updated the original 7 pending 2026-06-08 rows IN-PLACE: filled Result (Win/Loss/Canceled), P_L_NOK (correct profits/losses/0), and enhanced Notes with payout details + post-settlement analysis (no "(SETTLED)" suffix, clean professional format).
+- Preserved ALL historical rows (2026-06-04 to 2026-06-07) exactly.
+- Kept the 2 unreported pending bets (Boulter vs Fernandez, Siegemund vs Jones) unchanged.
+- Pushed full corrected content + immediate validation re-fetch confirmed: no duplicates anywhere, all 7 bets now cleanly updated in their original rows, file is pure CSV, professional, and complete.
+
+**New standing rule going forward (per your instruction)**: When you provide results for pending bets, we UPDATE THE EXISTING ROWS in-place (Result/P_L/Notes) rather than appending new rows. This prevents any possibility of dubbles and keeps the log clean/single-source-of-truth.
+
+**Bankroll impact**: None (the P/L numbers were already correctly reflected in the additive bankroll section above; this was purely a log hygiene fix).
+
+**Transparency**: This correction is fully documented here and in the Git commit message for complete audit trail. All playbook rules followed (full retrieve → permitted clean replace for user-requested fix → push → double validation before reply). No history lost.
+
+*Duplicate fix and clean update-in-place protocol implemented strictly additive 2026-06-08 after full tool-based validation. bet_log.csv is now duplicate-free and follows your exact preference.*
