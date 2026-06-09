@@ -218,3 +218,25 @@ No new bets added and no changes to the 3 recommendations, because **no addition
 
 ---
 
+## NEW ADDITIVE SECTION: Placement Confirmation for New Bets from current_odds_02.txt - June 9 2026 (added strictly additive per Data File Safe Update Protocol, File Management Rule, and Playbook by the Letter)
+
+**User Report**: "Placed the 2 singles as recommended" (B8 -1.5 maps @3.00 for 12 NOK and Virtanen to win @1.82 for 12 NOK) on 2026-06-09 ~17:54 CEST.
+
+**Exact Action Taken**:
+- Appended 2 clean new rows to bet_log.csv with full research Notes (see bet_log.csv update for exact text).
+- Added this placement confirmation section to the round file.
+- Added additive bankroll section noting new pending 24 NOK stakes and updated liquid (~419.20 NOK).
+- All pushes via GitHub tools with immediate double validation re-fetch confirming updates correct and prior content preserved.
+
+**Pending Bets Summary (total active pending now includes these 2 + any prior unreported like Legacy vs Tyloo)**:
+- B8 -1.5 maps @3.00 — 12 NOK — Pending
+- Virtanen to win @1.82 — 12 NOK — Pending
+
+**Process Compliance**: These were the only 2 from the full protocol review of both odds files that cleared the strict EV threshold with reasonable confidence. Duplicate check performed (none with existing pending). Strict NT compliance and conservative sizing upheld. Full transparency in round file.
+
+**Next Steps**: Monitor for settlement. When results reported, update the specific rows in bet_log.csv in-place with Result/P_L_NOK and enhanced Notes. Add additive settlement section to this round file and current_bankroll.md. Playbook followed by the letter.
+
+*Placement confirmation section added strictly additive after user report, full tool updates, and double validations. Ready for settlement tracking and next round.*
+
+---
+

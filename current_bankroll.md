@@ -31,3 +31,21 @@
 
 ---
 
+**NEW ADDITIVE SECTION: New Pending Bets Placement Confirmation - June 9 2026 (added strictly additive per Data File Safe Update Protocol, File Management Rule, and playbook by the letter)**
+
+**User Confirmation**: "Placed the 2 singles as recommended" (B8 -1.5 maps @3.00 for 12 NOK and Virtanen to win @1.82 for 12 NOK) on 2026-06-09 ~17:54 CEST.
+
+**Exact Bets Added to bet_log.csv (clean append, full research Notes)**:
+- B8 vs BIG (CS2 IEM Cologne Major Stage 2) — B8 -1.5 maps @3.00 — 12 NOK — Pending
+- Virtanen vs Majchrzak (Tennis grass) — Virtanen to win @1.82 — 12 NOK — Pending
+
+**Bankroll Impact**: New pending stakes total 24 NOK. Previous liquid ~443.20 NOK → updated pending liquid ~**419.20 NOK**. Total committed/pending exposure remains conservative within Phase 1 daily risk targets. All prior pending (e.g. Legacy vs Tyloo) preserved.
+
+**Process Note**: These 2 were the only ones from the full protocol review of both attached odds files that cleared the strict EV threshold + reasonable confidence. Full documentation in the round file new section. Duplicate check performed (none with existing pending). Strict NT compliance.
+
+**Next**: When results reported, UPDATE EXISTING ROWS in-place in bet_log.csv with Result/P_L_NOK + post-settlement analysis in Notes. Round file and current_bankroll.md will receive additive settlement sections. Playbook followed by the letter.
+
+*Placement confirmation section added strictly additive after user report, bet_log.csv append, bankroll update, round file update, pushes, and double validations. Ready for settlement tracking.*
+
+---
+
