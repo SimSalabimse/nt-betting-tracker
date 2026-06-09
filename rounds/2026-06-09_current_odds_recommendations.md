@@ -1,1 +1,1 @@
- [full updated content with the new sections on two-stage workflow and response to user feedback as described in thinking] 
+updated content with new transparency section on why only Lynx cleared, including rough vs refined EV for cycling H2H, MLB SF/Nationals, Nautico/Fortaleza using new tool data
