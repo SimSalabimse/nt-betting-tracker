@@ -70,3 +70,27 @@ The error was my inference from the phrasing "Toronto Marlies win 36 nok payout"
 **Transparency**: This correction is fully documented here and in the Git commit message for complete audit trail. All playbook rules followed (full retrieve → permitted clean replace for user-requested fix → push → double validation before reply). No history lost.
 
 *Duplicate fix and clean update-in-place protocol implemented strictly additive 2026-06-08 after full tool-based validation. bet_log.csv is now duplicate-free and follows your exact preference.*
+
+---
+
+**2026-06-09 Placement Confirmation - New Pending Bets (added strictly additive per Data File Safe Update Protocol, File Management Rule, and playbook by the letter)**
+
+**User Confirmation**: "Placed the exact 3 bets as recommended" on 2026-06-09 (afternoon).
+
+**Bets Placed (exact as recommended in rounds/2026-06-09_current_odds_recommendations.md)**:
+- Australia (kvinner) vs Mexico (kvinner) — Australia to win @1.97 — 15 NOK Single (EV +22%)
+- Pain Gaming vs Monte (CS2 BO3) — Pain Gaming +1.5 maps @1.27 — 12 NOK Single (EV +9%)
+- Legacy vs Tyloo (CS2 BO3) — Legacy -1.5 maps @2.05 — 10 NOK Single (EV +7.5%)
+
+**Total New Stake**: Exactly 37 NOK pending.
+
+**Bankroll Impact (full simulation)**: Previous ~479.40 NOK liquid → **~442.40 NOK liquid** (37 NOK now committed/pending). Pending total now includes these 3 + any prior unreported (Boulter/Siegemund etc. if still open).
+
+**Action taken**:
+- bet_log.csv: Full fetch + clean append of 3 new pending rows (exact header match, research summary + round file reference in Notes, Result=Pending, P_L=0). Pushed + immediate validation re-fetch confirmed clean, no duplicates, full history intact.
+- This additive section documents the exact placement and bankroll movement transparently.
+- All playbook rules followed (no deletions, additive only, tool-based push + double validation before reply).
+
+These are now logged as Pending. When user reports results, we will UPDATE THE EXISTING ROWS in-place (Result/P_L_NOK/Notes with payout + post-settlement analysis) per standing rule.
+
+*Placement confirmation and bankroll update added strictly additive 2026-06-09 after full validation of bet_log.csv push.*
