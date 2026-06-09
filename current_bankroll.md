@@ -18,3 +18,13 @@ Track in bet_log.csv. Update ROI after results.
 
 ## Protocol Followed
 Additive only. GitHub push + validation before reply.
+
+## 2026-06-09 23:38 CEST - User Confirmation Update (Additive)
+- User confirmed: All 3 recommended bets placed exactly as specified.
+  - NHL Over 5.5 @ 1.72: 20 NOK (placed)
+  - WNBA Atlanta Dream ML @ 1.25: 15 NOK (placed)
+  - MLB Under 8.5 (selected pitcher-driven): 10 NOK (placed, as user adjusted stake)
+- Total staked confirmed: 45 NOK
+- Liquid now: ~434.40 NOK pending
+- Status: All pending settlement. Awaiting results for ROI/profit_loss update in bet_log.csv and this file.
+- Notes: Strict playbook compliance - singles only, conservative sizing, full research documented. No deviations. Ready for post-match updates.
