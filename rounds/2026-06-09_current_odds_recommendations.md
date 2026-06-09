@@ -1,1 +1,1 @@
-updated content with new transparency section on why only Lynx cleared, including rough vs refined EV for cycling H2H, MLB SF/Nationals, Nautico/Fortaleza using new tool data
+Additive section acknowledging user feedback on not defaulting to HUBs/Asian handicaps and giving equal (or slight) priority to main markets (1X2, Over/Under, BTTS, team totals, period/half-time betting) and historical patterns like first-half vs second-half goal tendencies. Updated workflow note.
