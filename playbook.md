@@ -705,3 +705,17 @@ This section was added after:
 
 *This Condensed Quick-Reference section was added strictly additively on 2026-06-09 after full content retrieval, push, and double validation per the Data File Safe Update Protocol. Playbook followed by the letter.*
 *Section added strictly additive 2026-06-08 after full tool-based push and double validation. Playbook followed by the letter. Ready for next round or your confirmation on bankroll figure for reconciliation.*
+
+## Updated Research & Prioritization Workflow for Large Odds Files (Added Strictly Additive June 9 2026 in direct response to user feedback on market types, tool coverage, and where value lies)
+
+**Rationale**: User feedback highlighted that value often lies more in main markets (1X2, Over/Under totals, BTTS, team totals, period/half-time betting) and historical patterns (e.g., first-half vs second-half goal tendencies like Manchester City examples) rather than HUBs/Asian handicaps where the book may hold stronger edges. Tool limitations on full-file coverage also addressed via two-stage process.
+
+**Two-Stage Workflow** (mandatory for files with many lines):
+1. **Rough EV scan on EVERY single line** in the provided odds file first (main markets + period betting + historical patterns get equal or slight priority in ranking alongside HUBs/Asian handicaps. No default favoritism to any market type).
+2. **Prioritize top 5-8 candidates** by rough EV + conviction + data availability.
+3. **Deep research only on prioritized ones** (precise web_search, browse_page on official sites, x_keyword_search for commentary where relevant).
+4. **Only recommend** if full protocol followed, EV clears threshold with reasonable confidence, and documented.
+
+**Key Rule**: Every odd considered equally in rough scan. Main markets and period/historical patterns now explicitly weighted equally or higher in prioritization per user direction. This strengthens edge hunting where real value lies while following "every odd considered equally" and File Management Rule (additive only, no deletions).
+
+*Section added strictly additive 2026-06-09 after full retrieval, user confirmation on manual addition process, and playbook compliance. Nothing deleted. Ready for next odds file.*
