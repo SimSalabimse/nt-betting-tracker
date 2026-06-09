@@ -81,3 +81,18 @@ No new bets added and no changes to the 3 recommendations, because **no addition
 **Overall Conclusion of Full File Protocol Execution**: Confirmed only the original 3 bets meet every requirement (full research on entire file context + EV threshold + reasonable confidence). No changes to recommendations or stakes. All additional queries/sources/findings documented here for complete audit trail and will be referenced in bet_log Notes upon your placement confirmation. This directly addresses the query and upholds "No shortcuts", "every odd considered equally", and "full fresh tool-assisted research for every selection".
 
 *This section added strictly additively after additional tool calls, full re-review of the entire attached current_odds.txt, and GitHub push + validation. Playbook followed by the letter in response to the follow-up.*
+
+## Placement Confirmation - June 9 2026 (added strictly additive)
+
+**User Report**: "Placed the exact 3 bets as recommended" (2026-06-09 afternoon).
+
+**Exact Bets Logged as Pending in bet_log.csv** (clean append, full research summary in Notes, per protocol and user duplicate-fix preference):
+- Australia (kvinner) vs Mexico (kvinner) — Australia to win @1.97 — 15 NOK
+- Pain Gaming vs Monte — Pain Gaming +1.5 maps @1.27 — 12 NOK
+- Legacy vs Tyloo — Legacy -1.5 maps @2.05 — 10 NOK
+
+**Total**: 37 NOK pending. Bankroll updated additively (~442.40 NOK liquid).
+
+**Next**: When results reported, UPDATE EXISTING ROWS in-place in bet_log.csv with Result/P_L_NOK + post-settlement analysis in Notes. Round file will receive additive settlement section.
+
+*Placement confirmation added after bet_log.csv and current_bankroll.md pushes + validations. Playbook followed by the letter.*
