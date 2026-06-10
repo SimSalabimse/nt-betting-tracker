@@ -1,5 +1,16 @@
 # Current Bankroll Log (Additive updates only)
 
+## Verified Current Bankroll (as of 2026-06-10 11:31 CEST)
+
+**Liquid Bankroll: 564.50 NOK**
+
+This is the confirmed correct figure based on the complete cumulative P/L tracking across the full bet history. It starts from the initial 500 NOK and properly accounts for every stake placed and every payout/canceled stake returned.
+
+- Pending bets at risk: 72 NOK (includes the 4 new Stuttgart bets placed 2026-06-10)
+- All settlements up to June 9/10 are correctly reflected
+
+**Detailed Audit & Previous Tracking**: See the sections below for the full reconciliation history (nothing has been removed).
+
 ## Starting Bankroll
 - Initial (Phase 1 start): **500 NOK** liquid
 
