@@ -1,2 +1,0 @@
-Date,Match,Selection,Market,Odds,Est_Prob,EV_pct,Stake_NOK,Bet_Type,Result,P_L_NOK,Notes
-# New active betting log started 2026-06-12 per user explicit instruction on 2026-06-11 to address file size issues with the previous master. The original bet_log.csv is kept available as the full historical archive (all bets up to 2026-06-11). All future bets and updates will be appended to this new file. This is a one-time exception documented in playbook.md for practicality while preserving the old data. Playbook rules followed with full retrieval and validation for this action.
