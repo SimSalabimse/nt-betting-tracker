@@ -78,7 +78,7 @@
 *Condensed reference added strictly additive 2026-06-09 after full retrieval and validation. Playbook followed by the letter.*
 
 ## 1. Norsk Tipping Oddsen Rules & Mechanics (Fully Understood)
-**Platform**: Oddsen (fixed odds sports betting). Decimal odds. Live + pre-match. Sports: Fotball (main), Ishockey, Håndball, Tennis, Basketball, Golf, Formel 1, Baseball, Darts, Esports (CS, LoL, Dota), Sjakk/Chess, others seasonal (biathlon etc. when available).
+**Platform**: Oddsen (fixed odds sports betting). Decimal odds. Live + pre-match. Sports: Fotball (main), Ishockey, Håndball, Tennis, Basketball, Golf, Formel 1, Baseball, Darts, Snooker, Esports (CS, LoL, Dota), Sjakk/Chess, others seasonal (biathlon etc. when available).
 
 **Bet Types** (from official NT pages):
 - **Singler (Singles)**: One selection per ticket. Payout if wins. Multiple singles = multiple tickets. Lowest variance. Preferred for steady growth.
@@ -171,6 +171,12 @@
 - **Best starting multiplier**: 1.70 - 2.80.
 - **Why**: Consistent player form/averages; streaks.
 - **Initial**: Good for volume/singles or small systems.
+
+- **Snooker**: Professional snooker (World Snooker Tour ranking events, Triple Crown tournaments). Matches typically best-of-11 to best-of-35 frames; high individual skill, tactical play, mental resilience, and form factors dominate.
+- **Best starting edges**: Match winner (recent form/tournament results, world ranking differential, H2H record in similar formats/stages, motivation for ranking points or titles, tactical matchup). Frame handicaps or over/under total frames if offered (value on pace/style mismatches or session play). Motivated underdogs or in-form players vs fatigued favorites in long events.
+- **Best starting multiplier**: 1.70 - 3.20 (balanced value often in 1.90-2.80 range; wider for potential upsets in marathon matches).
+- **Why**: Strong predictive power from recent performance, H2H history, and player-specific factors (safety, long potting, mental strength). Public bias toward big names creates value on well-researched mid/lower-tier or streaking players. Good data availability via worldsnooker.com, Flashscore, and stats platforms. Similar consistency focus to darts but with added variance from frame-by-frame swings and best-of formats.
+- **Initial**: Selective volume when clear +EV (excellent diversifier alongside darts/tennis). Singles preferred for control. Min EV 8% (higher variance from long matches). Track per-sport ROI after 15-20+ bets; pause or tighten if negative realization.
 
 - **Esports (Counter-Strike 2, League of Legends, Dota 2)**: Maps, series, props.
 - **Best starting edges**: Map/series winner (recent form, meta/patch, team synergy, player performance). Totals maps if avail.
@@ -354,7 +360,7 @@ When updating any file (playbook.md, rounds/*.md recommendation/post-mortem file
 - **No destructive or overwriting edits**: Do not rewrite or replace large portions of file content in a way that removes prior material. Use GitHub's version history for diffs; the working files should grow with knowledge, not shrink. If archiving old rounds is ever needed, move to a dedicated archive/ folder with a clear pointer/summary left in the main file.
 - **Justification and transparency for any rare removal**: The only exception is correcting demonstrably false, harmful, or completely superseded information. In such cases: (1) Add a prominent, dated correction note in a new visible section explaining exactly what was changed and why, (2) Provide the accurate replacement or updated data right alongside it, (3) Document thoroughly in the Git commit message. Never silently delete or overwrite without trace.
 - **Mandatory tool-based process + validation**: All updates must be performed exclusively via the connected GitHub tools (create_or_update_file with full current+new content, or push_files). After every single push, immediately validate by re-fetching the file contents (using github___get_file_contents) to confirm the new material is present, no unintended content was lost, and the file remains complete. Only then confirm the update to the user.
-- **Addressing 'deleting things' feedback**: Previous full-content updates (e.g., when incorporating moderate acceleration rules or fixing round files) were done to ensure the entire document stayed consistent, complete, and included all prior text + new additions in one clean state. This was a practical method to avoid fragmented or conflicting partial edits and to follow the 'living document' approach. It was never about being 'happy with deleting' — the intent was preservation through reconstruction. However, this new explicit, detailed rule now takes precedence and will be followed by the letter going forward: strictly additive, non-destructive updates only.
+- **Addressing 'deleting things' feedback**: Previous full-content updates (e.g., when incorporating moderate acceleration rules or fixing round files) were done to ensure the entire document stayed consistent, complete, and included all prior text + new additions in one clean state. This was a practical method to avoid fragmented or conflicting partial edits and to follow the 'living document' approach. However, this new explicit, detailed rule now takes precedence and will be followed by the letter going forward: strictly additive, non-destructive updates only.
 
 This expanded rule directly strengthens the existing short **File Management Rule** in Core Principles and aligns perfectly with the playbook's own directives on **Full transparency**, **No shortcuts**, **Dynamic** updates, **New Rules/Learnings: Add to playbook**, and **Playbook Updates: This file edited with new sections/learnings. Versioned.** It ensures the repository (and all its files) remains a trustworthy, complete historical record of our betting journey, analyses, and growth.
 
