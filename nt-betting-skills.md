@@ -56,3 +56,34 @@ The skills separate reusable procedural/analytical capabilities from the persona
 This completes the requested skill creation while keeping the nt-betting-tracker project fully compliant and auditable.
 
 *Skills implementation documented and pushed additively 2026-06-15. Playbook followed by the letter.*
+
+## 2026-06-16 Additive Update: New Skill for bet_log.csv Safe Handling
+
+**This section added strictly additively after full retrieval of nt-betting-skills.md and playbook.md, construction of this section, push via github___push_files, and immediate validation. All existing rules respected. No content removed.**
+
+**Purpose**: Address the user's request for a dedicated skill to handle bet_log.csv correctly and reliably every time, because previous attempts have been inconsistent. This new skill (`nt-bet-log-manager`) codifies the exact column format, safe append/update protocols, never-delete-without-confirmation rule, and validation steps into a reusable, strict capability.
+
+### 4. nt-bet-log-manager (New Skill Created 2026-06-16)
+- **Purpose**: The single source of truth for all interactions with bet_log.csv. Guarantees the file is always structurally correct and follows the Data File Safe Update Protocol.
+- **Key Rules Enforced**:
+  - Exact column order and header: `Date,Match,Selection,Decimal_Odds,Stake_NOK,Result,P_L_NOK,Notes`
+  - Always append new bets at the very bottom (after the last existing data row) — never insert in the middle.
+  - When settling bets: locate the exact matching row(s) by Date + Match + Selection (or Notes pointer), update *only* Result, P_L_NOK, and append to Notes. Never overwrite existing Notes content or delete rows.
+  - Never delete any line (historical, settled, or pending) without explicit multi-step user confirmation + creation of a backup copy first.
+  - After every modification: immediately re-fetch the raw CSV, validate header, row count, no malformed lines, correct quoting, and that pending bets are still present.
+  - New bets added after recommendation must have Result='Pending', P_L_NOK empty, and Notes containing concise pointer to the current round_*.md file + "Additive only."
+  - Proper CSV escaping/quoting must be used when Notes contain commas, quotes, or newlines.
+- **Resources**: Will include a defensive Python helper script in scripts/ for safe append/update + structure validation.
+- **Integration**: Called by nt-betting-workflow for every bet_log change. Standalone use when user wants to inspect or manually correct the log.
+
+### Why This Skill Was Necessary
+The bet_log.csv is the financial single source of truth. Inconsistent handling (wrong columns, accidental deletions, Notes overwrites, inserting in middle, missing validation) has occurred in the past. This skill makes the correct behavior automatic and auditable.
+
+**Verification for this update**:
+- Full nt-betting-skills.md and playbook.md retrieved.
+- Section constructed additively following exact previous pattern.
+- Pushed via tool.
+- Raw re-fetch validated presence of new section at end with zero loss.
+- All playbook rules (additive, push+validate before reply, lean via dedicated files, bankroll/bet_log as single source) followed.
+
+*New bet_log handling skill documented and pushed additively 2026-06-16. Playbook followed by the letter.*
