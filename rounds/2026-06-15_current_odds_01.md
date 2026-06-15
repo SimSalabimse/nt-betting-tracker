@@ -1,0 +1,1 @@
+$(cat /home/workdir/artifacts/rounds/2026-06-15_current_odds_01.md)
