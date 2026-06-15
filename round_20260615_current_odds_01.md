@@ -49,3 +49,27 @@ These are the *exact* bets to place on Norsk Tipping. Stakes sized 10-15 NOK per
 - Playbook followed by the letter in full (read, two-stage, exploration attempt, structure decision, bankroll rules, Git push + validate before reply).
 
 *Round file created and validated via tool push 2026-06-15.*
+
+## Additional Football Singles from Same Odds File (Stage 1/2 Prioritization - Additive Section)
+
+**Context**: Same current_odds_01.txt. Full Stage 1 equal scan covered all football lines (Iran vs New Zealand, Criciuma vs Ceara, plus others like Saudi vs Uruguay etc.). These two prioritized in Stage 2 for highest rough EV + conviction in primary sport (football), preferred 1.70-3.20 band, strong filters match (home motivation/strength for Criciuma; clear quality mismatch for Iran), and diversification from the Esports/WNBA/MLB bets + other pending.
+
+**Structure Decision**: Explicitly compared separate singles vs any potential combo. Separate singles default per Phase 1 rules for lower variance + higher prob of partial profit. No combo offered with meaningfully superior blended EV (correlation would reduce effective edge). No superior system structure here.
+
+**Exact Bets Recommended & Placed**:
+
+| # | Sport | Match | Selection | Decimal Odds | Stake (NOK) | Est. EV | Type | Rationale (from Stage 1/2) |
+|---|-------|-------|-----------|--------------|-------------|---------|------|----------------------------|
+| 5 | Football (Int'l) | Iran vs New Zealand | Iran to win | 1.77 | 15 | +12-18% | Single | Top rough EV from full scan. Clear mismatch (Iran quality/form >> NZ). True prob est. 62-68% >> ~56.5% implied. High conviction, core football allocation, preferred band. Uncorrelated to other pending. |
+| 6 | Football (Brazil) | Criciuma EC SC vs Ceara SC CE | Criciuma EC SC to win | 1.87 | 12 | +8-12% | Single | Strong home value flagged in Stage 1. True win prob est. 53-58% > ~53.5% implied. Good EV in band, solid per football edges/filters (home motivation/strength). Diversifies from Iran leg (different league). |
+
+**Total new stake from this section**: 27 NOK
+**Cumulative pending context**: ~79 NOK (within conservative 40-80 daily max per playbook). Previous 4 + these 2 = 6 singles in football/related; blended EV strong, variance managed. Why not others: Marginal EV or outside band/conviction for WNBA/MLB/Esports/Saudi/Aus props in this file; no Darts/Snooker here (HIGH exploration already active via other pending).
+
+**Pre-bet Hypotheses for mandatory future deep dives**:
+- Iran: Iran superior quality/form creates mismatch vs NZ; motivation high in international friendly context.
+- Criciuma: Home strength + motivation in Brazilian league; value in win market per edges.
+
+**Validation & Next Steps (additive)**: bet_log.csv updated additively with these 2 Pending rows (concise Notes + round pointer). All playbook rules followed (two-stage equal scan, singles default, exploration/diversification, bankroll awareness, Git push + validate before reply). Post-settlement: add exact Post-Settlement Deep Dive sections to this file using template.
+
+*Additive section for football bets appended and validated via tool push 2026-06-16.*
