@@ -1,1 +1,5 @@
-$(cat /home/workdir/artifacts/bet_log.csv)
+Date,Match,Selection,Decimal_Odds,Stake_NOK,Result,P_L_NOK,Notes
+2026-06-15,Sam Craigie vs Julien Leclercq (Snooker Wuhan Qual),Craigie -1.5 frames,1.92,12,Pending,,See round_20260615_current_odds_snooker_football.md #1 | Snooker HIGH exploration
+2026-06-15,Chatchapong Nasa vs Phil O'Kane (Snooker),Nasa to win,1.47,15,Pending,,See round_20260615_current_odds_snooker_football.md #2 | Snooker HIGH exploration
+2026-06-15,KA Akureyri vs Fram Reykjavik,Under 2.5 goals,2.65,10,Pending,,See round_20260615_current_odds_snooker_football.md #3
+2026-06-15,Belgium vs Egypt,Belgium to win,1.55,15,Pending,,See round_20260615_current_odds_snooker_football.md #4 | Strong EV single
