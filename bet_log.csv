@@ -1,10 +1,1 @@
 Date,Match,Selection,Decimal_Odds,Stake_NOK,Result,P_L_NOK,Notes
-2026-06-15,Sam Craigie vs Julien Leclercq (Snooker Wuhan Qual),Craigie -1.5 frames,1.92,12,Win,11.04,Win +11.04 NOK. See round_20260615_current_odds_snooker_football.md Post-Settlement Deep Dives Bet 1 | Snooker HIGH exploration
-2026-06-15,Chatchapong Nasa vs Phil O'Kane (Snooker),Nasa to win,1.47,15,Loss,-15.00,Loss -15.00 NOK. See round_20260615_current_odds_snooker_football.md Post-Settlement Deep Dives Bet 2 | Snooker HIGH exploration
-2026-06-15,KA Akureyri vs Fram Reykjavik,Under 2.5 goals,2.65,10,Loss,-10.00,Loss -10.00 NOK. See round_20260615_current_odds_snooker_football.md Post-Settlement Deep Dives Bet 3
-2026-06-15,Belgium vs Egypt,Belgium to win,1.55,15,Loss,-15.00,Loss -15.00 NOK. See round_20260615_current_odds_snooker_football.md Post-Settlement Deep Dives Bet 4 | Strong EV single
-2026-06-15,Iran vs New Zealand,Iran to win,1.77,15,Pending,,See round_20260615_current_odds_01.md #5 | Football primary, high rough EV ~12-18%, preferred 1.70-3.20 band, strong team mismatch conviction from Stage 1/2 scan. Additive only.
-2026-06-15,Criciuma EC SC vs Ceara SC CE,Criciuma EC SC to win,1.87,12,Pending,,See round_20260615_current_odds_01.md #6 | Brazilian Serie B home value, good EV at 1.87, solid per football edges/filters. Uncorrelated diversifier. Additive only.
-2026-06-15,Sashi eSport vs Hyperspirit,Sashi eSport -1.5,2.10,12,Pending,,See round_20260615_current_odds_01.md #1 | Esports handicap preferred per filters, rough EV 22-30%+, diversification
-2026-06-15,Golden State Valkyries vs Los Angeles Sparks,Golden State Valkyries -5.5,1.85,12,Pending,,See round_20260615_current_odds_01.md #2 | WNBA stats-heavy mismatch handicap, rough EV positive, diversification
-2026-06-15,Washington Nationals vs Kansas City Royals,Washington Nationals -1.5,2.28,10,Pending,,See round_20260615_current_odds_01.md #3 | MLB value handicap, rough EV 9-21%, uncorrelated diversification
