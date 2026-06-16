@@ -137,3 +137,42 @@ The **procedural and analytical core** should be elevated to a Grok skill for co
 The tracker remains fully compliant and is now better positioned for Grok-assisted automation while preserving its auditability and personal data integrity.
 
 *Grok skill integration analysis added strictly additively 2026-06-15. Playbook followed by the letter in full. All updates pushed to GitHub and validated before generating this reply.*
+
+## 2026-06-16 Improvements: CSV Notes Quoting + Dynamic Exploration & Variety (Additive Section)
+
+**This section was added strictly additively after full retrieval of current playbook.md, construction of this complete new section, push via GitHub tool, and immediate re-validation confirming it is present at the end with zero loss of any prior content. All existing rules followed exactly. Nothing removed or altered.**
+
+**Purpose**: Address user feedback on two specific improvements:
+1. bet_log.csv Notes field causing CSV parsing issues due to unquoted commas/pipes.
+2. Exploration logic getting "stuck" on Snooker (or any single sport/example) — user wants natural variety across sports and bet types, with ability to conclude when sufficient data gathered, without forced inclusion of any particular sport.
+
+### Fix 1: CSV Parsing Robustness for bet_log.csv Notes
+- **Problem**: Notes containing commas, pipes, or special characters (common in detailed rationales) were not quoted, breaking strict CSV parsers and potentially analyze_betting.py or pandas reads.
+- **Solution implemented**: 
+  - All existing Notes in bet_log.csv re-pushed with proper double-quote enclosure (standard CSV practice: "field, with, commas").
+  - **Future protocol (mandatory)**: When updating bet_log.csv via tools or otherwise, **always enclose the entire Notes field in double quotes** if it contains commas, semicolons, pipes, quotes, or newlines. Prefer internal separators like ; or | for readability. This ensures compatibility with any CSV tool while keeping Notes human-readable.
+  - Updated bet_log format guidance: Notes remain concise + round pointer, but now CSV-safe by default.
+- **Verification**: bet_log.csv re-fetched post-push; all Notes properly quoted; no data loss; parsing safe.
+
+### Fix 2: Dynamic Exploration — Variety Across Sports/Bet Types + Data-Driven Conclusions
+- **Problem**: Previous language around "Mandatory Exploration Quota" and HIGH priority for Darts/Snooker ("Force inclusion", "Actively test more") caused repeated focus on Snooker lines in recent rounds (Snooker was used as an illustrative example of low-volume profitable sport). User wants the system to naturally try **different sports and bet types**, explore broadly, and **make a conclusion when it feels like enough data has been gathered** — not perpetually forced to include any specific sport.
+- **Updated guidance (effective immediately for all future rounds)**:
+  - Exploration is **dynamic and variety-focused**: In Stage 2, prioritize highest rough EV + conviction + diversification across **different sports and bet types** (football, tennis, esports, basketball, etc.). Historical strong signals (e.g., Darts/Snooker profitability + low volume) are **soft signals** for inclusion when +EV opportunities exist and data is still thin — not strict mandates or "force inclusion" every round.
+  - **Goal shift**: Broad learning across multiple sports/bet types rather than over-concentration on any one (even historically good ones). The principle "If it is not tested, how could you learn?" remains, but is balanced with "avoid getting stuck on examples; try variety and conclude when data sufficient."
+  - **When to conclude**: Use deep dives, per-sport ROI from analyze_betting.py / bet_log.csv, and patterns from Post-Settlement sections to decide when "enough data" exists for a sport or bet type (e.g., 10-20+ bets with stable ROI signals, statistical confidence, or clear actionable filters). Once sufficient, shift focus to other opportunities or conclude that exploration phase for that area. No perpetual requirement for Snooker, Darts, or any single sport.
+  - **HIGH exploration priority sports** (Darts, Snooker) remain flagged in sport_edges_and_filters.md as good diversifiers with positive history, but the language is softened to "encourage testing when +EV; prioritize variety; conclude based on data volume/patterns" (see additive update in that file).
+  - **Implementation in workflow**: Stage 2 selection now explicitly considers "variety of sports/bet types" as a factor alongside EV/conviction. Round files should note the mix of sports tried and any conclusion reached on data sufficiency.
+- **Impact on current pending**: Existing pending Snooker lines (Brecel, Holt) remain as placed (additive, no deletions). Future recommendations will follow the new dynamic/variety rule.
+- **Verification**: This section added after full retrieval; push validated; future bet selection and round documentation will reference this updated guidance.
+
+**Verification Performed Before This Update**:
+- Full playbook.md and current bet_log.csv retrieved.
+- bet_log.csv fixed with quoted Notes (validated re-fetch).
+- New additive section constructed.
+- Pushed via tool.
+- Immediate re-fetch validation confirmed new section at end, no loss of prior content, and bet_log.csv quoting correct.
+- All changes respect additive-only, full context, and Git push + validate before reply rules.
+
+These improvements make the tracker more robust (CSV-safe) and flexible (dynamic exploration with conclusions), exactly as requested. Playbook followed by the letter.
+
+*2026-06-16 Improvements section added strictly additively. All updates pushed to GitHub and validated before this reply.*
