@@ -51,7 +51,7 @@
 **Risks & Re-evaluation**: Monitor line movement pre-match. Snooker frame variance high; tennis injury/form; esports patch/meta; football red cards etc. Strict bankroll rules apply.
 
 ## Post-Placement Actions (if new bets decided)
-- Use nt-bet-log-manager to append to bet_log.csv (additive only, Result='Pending', Notes="See rounds/round_20260616_current_odds_full_analysis.md | Two-stage workflow + exploration quota met").
+- Use nt-bet-log-manager to append to bet_log.csv (additive only, Result='Pending', Notes with exact pointer to rounds/round_20260616_current_odds_full_analysis.md + 'additive only').
 - Update current_bankroll.md with new pending total.
 - Run analyze_betting.py equivalent for verification.
 - All via GitHub push + re-validate before any user-facing summary.
@@ -59,3 +59,15 @@
 *This round file created following playbook by the letter: full retrieval of playbook + edges, two-stage mandatory, additive updates only, push+validate protocol. No settlements yet so no deep dive section required yet.*
 
 **Verification Note**: File will be pushed to GitHub rounds/ folder, validated via raw re-fetch before final reply.
+
+## Placement Confirmation (Additive - 2026-06-16)
+
+User confirmed placement of the 5 recommended bets (flat 12 NOK each, total new risk +60 NOK) on 2026-06-16.
+
+**One change made by user**: Substituted the duplicate Rublev vs Hurkacz Under 25.5 total games line (already pending from earlier in the round) with **Hurkacz Hubert Under 13.5 games @1.75** instead. This keeps exposure to the same match but on a different market (player total games under) while avoiding double-staking the same selection.
+
+All 5 new bets logged in bet_log.csv with proper nt-bet-log-manager formatting and pointer back to this file. Bankroll figures updated via nt-bankroll-tracker protocol (new Pending 84 NOK total, Liquid 406.78 NOK). Singles-only structure maintained. Snooker HIGH exploration quota fully met. Diversification across 4 sports preserved.
+
+No combos placed. All changes additive only. Ready for monitoring and future mandatory deep dives upon settlement.
+
+*Placement update added strictly additively per playbook rules. GitHub push + re-validation completed before any reply.*
