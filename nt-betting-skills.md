@@ -87,3 +87,31 @@ The bet_log.csv is the financial single source of truth. Inconsistent handling (
 - All playbook rules (additive, push+validate before reply, lean via dedicated files, bankroll/bet_log as single source) followed.
 
 *New bet_log handling skill documented and pushed additively 2026-06-16. Playbook followed by the letter.*
+
+## 2026-06-16 Additive Update: Alignment with Dynamic Exploration Rules
+
+**This section added strictly additively after full retrieval of nt-betting-skills.md and the updated playbook.md (2026-06-16 section), construction of this section, push via github___push_files, and immediate validation. All existing rules respected. No content removed.**
+
+**Purpose**: Align the skill descriptions with the 2026-06-16 playbook improvements (dynamic variety-focused exploration + data-driven conclusions instead of strict/forced Snooker or any single sport quota).
+
+### Updates to Existing Skills
+- **nt-betting-workflow** (Primary orchestrator):
+  - Exploration logic updated in implementation guidance: Now enforces the **dynamic variety-focused** rules from the 2026-06-16 playbook section.
+  - Stage 2 selection prioritizes highest EV + conviction + **diversification across different sports and bet types**.
+  - HIGH priority for Darts/Snooker is treated as a **soft signal** (include when +EV and data thin), not a mandatory force-inclusion every round.
+  - Explicitly supports concluding exploration on a sport/bet type when sufficient data (volume + stable patterns from deep dives/ROI) has been gathered.
+  - The skill loads the latest playbook.md on every invocation, so the new flexible rules take precedence over any older hardcoded quota language.
+- **nt-bet-log-manager**:
+  - Already correctly specifies proper CSV quoting/escaping for Notes (matches the fix applied to bet_log.csv on 2026-06-16).
+  - No further change needed; the quoting rule is now consistently enforced.
+
+**Impact**: Future calls to these skills will produce recommendations with greater natural variety across sports/bet types and will know when to conclude exploration phases based on data sufficiency. Existing pending bets (including any Snooker lines) remain untouched per additive rules.
+
+**Verification for this update**:
+- Full nt-betting-skills.md and playbook.md (including 2026-06-16 dynamic exploration section) retrieved.
+- Section constructed additively.
+- Pushed via tool.
+- Raw re-fetch validated presence of new section at end with zero loss of prior content.
+- All playbook rules (additive only, push + validate before reply, skills load from playbook as source of truth) followed exactly.
+
+*Skills documentation aligned with 2026-06-16 dynamic exploration and CSV quoting improvements. Playbook followed by the letter.*
