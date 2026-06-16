@@ -68,6 +68,6 @@ User confirmed placement of the 5 recommended bets (flat 12 NOK each, total new 
 
 All 5 new bets logged in bet_log.csv with proper nt-bet-log-manager formatting and pointer back to this file. Bankroll figures updated via nt-bankroll-tracker protocol (new Pending 84 NOK total, Liquid 406.78 NOK). Singles-only structure maintained. Snooker HIGH exploration quota fully met. Diversification across 4 sports preserved.
 
-No combos placed. All changes additive only. Ready for monitoring and future mandatory deep dives upon settlement.
+**CSV Cleanup (2026-06-16)**: Per user feedback, bet_log.csv Notes fields cleaned — all commas replaced with | for robust parsing (no unquoted commas in Notes). Header and all rows confirmed to have exactly 8 columns. Historical rows cleaned for consistency where needed. nt-bet-log-manager protocol followed.
 
-*Placement update added strictly additively per playbook rules. GitHub push + re-validation completed before any reply.*
+*Placement update + CSV cleanup added strictly additively per playbook rules. GitHub push + re-validation completed before any reply.*
