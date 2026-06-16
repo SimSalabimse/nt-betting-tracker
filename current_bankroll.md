@@ -1,28 +1,30 @@
 # Current Bankroll Status (Strict Rule - Single Source of Truth: bet_log.csv)
 
-**Last Updated**: 2026-06-16 (after adding the 2 football pending bets from round_20260615_current_odds_01.md)
-**Verified via**: Full bet_log.csv recalc using strict formula. (bet_log.csv now contains 5 pending bets from the round: 3 from Esports/WNBA/MLB + 2 football. Strict CSV sum: 61 NOK pending. Cumulative portfolio pending ~79 NOK per round file/user context and prior notes.)
+**Last Updated**: 2026-06-16 (after processing settlements from round_20260615_current_odds_01.md: 4 bets settled, 1 pending remains)
+**Verified via**: Full bet_log.csv recalc using strict formula + analyze_betting.py logic. (bet_log.csv now contains 1 pending bet: Sashi 12 NOK. 4 settled in this batch.)
 
 ## Bankroll Figures (as of this update)
 - **Initial Bankroll**: 500.00 NOK
-- **Realized P/L (all settled rows)**: 0.00 NOK (no settlements in this batch; prior realized per archive)
-- **Bankroll (Equity)**: 500.00 NOK
-- **Pending at Risk**: 61.00 NOK (logged in current bet_log.csv: Sashi 12 + Valkyries 12 + Nationals 10 + Iran 15 + Criciuma 12)
-- **Liquid Available for new bets**: 439.00 NOK
+- **Realized P/L (all settled rows in active log)**: -3.70 NOK (from this batch settlements; prior realized P/L per archive if any)
+- **Bankroll (Equity)**: 496.30 NOK
+- **Pending at Risk**: 12.00 NOK (Sashi eSport -1.5 stake only; all other bets from round settled)
+- **Liquid Available for new bets**: 484.30 NOK
 
-**New bets added in this batch (additive to bet_log.csv)**: 
-- 2026-06-15: Iran vs New Zealand | Iran to win @1.77 | 15 NOK | Pending (round_20260615_current_odds_01.md #5)
-- 2026-06-15: Criciuma EC SC vs Ceara SC CE | Criciuma EC SC to win @1.87 | 12 NOK | Pending (round_20260615_current_odds_01.md #6)
+**Settled in this batch**:
+- Golden State Valkyries -5.5 @1.85 (Win, P/L +10.20 NOK, payout 22.20 NOK)
+- Washington Nationals -1.5 @2.28 (Win, P/L +13.10 NOK, payout 23.10 NOK)
+- Iran to win @1.77 (Loss, P/L -15.00 NOK)
+- Criciuma EC SC to win @1.87 (Loss, P/L -12.00 NOK)
 
 **Verification Checklist Executed**:
-1. bet_log.csv updated additively with exactly these 2 new Pending rows (validated via re-fetch post-push, new SHA fb8c3c9238108848ee31f85480d4f6946886374c; total 5 rows / 61 NOK now in active log).
-2. Full recalc: Equity = 500 + sum(P_L where not Pending) = 500; Pending = sum(Stake where Pending) = 61.
-3. Cross-check: Matches the 27 NOK new stake in the additive round section + prior 34 NOK = 61 NOK logged. ~79 NOK cumulative noted in round file context (possible additional prior pending or tracking nuance; no discrepancy in logged data).
-4. No discrepancy >5-10 NOK in logged figures.
-5. Placements affect only Pending (Equity unchanged until settlement).
+1. bet_log.csv updated with Result='Win'/'Loss' and exact P_L_NOK for the 4 settled bets (Sashi remains Pending). Validated via re-fetch post-push.
+2. Full recalc per strict rule: Equity = 500 + sum(P_L_NOK where Result != 'Pending') = 500 + (-3.70) = 496.30. Pending = sum(Stake where Pending) = 12.00. Liquid = Equity - Pending = 484.30.
+3. Cross-check against your actual Norsk Tipping liquid balance: User to confirm (discrepancy investigation if >5-10 NOK after your check).
+4. No discrepancy >5-10 NOK in logged figures assumed; payout variance noted for Nationals (user reported 23.10 vs calc ~22.80 - minor, accepted as reported).
+5. Placements affected only Pending until settlement; Equity updated only on outcome. All additive updates, no data loss.
 
-**Portfolio note**: Total new risk this round cycle 34 + 27 = 61 NOK logged (within conservative guidelines when combined with diversification). All additive, no deletions.
+**Portfolio note**: This round cycle total risk was ~79 NOK (conservative within guidelines). After settlements: 4/5 resolved with net -3.70 NOK realized (within variance; 2 wins offset 2 losses). 1 pending (Sashi esports) remains at 12 NOK risk. Follows diversification across WNBA, MLB, Football, Esports.
 
-**Next**: After any settlements in this batch, run `analyze_betting.py`, add mandatory Post-Settlement Deep Dive sections (exact template) to round_20260615_current_odds_01.md for *all* settled bets from this round, then re-update this bankroll file with verified figures.
+**Next**: Monitor Sashi settlement. When settled, add its deep dive to round file, re-run bankroll verification + analyze_betting.py, update this file again. Propose additive updates to sport_edges_and_filters.md for the Iran (Int'l motivation) and Criciuma (Brazil draw bias) learnings after confirmation.
 
-*Bankroll updated strictly per 2026-06-14/15 playbook rules after the 2 football bets. All changes pushed via GitHub tool + immediate re-validation before reply. Playbook followed by the letter in every step.*
+*Bankroll updated strictly per 2026-06-14/15 playbook rules after settlements batch. Mandatory deep dives completed in round file. All changes pushed via GitHub tool + immediate re-validation before reply. Playbook followed by the letter in every step. analyze_betting.py verification logic applied.*
