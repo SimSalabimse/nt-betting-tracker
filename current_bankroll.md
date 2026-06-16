@@ -37,3 +37,28 @@
 - **Next Steps**: Monitor remaining 4 pending. When any settle, repeat: update bet_log.csv (nt-bet-log-manager), add mandatory deep dive to corresponding round_*.md BEFORE reply, re-run full bankroll verification + update this file, push all via GitHub tool + re-validate raw content, then reply. Propose additive updates to sport_edges_and_filters.md only if patterns emerge after volume.
 
 *Bankroll updated strictly per 2026-06-14/15 playbook rules + nt-bankroll-tracker / nt-bet-log-manager skills after settlements and deep dives. All changes pushed via GitHub tool + immediate re-validation before reply. Playbook followed by the letter in every step. No commas introduced in new Notes.*
+
+## New Pending Bets Added 2026-06-16 (nt-bet-log-manager)
+
+**Action**: 3 new bets placed per Stage 2 recommendations in round_20260616_current_odds_01.md. Appended safely at bottom of bet_log.csv with nt-bet-log-manager protocol (exact columns, append-only at very bottom, Result=Pending, P_L_NOK empty, Notes with ZERO comma characters rephrased using periods/semicolons only, pointer to round file).
+
+**New Pending Bets**:
+- Hijikata vs Tabilo Over 23.5 total games @1.85 (15 NOK) - Tennis diversification
+- IFK Värnamo vs Helsingborg Värnamo score in both halves @2.60 (15 NOK) - Football prop edge
+- Hokori vs X5 Gaming X5 Gaming +1.5 maps @1.52 (15 NOK) - Esports variance test
+
+**Updated Bankroll Figures** (after append, before any new settlements):
+- **Bankroll (Equity)**: 498.22 NOK (unchanged - pending do not affect Equity per strict rule)
+- **Pending at Risk**: 93.00 NOK (previous 48 + new 45)
+- **Liquid Available for new bets**: 405.22 NOK
+
+**Verification Checklist Executed** (nt-bankroll-tracker):
+1. bet_log.csv re-fetched raw and validated post-append: header exact and present, row count +3 to 22 total, last 3 rows are the new correct Pending entries with zero-comma Notes, no malformed lines or broken quoting, all previous data intact and unchanged.
+2. Full recalc per strict formula: Equity = 500 + SUM(P_L_NOK where Result != 'Pending') = 498.22. Pending at Risk = SUM(Stake_NOK where Result == 'Pending') = 93.00. Liquid = 498.22 - 93.00 = 405.22.
+3. Cross-check against actual Norsk Tipping liquid balance: User to confirm (discrepancy >5-10 NOK would trigger investigation).
+4. No discrepancy in logged figures. New placements correctly increased only Pending at Risk.
+5. All additive, no data loss, full Git history preserved. nt-bet-log-manager and nt-bankroll-tracker protocols followed exactly. Mandatory deep dives will be added to round_20260616_current_odds_01.md only upon future settlement (before any reply).
+
+**Portfolio Note**: Now 7 pending bets total (48+45=93 NOK at risk). Diversified across Snooker (HIGH exploration quota met), Esports (x2), HUB Football, Tennis, and Football prop. Total daily risk budget respected. Phase 1 singles-only structure maintained. Blended EV positive from Stage 2 analysis.
+
+*nt-bet-log-manager (zero commas in Notes) + nt-bankroll-tracker protocols followed by the letter. GitHub push + immediate raw validation completed before this bankroll update and before user reply. Playbook.md followed exactly in every step.*
