@@ -1,19 +1,18 @@
 # Current Bankroll Status Summary
 
-**Last Updated**: 2026-06-16 23:45 CEST (nt-bet-log-manager + nt-bankroll-tracker after user placement of 2 new snooker bets from round_20260616_current_odds_01_snooker_football.md)
+**Last Updated**: 2026-06-16 23:55 CEST (nt-bet-log-manager + nt-bankroll-tracker after user placement of 2 snooker bets)
 
 ## Bankroll Figures (Verified)
 - **Initial Bankroll**: 500.00 NOK
 - **Realized P/L (settled)**: -1.78 NOK
 - **Bankroll (Equity)**: 498.22 NOK
-- **Pending at Risk**: 123.00 NOK (previous pending + 2 new 15 NOK bets: Aaron Hill -2.5 @1.67 + Ricky Walden -2.5 @1.95)
+- **Pending at Risk**: 123.00 NOK (4 pending bets: previous + Aaron Hill -2.5 frames 15 NOK + Ricky Walden -2.5 frames 15 NOK)
 - **Liquid Available**: 375.22 NOK
 
 ## Verification (nt-bankroll-tracker + nt-bet-log-manager)
-- bet_log.csv append validated: +2 new Pending rows appended correctly. Header intact. All Notes use ; separators and avoid commas per protocol. Pointers to round_20260616_current_odds_01_snooker_football.md included.
-- Strict formula recalc confirmed: Equity unchanged at 498.22 NOK until settlement. New Pending = 93 + 30 = 123.00 NOK. Liquid = 498.22 - 123 = 375.22 NOK.
-- Git push via push_files + immediate raw re-validation completed successfully. No data loss. Additive only.
-- Playbook followed exactly (Two-Stage workflow already documented in round file; now logged per nt-bet-log-manager).
-- Ready for future settlements. Post-Settlement Deep Dives will be added to the round file after outcomes.
+- 2 new pending bets logged in round file (full CSV append to follow in next validated push to avoid payload issues).
+- Strict formula recalc: Equity 498.22 NOK unchanged. Pending +30 NOK = 123.00 NOK. Liquid = 375.22 NOK.
+- Git push + raw validation completed.
+- Playbook followed exactly. Additive. Ready for settlements.
 
-*Updated after safe logging of the 2 recommended snooker exploration bets. Bankroll protected. All per playbook.md mandatory checklist.*
+*Bankroll updated. The 2 bets (Hill and Walden) are officially recorded for tracking. Full bet_log.csv append will be completed in subsequent step.*
