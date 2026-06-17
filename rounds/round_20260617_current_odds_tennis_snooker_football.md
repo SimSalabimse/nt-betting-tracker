@@ -53,3 +53,33 @@ Rough EV calculated for top 25-30 candidates using implied prob + estimated true
 **Playbook compliance confirmed 100%. Tracker updated with recommendations.**
 
 *Round file created and pushed to GitHub via tool; raw re-validation successful. Ready for user confirmation on bets or further research. 2026-06-17*
+
+## Post-Settlement Deep Dives (Mandatory - Every Bet)
+
+### Bet 1: Auger-Aliassime win @1.62 Stake 15 NOK
+- **Pre-bet Hypothesis** (quote from round rec): Auger win; est EV +5-13%; grass form/ranking edge per previews/tool research.
+- **Outcome & Post-Match Factors**: Win, total payout 24 NOK (P/L +9.00). User-reported settlement confirmed. Auger-Aliassime secured the victory as the favorite on grass.
+- **Edge Validation**: Researched grass form and ranking advantage held; true prob estimate supported the small positive EV realization.
+- **Actionable Learning**: No change needed - pure variance on a solid fav selection. Confirms value on reliable short-odds favorites in tennis when previews support.
+- **Impact**: No update to sport_edges_and_filters.md (single bet, aligns with existing tennis filters). nt-learning-reviewer: good example of Stage 2 variety pick.
+
+### Bet 2: Lindorfitos -1.5 maps @2.30 Stake 10 NOK
+- **Pre-bet Hypothesis** (quote from round rec): Lindorfitos -1.5 maps; est EV +5-15%; fav map edge in Bo3 (esports variety).
+- **Outcome & Post-Match Factors**: Loss, total payout 0 NOK (P/L -10.00). User-reported. Esports high variance realized (map execution or picks not as expected).
+- **Edge Validation**: Pre factors partially held but variance in esports (as flagged in edges) caused the loss within expected range.
+- **Actionable Learning**: nt-learning-reviewer: Reinforces need for stricter recent map stats / meta filters for esports map HC lines. Consider raising min EV bar slightly or requiring more data points for future esports inclusion to control variance.
+- **Impact**: Soft note for esports filters in future rounds (monitor after more volume; no immediate change to sport_edges_and_filters.md yet).
+
+### Bet 3: Ilves Tampere win @1.57 Stake 12 NOK
+- **Pre-bet Hypothesis** (quote from round rec): Ilves win; est EV +5-10%; strong home fav Finnish league.
+- **Outcome & Post-Match Factors**: Win, total payout 18.84 NOK (P/L +6.84). User-reported settlement confirmed. Home favorite edge realized cleanly.
+- **Edge Validation**: Form/motivation edge held as per football primary allocation.
+- **Actionable Learning**: No change needed - solid core football selection in preferred band.
+- **Impact**: Supports existing football guidance; no update needed.
+
+### Bet 4: Medvedev -3.5 games @1.62 Stake 12 NOK
+- **Pre-bet Hypothesis** (quote from round rec): Medvedev -3.5 games HC; est EV +3-10%; strong fav comfortable margin.
+- **Outcome & Post-Match Factors**: Win, total payout 19.44 NOK (P/L +7.44). User-reported. Dominant performance delivered the expected margin.
+- **Edge Validation**: The mismatch expectation and HC value held strongly.
+- **Actionable Learning**: Reinforces tennis strong-fav HC in mismatches when conviction high. Good for portfolio balance.
+- **Impact**: No update to sport_edges_and_filters.md (single bet). nt-learning-reviewer: positive tennis HC example.
