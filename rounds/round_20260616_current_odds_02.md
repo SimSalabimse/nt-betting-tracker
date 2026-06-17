@@ -137,18 +137,36 @@ Full scan performed on 2493-line odds file. Implied probabilities calculated as 
 
 ---
 
-## Summary for User
+## Post-Settlement Deep Dives (Mandatory - Every Bet)
 
-**Top Recommendations** (place as singles on Norsk Tipping):
-1. **Begge lag scorer Nei @1.50** - 12 NOK (strongest edge)
-2. **Erling Haaland scorer @1.45** - 15 NOK
-3. **Norge @1.20** - 15 NOK
-4. **Norge clean sheet Ja @1.58** - 12 NOK
+### Bet 1: Begge lag scorer Nei @1.50 Stake 12 NOK (Loss)
+- **Pre-bet Hypothesis** (quote from round rec): BTTS Nei; est EV +17-29%; Iraq low threat vs Norway defense. nt-bet-log-manager protocol followed.
+- **Outcome & Post-Match Factors**: Loss (P/L -12.00). Per user report and consistent with clean sheet loss: Iraq scored at least once. Norway won the match.
+- **Edge Validation**: The core edge (Iraq low attacking threat) held directionally but variance realized (Iraq did score). Pre-match xG models would have shown low but non-zero probability for Iraq goal.
+- **Actionable Learning**: In mismatch friendlies, even weak opponents can nick a goal via set pieces or individual quality. Consider small buffer on BTTS No or pair with over goals markets in future. No change to sport_edges_and_filters.md needed yet (single outcome).
+- **Impact**: Monitor Iraq/Norway type mismatches for BTTS No + Over 2.5/3.5 combos if correlation supports.
 
-These exploit the mismatch effectively. Avoid most combos and longshots unless specific high conviction.
+### Bet 2: Erling Haaland scorer @1.45 Stake 15 NOK (Win)
+- **Pre-bet Hypothesis** (quote from round rec): Haaland scorer; est EV +16-26%; clinical vs weak Iraq defense. nt-bet-log-manager protocol followed.
+- **Outcome & Post-Match Factors**: Win (P/L +6.75, total payout 21.75 NOK). Haaland scored as expected.
+- **Edge Validation**: Edge held strongly. Haaland's finishing + focal role in attack vs limited defense delivered.
+- **Actionable Learning**: Player props on elite finishers in mismatches remain high-value when odds >1.40. Continue prioritizing in Stage 2 when available.
+- **Impact**: Reinforces football player props (esp. Haaland-type) as strong diversifier when main match lines are short.
 
-**Tracker Update**: This round file pushed to repo. Bankroll and bet_log will be updated via nt-bankroll-tracker / nt-bet-log-manager protocol upon confirmation/placement. analyze_betting.py will be run for verification.
+### Bet 3: Norge win @1.20 Stake 15 NOK (Win)
+- **Pre-bet Hypothesis** (quote from round rec): Norge win; est EV +7-12%; strong favorite in mismatch. nt-bet-log-manager protocol followed.
+- **Outcome & Post-Match Factors**: Win (P/L +3.00, total payout 18.00 NOK). Norway won as heavily expected.
+- **Edge Validation**: High-probability anchor held. Low variance outcome as modeled.
+- **Actionable Learning**: Heavy favorites in clear mismatches (1.15-1.30 range) can be used as portfolio stabilizers when EV still positive after vig.
+- **Impact**: Good for bankroll protection in larger portfolios; keep in toolkit for Phase 1.
 
-**Next**: Provide settlement updates for deep dives, or new odds for next round. Playbook followed by the letter.
+### Bet 4: Norge holder nullen Ja @1.58 Stake 12 NOK (Loss)
+- **Pre-bet Hypothesis** (quote from round rec): Clean sheet Ja; est EV +11-23%; Norway dominant defense. nt-bet-log-manager protocol followed.
+- **Outcome & Post-Match Factors**: Loss (P/L -12.00). Iraq scored (consistent with BTTS occurring).
+- **Edge Validation**: Defense edge directionally correct but one goal conceded (likely set piece or individual error). Variance in clean sheet props higher than modeled in friendly context.
+- **Actionable Learning**: In low-stakes friendlies, clean sheet props have extra variance from rotation/motivation. Prefer Over goals or BTTS No paired with win rather than clean sheet alone next time.
+- **Impact**: Slight caution on clean sheet markets in friendlies; no broad filter change yet.
 
-*Git push performed. Validation pending tool response. Ready for reply after confirmation.*
+**Overall Batch Learning**: 2 wins, 2 losses. Net P/L -14.25 NOK on 54 NOK risked. Blended realized return lower than pre-bet EV estimate due to the two losses on correlated defensive props (BTTS No + Clean sheet both failed when Iraq scored). Portfolio still showed the value of the mismatch but highlighted correlation risk in same-match defensive bets. No immediate update to sport_edges_and_filters.md (needs 10-20+ bets for pattern). Continue monitoring Norway/Iraq-type fixtures for refined filters.
+
+*Post-Settlement Deep Dives added per mandatory playbook rule. Git push + validation before reply.*
