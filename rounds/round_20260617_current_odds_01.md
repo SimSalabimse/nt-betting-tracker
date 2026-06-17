@@ -78,3 +78,40 @@ User placed the following 5 singles (adjusted from initial rec for min stake and
 **Playbook compliance confirmed. Tracker fully updated with placed bets.**
 
 *Round file updated with actual placed bets, pushed to GitHub, and validated before generating user reply. 2026-06-17*
+
+## Post-Settlement Deep Dives (Mandatory - Every Bet)
+
+### Bet 1: Østerrike win @1.37 Stake 15 NOK
+- **Pre-bet Hypothesis** (quote from round rec): Østerrike win; est EV +9.6-15%; mismatch value. Strong favorite bias in mismatch per Stage 1 scan.
+- **Outcome & Post-Match Factors**: Win, total payout 21 NOK. Tool-searched/actual drivers: Austria dominated weaker Jordan, scored early, controlled game - mismatch edge fully realized. No upset factors.
+- **Edge Validation**: Researched factors held strongly. True prob estimate accurate.
+- **Actionable Learning**: No change needed - pure variance. Solid football mismatch fav example from equal scan. nt-learning-reviewer: aligns with edges.
+- **Impact**: No update to sport_edges_and_filters.md (single bet, no new pattern).
+
+### Bet 2: Argentina Over 2.5 goals @1.95 Stake 20 NOK
+- **Pre-bet Hypothesis** (quote from round rec): Over 2.5; est EV +13-27%; Argentina attack edge in mismatch. Clearer value leg.
+- **Outcome & Post-Match Factors**: Win, total payout 41 NOK. Argentina attack and creation dominated; over hit as expected from edge.
+- **Edge Validation**: Strongest EV spot validated; attack factors held.
+- **Actionable Learning**: Reinforces O/U preference in mismatches when Stage 1 flags value. Good diversification. nt-learning-reviewer notes strong selection process.
+- **Impact**: Supports existing football O/U guidance; no change.
+
+### Bet 3: Taylor Fritz win @1.25 Stake 10 NOK
+- **Pre-bet Hypothesis** (quote from round rec): Fritz win; est EV +6.25-12.5%; strong fav value. Variety tennis leg.
+- **Outcome & Post-Match Factors**: Win, total payout 12.50 NOK. Fritz dominated as expected from ranking/form gap.
+- **Edge Validation**: Strong fav edge held with low variance.
+- **Actionable Learning**: No change needed - pure variance. Confirms tennis strong favs reliable for small stake diversification in variety mix. nt-learning-reviewer: good for portfolio balance.
+- **Impact**: No update needed.
+
+### Bet 4: Brandon Nakashima win @1.30 Stake 10 NOK
+- **Pre-bet Hypothesis** (quote from round rec): Nakashima win; est EV +1.4-9%; variety tennis leg.
+- **Outcome & Post-Match Factors**: Win, total payout 13 NOK. Nakashima controlled effectively vs Buse.
+- **Edge Validation**: EV estimate held; win materialized.
+- **Actionable Learning**: No change needed - outcome aligns. Good exploration of tennis.
+- **Impact**: None. nt-learning-reviewer: tennis variety positive.
+
+### Bet 5: KT Rolster Challengers win @1.75 Stake 10 NOK
+- **Pre-bet Hypothesis** (quote from round rec): KT Rolster Challengers win; est EV ~0-5%; esports diversifier.
+- **Outcome & Post-Match Factors**: Loss, total payout 0 NOK. Dplus won series/maps; high variance in esports (map picks, day form) caused upset.
+- **Edge Validation**: Marginal EV spot lost within variance. Pre factors partially held but execution variance high.
+- **Actionable Learning**: nt-learning-reviewer: Raise min EV bar for esports to 7%+ or add stricter data requirements (recent maps, specific H2H) for future inclusion. Dynamic variety good but reduce low-EV esports exposure to control variance. Consider review of esports ROI in analyze_betting.py after more volume.
+- **Impact**: Soft note for esports filters in future rounds (no update to sport_edges_and_filters.md yet - single bet; monitor for pattern after 8-10+ esports bets).
