@@ -111,4 +111,12 @@ Use them for consistent rule enforcement.
 - Strict EV filter after deep research.
 - Bankroll discipline and continuous learning.
 
+## 2026-06-19 Role Update: Grok Autonomous Decision Maker
+
+**Updated Authority Structure**:
+- **Grok (AI) Role**: Makes **ALL** decisions autonomously. Performs research, EV analysis, bet selection, stake sizing, portfolio construction, and risk management. Provides ready-to-place bet instructions immediately.
+- **User Role**: You are here **only to place the bets**. Receive clear instructions (exact Match, Selection, Decimal Odds, Stake in NOK, any special notes) and execute them on your betting platform (e.g. Norsk Tipping). Report back results or settlements. No research or decision-making required from you.
+
+This update codifies the workflow where Grok handles the intellectual heavy lifting for maximum edge and consistency. All future recommendations will be in "ready-to-place" format. Skills (nt-betting-workflow and supporting) updated to enforce this. Pushed and validated per strict discipline.
+
 This is the living playbook. Update additively when processes improve.

@@ -34,7 +34,7 @@ These are exactly the kind of non-obvious, repeatable, high-value procedures tha
 **Frontmatter Description** (example):
 ```
 name: nt-betting-workflow
-description: Use for all Norsk Tipping Oddsen betting rounds, settlements, bankroll reconciliations, post-settlement deep dives, EV analysis, and portfolio construction. Enforces the full playbook protocols including two-stage research, mandatory exploration quota, deep dive templates, and bankroll verification checklist.
+description: Use for all Norsk Tipping Oddsen betting rounds, settlements, bankroll reconciliations, post-settlement deep dives, EV analysis, and portfolio construction. Enforces the full playbook protocols including two-stage research, mandatory exploration quota, deep dive templates, and bankroll verification checklist. Grok autonomously decides all bets; user executes only.
 ```
 
 **Key Body Content (Imperative Form)**:
@@ -42,6 +42,7 @@ description: Use for all Norsk Tipping Oddsen betting rounds, settlements, bankr
 - Execute the **Two-Stage Research Workflow** on every round without exception:
   - Stage 1: Equal consideration rough EV scan across *all* markets/lines in the odds file.
   - Stage 2: Prioritize using highest EV + conviction + **mandatory exploration quota** (at least 1-2 from HIGH priority sports in sport_edges_and_filters.md, e.g. Darts and Snooker).
+- **Autonomous Decisions**: After research, Grok selects exact bets, stakes, and portfolio. Provide ready-to-place instructions immediately. User places on platform.
 - For every settlement batch, *before any user reply*:
   - Update bet_log.csv
   - Add the exact **Post-Settlement Deep Dive** section (template in playbook) to the relevant `rounds/` file.
@@ -99,17 +100,16 @@ This structure keeps the tracker lean, auditable, and fully under your control w
 
 **2026-06-18 Note**: Option A (direct GitHub bet_log.csv appends by Grok when bets placed) is now the active standard. Local safe script is fallback only.
 
-**2026-06-19 Update: nt-betting-workflow Skill Activated**
+**2026-06-19 Update: nt-betting-workflow Skill Activated + Role Clarification**
 
-The primary `nt-betting-workflow` skill has been successfully created at `/home/workdir/.grok/skills/nt-betting-workflow/` using the skill-creator init script and populated with a comprehensive imperative SKILL.md (91 lines, validated).
+The primary `nt-betting-workflow` skill has been successfully created/updated at `/home/workdir/.grok/skills/nt-betting-workflow/` (and supporting skills nt-bet-log-manager, nt-bankroll-tracker, betting-value-calculator created). 
 
-It now serves as the main orchestrator for all betting workflow tasks and explicitly encodes:
-- Mandatory GitHub state verification + full-content push + re-validation before every data-changing reply
-- Two-stage research (Stage 1 rough EV scan of every line + Stage 2 deep research on flagged opportunities)
-- Safe bet_log.csv handling rules (nt-bet-log-manager)
-- Bankroll verification formulas + checklist (nt-bankroll-tracker)
-- Support for EV/portfolio calculations (betting-value-calculator to be initialized on demand)
+**Key Update - Autonomous Decision Making**:
+- Grok now explicitly makes **ALL** decisions: full research, bet selection, exact stakes, and portfolio. 
+- User role is **executor only**: Receive ready-to-place bets and place them on the platform. Report back settlements.
+- All skills updated to enforce this division of labor for maximum consistency and edge.
+- Future responses will deliver clear bet instructions immediately after GitHub-validated research.
 
-The skill references the authoritative playbook.md and round files in this repo. All future nt-betting interactions (including the current round_20260619_current_odds_01.md) will use this skill. Supporting skills can be created similarly if/when needed for finer granularity.
+The skill references the authoritative playbook.md and round files in this repo. All future nt-betting interactions will use this updated framework. Supporting skills created for finer support.
 
-This update was pushed via github___create_or_update_file with full content and SHA validation immediately after skill creation and local validation. Workflow discipline maintained 100%.
+This update was pushed via github___push_files with full content and SHA validation. Workflow discipline maintained 100%. Role now crystal clear: Grok decides, you place.
