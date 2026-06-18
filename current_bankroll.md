@@ -1,23 +1,23 @@
 # Current Bankroll Status Summary
 
-**Last Updated**: 2026-06-18 20:06 CEST (nt-bankroll-tracker + nt-bet-log-manager after appending 3 new pending bets from Czechia vs South Africa WC analysis in round_20260618_current_odds_01.md)
+**Last Updated**: 2026-06-18 20:11 CEST (nt-bankroll-tracker + nt-bet-log-manager after settling 6 pending bets: 3x Tsjekkia losses, OConnor loss, Pitea BTTS loss, Bouzkova -5.5 win)
 
-## Bankroll Figures (Verified via full bet_log.csv recalc logic - analyze_betting.py equivalent)
+## Bankroll Figures (Verified via full bet_log.csv recalc logic)
 - **Initial Bankroll**: 500.00 NOK
-- **Realized P/L (all settled)**: -50.40 NOK
-- **Bankroll (Equity)**: **449.60 NOK**
-- **Pending at Risk**: **92.00 NOK** (previous 32.00 from Bouzkova/OConnor/Eskilstuna + new 60.00 from Czechia bets: 25+20+15)
-- **Liquid Available**: **357.60 NOK**
+- **Realized P/L (all settled)**: -120.80 NOK (previous -50.40 + net delta -70.40 from 6 settlements: -25-20-15-10-10 +9.60)
+- **Bankroll (Equity)**: **379.20 NOK**
+- **Pending at Risk**: **0.00 NOK** (all previous pending settled this round)
+- **Liquid Available**: **379.20 NOK**
 
-## Verification (nt-bankroll-tracker skill + strict formula + post-settlement checks)
-- Strict formula: Equity = 500 + SUM(P_L_NOK for Result != 'Pending') confirmed unchanged (no new settlements).
-- New pending added: +60 NOK at risk (Tsjekkia Win 25 + Over 2.5 20 + Schick Anytime 15). Pending at Risk updated from 32.00 → 92.00. Liquid adjusted accordingly.
-- nt-bet-log-manager protocol followed for CSV append (fresh SHA fetch, proper quoting, append-only at bottom, no commas in unquoted fields).
-- Cross-check: bet_log.csv now contains the 3 new Pending rows with correct Notes referencing round file and skills.
-- No placement-only activity; all via robust manager.
-- Git push + immediate re-validation (tree + content re-read) completed before generating this reply.
-- nt-learning-reviewer / post-settlement notes carried forward from previous.
+## Verification (nt-bankroll-tracker skill + strict formula)
+- Equity = 500 + SUM(P_L_NOK for Result != 'Pending') confirmed.
+- All 6 pending bets settled per user report. bet_log.csv updated with Result/P_L_NOK + settlement notes only (no deletions, proper quoting).
+- New realized P/L: Tsjekkia Win -25, Over 2.5 -20, Schick Anytime -15, OConnor -10, Eskilstuna/Pitea BTTS -10, Bouzkova +9.60.
+- Pending at Risk reduced from 92.00 → 0.00. Equity and Liquid updated accordingly.
+- nt-bet-log-manager protocol followed exactly (fresh SHA, append-only for new, targeted updates for settlements).
+- Git push + re-validation (content + SHA) completed before this reply.
+- Post-settlement deep dives / learning notes can be added to round file if needed.
 
-**New pending risk from WC football core bets added and bankroll figures recalculated per strict nt-bankroll-tracker rules. All playbook requirements met (deep research before bets, immediate log append, bankroll verification, push+validate before reply).**
+**All settlements processed, bankroll recalculated, and files pushed/validated per strict playbook rules. nt-betting-workflow + nt-bet-log-manager + nt-bankroll-tracker followed.**
 
-*Updated via connected GitHub tools per user nt-bet-log-manager / nt-bankroll-tracker instructions. SHA validated before/after each push.*
+*Updated via GitHub connected tools with full content + SHA validation on every push.*
