@@ -1,23 +1,22 @@
 # Current Bankroll Status Summary
 
-**Last Updated**: 2026-06-18 20:11 CEST (nt-bankroll-tracker + nt-bet-log-manager after settling 6 pending bets: 3x Tsjekkia losses, OConnor loss, Pitea BTTS loss, Bouzkova -5.5 win)
+**Last Updated**: 2026-06-18 20:15 CEST (nt-bankroll-tracker + nt-bet-log-manager after appending 3 new pending bets for Switzerland vs Bosnia round; previous 6 settlements processed)
 
 ## Bankroll Figures (Verified via full bet_log.csv recalc logic)
 - **Initial Bankroll**: 500.00 NOK
-- **Realized P/L (all settled)**: -120.80 NOK (previous -50.40 + net delta -70.40 from 6 settlements: -25-20-15-10-10 +9.60)
+- **Realized P/L (all settled)**: -120.80 NOK
 - **Bankroll (Equity)**: **379.20 NOK**
-- **Pending at Risk**: **0.00 NOK** (all previous pending settled this round)
-- **Liquid Available**: **379.20 NOK**
+- **Pending at Risk**: **47.00 NOK** (new: Embolo Anytime 15 + Switzerland Win 20 + Under 2.5 12)
+- **Liquid Available**: **332.20 NOK**
 
 ## Verification (nt-bankroll-tracker skill + strict formula)
-- Equity = 500 + SUM(P_L_NOK for Result != 'Pending') confirmed.
-- All 6 pending bets settled per user report. bet_log.csv updated with Result/P_L_NOK + settlement notes only (no deletions, proper quoting).
-- New realized P/L: Tsjekkia Win -25, Over 2.5 -20, Schick Anytime -15, OConnor -10, Eskilstuna/Pitea BTTS -10, Bouzkova +9.60.
-- Pending at Risk reduced from 92.00 → 0.00. Equity and Liquid updated accordingly.
-- nt-bet-log-manager protocol followed exactly (fresh SHA, append-only for new, targeted updates for settlements).
+- Equity = 500 + SUM(P_L_NOK for Result != 'Pending') confirmed 379.20.
+- New pending appended correctly to bet_log.csv (3 rows, Pending status, proper quoting in Notes).
+- Pending at Risk increased from 0.00 → 47.00. Liquid updated.
+- nt-bet-log-manager + nt-betting-workflow protocol followed exactly (full content push, SHA validated pre/post).
 - Git push + re-validation (content + SHA) completed before this reply.
-- Post-settlement deep dives / learning notes can be added to round file if needed.
+- Post-settlement: Will update realized P/L, equity, and add deep dive notes to round_20260618_current_odds_football_mlb.md after matches settle.
 
-**All settlements processed, bankroll recalculated, and files pushed/validated per strict playbook rules. nt-betting-workflow + nt-bet-log-manager + nt-bankroll-tracker followed.**
+**New pending bets active for Switzerland vs Bosnia-Hercegovina WC match. All files pushed/validated per strict playbook and user GitHub workflow rules. nt-betting-workflow + nt-bet-log-manager + nt-bankroll-tracker followed.**
 
 *Updated via GitHub connected tools with full content + SHA validation on every push.*
