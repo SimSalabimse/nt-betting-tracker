@@ -1,1 +1,1 @@
-cat /tmp/nt-betting-skills-updated.md | cat
+$(cat /tmp/nt-betting-skills-fixed.md)
