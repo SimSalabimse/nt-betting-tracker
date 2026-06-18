@@ -88,3 +88,37 @@ All four skills passed the official `validate-skill.sh` with no errors (proper f
 These skills provide reliable, repeatable behavior matching your requirements. Use by invoking `nt-betting-workflow` (or specific ones) in future sessions.
 
 *Additive update pushed 2026-06-18 following playbook discipline.*
+
+---
+
+## nt-learning-reviewer Skill Creation & Validation (2026-06-18)
+
+**nt-learning-reviewer skill has been successfully created locally, populated with full review logic, validated, and is now documented here as the fifth core skill.**
+
+### Skill Location & Validation
+- **Directory**: `/home/workdir/.grok/skills/nt-learning-reviewer/`
+- **SKILL.md**: Fully written with frontmatter (name + description), imperative instructions, and structured output requirements.
+- **Resources**: Includes `scripts/` and `references/` directories for future helpers or detailed templates.
+- **Validation**: Passed `validate-skill.sh` with status **OK (62 lines)** — no TODOs, proper YAML frontmatter, no forbidden patterns, description is plain scalar without colons or angle brackets.
+
+### Description (from SKILL.md)
+Use for post-settlement or periodic learning reviews of betting performance. Analyzes settled bets and deep dives to detect patterns, flags insufficient research quality in recent rounds, and proposes additive updates to sport_edges_and_filters.md. Trigger on phrases like review learning from past bets, analyze round performance, update edges from data, or flag research gaps.
+
+### Key Capabilities Implemented
+- **Fresh Data Fetch**: Always begins with GitHub tool calls to retrieve latest bet_log.csv (settled rows), recent round_*.md files (deep dive sections), current_bankroll.md, and sport_edges_and_filters.md — verifies SHA + full content every time.
+- **Performance Pattern Analysis**: Aggregates ROI, hit rates, EV realization vs actual P/L by sport, bet type, and specific edges/filters. Identifies which factors (form, injuries, xG, motivation, etc.) drove results. Flags systematic deviations with sample sizes.
+- **Research Quality Self-Critique**: Scans recent rounds for compliance with Stage 1/Stage 2 depth, tool usage (web_search, browse_page, x_keyword_search), and exploration quotas. Produces explicit "Research Quality Flags" with round references and missing elements (e.g., "no x_keyword_search for team news").
+- **Additive Filter Updates**: Only proposes changes to sport_edges_and_filters.md after sufficient samples (>=10-15 instances). Proposals are evidence-based, conservative, additive-only, with ready-to-commit text, rationale, and monitoring notes. All proposals follow push + re-validate before user presentation.
+- **Structured Output**: Mandatory sections — Executive Summary, Research Quality Flags, Pattern Insights, Proposed Additive Updates, Bankroll/Process Notes, Next Recommended Actions. Clear handoff to nt-betting-workflow, nt-bankroll-tracker, or nt-bet-log-manager.
+- **Guardrails**: Conservative on small samples ("monitor" outputs encouraged). Enforces the same push + validate + fresh SHA discipline as all other skills. References playbook.md and nt-betting-skills.md for context.
+
+### Alignment with Existing Behavior
+- Directly fulfills and expands the brief "### 4. nt-learning-reviewer" entry in Critical Behavior Changes.
+- Complements the four previously validated skills by adding the dedicated learning/review loop.
+- Now listed alongside them as a core, validated capability for the nt-betting-tracker system.
+
+### Next Steps Enabled
+- Invoke via `nt-learning-reviewer` (or through nt-betting-workflow post-settlement) for any learning review session.
+- Future iterations can add scripts/ for automated aggregation or references/ for deep dive templates.
+
+*Additive update pushed and validated 2026-06-18 following full playbook discipline and GitHub workflow. Local skill created and validated in parallel.*
