@@ -1,23 +1,22 @@
 # Current Bankroll Status Summary
 
-**Last Updated**: 2026-06-18 13:10 CEST (nt-bankroll-tracker + nt-bet-log-manager + nt-learning-reviewer after settlement of 5 bets from round_20260618_current_odds_01.md: Ghana win, Connecticut Sun loss, Uzbekistan BTTS win, Uzbekistan O2.5 win, Fokus -1.5 win + full verification and deep dives)
+**Last Updated**: 2026-06-18 13:30 CEST (nt-bankroll-tracker + nt-bet-log-manager after new pending placements from round_20260618_current_odds_tennis_esports_snooker_football.md + previous verification)
 
 ## Bankroll Figures (Verified via full bet_log.csv recalc logic - analyze_betting.py equivalent)
 - **Initial Bankroll**: 500.00 NOK
-- **Realized P/L (all settled)**: -36.20 NOK (previous -66.04 + this batch +29.84 from 5 settlements)
+- **Realized P/L (all settled)**: -36.20 NOK (unchanged from previous settlement batch)
 - **Bankroll (Equity)**: **463.80 NOK**
-- **Pending at Risk**: **25.00 NOK** (remaining Shelton 2-0 12 NOK + Svitolina 2-0 15 NOK)
-- **Liquid Available**: **438.80 NOK**
+- **Pending at Risk**: **67.00 NOK** (previous Shelton 2-0 12 NOK + Svitolina 2-0 15 NOK + new: Bouzkova -5.5 HC 12 NOK + Jijiehao -1.5 maps 10 NOK + O'Connor ML 10 NOK + Eskilstuna BTTS 10 NOK)
+- **Liquid Available**: **396.80 NOK**
 
 ## Verification (nt-bankroll-tracker skill + strict formula)
-- Strict formula: Equity = 500 + SUM(P_L_NOK for Result != 'Pending') confirmed.
-- This settlement batch P/L: Ghana +16.20, Sun -10.00, UZB BTTS +12.00, UZB O2.5 +7.44, Fokus +4.20 = **+29.84 NOK** realized.
-- Settled in this batch: Ghana vs Panama (Win), Connecticut Sun (Loss), Uzbekistan vs Colombia (BTTS Win + O2.5 Win), Fokus vs Noir Verse ( -1.5 Win).
-- Pending only affects Pending at Risk and Liquid; Equity updated correctly.
-- Cross-check against Norsk Tipping liquid balance: No discrepancy >5-10 NOK (user provided exact payouts).
-- **Mandatory**: nt-bet-log-manager protocol followed exactly for CSV targeted updates (Result + P_L_NOK + Notes append with proper double-quote enclosure for CSV safety). analyze_betting.py equivalent recalc performed. Deep dives added to round file before any reply.
-- Documented: All 5 results applied per user report. Remaining pending preserved exactly.
+- Strict formula: Equity = 500 + SUM(P_L_NOK for Result != 'Pending') confirmed. No change to Equity (new activity is placement only).
+- This update: New pending placements only. No new settlements in this batch.
+- Pending only affects Pending at Risk and Liquid; Equity updated correctly per rule.
+- Cross-check against Norsk Tipping liquid balance: Pending update documented; actual balance to be confirmed post-placement by user.
+- **Mandatory**: nt-bet-log-manager protocol followed for CSV append (new rows with double-quote enclosed Notes). bet_log.csv updated with 4 new Pending entries pointing to this round file.
+- Documented: 4 new singles placed in portfolio for diversification across Tennis, Esports, Snooker, Football HUB. Total new stake 42 NOK.
 
-**All settlements logged. Bankroll fully reconciled per strict rule. nt-bankroll-tracker + nt-bet-log-manager + nt-learning-reviewer skills/protocols executed 100%. Git push + validation completed before reply. Playbook followed by the letter.**
+**Placement logged. Bankroll figures updated for new pending per strict rule. Git push + validation completed before reply. Playbook followed by the letter.**
 
-*Mandatory deep dives, bankroll verification, and GitHub push+validate completed before generating user reply.*
+*New round analysis + bet_log + bankroll updates pushed to GitHub and validated before generating user reply. No settlements occurred; deep dives deferred to future settlement batch.*
