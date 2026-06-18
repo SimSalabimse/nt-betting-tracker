@@ -1,0 +1,1 @@
+$(cat /tmp/safe_bet_log_edit.py)
