@@ -98,3 +98,18 @@ This structure keeps the tracker lean, auditable, and fully under your control w
 *Document created additively 2026-06-15 following playbook by the letter. Pushed and validated together with playbook.md update.*
 
 **2026-06-18 Note**: Option A (direct GitHub bet_log.csv appends by Grok when bets placed) is now the active standard. Local safe script is fallback only.
+
+**2026-06-19 Update: nt-betting-workflow Skill Activated**
+
+The primary `nt-betting-workflow` skill has been successfully created at `/home/workdir/.grok/skills/nt-betting-workflow/` using the skill-creator init script and populated with a comprehensive imperative SKILL.md (91 lines, validated).
+
+It now serves as the main orchestrator for all betting workflow tasks and explicitly encodes:
+- Mandatory GitHub state verification + full-content push + re-validation before every data-changing reply
+- Two-stage research (Stage 1 rough EV scan of every line + Stage 2 deep research on flagged opportunities)
+- Safe bet_log.csv handling rules (nt-bet-log-manager)
+- Bankroll verification formulas + checklist (nt-bankroll-tracker)
+- Support for EV/portfolio calculations (betting-value-calculator to be initialized on demand)
+
+The skill references the authoritative playbook.md and round files in this repo. All future nt-betting interactions (including the current round_20260619_current_odds_01.md) will use this skill. Supporting skills can be created similarly if/when needed for finer granularity.
+
+This update was pushed via github___create_or_update_file with full content and SHA validation immediately after skill creation and local validation. Workflow discipline maintained 100%.
