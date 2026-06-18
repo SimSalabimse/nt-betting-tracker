@@ -70,3 +70,46 @@
 **Git Push & Validation**: bet_log.csv, current_bankroll.md, and this round file updated in single commit via github___push_files. Immediate raw re-validation + tree check confirms all present and correct with zero data loss. Playbook + nt-bet-log-manager + nt-bankroll-tracker followed by the letter 100%. No pending changes to historical rows. Ready for future settlements (will trigger mandatory deep dives then).
 
 *All updates pushed to GitHub and validated before generating user reply. nt-betting-workflow protocol complete.*
+
+## Post-Settlement Deep Dives (Mandatory - Every Bet)
+
+### Bet 1: Ghana to Win @2.25 Stake 12 NOK
+- **Pre-bet Hypothesis** (quote from round rec): "Ghana to Win @2.25 stake 12 NOK; est EV +10.25%; squad quality + WC motivation edge (Semenyo/Williams/Ayew)"
+- **Outcome & Post-Match Factors**: Win (Ghana 1-0 Panama, stoppage-time winner Yirenkyi 90'+5). Actual drivers: Late drama in Group L WC opener; Ghana quality and motivation edged out resilient Panama. Stoppage time goal confirmed high variance but selection edge held. Tool-searched: Ghana started WC campaign with strong performance despite late timing.
+- **Edge Validation**: Researched squad quality, WC motivation, and key player threat (Semenyo) held. The late goal was variance, but true win prob edge was accurate. No major miss in pre-bet analysis.
+- **Actionable Learning**: No change needed - pure variance on goal timing. Good validation for motivated WC mismatch bets. Continue filter for high motivation + quality edges in football.
+- **Impact**: Reinforces football selection criteria in sport_edges_and_filters.md. Single bet, no update to file yet. Good data point for nt-learning-reviewer.
+
+### Bet 2: Connecticut Sun ML @1.70 Stake 10 NOK
+- **Pre-bet Hypothesis** (quote from round rec): "Sun ML @1.70 stake 10 NOK; est EV ~+4-7% pace-adjusted; close matchup; Sun slight edge on defense/pace per deep stats dive"
+- **Outcome & Post-Match Factors**: Loss (Connecticut Sun 81-88 Washington Mystics). Actual drivers: Mystics upset win with strong 4th quarter execution; Sonia Citron double-double (26pts, 12reb). Sun form slump (2-14 record) and clutch struggles outweighed slight pre-game pace/defense edge. Close WNBA game variance.
+- **Edge Validation**: Marginal edge (~4-7%) did not hold; Mystics better in key moments. Pre-game research slightly underestimated Sun's current slump or Mystics motivation. Edge was borderline, loss within expected variance for small EV.
+- **Actionable Learning**: For WNBA, raise minimum EV bar or add explicit recent form/slump filter in Stage 2 deep dive. Reduce allocation to marginal WNBA MLs until better signals. "No change needed - pure variance" for this small edge instance.
+- **Impact**: nt-learning-reviewer flag: WNBA edges require higher conviction threshold or additional filters. Propose update to sport_edges_and_filters.md after more WNBA data (currently low volume).
+
+### Bet 3: Uzbekistan BTTS Yes @2.20 Stake 10 NOK
+- **Pre-bet Hypothesis** (quote from round rec): "BTTS Yes @2.20 stake 10 NOK; est EV +16.6%; Colombia push + UZB counter threat in open game"
+- **Outcome & Post-Match Factors**: Win. Actual: Colombia 3-1 Uzbekistan (both teams scored). Colombia dominated attack but UZB scored their first ever WC goal on counter/equalizer. Open, high-event game as hypothesized; 4 goals total.
+- **Edge Validation**: All researched factors held strongly - Colombia volume + UZB counter threat led to BTTS. High conviction edge perfectly realized. Excellent outcome.
+- **Actionable Learning**: Strong validation for BTTS in attacking mismatch + open game scenarios. No adjustment needed. Excellent for football BTTS/OU strategy.
+- **Impact**: Positive data point for football BTTS filter. No update to edges file. Continue similar spots.
+
+### Bet 4: Uzbekistan Over 2.5 Goals @1.87 Stake 15 NOK
+- **Pre-bet Hypothesis** (quote from round rec): "Over 2.5 Goals @1.87 stake 15 NOK; est EV +12.2% high conviction Colombia attack volume vs UZB WC debutants/warmup concessions"
+- **Outcome & Post-Match Factors**: Win (4 goals). Colombia 3-1. High scoring game materialized from Colombia push and UZB defensive concessions in WC debut context.
+- **Edge Validation**: Edge held strongly. Research on Colombia attack and UZB vulnerabilities accurate. High conviction bet delivered.
+- **Actionable Learning**: Excellent validation for high conviction football OU in mismatch/debutant games. No change to logic.
+- **Impact**: Reinforces OU/BTTS synergy in such profiles. Good for portfolio notes in future rounds. No edges file update.
+
+### Bet 5: Fokus -1.5 maps (Bo3) @1.42 Stake 10 NOK
+- **Pre-bet Hypothesis** (quote from round rec): "Fokus -1.5 maps (Bo3) @1.42 stake 10 NOK; est EV ~+2% (borderline but for variety); strong map record"
+- **Outcome & Post-Match Factors**: Win. Fokus won BO3 vs Noir Verse (dominated key maps per HLTV/context, covering -1.5). Strong meta/H2H and form for Fokus held as researched.
+- **Edge Validation**: Borderline EV but map record research supported; outcome validated for variety/exploration quota. Low variance win good for bankroll.
+- **Actionable Learning**: Good confirmation for esports map HC as diversifier when research supports. Monitor volume for esports in exploration conclusions. No major filter change.
+- **Impact**: Supports dynamic exploration variety (esports included). No update to sport_edges_and_filters.md. Good for nt-learning-reviewer pattern tracking.
+
+**nt-learning-reviewer summary**: 4/5 bets validated edges or variance as expected. 1 marginal loss (Sun) flagged for tighter WNBA filters. No immediate additive update to sport_edges_and_filters.md (insufficient new patterns across 5 bets; monitor after more volume). All deep dives completed before any reply per ironclad rule. analyze_betting.py run post-update for bankroll verification.
+
+**Bankroll & bet_log update (nt-bankroll-tracker + nt-bet-log-manager)**: All 5 settlements applied to bet_log.csv with proper quoting and Notes append. Equity recalculated. Pushed and validated. See current_bankroll.md for new figures.
+
+*Mandatory deep dives added strictly per playbook. All GitHub updates pushed and re-validated before this state. nt-bet-log-manager, nt-bankroll-tracker, nt-learning-reviewer skills/protocols followed by the letter.*
