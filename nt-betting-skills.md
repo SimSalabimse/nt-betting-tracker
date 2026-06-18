@@ -140,7 +140,7 @@ Use for post-settlement or periodic learning reviews of betting performance. Ana
 - **Validation**: Passed all checks (frontmatter, no TODOs, proper structure, playbook alignment). Ready for use via skill invocation.
 
 ### Key Capabilities
-- **Mandatory Fresh State Fetch**: Begins every run by calling GitHub tools to pull latest settled rows from bet_log.csv, the just-updated round file's Post-Settlement Deep Dive section, current_bankroll.md (post-verification), and sport_edges_and_filters.md. Always verifies SHA and full content.
+- **Mandatory Fresh State Fetch**: Begins every run by calling GitHub tool calls to pull latest settled rows from bet_log.csv, the just-updated round file's Post-Settlement Deep Dive section, current_bankroll.md (post-verification), and sport_edges_and_filters.md. Always verifies SHA and full content.
 - **Outcome vs Expectation Analysis**: Compares realized P/L, hit rate, and actual EV realization against pre-bet projections and research notes. Quantifies slippage (research quality gaps, variance, correlation misses in combos).
 - **Pattern Detection with Sample-Size Discipline**: Identifies repeatable edges/filters that over/under-performed. Only surfaces insights when sample >= 8-10 settled instances for that specific factor (form, motivation, xG deviation, etc.). Flags "monitor" for smaller samples.
 - **Research Quality Audit (Post-Settlement Lens)**: Reviews the deep dive notes in the round file for completeness (tool calls made, all candidates researched, exploration quota met, motivation/injury factors checked). Produces explicit flags like "Round X: No x_keyword_search used for team news on Match Y — potential blind spot."
@@ -166,3 +166,18 @@ Use for post-settlement or periodic learning reviews of betting performance. Ana
 - All updates to this skill itself will follow the same GitHub push + validate discipline documented here.
 
 *Skill created, documented, pushed to GitHub, and validated 2026-06-18 following the complete successful push workflow (verify state → full content update with SHA → re-verify tree/content). Additive only, no existing behavior changed.*
+
+---
+
+## Local Skill Files Created & Validated (2026-06-18 Follow-Up)
+
+**post-settlement-learning-reviewer skill directory and SKILL.md have been fully created locally in `/home/workdir/.grok/skills/post-settlement-learning-reviewer/` and validated.**
+
+- Initialized via skill-creator init script (with scripts/ and references/ directories).
+- Full imperative SKILL.md written with proper YAML frontmatter (plain scalar description, no colons/angle brackets), structured output template, guardrails, and exact alignment to playbook §4 and the GitHub documentation above.
+- Validated successfully with `validate-skill.sh`: **OK (71 lines)** — no errors, proper structure, ready for invocation.
+- The skill is now available for use in future sessions (persisted in user skills directory).
+
+This completes the end-to-end creation: GitHub documentation pushed + validated, local skill files created + validated. All following the strict push + validate before reply discipline.
+
+*Additive follow-up pushed 2026-06-18.*
