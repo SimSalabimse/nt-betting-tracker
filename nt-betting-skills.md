@@ -122,3 +122,47 @@ Use for post-settlement or periodic learning reviews of betting performance. Ana
 - Future iterations can add scripts/ for automated aggregation or references/ for deep dive templates.
 
 *Additive update pushed and validated 2026-06-18 following full playbook discipline and GitHub workflow. Local skill created and validated in parallel.*
+
+---
+
+## post-settlement-learning-reviewer Skill Creation & Validation (2026-06-18)
+
+**Dedicated `post-settlement-learning-reviewer` skill has been successfully created as a specialized, focused capability for immediate post-settlement learning and continuous improvement loops.**
+
+### Purpose & Trigger
+- **Primary Trigger**: Automatically or manually invoked right after bet settlements are processed (post bankroll verification and deep dive append in the relevant round file).
+- **Focus**: Pure post-settlement analysis — no pre-bet research or recommendation generation. Dedicated to extracting maximum learning from realized outcomes.
+- **Integration**: Works hand-in-hand with `nt-betting-workflow` (which calls it after settlement handling) and `nt-learning-reviewer` (shares core logic but this one is narrower and always settlement-first).
+
+### Skill Location & Validation
+- **Directory**: `/home/workdir/.grok/skills/post-settlement-learning-reviewer/`
+- **SKILL.md**: Fully populated with imperative instructions, frontmatter (name: post-settlement-learning-reviewer, plain description), structured output templates, and guardrails.
+- **Validation**: Passed all checks (frontmatter, no TODOs, proper structure, playbook alignment). Ready for use via skill invocation.
+
+### Key Capabilities
+- **Mandatory Fresh State Fetch**: Begins every run by calling GitHub tools to pull latest settled rows from bet_log.csv, the just-updated round file's Post-Settlement Deep Dive section, current_bankroll.md (post-verification), and sport_edges_and_filters.md. Always verifies SHA and full content.
+- **Outcome vs Expectation Analysis**: Compares realized P/L, hit rate, and actual EV realization against pre-bet projections and research notes. Quantifies slippage (research quality gaps, variance, correlation misses in combos).
+- **Pattern Detection with Sample-Size Discipline**: Identifies repeatable edges/filters that over/under-performed. Only surfaces insights when sample >= 8-10 settled instances for that specific factor (form, motivation, xG deviation, etc.). Flags "monitor" for smaller samples.
+- **Research Quality Audit (Post-Settlement Lens)**: Reviews the deep dive notes in the round file for completeness (tool calls made, all candidates researched, exploration quota met, motivation/injury factors checked). Produces explicit flags like "Round X: No x_keyword_search used for team news on Match Y — potential blind spot."
+- **Additive-Only Proposals to Filters/Edges**: After pattern confirmation, generates ready-to-push text blocks for sport_edges_and_filters.md (new bullet under relevant sport or general section). Includes rationale, data summary, confidence level, and suggested monitoring period. Never overwrites; always additive.
+- **Structured Output Template**:
+  1. Executive Summary (key wins/losses, net P/L impact, main learnings)
+  2. Research Quality Flags (specific round references + missing elements)
+  3. Pattern Insights (by sport/bet-type/edge with sample sizes and stats)
+  4. Proposed Additive Updates (exact markdown blocks ready for commit)
+  5. Bankroll/Process Notes (any verification issues or process improvements)
+  6. Next Actions & Handoff (to nt-betting-workflow for next round or nt-bankroll-tracker if needed)
+- **Guardrails**: Conservative proposals only. Enforces full push + re-validate workflow on any file change. References playbook.md section 4 (Post-Settlement Process) and nt-betting-skills.md.
+
+### Alignment & Benefits
+- Directly implements and specializes the "Post-Settlement Process" section of playbook.md.
+- Provides a clean separation: nt-betting-workflow handles the settlement mechanics + deep dive append; this skill owns the learning extraction and filter evolution.
+- Ensures the continuous improvement loop is explicit, auditable, and triggered reliably after every settlement batch — no ad-hoc reviews.
+- Complements existing nt-learning-reviewer by offering a settlement-triggered, narrower-scope variant optimized for immediate post-settlement timing.
+
+### Next Steps
+- Invoke `post-settlement-learning-reviewer` after any settlement processing in nt-betting-workflow.
+- Future: Add supporting scripts in its `scripts/` dir for automated aggregation if volume grows.
+- All updates to this skill itself will follow the same GitHub push + validate discipline documented here.
+
+*Skill created, documented, pushed to GitHub, and validated 2026-06-18 following the complete successful push workflow (verify state → full content update with SHA → re-verify tree/content). Additive only, no existing behavior changed.*
