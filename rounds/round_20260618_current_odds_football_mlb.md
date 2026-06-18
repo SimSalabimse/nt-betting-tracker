@@ -80,14 +80,34 @@ Scanned **every single line** in the ~26kB odds file. Flagged markets with rough
 
 ---
 
+## Post-Settlement Deep Dive & Learnings (2026-06-18 23:02 CEST)
+
+**Settlements**:
+- Switzerland Win @1.55 (20 NOK): **Win** — Total payout 31 NOK (P/L **+11.00**). Hit as expected; quality edge prevailed in must-win WC match.
+- Under 2.5 Goals @1.87 (12 NOK): **Loss** — P/L **-12.00**. Over 2.5 hit (game opened up more than previewed).
+- Breel Embolo Anytime @2.20 (15 NOK): **Loss** — P/L **-15.00**. Embolo did not score (variance in finishing despite involvement/expected volume).
+
+**Round Net P/L**: **-16.00 NOK**
+
+**Key Learnings**:
+- Switzerland win conviction was correct (high-quality side handled motivation well); marginal EV line still delivered due to edge in squad depth/experience.
+- Embolo anytime at 2.20 was solid pre-match (true prob ~48-50% range) but finishing variance realized — classic single-player prop risk. Future filter: prefer correlated scorer+assist combos or team totals when individual finishing looks streaky.
+- Under 2.5 lean was reasonable pre-match (Bosnia defensive setup + testy preview) but WC must-win games can open up late; slight over-performance in xG/pace. Adjust filter for "must-win WC" games to slightly higher total goal expectation.
+- Overall portfolio: Win leg offset two losses partially. Blended EV estimate held reasonably despite variance. Continue strict singles + small stakes on marginal EV plays.
+- Bankroll now at 363.20 NOK (after -16 round). No chasing; next round full reset discipline.
+
+**Next**: Update sport_edges_and_filters.md with WC finishing variance + must-win total goals adjustment. Monitor for next fixtures.
+
+---
+
 ## Validation & Commit Notes
 - Full content of current_odds_01.txt scanned line-by-line per playbook.
 - Research via web_search + previews for team news, expected goals, tactical outlook.
-- bet_log.csv updated with 3 new pending bets immediately (see SHA validation).
-- current_bankroll.md updated with new Pending at Risk.
-- This file pushed and validated before final reply.
+- bet_log.csv updated with 3 new pending bets immediately, then settled with targeted updates + notes.
+- current_bankroll.md updated with new realized P/L / equity / pending=0.
+- This file (analysis + post-settlement deep dive) pushed and validated before final reply.
 - Playbook + user GitHub push workflow followed exactly (full content, SHA pre/post, clear messages).
 
-**Next**: Monitor pre-match if odds move; settle via nt-bet-log-manager after results. Good luck on the Swiss!
+**All settlements processed. Good discipline maintained. Ready for next round.**
 
 *Updated and pushed via nt-betting-workflow + GitHub connected tools per strict user instructions. All SHAs validated.*
