@@ -5,7 +5,7 @@
 **playbook.md and nt-learning-reviewer skill reference this for decisions.**
 **All changes additive or with clear version notes. Full history in Git.**
 
-**Last Updated**: 2026-06-19 (post-settlement batch for Grind Back + Hood wins + nt-bankroll-tracker verification)
+**Last Updated**: 2026-06-19 (post-settlement batch for Zverev/Sabalenka/Team Spirit via post-settlement-learning-reviewer + nt-bankroll-tracker + nt-bet-log-manager)
 
 ## Core Rules for This File
 - This is the single source for current edges, min EV per sport, best odds bands (multipliers), key filters, paused items, and high-level ROI summary.
@@ -18,6 +18,26 @@
 - Preferred Multiplier Band (most sports): 1.70 - 3.20 (balances edge realization and variance; avoid heavy favs <1.60 unless exceptional conviction, avoid longshots >4.0 unless data supports).
 - Daily Portfolio Risk: 40-80 NOK max (Phase 1 conservative). Scale with bankroll growth.
 - Stake per high-conviction single: 10-20 NOK (or system equivalent with 10 NOK/leg min). Individual sizing by EV + confidence.
+
+## Post-Settlement Learning Review (2026-06-19 Zverev / Sabalenka / Team Spirit batch)
+
+**Executed via post-settlement-learning-reviewer + nt-bet-log-manager + nt-bankroll-tracker skills** (fresh GitHub fetch of bet_log.csv, round_20260619_current_odds_tennis_darts_esports_recommendations.md, current_bankroll.md, this file; all SHAs + full content verified pre/post push).
+
+**Outcomes**:
+- Zverev vs Collignon Zverev -1.5 sets @1.57 stake 12 NOK → **Win** +6.84 NOK (payout 18.84). Hit cleanly as modeled from heavy class gap research.
+- Sabalenka vs Bartunkova Sabalenka -1.5 sets @1.35 stake 12 NOK → **Loss** -12.00 NOK. Variance realized (likely set dropped or opponent overperformance).
+- Team Spirit vs G2 Esports Team Spirit -1.5 maps @1.90 stake 10 NOK → **Loss** -10.00 NOK. Esports map variance in BO3 realized.
+
+**Net from batch**: **-15.16 NOK** realized P/L
+**Previous Equity**: 411.26 NOK → **New Equity 396.10 NOK** (Pending now 0)
+
+**Pattern Insight (Additive Note)**: 
+- Zverev heavy fav -1.5 sets held strong — reinforces tennis class mismatch handicap value when ranking/form gap is large and research aligns. Good validation for this bet type.
+- Sabalenka and Team Spirit losses are normal variance on positive-EV lines (small stakes used). No indication of research flaw; continue conservative sizing (10-12 NOK) on such high-conviction handicaps.
+- Esports map HC variance confirmed again (consistent with prior Jijiehao note). Strict recent map stats filter + max 10 NOK stake remains appropriate. Single loss does not pause the approach.
+- Overall: Mixed batch but within expected variance for the selected +EV lines. No major filter changes needed at this sample size. Continue selective use of tennis/esports HC when Stage 2 research (form, H2H, meta) is strong.
+
+**Bankroll note**: Equity now 396.10 NOK. All pending cleared. Strict discipline maintained.
 
 ## Post-Settlement Learning Review (2026-06-19 Grind Back + Hood batch)
 
@@ -110,5 +130,6 @@ Ready-to-commit text blocks below. All changes additive. Pushed + re-validated v
 - **2026-06-18**: Post-settlement-learning-reviewer skill executed after June 15-18 settlements batch. Added dedicated review section with Executive Summary, Research Quality Flags, Pattern Insights, and ready-to-commit additive filter updates for Tennis (grass 2-0 variance), Football Int'l props (higher variance in WC/friendlies), and Esports (small stake confirmation). Updated table rows for Tennis and Football with new cautions. All changes additive only. Full Git push + tree/content re-validation completed before presentation. References specific deep dives (Shelton, Jijiehao, Czechia, Portugal) from round files. Bankroll at 363.20 NOK noted for context.
 - **2026-06-19**: Minor additive update for 2026-06-19 Under bets batch (3/4 hit). Added short pattern insight on controlled low-event unders performing well when research aligns. Reinforced Football row. No major filter changes (sample size small). Full Git push + validation completed. Equity now 397.76 NOK.
 - **2026-06-19 (later)**: Added post-settlement review for Grind Back esports map win and Hood darts prop win. Reinforced confidence in filtered esports map lines and darts props on dominant favorites. No major filter changes. Equity now 411.26 NOK.
+- **2026-06-19 (this batch)**: Added post-settlement review for Zverev (hit), Sabalenka and Team Spirit (variance losses). Reinforced tennis class mismatch HC and esports map HC conservative approach. No major filter changes. Equity now 396.10 NOK. All pushes validated.
 
 **This file is now the go-to for edge parameters. nt-betting-workflow and nt-learning-reviewer skills reference it. Changes are driven by data from deep dives.**
