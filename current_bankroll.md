@@ -1,26 +1,24 @@
 # Current Bankroll
 
-**Equity**: 411.80 NOK  
-**Pending at Risk**: **64 NOK**  
-**Liquid Available**: **347.80 NOK**
+**Equity**: 422.30 NOK  
+**Pending at Risk**: **0 NOK**  
+**Liquid Available**: **422.30 NOK**
 
-**Last Updated**: 2026-06-19 20:40 CEST (nt-betting-workflow executed for Irish leagues + Athletics H2H exploratory round)
+**Last Updated**: 2026-06-19 23:10 CEST (nt-bet-log-manager + nt-bankroll-tracker + post-settlement-learning-reviewer executed for 6 settlements)
 
-**New Pending Bets Added (this round)**:
-- Cork City vs Treaty United: Over 2.5 goals @1.50 stake 12 NOK
-- Bray Wanderers vs Longford Town: Bray Wanderers to win @1.60 stake 10 NOK
-- Athletics H2H (Arce vs Girma): Daniel Arce to win @1.25 stake 10 NOK (**Exploratory new sport** per user reminder + playbook rule)
+**Settlements processed this update**:
+- Athletics H2H (Arce vs Girma) — Daniel Arce to win @1.25 stake 10 NOK → **Win**, payout 12.50 NOK, P/L **+2.50 NOK**
+- Cork City vs Treaty United — Over 2.5 goals @1.50 stake 12 NOK → **Win**, payout 18.00 NOK, P/L **+6.00 NOK**
+- Bray Wanderers vs Longford Town — Bray Wanderers to win @1.60 stake 10 NOK → **Win**, payout 16.00 NOK, P/L **+6.00 NOK**
+- USA vs Australia — Over 2.5 goals @2.25 stake 12 NOK → **Loss**, P/L **-12.00 NOK**
+- USA vs Australia — USA -1 handicap @2.85 stake 10 NOK → **Win**, payout 28.00 NOK, P/L **+18.00 NOK**
+- USA vs Australia — Folarin Balogun to score @2.35 stake 10 NOK → **Loss**, P/L **-10.00 NOK**
 
-**Total New Pending Risk (this round)**: +32 NOK
-**Cumulative Pending**: 64 NOK (~15.5% of equity)
-
-**Previous**: Equity 411.80 Pending 32 (from USA round) → New Pending 64, Liquid 347.80
+**Net from this batch**: **+10.50 NOK** realized P/L
+**Previous Equity**: 411.80 NOK → **New Equity 422.30 NOK**
 
 **Notes**:
-- Full nt-betting-workflow followed: new round file created with 3 bets (including 1 new sport exploratory to honor user request).
-- bet_log.csv updated via GitHub append (full content + SHA verified, 3 new Pending rows, Notes tagged with round ref + "Exploratory new sport").
-- nt-bankroll-tracker verification: Equity from full bet_log.csv; pending now 64 NOK total. All protocol followed.
-- All changes pushed + re-validated before reply.
-- Post-settlement deep dive (including review of the athletics exploratory bet) will be added after results.
-
-This maintains full compliance with successful push workflow, playbook, and your explicit request to explore new odds types/new sports.
+- Full nt-bet-log-manager protocol followed: fetched full bet_log.csv + SHA, targeted updates only on the 6 matching Pending rows (Result + P_L_NOK changed, original Notes preserved + settlement details appended). No historical rows altered.
+- nt-bankroll-tracker verification: Equity recalculated from full bet_log.csv SUM of realized P/L + starting base. Pending risk now 0 NOK. All six settlements processed correctly.
+- post-settlement-learning-reviewer executed: Added full Post-Settlement Deep Dive sections to both round_20260619_current_odds_usa_australia_recommendations.md and round_20260619_current_odds_irish_athletics_recommendations.md. Reviewed outcomes vs pre-bet research. Added short additive note to sport_edges_and_filters.md on first athletics exploratory bet performance.
+- All changes pushed via GitHub tools + re-validated (tree + full content fetch) before this record.
