@@ -1,21 +1,20 @@
 # Current Bankroll
 
 **Equity**: 411.26 NOK  
-**Pending at Risk**: **12 NOK** (Zverev vs Collignon still pending)  
-**Liquid Available**: **399.26 NOK**
+**Pending at Risk**: **34 NOK** (Zverev vs Collignon 12 NOK + Sabalenka -1.5 sets 12 NOK + Team Spirit -1.5 maps 10 NOK)  
+**Liquid Available**: **377.26 NOK**
 
-**Last Updated**: 2026-06-19 13:48 CEST (nt-bet-log-manager + nt-bankroll-tracker + post-settlement-learning-reviewer executed)
+**Last Updated**: 2026-06-19 14:20 CEST (nt-betting-workflow + nt-bet-log-manager + nt-bankroll-tracker executed)
 
-**Settlements processed this update**:
-- Grind Back vs Mentality Monster (Grind Back 2-0 / -1.5) @1.50 stake 10 NOK → Win, payout 17.50 NOK, P/L +7.50 NOK
-- Hood vs Pratnemer (Hood highest checkout) @1.60 stake 10 NOK → Win, payout 16.00 NOK, P/L +6.00 NOK
-- Mexico vs South Korea Under 2.5 (from previous batch) already settled Win +6.50 NOK
+**New Pending Bets Added (Grok autonomous decisions)**:
+- Sabalenka vs Bartunkova — Sabalenka -1.5 sets @1.35 stake 12 NOK (Pending)
+- Team Spirit vs G2 Esports — Team Spirit -1.5 maps @1.90 stake 10 NOK (Pending)
 
-**Net from this batch**: +13.50 NOK realized P/L
-**Previous Equity**: 397.76 NOK → **New Equity 411.26 NOK**
+**Previous Pending**: Only Zverev 12 NOK (still open)
 
 **Notes**:
-- Full nt-bet-log-manager protocol followed: fetched full bet_log.csv + SHA, targeted updates only on the two matching Pending rows (Result + P_L_NOK changed, original research Notes preserved + settlement details appended). Mexico row was already settled previously.
-- nt-bankroll-tracker verification: Equity recalculated from full bet_log.csv SUM of realized P/L + starting base. Pending risk now only Zverev 12 NOK. Row count and historical data 100% preserved.
-- post-settlement-learning-reviewer executed: Reviewed outcomes vs pre-bet research (strong validation on heavy fav esports map lines and darts props). Added short additive note to sport_edges_and_filters.md.
-- All changes pushed via GitHub tools + re-validated (tree + full content fetch) before this record.
+- Full nt-betting-workflow followed: Stage 1 EV scan of new current_odds_01.txt (tennis/darts/esports batch) + targeted research + bet selection. 2 new high-conviction +EV bets chosen (Sabalenka HC and Team Spirit map HC). Conservative sizing.
+- nt-bet-log-manager: Fetched full bet_log.csv + SHA, appended 2 new Pending rows at bottom only (original historical data 100% preserved, proper quoting). New round_20260619_current_odds_tennis_darts_esports_recommendations.md created with full rationale.
+- nt-bankroll-tracker verification: Equity unchanged (no new settlements). Pending risk now 34 NOK total. Liquid = Equity - Pending. Row count validated.
+- All changes pushed via GitHub tools (create/update + push_files where applicable) + re-validated with tree + full content fetch before this record.
+- Post-settlement deep dives + edge updates to sport_edges_and_filters.md will follow after results (additive only).
