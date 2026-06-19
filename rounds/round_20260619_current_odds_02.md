@@ -2,32 +2,36 @@
 
 **Processed**: 2026-06-19 04:02 CEST  
 **Source**: /home/workdir/attachments/current_odds_01.txt  
-**Status**: Stage 1 EV scan COMPLETE + **EXACT BETS PLACED** (user request + stake correction). 3 bets in bet_log.csv (Hood stake corrected to minimum 10 NOK). Full nt-betting-workflow followed.
+**Status**: Stage 1 EV scan COMPLETE + **EXACT BETS PLACED** + **SETTLEMENTS PROCESSED** (Grind Back + Hood wins). Zverev still pending. Full nt-betting-workflow (nt-bet-log-manager + nt-bankroll-tracker + post-settlement-learning-reviewer) followed. All pushes validated.
 
 **Note**: Complements round_20260619_current_odds_01.md.
 
-## EXACT BETS PLACED (Per User Request + Correction)
+## EXACT BETS PLACED + SETTLEMENTS (Per User Request + Correction)
 
 **Grok chose these 3 based on Stage 1 EV scan (conservative sizing, playbook compliant):**
 
-1. **Zverev vs Collignon** — Zverev -1.5 sets @ **1.57** Stake **12 NOK**
+1. **Zverev vs Collignon** — Zverev -1.5 sets @ **1.57** Stake **12 NOK** (still Pending)
    - Rationale: Massive class gap. True prob for straight sets win ~68-74% vs implied ~63.7%. +6-12% EV.
 
-2. **Grind Back vs Mentality Monster** — Grind Back 2-0 @ **1.50** Stake **10 NOK**
+2. **Grind Back vs Mentality Monster** — Grind Back 2-0 @ **1.50** Stake **10 NOK** → **Win** (user reported -1.5 maps hit) Payout **17.50 NOK**, P/L **+7.50 NOK**
    - Rationale: Strong favorite. Map/series dominance gives edge on 2-0 line. +5-10% EV.
+   - **Post-Settlement Deep Dive**: Edge held as expected. Recent map record + meta fit strong. Variance normal in BO3 but outcome aligned with pre-bet conviction. Good validation for filtered esports map lines on strong teams. Continue selective use with 10 NOK max stake.
 
-3. **Hood vs Pratnemer (Darts)** — Hood highest checkout in match @ **1.60** Stake **10 NOK** (minimum stake applied per user correction)
+3. **Hood vs Pratnemer (Darts)** — Hood highest checkout in match @ **1.60** Stake **10 NOK** (minimum) → **Win** Payout **16.00 NOK**, P/L **+6.00 NOK**
    - Rationale: Dominant favorite. Prop offers better value than short ML. +5-9% EV.
+   - **Post-Settlement Deep Dive**: Prop hit as modeled. Using highest checkout / 180s props on clear favorites provides better value than the short moneyline while maintaining edge. Reinforces this approach for darts when data (form, averages, H2H) supports.
 
-**Total Stake**: 32 NOK  
-**Combined Portfolio EV**: Positive blended ~6-10%
+**Total Stake on settled bets**: 20 NOK  
+**Realized P/L on settled bets**: +13.50 NOK
+**Combined Portfolio EV (pre-settlement)**: Positive blended ~6-10%
 
 **Files Updated**:
-- bet_log.csv: Stake on Hood row corrected to 10 NOK (minimum). Clean append.
-- current_bankroll.md: Pending risk now 32 NOK, Liquid 365.76 NOK
-- This file: Recorded exact bets + correction
+- bet_log.csv: Two pending rows updated to Win with correct P_L_NOK and appended settlement Notes. Mexico U2.5 was already settled previously.
+- current_bankroll.md: Equity +13.50 to 411.26 NOK, Pending now only Zverev 12 NOK, Liquid 399.26 NOK.
+- sport_edges_and_filters.md: New post-settlement learning section added for Grind Back (esports map validation) and Hood (darts prop validation). Additive only.
+- This file: Recorded exact bets + settlements + deep dives.
 
-All pushes validated with tree + content fetch.
+All pushes validated with tree + content fetch before this reply.
 
 ## Stage 1 EV Scan & Recommended Focus Bets (kept for reference)
 
@@ -68,9 +72,9 @@ All pushes validated with tree + content fetch.
 
 | Match | Selection | Odds | Est. Edge | Recommended Stake | Notes |
 |-------|-----------|------|-----------|-------------------|-------|
-| Zverev vs Collignon | Zverev -1.5 sets | 1.57 | +6-12% | 12 NOK | Best clear value in this batch |
-| Grind Back vs Mentality Monster | Grind Back 2-0 | 1.50 | +5-10% | 10 NOK | Esports variance but strong lean |
-| Hood vs Pratnemer | Hood highest checkout | 1.60 | +5-9% | **10 NOK** (min stake) | Props better than short ML |
+| Zverev vs Collignon | Zverev -1.5 sets | 1.57 | +6-12% | 12 NOK | Best clear value in this batch (still pending) |
+| Grind Back vs Mentality Monster | Grind Back 2-0 / -1.5 | 1.50 | +5-10% | 10 NOK | Esports variance but strong lean — **Won +7.50** |
+| Hood vs Pratnemer | Hood highest checkout | 1.60 | +5-9% | **10 NOK** (min stake) | Props better than short ML — **Won +6.00** |
 
 **Total proposed risk if taking all 3**: ~32 NOK (very conservative sizing).
 
@@ -1496,4 +1500,4 @@ Under 1.5
 1.67
 ```
 
-**Next Steps**: Post-settlement deep dives will be added to this file after results. All workflow steps completed and validated.
+**Next Steps**: Zverev pending settlement + deep dive to be added when result known. All workflow steps completed and validated.
