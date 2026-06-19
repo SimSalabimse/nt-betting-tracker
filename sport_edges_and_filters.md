@@ -5,7 +5,7 @@
 **playbook.md and nt-learning-reviewer skill reference this for decisions.**
 **All changes additive or with clear version notes. Full history in Git.**
 
-**Last Updated**: 2026-06-19 (post-settlement batch for 2026-06-19 unders + nt-bankroll-tracker verification)
+**Last Updated**: 2026-06-19 (post-settlement batch for Grind Back + Hood wins + nt-bankroll-tracker verification)
 
 ## Core Rules for This File
 - This is the single source for current edges, min EV per sport, best odds bands (multipliers), key filters, paused items, and high-level ROI summary.
@@ -18,6 +18,19 @@
 - Preferred Multiplier Band (most sports): 1.70 - 3.20 (balances edge realization and variance; avoid heavy favs <1.60 unless exceptional conviction, avoid longshots >4.0 unless data supports).
 - Daily Portfolio Risk: 40-80 NOK max (Phase 1 conservative). Scale with bankroll growth.
 - Stake per high-conviction single: 10-20 NOK (or system equivalent with 10 NOK/leg min). Individual sizing by EV + confidence.
+
+## Post-Settlement Learning Review (2026-06-19 Grind Back + Hood batch)
+
+**Executed via post-settlement-learning-reviewer + nt-bankroll-tracker + nt-bet-log-manager skills** (fresh GitHub fetch of bet_log.csv, round_20260619_current_odds_02.md, current_bankroll.md, this file; all SHAs + full content verified pre/post push).
+
+**Outcomes**: 2 wins (Grind Back +7.50, Hood +6.00). Net +13.50 NOK on the two new bets. Combined with previous Mexico U2.5 confirmation.
+
+**Pattern Insight (Additive Note)**: 
+- Esports map/series lines on strong favorites (Grind Back -1.5 / 2-0) continue to deliver when recent map record + meta fit is strong. Variance is expected in BO3 but edge held.
+- Darts props (highest checkout on dominant favorite) offered good value vs short ML and hit. Reinforces using props on clear favorites when data supports (form, averages, H2H).
+- No major filter changes needed (small sample), but reinforces conservative 10 NOK max on high-variance props and esports map lines.
+
+**Bankroll note**: Equity now 411.26 NOK. Pending only Zverev 12 NOK. Strict discipline maintained.
 
 ## Post-Settlement Learning Review (2026-06-19 batch) — 4 Under 2.5/5.5 bets
 
@@ -75,7 +88,7 @@ Ready-to-commit text blocks below. All changes additive. Pushed + re-validated v
 | **Fotball (Primary)** | 7% | 1.80 - 3.20 | Draws in cagey/motivated spots; Over/Under 2.5 (xG trends); BTTS; Asian HC; Underdogs in relegation/derby; Home strong defenses (clean sheet); BTTS No in mismatch | Lower leagues: stricter recent form + GD filters. Avoid heavy favs without strong H2H. **Add 2026-06-18 (post-settlement review)**: For WC 2026 qualifiers/friendlies & early int'l: limit player props (anytime scorer) and specific team bets unless exceptional data + motivation confirmation via extra tool search. Prioritize main lines (win/over/BTTS) in mismatches. Higher variance observed in recent props (Czechia, Portugal). Monitor next 10+ bets. **Add 2026-06-19**: Unders in controlled low-event domestic/playoff/WC group contexts performing strongly when research (xG, injuries, motivation) aligns — continue selective use. | High allocation. Core of portfolio. | High (dozens) | Positive overall; monitor lower leagues separately | Selective testing of props and BTTS; high volume supports detailed filters |
 | **Darts** | 7-8% | 1.70 - 2.80 | Match winner (form, H2H, averages, streaks); Legs handicap | Veteran vs inconsistent; avoid fatigue spots in long events | Selective volume when strong data | Low-Medium | Highly profitable when selected (per history) | Test selectively when +EV; conclude phase after 10-15 bets with patterns; do not over-allocate |
 | **Snooker** | 8% | 1.70 - 3.20 | Match winner (form, ranking diff, H2H in format, motivation); Frame handicap / total frames; margin HC in mismatches | Long matches: mental/tactical edges; motivated underdogs | Selective when clear +EV and not over-represented in recent portfolio | Low-Medium | Positive signals in history but watch for variance | **Variety priority** - Test when strong +EV; avoid consecutive rounds heavy in Snooker; conclude after data sufficiency.
-| **Tennis** | 7-8% | 1.70 - 3.50+ | Match winner (surface/form/H2H/fatigue); Set or games HC; Over/Under totals | Cancellations common in best-of-5 late rounds; physical toll. **Add 2026-06-18 (post-settlement review)**: For 2-0 or set handicap bets on strong grass favorites: require opponent recent form/fatigue/H2H set resilience check. If indicators of competitiveness or opponent set-winning recent form, prefer match-winner or games HC alternatives to mitigate set-drop variance (Shelton grass example). Monitor strict 2-0 hit rate over next 8-10 instances. Clear mismatches (e.g. Svitolina) remain high-confidence. | Good diversifier; low-variance short-odds favs reliable | Medium-High | Mixed (strong favs good, variance in dogs) | Active testing of totals and HC; good for variety |
+| **Tennis** | 7-8% | 1.70 - 3.50+ | Match winner (surface/form/H2H/fatigue); Set or games HC; Over/Under totals | Cancellations common in best-of-5 late rounds; physical toll. **Add 2026-06-18 (post-settlement review)**: For 2-0 or set handicap bets on strong grass favorites: require opponent recent form/fatigue/H2H set resilience check. If indicators of competitiveness or opponent set-winning recent form, prefer match-winner or games handicap alternatives to mitigate set-drop variance (Shelton grass example). Monitor strict 2-0 hit rate over next 8-10 instances. Clear mismatches (e.g. Svitolina) remain high-confidence. | Good diversifier; low-variance short-odds favs reliable | Medium-High | Mixed (strong favs good, variance in dogs) | Active testing of totals and HC; good for variety |
 | **Ishockey / Handball** | 8% | 1.85 - 2.80 (totals) | Totals (pace/defense); Period betting; HC in mismatches | High variance -> stricter filters | Medium allocation in systems | Medium | Positive in good spots | Use for portfolio balance and systems |
 | **Esports (CS2, LoL, Dota)** | 8-9%+ | 1.80 - 3.00 | Map/series winner (form, meta, H2H map record); -1.5 maps on strong teams | High variance; require strong recent map stats (>60-65% win rate); no major roster issues. **Add 2026-06-18**: Max stake 10 NOK confirmed for map HC; variance normal (Jijiehao loss realized within model). Strict map record filter remains. Good for selective diversification. | Selective; tighter after losses | Medium | Mixed; good on handicaps when filtered | Test map handicaps and series when data supports; good diversifier |
 | **Basketball / MLB / Baseball** | 7-8% | 1.80 - 2.60 | Totals (pace/defense); ML/HC in mismatches; player props | | Medium when data good | Medium | Positive in researched spots | Stats-heavy modeling spots; good for variety |
@@ -96,5 +109,6 @@ Ready-to-commit text blocks below. All changes additive. Pushed + re-validated v
 - **2026-06-17**: Major update for variety-first approach. Removed any "force" language. Integrated nt-learning-reviewer skill as the mechanism for deciding when enough data exists to adjust priorities or conclude phases for specific sports/bet types (e.g., Snooker). Updated table and rules to explicitly prevent over-focus on any one sport and encourage natural variety. Snooker Exploration Approach changed to prioritize variety and conclude after data sufficiency.
 - **2026-06-18**: Post-settlement-learning-reviewer skill executed after June 15-18 settlements batch. Added dedicated review section with Executive Summary, Research Quality Flags, Pattern Insights, and ready-to-commit additive filter updates for Tennis (grass 2-0 variance), Football Int'l props (higher variance in WC/friendlies), and Esports (small stake confirmation). Updated table rows for Tennis and Football with new cautions. All changes additive only. Full Git push + tree/content re-validation completed before presentation. References specific deep dives (Shelton, Jijiehao, Czechia, Portugal) from round files. Bankroll at 363.20 NOK noted for context.
 - **2026-06-19**: Minor additive update for 2026-06-19 Under bets batch (3/4 hit). Added short pattern insight on controlled low-event unders performing well when research aligns. Reinforced Football row. No major filter changes (sample size small). Full Git push + validation completed. Equity now 397.76 NOK.
+- **2026-06-19 (later)**: Added post-settlement review for Grind Back esports map win and Hood darts prop win. Reinforced confidence in filtered esports map lines and darts props on dominant favorites. No major filter changes. Equity now 411.26 NOK.
 
 **This file is now the go-to for edge parameters. nt-betting-workflow and nt-learning-reviewer skills reference it. Changes are driven by data from deep dives.**
