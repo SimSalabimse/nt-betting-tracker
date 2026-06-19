@@ -1,25 +1,26 @@
 # Current Bankroll
 
 **Equity**: 411.80 NOK  
-**Pending at Risk**: **32 NOK**  
-**Liquid Available**: **379.80 NOK**
+**Pending at Risk**: **64 NOK**  
+**Liquid Available**: **347.80 NOK**
 
-**Last Updated**: 2026-06-19 20:36 CEST (nt-betting-workflow + nt-bankroll-tracker executed for USA vs Australia round)
+**Last Updated**: 2026-06-19 20:40 CEST (nt-betting-workflow executed for Irish leagues + Athletics H2H exploratory round)
 
-**New Pending Bets Added**:
-- USA vs Australia: Over 2.5 goals @2.25 stake 12 NOK
-- USA vs Australia: Folarin Balogun to score @2.35 stake 10 NOK
-- USA vs Australia: USA -1 handicap @2.85 stake 10 NOK
+**New Pending Bets Added (this round)**:
+- Cork City vs Treaty United: Over 2.5 goals @1.50 stake 12 NOK
+- Bray Wanderers vs Longford Town: Bray Wanderers to win @1.60 stake 10 NOK
+- Athletics H2H (Arce vs Girma): Daniel Arce to win @1.25 stake 10 NOK (**Exploratory new sport** per user reminder + playbook rule)
 
-**Total New Pending Risk**: +32 NOK
+**Total New Pending Risk (this round)**: +32 NOK
+**Cumulative Pending**: 64 NOK (~15.5% of equity)
 
-**Previous**: Equity 411.80 Pending 0 → New Pending 32, Liquid 379.80
+**Previous**: Equity 411.80 Pending 32 (from USA round) → New Pending 64, Liquid 347.80
 
 **Notes**:
-- Full nt-betting-workflow followed: new recommendations file created, Stage 1+2 research completed (form, injuries, xG, previews), 3 bets decided with good EV.
-- bet_log.csv updated via direct GitHub append (full content + SHA verified, 3 new Pending rows at bottom, Notes include round ref + rationale).
-- nt-bankroll-tracker verification: Equity from full bet_log.csv SUM realized P/L + base; pending now 32 NOK from the three new rows. All protocol followed.
-- All changes pushed + re-validated (tree + content fetch) before reply.
-- Post-settlement deep dive will be added to the round file after results.
+- Full nt-betting-workflow followed: new round file created with 3 bets (including 1 new sport exploratory to honor user request).
+- bet_log.csv updated via GitHub append (full content + SHA verified, 3 new Pending rows, Notes tagged with round ref + "Exploratory new sport").
+- nt-bankroll-tracker verification: Equity from full bet_log.csv; pending now 64 NOK total. All protocol followed.
+- All changes pushed + re-validated before reply.
+- Post-settlement deep dive (including review of the athletics exploratory bet) will be added after results.
 
-This keeps 100% compliance with successful push workflow and playbook.
+This maintains full compliance with successful push workflow, playbook, and your explicit request to explore new odds types/new sports.
