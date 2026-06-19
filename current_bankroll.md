@@ -1,21 +1,24 @@
 # Current Bankroll
 
 **Equity**: 396.10 NOK  
-**Pending at Risk**: **0 NOK**  
-**Liquid Available**: **396.10 NOK**
+**Pending at Risk**: **22 NOK**  
+**Liquid Available**: **374.10 NOK**
 
-**Last Updated**: 2026-06-19 17:30 CEST (nt-bet-log-manager + nt-bankroll-tracker + post-settlement-learning-reviewer executed)
+**Last Updated**: 2026-06-19 17:55 CEST (nt-betting-workflow + nt-bankroll-tracker executed for new football bets)
 
-**Settlements processed this update**:
-- Zverev vs Collignon (Zverev -1.5 sets) @1.57 stake 12 NOK → **Win**, payout 18.84 NOK, P/L **+6.84 NOK**
-- Sabalenka vs Bartunkova (Sabalenka -1.5 sets) @1.35 stake 12 NOK → **Loss**, P/L **-12.00 NOK**
-- Team Spirit vs G2 Esports (Team Spirit -1.5 maps) @1.90 stake 10 NOK → **Loss**, P/L **-10.00 NOK**
+**New Pending Bets Added**:
+- Hinna vs Brodd: Brodd to win @2.15 stake 10 NOK
+- Ranheim vs Lyn: Over 2.5 goals @1.35 stake 12 NOK
 
-**Net from this batch**: **-15.16 NOK** realized P/L
-**Previous Equity**: 411.26 NOK → **New Equity 396.10 NOK**
+**Total New Pending Risk**: +22 NOK
+
+**Previous**: Equity 396.10 Pending 0 → New Pending 22, Liquid 374.10
 
 **Notes**:
-- Full nt-bet-log-manager protocol followed: fetched full bet_log.csv + SHA, targeted updates only on the three matching Pending rows (Result + P_L_NOK changed, original research Notes preserved + settlement details appended). No historical rows altered, row count preserved.
-- nt-bankroll-tracker verification: Equity recalculated from full bet_log.csv SUM of realized P/L + starting base. Pending risk now 0 NOK. All three settlements processed correctly. Row count and historical data 100% preserved.
-- post-settlement-learning-reviewer executed: Reviewed outcomes vs pre-bet research in round_20260619_current_odds_tennis_darts_esports_recommendations.md. Zverev hit as expected (class gap). Sabalenka and Team Spirit losses = normal variance on +EV lines. Added short additive pattern note to sport_edges_and_filters.md.
-- All changes pushed via GitHub tools + re-validated (tree + full content fetch) before this record.
+- Full nt-betting-workflow followed: recommendations file created, deep research (form/H2H for Norwegian matches), EV filter passed, autonomous decision by Grok.
+- bet_log.csv updated via direct GitHub append (full content + SHA verified, 2 new Pending rows at bottom, Notes include round ref + rationale, no historical alteration, row count +2 preserved).
+- nt-bankroll-tracker verification: Equity from full bet_log.csv SUM realized P/L + base; pending now 22 NOK from the two new rows. All protocol followed.
+- All changes pushed + re-validated (tree + content fetch) before reply.
+- Post settlement will trigger learning review additive to sport_edges_and_filters.md and the round file.
+
+This keeps 100% compliance with successful push workflow and playbook.
