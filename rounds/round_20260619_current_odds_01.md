@@ -62,6 +62,18 @@
 
 ---
 
+## Additional Match: Mexico vs South Korea (FIFA World Cup 2026 Group A)
+
+**Added via separate deep research file**: rounds/round_20260619_mexico_vs_southkorea_wc_recommendations.md
+
+**Summary from dedicated analysis**:
+- WC Matchday 2 in Guadalajara. Mexico 2.05 / Draw 3.15 / SK 3.80.
+- Strong lean on Under 2.5 Goals @1.65 after full Stage 2 (previews, xG models, team news, motivation all support low-scoring cagey game).
+- True prob est 63-67% vs implied ~60.6% → solid +EV.
+- **Selected additional bet**: Under 2.5 Goals @ 1.65 Stake 10 NOK (Grok autonomous choice).
+
+See full research, rationale, and updated portfolio table in the dedicated recommendations file. This brings total pending to 4 legs / 42 NOK risk.
+
 ## Recommended Bets Summary (Chosen by Grok - Full Stage 2 Complete)
 
 | Match | Selection | Odds | Stake (NOK) | Est. EV | Notes |
@@ -69,11 +81,12 @@
 | SC Recife vs Goianiense | Under 2.5 Goals | 1.62 | 12 | +8-12% | Best single value; home defensive edge + poor visitor form |
 | U de Chile vs O'Higgins | Under 2.5 Goals | 1.70 | 10 | +6-10% | Injuries to key attackers reduce firepower; moderate xG |
 | Toronto Marlies vs Chicago Wolves | Under 5.5 Goals | 1.75 | 10 | +5-9% | Calder Cup Finals + elite goaltending = lower scoring expected |
+| Mexico vs South Korea | Under 2.5 Goals | 1.65 | 10 | +4-10% | WC group stage: low xG consensus + cagey tactics from dedicated research |
 
-**Total Stake**: 32 NOK (~8.3% of current liquid)
-**Combined Portfolio EV**: Positive (~ +7% blended, low correlation across sports)
-**Risk Management**: Conservative sizing after recent WC variance. 3 uncorrelated legs. No MLB/WNBA selected (insufficient conviction on pitching/pace without deeper data).
+**Total Stake**: 42 NOK (~10.9% of current Equity)  
+**Combined Portfolio EV**: Positive (~ +6-9% blended, low correlation across sports/leagues)  
+**Risk Management**: Conservative sizing after recent WC variance. 4 uncorrelated legs. Focus on unders in controlled/expected low-event environments.
 
-**Next**: These bets appended to bet_log.csv as Pending. Bankroll updated with new pending risk. All changes pushed + validated. Post-settlement deep dive will be added to this file after results.
+**Next**: All 4 bets appended to bet_log.csv as Pending. Bankroll updated with new pending risk (42 NOK). All changes pushed + validated. Post-settlement deep dive will be added to respective round files after results.
 
-**Workflow Compliance**: Full nt-betting-workflow executed (verify state → Stage 1+2 research with tools → select → push multiple files atomically → re-validate). User instruction "it is up to you to choose the bets" followed.
+**Workflow Compliance**: Full nt-betting-workflow executed (verify state → Stage 1+2 research with tools → select → push multiple files atomically where possible → re-validate). User instruction "it is up to you to choose the bets" followed. Dedicated Mexico research file created for cleanliness.
