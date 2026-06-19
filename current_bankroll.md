@@ -1,25 +1,21 @@
 # Current Bankroll
 
-**Equity**: 396.10 NOK  
-**Pending at Risk**: **32 NOK**  
-**Liquid Available**: **364.10 NOK**
+**Equity**: 411.80 NOK  
+**Pending at Risk**: **0 NOK**  
+**Liquid Available**: **411.80 NOK**
 
-**Last Updated**: 2026-06-19 17:55 CEST (nt-betting-workflow + nt-bankroll-tracker executed for 3 new bets incl. exploratory new odds type; stake corrected to 10 NOK min)
+**Last Updated**: 2026-06-19 20:30 CEST (nt-bet-log-manager + nt-bankroll-tracker + post-settlement-learning-reviewer executed)
 
-**New Pending Bets Added**:
-- Hinna vs Brodd: Brodd to win @2.15 stake 10 NOK
-- Ranheim vs Lyn: Over 2.5 goals @1.35 stake 12 NOK
-- Ranheim vs Lyn: Scorer begge lag i 1. omgang Ja @3.15 stake 10 NOK (exploratory on new odds type per playbook feedback; minimum stake applied)
+**Settlements processed this update**:
+- Ranheim vs Lyn (Over 2.5 goals) @1.35 stake 12 NOK → **Win**, payout 16.20 NOK, P/L **+4.20 NOK**
+- Ranheim vs Lyn (Both teams score in 1st half Ja) @3.15 stake 10 NOK → **Win**, payout 31.50 NOK, P/L **+21.50 NOK**
+- Hinna vs Brodd (Brodd to win) @2.15 stake 10 NOK → **Loss**, P/L **-10.00 NOK**
 
-**Total New Pending Risk**: +32 NOK
-
-**Previous**: Equity 396.10 Pending 30 → New Pending 32, Liquid 364.10
+**Net from this batch**: **+15.70 NOK** realized P/L
+**Previous Equity**: 396.10 NOK → **New Equity 411.80 NOK**
 
 **Notes**:
-- Full nt-betting-workflow followed: recommendations file updated (stake fix to 10 NOK minimum), deep research on new athletics H2H + props, 3rd exploratory bet corrected to minimum stake to honor both exploration rule and 10 NOK minimum stake rule.
-- bet_log.csv updated via direct GitHub (full content + SHA verified, targeted stake correction on the exact pending row, append-only discipline maintained, Notes updated).
-- nt-bankroll-tracker verification: Equity from full bet_log.csv SUM realized P/L + base; pending now 32 NOK. All protocol followed.
-- All changes pushed + re-validated (tree + content fetch) before reply.
-- Post settlement will trigger learning review additive to sport_edges_and_filters.md and the round file.
-
-This keeps 100% compliance with successful push workflow, playbook Exploration & Balance, 10 NOK minimum stake rule, and user feedback.
+- Full nt-bet-log-manager protocol followed: fetched full bet_log.csv + SHA, targeted updates only on the three matching Pending rows (Result + P_L_NOK changed, original research Notes preserved + settlement details appended). No historical rows altered, row count preserved.
+- nt-bankroll-tracker verification: Equity recalculated from full bet_log.csv SUM of realized P/L + starting base. Pending risk now 0 NOK. All three settlements processed correctly. Row count and historical data 100% preserved.
+- post-settlement-learning-reviewer executed: Reviewed outcomes vs pre-bet research in round_20260619_current_odds_football_recommendations.md. Over 2.5 and half-time BTTS hit as expected from high xG/open game analysis. Brodd loss = normal variance on +EV line (match ended 3-3). Added short additive pattern note to sport_edges_and_filters.md.
+- All changes pushed via GitHub tools + re-validated (tree + full content fetch) before this record.
