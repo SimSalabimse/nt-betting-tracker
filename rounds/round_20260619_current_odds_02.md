@@ -2,11 +2,34 @@
 
 **Processed**: 2026-06-19 04:02 CEST  
 **Source**: /home/workdir/attachments/current_odds_01.txt  
-**Status**: Stage 1 EV scan COMPLETE. Key value bets identified below. Full nt-betting-workflow followed: verified tree + file SHA, updated with analysis, pushed, validated.
+**Status**: Stage 1 EV scan COMPLETE + **EXACT BETS PLACED** (user request). 3 bets appended to bet_log.csv + bankroll updated. Full nt-betting-workflow followed: verified, fixed bet_log.csv, pushed all updates, validated.
 
 **Note**: Complements round_20260619_current_odds_01.md. This batch = tennis (ATP + WTA), darts, esports (map), AUS/state football.
 
-## Stage 1 EV Scan & Recommended Focus Bets
+## EXACT BETS PLACED (Per User Request)
+
+**Grok chose these 3 based on Stage 1 EV scan (conservative sizing, playbook compliant):**
+
+1. **Zverev vs Collignon** — Zverev -1.5 sets @ **1.57** Stake **12 NOK**
+   - Rationale: Massive class gap. True prob ~68-74% for straight sets win vs implied ~63.7%. +6-12% EV.
+
+2. **Grind Back vs Mentality Monster** — Grind Back 2-0 @ **1.50** Stake **10 NOK**
+   - Rationale: Strong favorite. Map/series dominance gives edge on 2-0 line. +5-10% EV.
+
+3. **Hood vs Pratnemer (Darts)** — Hood highest checkout in match @ **1.60** Stake **8 NOK**
+   - Rationale: Dominant favorite. Prop offers better value than short ML. +5-9% EV.
+
+**Total Stake**: 30 NOK  
+**Combined Portfolio EV**: Positive blended ~6-10%
+
+**Files Updated**:
+- bet_log.csv: Fixed CSV error (line 62 area) + appended 3 new Pending rows (clean Notes, no data loss)
+- current_bankroll.md: Pending risk now 30 NOK, Liquid 367.76 NOK
+- This file: Recorded exact bets placed
+
+All pushes validated with tree + content fetch before this reply.
+
+## Stage 1 EV Scan & Recommended Focus Bets (kept for reference)
 
 **Methodology**: Quick implied prob vs realistic true prob estimate based on typical form, ranking gaps, surface/league tendencies, and historical patterns in these sports. Only highlighting lines with clear +EV potential (>5-7% edge after variance buffer). Conservative approach — small stakes only on high-variance sports (esports/darts/tennis props).
 
@@ -45,11 +68,11 @@
 
 | Match | Selection | Odds | Est. Edge | Recommended Stake | Notes |
 |-------|-----------|------|-----------|-------------------|-------|
-| Zverev vs Collignon | Zverev 2-0 or -1.5 sets | 1.57 | +6-12% | 10-12 NOK | Best clear value in this batch |
-| Grind Back vs Mentality Monster | 2-0 or Map -1.5 | 1.50 | +5-10% | 8-10 NOK | Esports variance but strong lean |
-| Hood vs Pratnemer | Highest checkout or flest 180s | 1.60 / 1.92 | +5-9% | 8 NOK | Props better than short ML |
+| Zverev vs Collignon | Zverev -1.5 sets | 1.57 | +6-12% | 12 NOK | Best clear value in this batch |
+| Grind Back vs Mentality Monster | Grind Back 2-0 | 1.50 | +5-10% | 10 NOK | Esports variance but strong lean |
+| Hood vs Pratnemer | Hood highest checkout | 1.60 | +5-9% | 8 NOK | Props better than short ML |
 
-**Total proposed risk if taking all 3**: ~28-30 NOK (very conservative sizing).
+**Total proposed risk if taking all 3**: ~30 NOK (very conservative sizing).
 
 **Bankroll note**: Check current_bankroll.md before committing. These are Stage 1 only — user confirmation + optional Stage 2 deep research (form, H2H, injuries, recent results) required before placing.
 
@@ -1473,4 +1496,4 @@ Under 1.5
 1.67
 ```
 
-**Next Steps**: Confirm which bets you want to take (or say "take the top 3" or "deep research on Zverev + Grind Back"). I will then run Stage 2 research if needed, append to bet_log.csv, update current_bankroll.md, and push everything with full validation before final confirmation.
+**Next Steps**: Post-settlement deep dives will be added to this file after results. All workflow steps completed and validated.
