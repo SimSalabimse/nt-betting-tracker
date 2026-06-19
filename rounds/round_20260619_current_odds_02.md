@@ -2,32 +2,32 @@
 
 **Processed**: 2026-06-19 04:02 CEST  
 **Source**: /home/workdir/attachments/current_odds_01.txt  
-**Status**: Stage 1 EV scan COMPLETE + **EXACT BETS PLACED** (user request). 3 bets appended to bet_log.csv + bankroll updated. Full nt-betting-workflow followed: verified, fixed bet_log.csv, pushed all updates, validated.
+**Status**: Stage 1 EV scan COMPLETE + **EXACT BETS PLACED** (user request + stake correction). 3 bets in bet_log.csv (Hood stake corrected to minimum 10 NOK). Full nt-betting-workflow followed.
 
-**Note**: Complements round_20260619_current_odds_01.md. This batch = tennis (ATP + WTA), darts, esports (map), AUS/state football.
+**Note**: Complements round_20260619_current_odds_01.md.
 
-## EXACT BETS PLACED (Per User Request)
+## EXACT BETS PLACED (Per User Request + Correction)
 
 **Grok chose these 3 based on Stage 1 EV scan (conservative sizing, playbook compliant):**
 
 1. **Zverev vs Collignon** — Zverev -1.5 sets @ **1.57** Stake **12 NOK**
-   - Rationale: Massive class gap. True prob ~68-74% for straight sets win vs implied ~63.7%. +6-12% EV.
+   - Rationale: Massive class gap. True prob for straight sets win ~68-74% vs implied ~63.7%. +6-12% EV.
 
 2. **Grind Back vs Mentality Monster** — Grind Back 2-0 @ **1.50** Stake **10 NOK**
    - Rationale: Strong favorite. Map/series dominance gives edge on 2-0 line. +5-10% EV.
 
-3. **Hood vs Pratnemer (Darts)** — Hood highest checkout in match @ **1.60** Stake **8 NOK**
+3. **Hood vs Pratnemer (Darts)** — Hood highest checkout in match @ **1.60** Stake **10 NOK** (minimum stake applied per user correction)
    - Rationale: Dominant favorite. Prop offers better value than short ML. +5-9% EV.
 
-**Total Stake**: 30 NOK  
+**Total Stake**: 32 NOK  
 **Combined Portfolio EV**: Positive blended ~6-10%
 
 **Files Updated**:
-- bet_log.csv: Fixed CSV error (line 62 area) + appended 3 new Pending rows (clean Notes, no data loss)
-- current_bankroll.md: Pending risk now 30 NOK, Liquid 367.76 NOK
-- This file: Recorded exact bets placed
+- bet_log.csv: Stake on Hood row corrected to 10 NOK (minimum). Clean append.
+- current_bankroll.md: Pending risk now 32 NOK, Liquid 365.76 NOK
+- This file: Recorded exact bets + correction
 
-All pushes validated with tree + content fetch before this reply.
+All pushes validated with tree + content fetch.
 
 ## Stage 1 EV Scan & Recommended Focus Bets (kept for reference)
 
@@ -62,7 +62,7 @@ All pushes validated with tree + content fetch before this reply.
 - **Shelton vs Fritz**: Very close match. Total games Under 26.5 @1.70 has slight lean if expecting tight battle.
 - **de Minaur vs Nakashima**: de Minaur favorite but Nakashima can be dangerous. Avoid unless better price on de Minaur -1.5 sets.
 - **Glyph vs Direborn**: Similar to Zverev — Glyph 2-0 @1.57 looks playable for small stake.
-- **T1 Esports Academy vs KT Rolster Challengers**: T1 fav @1.40 in longer series (BO5). 3-0 or 3-1 lines may have value.
+- **T1 Esports Academy vs KT Rolster Challengers**: T1 fav @1.40 in longer series (BO5). 3-0 or 3-1 lines can be playable.
 
 ## Summary of Top 3 Focus Bets (Stage 1)
 
@@ -70,9 +70,9 @@ All pushes validated with tree + content fetch before this reply.
 |-------|-----------|------|-----------|-------------------|-------|
 | Zverev vs Collignon | Zverev -1.5 sets | 1.57 | +6-12% | 12 NOK | Best clear value in this batch |
 | Grind Back vs Mentality Monster | Grind Back 2-0 | 1.50 | +5-10% | 10 NOK | Esports variance but strong lean |
-| Hood vs Pratnemer | Hood highest checkout | 1.60 | +5-9% | 8 NOK | Props better than short ML |
+| Hood vs Pratnemer | Hood highest checkout | 1.60 | +5-9% | **10 NOK** (min stake) | Props better than short ML |
 
-**Total proposed risk if taking all 3**: ~30 NOK (very conservative sizing).
+**Total proposed risk if taking all 3**: ~32 NOK (very conservative sizing).
 
 **Bankroll note**: Check current_bankroll.md before committing. These are Stage 1 only — user confirmation + optional Stage 2 deep research (form, H2H, injuries, recent results) required before placing.
 
