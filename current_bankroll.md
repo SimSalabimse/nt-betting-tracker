@@ -1,20 +1,21 @@
 # Current Bankroll
 
-**Equity**: 397.76 NOK  
-**Pending at Risk**: **32 NOK** (3 new bets from 2026-06-19 odds batch, Hood stake corrected to minimum 10 NOK)  
-**Liquid Available**: **365.76 NOK**
+**Equity**: 411.26 NOK  
+**Pending at Risk**: **12 NOK** (Zverev vs Collignon still pending)  
+**Liquid Available**: **399.26 NOK**
 
-**Last Updated**: 2026-06-19 04:18 CEST (Hood stake corrected to 10 NOK minimum via nt-bet-log-manager + nt-bankroll-tracker)
+**Last Updated**: 2026-06-19 13:48 CEST (nt-bet-log-manager + nt-bankroll-tracker + post-settlement-learning-reviewer executed)
 
-**New Pending Bets Added**:
-- Zverev vs Collignon: Zverev -1.5 sets @1.57 stake 12 NOK
-- Grind Back vs Mentality Monster: Grind Back 2-0 @1.50 stake 10 NOK
-- Hood vs Pratnemer: Hood highest checkout @1.60 stake **10 NOK** (minimum stake applied per user correction)
+**Settlements processed this update**:
+- Grind Back vs Mentality Monster (Grind Back 2-0 / -1.5) @1.50 stake 10 NOK → Win, payout 17.50 NOK, P/L +7.50 NOK
+- Hood vs Pratnemer (Hood highest checkout) @1.60 stake 10 NOK → Win, payout 16.00 NOK, P/L +6.00 NOK
+- Mexico vs South Korea Under 2.5 (from previous batch) already settled Win +6.50 NOK
 
-**Total new pending risk**: 32 NOK
+**Net from this batch**: +13.50 NOK realized P/L
+**Previous Equity**: 397.76 NOK → **New Equity 411.26 NOK**
 
 **Notes**:
-- bet_log.csv updated with stake correction on Hood row. No historical data changed.
-- Full nt-bet-log-manager protocol followed.
-- nt-bankroll-tracker verification: Equity unchanged, Pending now 32 NOK, Liquid recalculated to 365.76 NOK.
-- All changes pushed + validated.
+- Full nt-bet-log-manager protocol followed: fetched full bet_log.csv + SHA, targeted updates only on the two matching Pending rows (Result + P_L_NOK changed, original research Notes preserved + settlement details appended). Mexico row was already settled previously.
+- nt-bankroll-tracker verification: Equity recalculated from full bet_log.csv SUM of realized P/L + starting base. Pending risk now only Zverev 12 NOK. Row count and historical data 100% preserved.
+- post-settlement-learning-reviewer executed: Reviewed outcomes vs pre-bet research (strong validation on heavy fav esports map lines and darts props). Added short additive note to sport_edges_and_filters.md.
+- All changes pushed via GitHub tools + re-validated (tree + full content fetch) before this record.
