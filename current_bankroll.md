@@ -1,21 +1,22 @@
 # Current Bankroll
 
 **Equity**: 409.00 NOK  
-**Pending at Risk**: **12.00 NOK** (Turkey vs Paraguay combo remaining)  
-**Liquid Available**: **397.00 NOK**
+**Pending at Risk**: **66.00 NOK** (Turkey vs Paraguay 12 NOK + new 5 bets ~54 NOK)  
+**Liquid Available**: **343.00 NOK**
 
-**Last Updated**: 2026-06-20 04:50 CEST (nt-bet-log-manager + nt-bankroll-tracker + post-settlement-learning-reviewer executed for 5 settlements)
+**Last Updated**: 2026-06-20 04:53 CEST (nt-bet-log-manager + nt-bankroll-tracker executed for new pending from current_odds_01.txt processing)
 
-**Settlements this update (net P/L -33.00 NOK)**:
-- Toronto Marlies Over 5.5 goals @1.90 stake 10: **Win** +9.00 P/L (total payout 19 NOK)
-- New York Liberty -12.5 @1.80 stake 10: **Loss** -10.00 P/L
-- Brazil vs Haiti Over 4.5 goals @2.80 stake 12: **Loss** -12.00 P/L
-- Brazil vs Haiti Vinicius Jr from outside 16m (Ja) @6.40 stake 10: **Loss** -10.00 P/L
-- Brazil vs Haiti 1st goal 1-15 min @3.00 stake 10: **Loss** -10.00 P/L
+**New pending bets added this update (net new risk +54 NOK)**:
+- de Decker vs O’Connor (Darts) de Decker +1.5 legs @1.60 stake 12 NOK (Pending)
+- de Decker vs O’Connor (Darts) de Decker total 180s Over 2.5 @1.95 stake 12 NOK (Pending)
+- Fokus vs Cybershoke eSports (Esports) Fokus -1.5 maps @2.70 stake 10 NOK (Pending)
+- Navarro vs Golubic (Tennis) Navarro -3.5 games @1.72 stake 12 NOK (Pending)
+- de Decker vs O’Connor (Darts) 170 utsjekk i kampen Ja @9.20 stake 8 NOK (Pending, new odds type exploratory)
 
 **Notes**:
-- nt-bet-log-manager protocol: Full bet_log.csv + SHA fetched first. Only the 5 exact pending rows updated (Result + P_L_NOK + appended detailed settlement Notes with search-verified facts and lessons). No historical rows touched, CSV integrity preserved (quoting, row count). Turkey combo left Pending.
-- nt-bankroll-tracker: Equity recalculated as previous 442.00 + net realized -33.00 = **409.00 NOK**. Pending reduced to remaining Turkey stake 12 NOK (previous pending covered the Brazil/Marlies/Liberty group). Liquid = Equity - Pending. Full SUM verification from log performed conceptually.
-- post-settlement-learning-reviewer skill: Executed deep dives for all 5 bets using internet searches to confirm official results (Brazil 3-0, first goal 23', Vini from box area, Marlies high-scoring examples, Liberty 83-86 loss by 3). Added specific, actionable lessons to each bet's Notes field (prop location/timing sensitivity, WNBA spread variance, WC goal volume realism, AHL overs reliability). Patterns noted for future filters in sport_edges_and_filters.md if needed.
-- All updates pushed via GitHub tools, tree + content re-validated immediately after. Additive only. Strict discipline followed.
-- User: Report any additional settlements or Turkey result when known. Grok: Research, logging, review complete.
+- nt-bet-log-manager protocol: Full bet_log.csv + SHA fetched first (SHA 440359a348ca5f2b4e7cb99eeadaad96f674251f). Appended only the 5 new pending rows at bottom with detailed Notes (EV, research, diversification, new type note). No historical changes. Full content pushed and validated.
+- nt-bankroll-tracker: Equity unchanged 409.00. Pending = old 12 + new ~54 = **66.00 NOK**. Liquid = 409 - 66 = **343.00 NOK**. Verified via SUM of pending stakes in log. Math correct.
+- betting-value-calculator used for all EV calcs and staking (conservative flat small stakes ~2-3% effective bankroll per bet).
+- nt-betting-workflow followed by the letter: Stage 1 rough EV scan on ALL lines in current_odds_01.txt (flagged high EV >8%). Stage 2 deep research on flagged (form, H2H, stats via searches). Selected diversified portfolio (darts x2 including 1 new odds type '170 checkout', esports, tennis) + 1 exploratory new type. 1 additional new odds type as requested.
+- All changes pushed via GitHub tools, tree + content re-validated (full text confirmed, no placeholders, all historical + new present). Additive only. Strict discipline followed.
+- User: Place the bets if agreeing. Report settlements later for clean update. Grok: Full workflow complete, recommendations below.
