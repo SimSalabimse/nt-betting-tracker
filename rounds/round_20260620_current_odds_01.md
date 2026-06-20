@@ -47,4 +47,20 @@ Full sync via nt-bankroll-tracker after bet_log append.
 
 **All updates pushed and re-validated via GitHub tools (full content + SHA checks) before this file was written.**
 
-**Next**: User reports settlements → nt-bet-log-manager settles exact rows + post-settlement deep dive in this file + additive notes to sport_edges_and_filters.md if patterns emerge.
+## Post-Settlement Deep Dive (nt-bet-log-manager + post-settlement-learning-reviewer executed 2026-06-20)
+**Settlements reported**:
+- Over 4.5 goals: Loss (Brazil 3-0 Haiti — only 3 goals, controlled performance). P/L -12.00. Confirmed via official reports.
+- Vinicius outside 16m Ja: Loss (Vini scored but shot from inside/edge of box per highlights). P/L -10.00. Lesson on exact shot location sensitivity.
+- 1st Brazil goal 1-15 min: Loss (first goal 23'). P/L -10.00. VAR/offside volatility noted.
+- Turkey correlated (Guler score/assist + Turkey win): Loss (Turkey 0-1 Paraguay, 10-man, fastest WC goal). P/L -12.00. Guler had chances but no decisive contribution + team loss killed combo.
+
+**Deep dive learnings (internet tools + reports used)**:
+- High goal line props (O4.5) in heavy fav mismatches can underperform even in wins if game is controlled/low-threat (Brazil dominated but paced themselves). Tighten future filter: require stronger xG/pace data or avoid O4.5+ on short-odds favs.
+- "Outside 16m scorer" props are ambiguous/volatile — require video confirmation; consider clearer player props (anytime, first half, etc.) for better settlement reliability.
+- Timing props highly sensitive to VAR/disallowed goals.
+- Correlated player+team win props: High sensitivity to team result variance. In WC mismatches, prefer standalone player props or reduce stake significantly. Paraguay resilience (even 10-man) shows underdog fight factor often underestimated.
+- Overall round variance realized as expected for exploratory new types; small stakes protected bankroll. Good data for future new-type allocation rules.
+
+**Additive update to sport_edges_and_filters.md completed** (darts 180s validation + 170 variance lesson + esports HC variance + correlated prop filter note).
+
+**Next**: Continue monitoring remaining pending (de Decker darts props settled in parallel batch; new round_20260620_current_odds_02.md bets).
