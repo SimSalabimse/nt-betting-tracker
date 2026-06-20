@@ -1,14 +1,16 @@
 # Current Bankroll
 
-**Equity**: 398.80 NOK  
-**Pending at Risk**: **46.00 NOK** (Navarro tennis 12 NOK + new 3 bets 34 NOK from round_20260620_current_odds_03.md)  
-**Liquid Available**: **352.80 NOK**
+**Equity**: 400.00 NOK  
+**Pending at Risk**: **10.00 NOK** (Gentle Mates vs Ex-Ruby esports -1.5 maps pending only)  
+**Liquid Available**: **390.00 NOK**
 
-**Last Updated**: 2026-06-20 14:56 CEST (nt-bet-log-manager appended 3 new pending bets from new current_odds_01.txt + nt-bankroll-tracker recalc. 1 new esports type exploration included. All GitHub pushes validated with tree/SHA/content re-read before reply.)
+**Last Updated**: 2026-06-20 17:43 CEST (nt-bet-log-manager settled 3 rows from round_20260620_current_odds_03.md exactly + nt-bankroll-tracker full recalc. post-settlement-learning-reviewer deep dives added to round file + sport_edges_and_filters.md. All pushes validated with tree/SHA/content re-read.)
 
-**New pending bets logged (from new current_odds_01.txt + nt-betting-workflow)**:
-- Spjelkavik vs Orkla Over 2.5 goals @1.45 stake 12 NOK (Pending)
-- Kvik Halden vs Sotra BTTS Ja @1.38 stake 12 NOK (Pending)
-- Gentle Mates vs Ex-Ruby (Esports) Gentle Mates -1.5 maps @2.35 stake 10 NOK (Pending - NEW ODDS TYPE / new sport exploration, 1 additional per user request)
+**Settlements processed (from round_20260620_current_odds_03.md pending)**:
+- Navarro vs Golubic Navarro -3.5 games: Win +8.64 NOK (payout 20.64)
+- Kvik Halden vs Sotra BTTS Ja: Win +4.56 NOK (payout 16.56)
+- Spjelkavik vs Orkla Over 2.5 goals: Loss -12.00 NOK
 
-**Validation notes**: bet_log.csv new SHA 3dc1c1f777efeb5655a5a6bebf27c19f44ae45eb (size 45612). Full workflow followed by the letter. Remaining Navarro pending active.
+**Net P/L from this batch**: +1.20 NOK | Equity adjusted. Remaining pending: only Gentle Mates esports @10 NOK.
+
+**Validation**: bet_log.csv SHA 4b1e8136815200485ee29308aba3c454072f7613 (size 46769). Workflow followed by the letter.
