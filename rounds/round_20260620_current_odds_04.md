@@ -2,16 +2,25 @@
 
 **Date**: 2026-06-20 (late batch) | **Source**: /home/workdir/attachments/current_odds_01.txt (new 15kB mixed odds dump) | **Workflow**: nt-betting-workflow (full Stage 1 rough EV scan across every single line + Stage 2 deep research on flagged high-EV candidates) + betting-value-calculator + nt-bet-log-manager + nt-bankroll-tracker
 
+**Bets placed (exact) - User confirmed all 3 recommended**:
+1. Frigg vs Lokomotiv Oslo — Over 3.5 goals @1.45 stake **12 NOK**
+2. Almeria vs Malaga — Begge lag scorer Ja @1.72 stake **12 NOK**
+3. Nathan Aspinall vs Jim Long (Darts) — Aspinall totalt antall 180s Over 2.5 @1.65 stake **10 NOK** (NEW ODDS TYPE exploration)
+
+**Total stake placed**: 34 NOK | **New pending risk added**: 34 NOK (logged via nt-bet-log-manager)
+
 **Strict adherence**:
-- Stage 1: Every market line scanned for rough EV ≥7-8%+ (implied vs est true from form, H2H, league trends, styles, motivation).
-- Stage 2: Deep research (previews, recent form, H2H, xG proxies, surface/venue for darts, map records for esports) on promising edges only.
-- New odds types/new sports: **1 additional** exploratory (e.g. darts 180s or esports map props beyond usual).
-- Diversification + min 10 NOK enforced. Max ~2 per category/sport where possible.
-- Autonomous decisions. Ready-to-place. Will append via GitHub tools after full SHA/content verification on confirmation.
-- All pushes validated (tree, full content + SHA pre-update, post-push re-verify with tree + re-read) before reply.
+- Stage 1: Every market line scanned for rough EV ≥7-8%+.
+- Stage 2: Deep research on flagged candidates (form, H2H, xG proxies, motivation, surface for tennis, map records for esports).
+- New odds types/new sports: **1 additional** — darts 180s prop as the extra exploration beyond usual.
+- Autonomous decisions. Ready-to-place. Appended via GitHub tools after full verification.
+- All pushes validated (tree, full content + SHA, post-push re-verify) before reply.
+
+**Summary of User Action**
+User confirmed and placed all 3 recommended bets on Norsk Tipping exactly as proposed. nt-bet-log-manager appended the exact pending rows to bet_log.csv (full fetch + SHA first, append-only). nt-bankroll-tracker updated current_bankroll.md with new pending total (now 78 NOK pending including prior + these). All pushes validated with tree + full content/SHA re-read before this update.
 
 ## Summary of Selected Bets (Ready-to-Place on Norsk Tipping)
-**Total new stake**: 34 NOK | **New pending risk**: +34 NOK
+**Total new stake**: 34 NOK | **New pending risk**: +34 NOK | **Updated totals**: Equity 400 NOK | Pending at Risk 78 NOK | Liquid 322 NOK
 
 **Exact bets**:
 1. **Frigg vs Lokomotiv Oslo** — Over 3.5 goals @1.45 stake **12 NOK**
@@ -52,14 +61,13 @@ This round tested/added:
 Post-settlement: Will run deep dive on hit rate for 180s prop and add patterns to sport_edges_and_filters.md (additive only).
 
 ## Bankroll & Log Sync
-All 3 new pending rows will be appended to bet_log.csv via nt-bet-log-manager protocol (full fetch + SHA + append-only + validation) **on user confirmation**. current_bankroll.md recalculated and updated post-append. Both pushed + re-validated (tree + content read) before any final reply. No overwrites of history.
+All 3 new pending rows appended to bet_log.csv via nt-bet-log-manager protocol (full fetch + SHA + append-only + validation). current_bankroll.md recalculated and updated. Both pushed + re-validated (tree + content read) before reply. No overwrites of history.
 
-**All GitHub updates (new round file) pushed and re-validated per strict style guide and nt-betting-workflow before this response.**
+**All GitHub updates (new round file, bet_log append, bankroll sync, this round file update) pushed and re-validated per strict style guide and nt-betting-workflow before this response.**
 
 ## Next Steps
-- User reviews shortlist and confirms exact bets/stakes (or adjustments, e.g. swap one for WNBA total or esports if preferred).
-- On confirmation: nt-betting-workflow triggers nt-bet-log-manager (append pending rows) + nt-bankroll-tracker update + append exact placed details to this round file.
-- Monitor live + post-match for settlements → post-settlement-learning-reviewer deep dive (additive learning on new types).
-- Continue strict EV discipline, bankroll rules, and diversification.
+- Monitor live + post-match for settlements on these 3 + remaining pending (Gentle Mates esports).
+- On settlement report: nt-bet-log-manager settles exact rows + post-settlement-learning-reviewer deep dive (additive learning on new types) + nt-learning-reviewer tracker update.
+- Continue strict EV discipline, bankroll rules, and additive learning.
 
 **Workflow complete for this odds file. All changes validated on GitHub.**
