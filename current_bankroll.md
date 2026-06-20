@@ -1,22 +1,14 @@
 # Current Bankroll
 
 **Equity**: 383.78 NOK  
-**Pending at Risk**: **0 NOK** (all reported settlements processed)  
-**Liquid Available**: **383.78 NOK**
+**Pending at Risk**: **37 NOK** (new 2026-06-21 round: Ecuador clean sheet 15 NOK + Tunisia/Japan Over 2.5 12 NOK + Hannibal Mejbri yellow 10 NOK)  
+**Liquid Available**: **346.78 NOK**
 
-**Last Updated**: 2026-06-21 00:13 CEST (nt-bet-log-manager + nt-bankroll-tracker + post-settlement-learning-reviewer executed full batch from user report: Germany round 3 wins 1 loss + Almeria mixed + vG darts loss + Frigg updated to win + Phoenix not placed. Full recalc + verification. All GitHub pushes validated with tree/SHA/content re-read.)
+**Last Updated**: 2026-06-21 (nt-bet-log-manager + nt-bankroll-tracker executed after user confirmation on ref stats check + proceed to log. Ref: István Kovács (Romania) for Tunisia vs Japan 1000th WC match; ~4.31 YC avg context + Tunisia physical style supports elevated card probability for Mejbri prop. Full workflow followed.)
 
-**Settlements processed this batch**:
-- Germany win (HUB) @1.45 stake 12 NOK: Win +5.40 NOK (payout 17.40 NOK)
-- Germany BTTS Ja @1.70 stake 10 NOK: Win +7.20 NOK (payout 17.20 NOK)
-- Germany corners Over 5.5 @1.60 stake 10 NOK: Win +6.50 NOK (payout 16.50 NOK)
-- Florian Wirtz To Score Or Assist + Germany Win @1.85 stake 10 NOK: Loss -10.00 NOK
-- Almeria win bet: Loss -10.00 NOK
-- Almeria BTTS Ja: Win +10.64 NOK (payout 20.64 NOK)
-- Michael van Gerwen -1.5 legs: Loss -12.00 NOK
-- Frigg Over 3.5 goals (old bet updated): Win +7.40 NOK (payout 17.40 NOK, late goal)
-- Phoenix Mercury -6.5 (incl. OT) @1.75 stake 10 NOK: **Not placed** (Norsk Tipping down at match time) — 0 NOK impact
+**New pending bets logged (2026-06-21 round_20260621_current_odds_01.md)**:
+- Ecuador vs Curacao: Ecuador clean sheet (Ja) @1.52 stake 15 NOK — Core mismatch clean sheet (controlled performance expected per deep research).
+- Tunisia vs Japan: Over 2.5 goals @2.00 stake 12 NOK — Core tactical/open game total.
+- Tunisia vs Japan: Hannibal Mejbri yellow card (Ja) @3.00 stake 10 NOK — Exploratory learning (physical player with 10 YC in 27 PL ~0.37/game; Tunisia physical style + high-tension must-win WC; ref context supports). User 0 faith in Draw — replaced per preference. Risk worth it on small stake per data.
 
-**Net P/L this batch**: +5.14 NOK | Equity adjusted from 378.64 NOK.
-
-**Validation**: bet_log.csv updated via nt-bet-log-manager (full fetch + SHA 0e3eac95b44f464b59a5feaa50e7656c81343622 before edits; targeted Result/P_L/Notes updates on matching rows + Frigg correction). nt-bankroll-tracker full recalc verified. post-settlement-learning-reviewer deep dives added to relevant round files. Workflow followed by the letter.
+**Validation**: bet_log.csv appended via nt-bet-log-manager (full fetch + SHA before edit; append-only pending rows, Result=Pending, P_L empty, detailed Notes with round + research). nt-bankroll-tracker full recalc verified. All GitHub pushes re-validated with tree + full content read. No skips on nt-betting-workflow or playbook rules.
