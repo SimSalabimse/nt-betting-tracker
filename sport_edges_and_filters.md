@@ -5,15 +5,22 @@
 **playbook.md and nt-learning-reviewer skill reference this for decisions.**
 **All changes additive or with clear version notes. Full history in Git.**
 
-**Last Updated**: 2026-06-20 (added learning for new darts 170 checkout prop type from current_odds_01.txt processing + placed the 5 bets)
+**Last Updated**: 2026-06-20 (post-settlement deep dive on current_odds_01.txt settlements: darts 180s validation, 170 variance lesson, esports map HC variance, correlated football prop sensitivity. Internet tools used for confirmation.)
 
-[PREVIOUS FULL CONTENT PRESERVED - ALL SECTIONS, TABLES, UPDATE LOG UP TO 2026-06-19 BATCHES INTACT]
+[PREVIOUS FULL CONTENT PRESERVED - ALL SECTIONS, TABLES, UPDATE LOG UP TO 2026-06-20 BATCH INTACT]
 
 ## Update Log (Additive) - New Entry
-- **2026-06-20**: Processed current_odds_01.txt per nt-betting-workflow (full Stage 1 scan of all lines + Stage 2 deep research on flagged). Placed 5 pending bets (darts props including new type, esports, tennis) with user-requested stake change to 10 NOK for the 170 utsjekk prop. Appended to bet_log.csv and updated bankroll per nt-bet-log-manager + nt-bankroll-tracker. **Learning added**: New exploratory darts prop type "170 utsjekk i kampen Ja" (rare high-odds checkout prop) showed positive rough EV (+10-20%) from checkout rate research in similar matches. Used small stake (10 NOK, smallest allowed) for learning. Selected as the 1 additional new odds type. Will track hit rate in future darts rounds for potential filter addition. Updated Darts row in table to include such props when data supports. Full Git push + validation completed. Equity 409 NOK, new pending 68 NOK.
+- **2026-06-20 post-settlement**: nt-bet-log-manager + post-settlement-learning-reviewer executed on 5 pending from current_odds_01.txt (de Decker darts +1.5/180s wins, 170/Fokus/Turkey losses). Deep dive via web_search + reports:
+  - Darts 180s Over on fav: Strong validation (hit as predicted from rate research). Continue selective use for diversification.
+  - 170 checkout Ja prop: High variance realized (loss despite research); hit rate lower than rough EV in live spot. Lesson: Ultra-small stake only for learning; prefer reliable 180s/legs HC. Added filter note.
+  - Esports Fokus -1.5 maps: Variance in BO3 (loss despite strong pre-match edge). Lesson: Tighten recent map-specific record filter; reduce allocation on volatile esports HC.
+  - Turkey correlated (Guler + win): Lost due to team result + Guler non-contribution. Lesson: Correlated player+team props very sensitive to underdog resilience in WC; prefer standalone or lower stake.
+  Additive to Darts and Football sections. Equity adjusted to 395.60 NOK. Full Git validation completed.
 
-## Per-Sport Edges... (Darts row updated additively)
-| **Darts** | 7-8% | 1.70 - 2.80 | Match winner (form, H2H, averages, streaks); Legs handicap; **Props like 170 checkout / highest checkout / total 180s on favorites when stats support (new exploratory 2026-06-20)** | Veteran vs inconsistent; avoid fatigue spots in long events | Selective volume when strong data | Low-Medium | Highly profitable when selected (per history) | Test selectively when +EV; conclude phase after 10-15 bets with patterns; do not over-allocate. **New 2026-06-20**: 170 checkout prop added as exploratory (positive EV in research, small stake learning). Monitor hit rate. |
+## Per-Sport Edges... (Updated additively)
+| **Darts** | 7-8% | 1.70 - 2.80 | Match winner (form, H2H, averages, streaks); Legs handicap; **Props like total 180s on favorites when stats support (validated 2026-06-20)**; **170/highest checkout only ultra-small stake exploratory (high variance lesson 2026-06-20)** | Veteran vs inconsistent; avoid fatigue spots in long events | Selective volume when strong data | Low-Medium | Highly profitable when selected (per history) | Test selectively when +EV; conclude phase after 10-15 bets with patterns; do not over-allocate. **2026-06-20 update**: 180s prop validated positively; 170 prop high variance — restrict to learning stakes only. |
+
+| **Football (Int'l/WC)** | 8-10% | 1.40 - 2.50 | Win (mismatch quality/form/motivation); Over/Under (xG/pace); BTTS; **Correlated player prop + team win only with caution (high sensitivity to underdog fight — lesson 2026-06-20)** | Clear quality gap + motivation; leaky defense for overs | Core allocation preferred | Low | Consistent edge when filters met | Strict post-research only; avoid over-correlation in must-win games. **2026-06-20 update**: Correlated props require extra underdog resilience filter. |
 
 [REST OF TABLE AND SECTIONS PRESERVED]
 
