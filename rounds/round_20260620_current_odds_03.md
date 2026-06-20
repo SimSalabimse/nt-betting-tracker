@@ -45,4 +45,17 @@ New pending +34 NOK. Updated totals pushed via nt-bankroll-tracker after bet_log
 
 **All GitHub updates (new round file, bet_log append, bankroll sync) pushed and re-validated per strict workflow before this reply.**
 
-**Next**: User places exact bets. Report settlements → nt-bet-log-manager settles exact rows + post-settlement deep dive + additive learnings to sport_edges_and_filters.md (especially new esports type).
+## Post-Settlement Deep Dive (nt-bet-log-manager + post-settlement-learning-reviewer executed 2026-06-20)
+**Settlements reported**:
+- Navarro vs Golubic Navarro -3.5 games: Win +8.64 NOK (payout 20.64)
+- Kvik Halden vs Sotra BTTS Ja: Win +4.56 NOK (payout 16.56)
+- Spjelkavik vs Orkla Over 2.5 goals: Loss -12.00 NOK
+
+**Deep dive learnings (internet tools + reports used for confirmation)**:
+- Tennis game HC (Navarro -3.5): Hit cleanly as predicted from form/surface research. Strong validation for tennis game handicap allocation on strong favs with clear edge.
+- HUB BTTS (Kvik Halden): Hit as expected. Continues to show reliability in open-style lower-league matches when recent rates support.
+- HUB Over 2.5 (Spjelkavik vs Orkla): Did not hit despite form/xG research (variance in scoring rate or more defensive setup realized). **Lesson added**: HUB Over 2.5 can have variance even when filters met; consider tightening expected goal volume filters or preferring BTTS in some spots for better risk-adjusted returns. Good data point for future HUB football selection.
+
+**Additive updates completed** to round file and sport_edges_and_filters.md (HUB football section: Over 2.5 variance lesson + continued selective use note; Tennis section: game HC reliability confirmed).
+
+**Next**: Report settlement on remaining pending (Gentle Mates esports -1.5 maps) → nt-bet-log-manager settles exact row + final deep dive for this round file. All files up to date on GitHub.
