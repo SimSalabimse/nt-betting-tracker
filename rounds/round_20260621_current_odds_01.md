@@ -100,7 +100,7 @@ User: Place exactly these on Norsk Tipping if accepted. Report back exact placed
 - **Min stake**: Both >10 NOK. Adjusted up slightly for liquidity/EV.
 - **EV/staking**: Internal betting-value-calculator applied (true prob est x odds -1). Conservative estimates used (no over-optimism). Blended portfolio EV positive. Max risk per round per bankroll rules.
 - **Exploration note**: Clean sheet prop is additive per recent post-settlement learnings (more reliable than some timing/outside-box in controlled mismatches). Will track in nt-learning-reviewer.
-- **High-odds avoidance**: No >4.0 lines selected (per new guidelines in sport_edges_and_filters.md).
+- **High-odds avoidance**: No >4.0 lines selected in main portfolio (per new guidelines in sport_edges_and_filters.md — high variance observed in recent 6.40/9.20/3.00 examples).
 
 ## Bankroll & Log Integration
 Pending these bets: Will trigger nt-bet-log-manager (full bet_log.csv fetch + SHA first) + nt-bankroll-tracker update ONLY after user confirms placement and reports exacts (any stake/odds tweaks). Current pending risk not yet added. Equity/liquid from current_bankroll.md verified in parallel (no change yet).
@@ -115,3 +115,29 @@ Pending these bets: Will trigger nt-bet-log-manager (full bet_log.csv fetch + SH
 All changes additive, validated, pushed per strict GitHub discipline (full content, SHA where applicable, re-verify before any user reply). No skips on rules from playbook/nt-betting-skills.md.
 
 **References**: playbook.md (2026-06-20 rules), nt-betting-skills.md (Option A flow, new reviewer skills), sport_edges_and_filters.md (for category status).
+
+---
+
+## User Query Follow-Up: Exploratory / High-Odds (>4.0) Bets
+
+**Answer to your question**: In the initial run I followed the current high-odds guidelines strictly (from sport_edges_and_filters.md 2026-06-20 section): ultra-exploratory only, max **1 per round**, ultra-small stake (hard min 10 NOK), pure learning/data collection bucket, deep dive required, high variance acknowledged from recent examples (multiple losses on 6.40 Vini outside-box, 9.20 170 checkout, 3.00 timing, etc.). Most >4.0 lines in these two matches are low-probability underdog scorer/combo props with very limited specific historical hit-rate data and high ambiguity/variance — not strongly supported as "winners" beyond lottery tickets. I therefore kept the main portfolio clean and conservative (2 bets only).
+
+**However**, per your request and to test what the data supports: I re-scanned **all high-odds (>4.0) lines** in the provided current_odds_01.txt + cross-referenced with Stage 2 research. One borderline candidate stands out with relatively better supporting factors than the rest:
+
+**Exploratory High-Odds Add-On (max 1 allowed per rules)**:
+- **Tunisia vs Japan — Uavgjort (Draw) @4.10** stake **10 NOK** (ultra-small, learning allocation)
+
+**Why this one (data support)**:
+- Implied probability ~24.4%.
+- Research (previews + context): Japan slight technical favorite but game expected open/tactical/competitive. Both teams highly motivated (knockout implications in expanded WC). Tunisia physical/set-piece threat + pride factor after heavy loss; Japan not dominant in recent similar spots. True draw probability est. 26–30%+ (some books price draw around +300–350). Slight +EV edge for pure exploratory purposes.
+- Clear, non-ambiguous outcome (unlike many scorer-location or exact-timing props).
+- Fits high-odds guidelines: max 1/round, 10 NOK hard min, learning-focused, will get full post-settlement video/context verification + tracker update via nt-learning-reviewer.
+- Does **not** violate diversification (added as 3rd small exploratory; main 2 bets remain core).
+
+**If you want to include it**: Place the original 2 + this Draw @4.10 for 10 NOK (total stake now 37 NOK). Report back exacts. I will then update the round file + log + bankroll with full SHA verification.
+
+**Risk note**: This is high-variance learning bet per 2026-06-20 guidelines. Hit rate expected lower than core bets. Only for data collection. If 3+ consecutive high-odds losses, we pause the bucket.
+
+**No other >4.0 lines** passed the "data supports can be a winner + deep dive" threshold strongly enough (most Curacao/Tunisia underdog props too speculative given team quality gap and limited specific stats). Clean sheet and Over 2.5 remain the strongest supported edges.
+
+**All updates additive**. Repo re-verified before/after this edit.
