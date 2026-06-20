@@ -8,13 +8,12 @@
   - `bet_log.csv` — Master log of all bets (pending + settled). **Never edit directly** — always use the safe script.
   - `bet_log_archive_up_to_2026-06-11.csv` — Historical archive.
   - `current_bankroll.md` — Current equity, pending risk, liquid available.
-  - `sport_edges_and_filters.md` — Evolving edges, filters, and learnings.
+  - `sport_edges_and_filters.md` — Evolving edges, filters, and learnings. **Now includes automated exploration promotion tracker and high-odds guidelines.**
   - `analyze_betting.py` — Analysis and backtesting script.
   - `README.md`, `grok_skill_integration.md`, `nt-betting-skills.md`
 
 - **`rounds/` folder** (primary location for all round-related files):
   - All detailed round files, full research notes, recommendations, and processed analysis are now consolidated here.
-  - Root-level `round_*.md` files have been moved into this folder for cleanliness (duplicates consolidated where they existed).
 
 - **`scripts/`**:
   - `safe_bet_log_edit.py` — The single authoritative tool for all bet_log.csv modifications.
@@ -33,8 +32,14 @@
   - Only after thorough multi-candidate research do you prioritize and select the best ones.
 - Goal: High-quality, evidence-based recommendations across a broad set of edges. Replace any match that fails criteria after full research.
 
-### 2. Recommendations
+### 2. Recommendations (Updated 2026-06-20 with Diversification & Min Stake)
 - Use clear tables with **exact** bets (stake, odds, selection). No vague "third option".
+- **Hard Min Stake Filter**: Calculated stake <10 NOK is skipped entirely (user hard limit). If borderline, only recommend exactly 10 NOK if post-adjust EV still >= +5%. All future proposals enforce this before any bet is added to log.
+- **Diversification Rule (fixes repeat same bets issue)**: 
+  - Max **2 bets per bet category/type** per round (e.g. no more than 2 Over 2.5, 2 BTTS, 2 Game HC, 2 ML fav in one portfolio).
+  - Every portfolio **must include bets from at least 2 different sports or distinctly different bet types** (e.g. one football BTTS + one tennis game HC).
+  - Track recent bet types from last 2-3 rounds in round file notes; avoid repeating the exact same edge profile (same odds band + same selection type) on multiple matches without fresh differentiating data.
+  - This addresses the statistical improbability of identical edge/odds profiles across unrelated matches occurring repeatedly. Enforced in nt-betting-workflow before final selection.
 - Immediately append new pending bets to bet_log.csv (no confirmation step — user will flag changes if needed).
 
 ### 3. bet_log.csv Handling (Strict Rules)
@@ -45,9 +50,10 @@
 - Mandatory backup + validation before/after every edit.
 - Never reduce row count without explicit confirmation.
 
-### 4. Post-Settlement Process
-- After settlements reported: Run deep dive review on the round.
-- Update edges/filters in sport_edges_and_filters.md when patterns emerge.
+### 4. Post-Settlement Process (Enhanced with nt-learning-reviewer)
+- After settlements reported: Run deep dive review on the round using **post-settlement-learning-reviewer skill**.
+- **nt-learning-reviewer skill** automatically updates exploration tracker in sport_edges_and_filters.md, checks promotion criteria, and flags categories ready for standard treatment.
+- Update edges/filters in sport_edges_and_filters.md when patterns emerge (additive).
 - Verify bankroll (see below).
 - Use older round files for learning when sufficient data exists.
 
@@ -56,10 +62,12 @@
 - Mandatory verification checklist after every settlement before updating current_bankroll.md.
 - Strict discipline on staking.
 
-### 6. Exploration & Balance
-- Diversify across sports (football, tennis, darts, snooker, etc.).
-- Avoid over-weighting any single sport.
-- Try new bet types/odds formats when edge supports it.
+### 6. Exploration & Balance (Updated 2026-06-20)
+- Diversify across sports (football, tennis, darts, snooker, esports, new props).
+- Avoid over-weighting any single sport or bet type (enforced by diversification rule above).
+- **Exploration bets**: Use small stakes (min 10 NOK). New automated promotion logic via nt-learning-reviewer (see sport_edges_and_filters.md for criteria: 10-12 settled + ROI>4% + patterns).
+- **High-Odds (>4.0) bets**: New dedicated guidelines in sport_edges_and_filters.md. Ultra-small stake only, deep dive on specific odds line required, max 1 per round. High variance observed - use for learning/data collection primarily.
+- Try new bet types/odds formats when edge supports it, but with strict filters.
 
 ## 2026-06-18 Safe bet_log.csv Editor Script
 
@@ -101,8 +109,10 @@ Persistent skills available:
 - `betting-value-calculator`
 - `nt-bankroll-tracker`
 - `nt-bet-log-manager`
+- `post-settlement-learning-reviewer` (new: handles deep dive after settlements, triggers nt-learning-reviewer)
+- `nt-learning-reviewer` (new: maintains data sufficiency tracker, auto promotion of exploration categories, updates sport_edges_and_filters.md)
 
-Use them for consistent rule enforcement.
+Use them for consistent rule enforcement. See nt-betting-skills.md for full definitions of new reviewer skills.
 
 ## General Rules
 - Repo is single source of truth.
@@ -110,6 +120,7 @@ Use them for consistent rule enforcement.
 - Validate before committing.
 - Strict EV filter after deep research.
 - Bankroll discipline and continuous learning.
+- **2026-06-20**: All recommendations now pass through diversification check, min-stake filter, and exploration status check before proposal.
 
 ## 2026-06-19 Role Update: Grok Autonomous Decision Maker
 
@@ -118,5 +129,9 @@ Use them for consistent rule enforcement.
 - **User Role**: You are here **only to place the bets**. Receive clear instructions (exact Match, Selection, Decimal Odds, Stake in NOK, any special notes) and execute them on your betting platform (e.g. Norsk Tipping). Report back results or settlements. No research or decision-making required from you.
 
 This update codifies the workflow where Grok handles the intellectual heavy lifting for maximum edge and consistency. All future recommendations will be in "ready-to-place" format. Skills (nt-betting-workflow and supporting) updated to enforce this. Pushed and validated per strict discipline.
+
+## 2026-06-20 Post-Settlement Learning Review Summary
+- With 98 bets data: Core football stable; exploration needs tighter filters/automation (implemented); repeat bet types fixed via diversification rule; min 10 NOK enforced; high-odds >4 treated as ultra-exploratory with deep dive requirement.
+- Changes pushed to sport_edges_and_filters.md and this playbook. nt-learning-reviewer and post-settlement-learning-reviewer skills now active in workflow.
 
 This is the living playbook. Update additively when processes improve.
