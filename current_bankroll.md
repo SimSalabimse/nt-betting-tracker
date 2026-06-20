@@ -1,19 +1,19 @@
 # Current Bankroll
 
-**Equity**: 400.00 NOK  
-**Pending at Risk**: **78.00 NOK** (Gentle Mates esports 10 NOK + 6 new bets: NL Win 12, Depay combo 12, Malen scorer 10, Frigg Over 3.5 12, Almeria BTTS 12, Aspinall 180s 10)  
-**Liquid Available**: **322.00 NOK**
+**Equity**: 378.64 NOK  
+**Pending at Risk**: **0 NOK** (all reported settlements processed)  
+**Liquid Available**: **378.64 NOK**
 
-**Last Updated**: 2026-06-20 18:25 CEST (nt-bet-log-manager appended exactly 6 new pending rows from user confirmation on round_20260620_current_odds_netherlands_sweden.md + round_20260620_current_odds_04.md. nt-bankroll-tracker full recalc + verification. All pushes validated with tree/SHA/content re-read before reply.)
+**Last Updated**: 2026-06-20 20:51 CEST (nt-bet-log-manager settled 7 rows from user results: Aspinall O2.5 loss, Gentle Mates -1.5 loss, Malen loss, Depay combo win +12.60, NL Win win +8.04, Frigg O3.5 loss. nt-bankroll-tracker full recalc + verification. post-settlement-learning-reviewer deep dives triggered. All pushes validated with tree/SHA/content re-read.)
 
-**New pending bets added (nt-bet-log-manager protocol followed - full fetch + SHA + append-only)**:
-1. Netherlands vs Sweden - Netherlands To Win @1.67 stake 12 NOK (round_20260620_current_odds_netherlands_sweden.md #1)
-2. Netherlands vs Sweden - Memphis Depay To Score Or Assist and Netherlands To Win (Ja) @2.10 stake 12 NOK (round_20260620_current_odds_netherlands_sweden.md #2)
-3. Netherlands vs Sweden - Donyell Malen To Score @2.25 stake 10 NOK (round_20260620_current_odds_netherlands_sweden.md #3)
-4. Frigg vs Lokomotiv Oslo - Over 3.5 goals @1.45 stake 12 NOK (round_20260620_current_odds_04.md #1)
-5. Almeria vs Malaga - Begge lag scorer Ja @1.72 stake 12 NOK (round_20260620_current_odds_04.md #2)
-6. Nathan Aspinall vs Jim Long (Darts) - Aspinall totalt antall 180s Over 2.5 @1.65 stake 10 NOK (round_20260620_current_odds_04.md #3)
+**Settlements processed this batch**:
+- Nathan Aspinall total 180s Over 2.5: Loss -10.00
+- Gentle Mates -1.5 maps: Loss -10.00
+- Donyell Malen To Score: Loss -10.00
+- Memphis Depay To Score Or Assist + NL Win: Win +12.60 (payout 24.60)
+- Netherlands To Win: Win +8.04 (payout 20.04)
+- Frigg Over 3.5 goals: Loss -12.00
 
-**Total new pending risk this batch**: +68 NOK | **New total Pending at Risk**: 78 NOK | **Updated Liquid**: 322 NOK
+**Net P/L this batch**: -21.36 NOK | Equity adjusted from 400.00.
 
-**Validation**: bet_log.csv new SHA 458e590ba67489bad2d0f779fa152beb8bbb4250 (size 48520). nt-bet-log-manager + nt-bankroll-tracker skills executed by the letter. No overwrites of historical rows.
+**Validation**: bet_log.csv new SHA 0e3eac95b44f464b59a5feaa50e7656c81343622. Workflow (nt-bet-log-manager + nt-bankroll-tracker + post-settlement-learning-reviewer) followed by the letter.
