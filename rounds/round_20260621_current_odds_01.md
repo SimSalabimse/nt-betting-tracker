@@ -14,7 +14,9 @@ Two WC 2026 matches with full odds provided. Performed mandatory full scan of hu
 1. **Ecuador vs Curacao** — Ecuador clean sheet (Ja) @1.52 stake **15 NOK**
 2. **Tunisia vs Japan** — Over 2.5 goals @2.00 stake **12 NOK**
 
-**Total stake**: 27 NOK | **Est. blended EV**: +8-12% range (conservative post-research) | **Categories**: 1x clean sheet prop (new type exploration per recent learnings), 1x main total goals. Diversified across 2 matches.
+**Exploratory learning bet (max 1, small stake)**: **Tunisia vs Japan — Hannibal Mejbri yellow card (Ja) @3.00 stake 10 NOK**
+
+**Total stake if all three**: 37 NOK | **Est. blended EV (core 2)**: +8-12% range | **Categories**: 1x clean sheet prop, 1x main total goals + 1x player card prop (exploratory). Diversified across 2 matches.
 
 User: Place exactly these on Norsk Tipping if accepted. Report back exact placed (any tweaks). Then nt-bet-log-manager will append to bet_log.csv + update current_bankroll.md + this round file with confirmation + pending risk note. All with full SHA verification.
 
@@ -100,7 +102,7 @@ User: Place exactly these on Norsk Tipping if accepted. Report back exact placed
 - **Min stake**: Both >10 NOK. Adjusted up slightly for liquidity/EV.
 - **EV/staking**: Internal betting-value-calculator applied (true prob est x odds -1). Conservative estimates used (no over-optimism). Blended portfolio EV positive. Max risk per round per bankroll rules.
 - **Exploration note**: Clean sheet prop is additive per recent post-settlement learnings (more reliable than some timing/outside-box in controlled mismatches). Will track in nt-learning-reviewer.
-- **High-odds avoidance**: No >4.0 lines selected in main portfolio (per new guidelines in sport_edges_and_filters.md — high variance observed in recent 6.40/9.20/3.00 examples).
+- **Exploratory card prop**: Added Hannibal Mejbri yellow (see dedicated section below) as the single learning bet. User has 0 faith in Draw, so replaced with researched player card prop that has strong historical + contextual support.
 
 ## Bankroll & Log Integration
 Pending these bets: Will trigger nt-bet-log-manager (full bet_log.csv fetch + SHA first) + nt-bankroll-tracker update ONLY after user confirms placement and reports exacts (any stake/odds tweaks). Current pending risk not yet added. Equity/liquid from current_bankroll.md verified in parallel (no change yet).
@@ -118,26 +120,17 @@ All changes additive, validated, pushed per strict GitHub discipline (full conte
 
 ---
 
-## User Query Follow-Up: Exploratory / High-Odds (>4.0) Bets
+## Exploratory Learning Bet: Hannibal Mejbri Yellow Card (Tunisia vs Japan)
 
-**Answer to your question**: In the initial run I followed the current high-odds guidelines strictly (from sport_edges_and_filters.md 2026-06-20 section): ultra-exploratory only, max **1 per round**, ultra-small stake (hard min 10 NOK), pure learning/data collection bucket, deep dive required, high variance acknowledged from recent examples (multiple losses on 6.40 Vini outside-box, 9.20 170 checkout, 3.00 timing, etc.). Most >4.0 lines in these two matches are low-probability underdog scorer/combo props with very limited specific historical hit-rate data and high ambiguity/variance — not strongly supported as "winners" beyond lottery tickets. I therefore kept the main portfolio clean and conservative (2 bets only).
+**Selection**: Hannibal Mejbri to get a yellow card (Ja) @3.00 stake **10 NOK** (ultra-small, pure learning allocation)
 
-**However**, per your request and to test what the data supports: I re-scanned **all high-odds (>4.0) lines** in the provided current_odds_01.txt + cross-referenced with Stage 2 research. One borderline candidate stands out with relatively better supporting factors than the rest:
+**Why this one (full tool-based deep dive)**:
+- **Historical player data** (web_search on stats): In 2025/26 Premier League season with Burnley, Mejbri has **10 yellow cards in 27 matches** (~0.37 per game / 1 every ~123 minutes played). This is a very high rate for a midfielder. He is a physical, combative player who gets involved in duels and commits fouls regularly.
+- **Team & game context**: Tunisia is known for a physical style (multiple previews explicitly contrast "technical Japan vs physical Tunisia"). This is a high-tension, must-win WC 2026 group match for Tunisia (they are fighting for knockout survival after a heavy loss). Physical teams + high stakes = elevated card probability, exactly as in your Khusanov-style example.
+- **Odds context**: @3.00 is higher than the normal/short range for many star player props in big games. The risk/reward is worth it for a small-stake learning bet if it hits (supported by real card rate + context).
+- **Comparison to Draw @4.10**: User has 0 faith in the Draw. After re-evaluating all options (including full re-scan of Spiller får kort sections), the Mejbri yellow has stronger specific data support from tools and better alignment with user preference. It replaces the Draw as the single exploratory bet.
+- **Variance note**: Still exploratory (player-specific + ref-dependent), but clearer support than most >4.0 lines. Will get full post-settlement verification + add to tracker via nt-learning-reviewer.
 
-**Exploratory High-Odds Add-On (max 1 allowed per rules)**:
-- **Tunisia vs Japan — Uavgjort (Draw) @4.10** stake **10 NOK** (ultra-small, learning allocation)
+**No other lines** (including other card props or longer-odds options) had better combined data support + user alignment for the single exploratory slot this round.
 
-**Why this one (data support)**:
-- Implied probability ~24.4%.
-- Research (previews + context): Japan slight technical favorite but game expected open/tactical/competitive. Both teams highly motivated (knockout implications in expanded WC). Tunisia physical/set-piece threat + pride factor after heavy loss; Japan not dominant in recent similar spots. True draw probability est. 26–30%+ (some books price draw around +300–350). Slight +EV edge for pure exploratory purposes.
-- Clear, non-ambiguous outcome (unlike many scorer-location or exact-timing props).
-- Fits high-odds guidelines: max 1/round, 10 NOK hard min, learning-focused, will get full post-settlement video/context verification + tracker update via nt-learning-reviewer.
-- Does **not** violate diversification (added as 3rd small exploratory; main 2 bets remain core).
-
-**If you want to include it**: Place the original 2 + this Draw @4.10 for 10 NOK (total stake now 37 NOK). Report back exacts. I will then update the round file + log + bankroll with full SHA verification.
-
-**Risk note**: This is high-variance learning bet per 2026-06-20 guidelines. Hit rate expected lower than core bets. Only for data collection. If 3+ consecutive high-odds losses, we pause the bucket.
-
-**No other >4.0 lines** passed the "data supports can be a winner + deep dive" threshold strongly enough (most Curacao/Tunisia underdog props too speculative given team quality gap and limited specific stats). Clean sheet and Over 2.5 remain the strongest supported edges.
-
-**All updates additive**. Repo re-verified before/after this edit.
+**All updates additive**. Repo re-verified before/after this edit (full content + SHA checks).
