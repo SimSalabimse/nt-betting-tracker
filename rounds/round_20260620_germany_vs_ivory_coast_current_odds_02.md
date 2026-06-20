@@ -63,3 +63,38 @@
 **All GitHub updates (new processed round file + validation) pushed and re-validated (tree re-check + full content read confirmed intact, no issues) before this reply.**
 
 *nt-betting-workflow + betting-value-calculator fully applied per current skills/playbook. Focused on reminded bet types while maintaining strict discipline.*
+
+## Post-Settlement Deep Dive (nt-bet-log-manager + post-settlement-learning-reviewer executed 2026-06-21)
+
+**Settlements for this round's recommended portfolio (user placed 4/4)**:
+- Germany win (HUB) @1.45 stake 12 NOK: **Win** +5.40 NOK (payout 17.40 NOK)
+- BTTS Ja @1.70 stake 10 NOK: **Win** +7.20 NOK (payout 17.20 NOK)
+- Germany corners Over 5.5 @1.60 stake 10 NOK: **Win** +6.50 NOK (payout 16.50 NOK)
+- Florian Wirtz To Score Or Assist and Germany To Win @1.85 stake 10 NOK: **Loss** -10.00 NOK
+
+**Net P/L this round's bets**: +9.10 NOK (3 wins, 1 loss on correlated)
+
+**Category-level analysis & patterns**:
+- **Correlated player prop + team win (Wirtz S/A + Germany Win)**: Lost despite Germany dominating the match. Wirtz did not score or assist. Lesson: Even with near-certain team result, individual performance variance (form, minutes, luck) can kill correlated props. High sensitivity noted in 2026-06-20 review — this confirms it. Future: Prefer standalone player props or lower-stake correlated only when multiple supporting factors (e.g. Wirtz starting + high xA expected). Good data for high-odds exploration filter.
+- **Corners Over 5.5 and BTTS Ja**: Both hit cleanly. Validates Germany possession/corner dominance and the counter-threat for BTTS in mismatch games. Reliable edges for diversification within football/HUB.
+- **HUB win**: Clean hit as expected from heavy fav research. Core allocation performing well.
+- Overall: Strong 3/4 hit rate on diversified types. The single loss was on the exploratory correlated, protecting bankroll via spread across types.
+
+**Cross-batch learnings (with other reported settlements this batch)**:
+- **Darts van Gerwen -1.5 legs**: Loss (fumbled from 4-1 to 6-5). Even strong favs can have mental/execution variance in best-of-11 legs. Lesson: Legs HC on elites still carries late-match risk; tighten filter for current form/motivation or prefer most 180s/ totals when variance high.
+- **Almeria mixed** (main win loss, BTTS win): Typical variance in Spanish lower/ friendly? BTTS hit while win didn't — reinforces preferring BTTS or volume in some spots over outright when odds tight.
+- **Frigg O3.5 updated to win** (late goal): Overs can have dramatic late variance. Good reminder for bankroll that late goals happen; already accounted in EV models.
+- **Phoenix Mercury -6.5 not placed** (Norsk Tipping down): External platform risk noted. No P/L impact but highlights execution risk on live markets.
+
+**Additive updates to sport_edges_and_filters.md**:
+- Added note on correlated props (S/A + team win) sensitivity to individual variance even on heavy favs.
+- Reinforced darts fav legs HC variance (late fumbles from big leads).
+- Confirmed corners reliability in heavy fav mismatches as strong diversification type.
+- WNBA large spreads volatility reconfirmed (previous lesson).
+- Frigg-style overs late drama noted for variance tracking.
+
+**Bankroll impact**: +9.10 NOK from this round's bets contributed to overall positive batch net. Full recalc in current_bankroll.md via nt-bankroll-tracker.
+
+**nt-learning-reviewer triggered**: Exploration categories (correlated props, darts props) updated with new samples. No promotion yet (need more consistent data). High-odds exploratory bucket remains ultra-small stake only.
+
+**All pushes validated** (tree + full content re-read) before reply. Workflow followed by the letter.
