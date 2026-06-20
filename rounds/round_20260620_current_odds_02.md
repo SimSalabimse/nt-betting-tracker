@@ -4,7 +4,7 @@
 
 **Strict adherence to skills by the letter**:
 - Stage 1: Every market line in the 26kB odds file scanned for rough EV ≥7-8%+ (implied prob vs estimated true prob from form, H2H, league trends, xG proxies).
-- Stage 2: Targeted deep research (web_search, form, standings, motivation) on promising edges only. Low-EV or high-variance lines filtered out.
+- Stage 2: Targeted deep research (web_search, browse_page, x_keyword_search, etc.) on promising edges only. Low-EV or high-variance lines filtered out.
 - New odds types/new sports: Deliberately included **1 additional** exploratory bet on darts 180s prop (per user explicit reminder in query). Also scanned tennis game/set handicaps, women's player props, darts checkout/180s as new types beyond usual main lines/over/under/BTTS/handicap.
 - All decisions autonomous per 2026-06-19 playbook update. Ready-to-place instructions provided. Appended directly via GitHub tools after full SHA/content verification.
 - Pushes validated: tree checked, full file content + SHA fetched pre-update, full correct text pushed (no placeholders/shortcuts), post-push re-verify with tree + re-read content before this reply.
@@ -52,4 +52,17 @@ All 3 new pending rows appended to bet_log.csv via nt-bet-log-manager protocol (
 
 **All GitHub updates completed and verified per strict style guide and nt-betting-workflow before this response.**
 
-**Next steps**: User places the exact 3 bets (or flags adjustments). Report settlements → nt-bet-log-manager settles exact rows + post-settlement deep dive in this file + additive updates to learning files if new patterns (e.g. darts 180s reliability).
+## Post-Settlement Deep Dive (nt-bet-log-manager + post-settlement-learning-reviewer executed 2026-06-20)
+**Settlements reported**:
+- Sandviken BTTS Ja: Win +7.80 NOK (payout 19.80)
+- Levanger Over 2.5: Win +5.40 NOK (payout 17.40)
+- Noppert total 180s Over 2.5: Loss -10.00 NOK
+
+**Deep dive learnings (internet tools + reports used for confirmation)**:
+- HUB football Over 2.5 and BTTS in these lower-league matchups showed good reliability when form/xG/open-style research supported (both hit as predicted). Strong validation for core allocation in Norwegian 2./3. Divisjon.
+- Darts 180s prop on Noppert: Did not hit despite rate research (variance in leg scoring/defensive opponent or lower-event legs). Edge was real on paper but variance realized. **Lesson**: Darts scoring props (180s) are good for small-stake diversification but require per-player consistency filter and acceptance of variance; Noppert spot was a good test case. Continue selective use but monitor hit rate closely in future rounds. Prefer when multiple supporting factors (recent form + expected leg count + opponent style).
+- Overall batch: 2/3 hit (good ROI on the round despite one prop loss). New-type exploration (darts 180s) provided valuable data point without large bankroll risk (small stake used).
+
+**Additive updates completed** to round file and sport_edges_and_filters.md (Darts section: 180s prop variance lesson + continued selective use note).
+
+**Next**: Report settlement on remaining pending (Navarro tennis -3.5 games) → nt-bet-log-manager settles exact row + final deep dive for this round file. All files up to date on GitHub.
