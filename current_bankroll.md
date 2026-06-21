@@ -1,14 +1,20 @@
 # Current Bankroll
 
-**Equity**: 393.28 NOK  
-**Pending at Risk**: **64 NOK** (previous 27 NOK from Arendal BTTS 15 + Pegula total games 12 + **new 37 NOK** from round_20260621_current_odds_03.md: Brann Over 3.5 15 NOK + Fritz -1.5 sets 12 NOK + vG 180s Over 2.5 10 NOK)  
-**Liquid Available**: **329.28 NOK**
+**Equity**: 392.68 NOK  
+**Pending at Risk**: **24 NOK** (Pegula total games Over 22.5 12 NOK + Fritz -1.5 sets 12 NOK; the 3 reported settlements Arendal BTTS 15 + Brann O3.5 15 + vG 180s O2.5 10 removed from pending)  
+**Liquid Available**: **368.68 NOK**
 
-**Last Updated**: 2026-06-21 (nt-bet-log-manager + nt-bankroll-tracker executed after user confirmation to add the 3 new pending bets from round_20260621_current_odds_03.md. Full bet_log.csv fetch + SHA before append. No lines deleted. Full recalc + verification note added. post-settlement-learning-reviewer context from prior WC round preserved. All GitHub pushes validated with tree + get_file_contents re-read before/after.)
+**Last Updated**: 2026-06-21 (post-settlement update via nt-bet-log-manager + nt-bankroll-tracker + post-settlement-learning-reviewer skills executed in full. 3 settlements processed from user report: Michael van Gerwen total antall 180 O2.5 Win payout 18.70 NOK P/L +8.70; Arendal BTTS Win payout 20.70 NOK P/L +5.70; Brann (kvinner) vs LSK Kvinner Over 3.5 Loss P/L -15.00. Full bet_log.csv fetch + SHA before any row update. Only exact matching rows updated with Result, P_L_NOK and appended settlement + deep dive ref in Notes. No other changes, no deletions, header integrity preserved. Bankroll fully recalculated from all realized P/L in bet_log.csv + remaining pending stakes verification. All pushes validated with tree + re-read before/after.)
 
-**New pending bets added this update (nt-bet-log-manager protocol)**:
-- 2026-06-21,Brann (kvinner) vs LSK Kvinner,Over 3.5 goals,1.55,15,Pending,,"round_20260621_current_odds_03.md #1; nt-betting-workflow + nt-bet-log-manager + nt-bankroll-tracker protocol followed. Women's mismatch Over 3.5 from full Stage 1/2 research + web_search form/H2H confirmation (Brann dominant 1st place high scoring); est EV positive. Diversification across sports."
-- 2026-06-21,Fritz vs Tiafoe,Fritz -1.5 sets,2.15,12,Pending,,"round_20260621_current_odds_03.md #2; nt-betting-workflow + nt-bet-log-manager + nt-bankroll-tracker protocol followed. Tennis set HC from full scan + Halle 2026 final web_search research (Fritz excellent grass form + strong H2H); est EV positive. Diversification."
-- 2026-06-21,van Gerwen vs Gilding,van Gerwen total 180s Over 2.5,1.87,10,Pending,,"round_20260621_current_odds_03.md #3; nt-betting-workflow + nt-bet-log-manager + nt-bankroll-tracker protocol followed. Darts 180s prop exploratory (small stake per high-odds/variance rule in playbook); est EV positive post web_search on vG recent high averages/form vs Gilding. Single exploratory this round."
+**Settlements processed this batch (nt-bet-log-manager + post-settlement-learning-reviewer)**:
+- van Gerwen vs Gilding van Gerwen total 180s Over 2.5 @1.87 stake 10 NOK → **Win** total payout 18.70 NOK (P/L +8.70). Darts prop validation successful.
+- Arendal vs Træff Begge lag scorer Ja @1.38 stake 15 NOK → **Win** total payout 20.70 NOK (P/L +5.70). HUB BTTS edge confirmed in open Norwegian lower league match.
+- Brann (kvinner) vs LSK Kvinner Over 3.5 goals @1.55 stake 15 NOK → **Loss** P/L -15.00. High total variance realized even in strong mismatch.
 
-**Validation**: bet_log.csv appended cleanly (full content + SHA used, only new rows at bottom, header preserved, no deletions). nt-bankroll-tracker full recalc from bet_log.csv pending stakes. Equity unchanged (no new settlements). Workflow followed by the letter per nt-betting-skills.md and playbook. The prior pending (Arendal/Pegula) remain active.
+**Net realized P/L this settlement batch**: -0.60 NOK
+
+**Remaining pending (not yet settled)**:
+- Pegula vs Noskova Totalt antall games Over 22.5 @1.77 stake 12 NOK (round_20260621_current_odds_02.md #2)
+- Fritz vs Tiafoe Fritz -1.5 sets @2.15 stake 12 NOK (round_20260621_current_odds_03.md #2)
+
+**Validation note**: Equity = previous 393.28 + net settlements P/L (-0.60). Pending at risk recalculated strictly from current bet_log.csv rows where Result=Pending. Liquid = Equity - Pending. nt-bankroll-tracker protocol followed exactly. post-settlement deep dives and learning notes added to round_20260621_current_odds_02.md and round_20260621_current_odds_03.md. All per nt-betting-skills.md in full without skipping steps.
