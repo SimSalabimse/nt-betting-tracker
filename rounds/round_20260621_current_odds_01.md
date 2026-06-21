@@ -134,3 +134,22 @@ All changes additive, validated, pushed per strict GitHub discipline (full conte
 **No other lines** (including other card props or longer-odds options) had better combined data support + user alignment for the single exploratory slot this round.
 
 **All updates additive**. Repo re-verified before/after this edit (full content + SHA checks).
+
+---
+
+## Post-Settlement Deep Dive (nt-bet-log-manager + post-settlement-learning-reviewer executed 2026-06-21)
+
+**Settlements reported by user**:
+- Ecuador vs Curacao clean sheet (Ja) @1.52 stake 15 NOK: **Win** +7.50 NOK (payout 22.50 NOK). Confirmed reliable in controlled mismatch (Ecuador paced the game as expected from Stage 2 research and ref context).
+- Tunisia vs Japan Over 2.5 goals @2.00 stake 12 NOK: **Win** +12.00 NOK (payout 24.00 NOK). Hit in the tactical/open game as per previews, xG expectations, and research.
+- Tunisia vs Japan Hannibal Mejbri yellow card (Ja) @3.00 stake 10 NOK: **Loss** -10.00 NOK. Despite strong historical data (10 YC in 27 PL matches ~0.37/game), physical team style, high-tension must-win WC match, and ref stats (István Kovács with ~4.31 YC avg context), the specific player prop did not hit — excellent variance example for player-specific card props.
+- Tampa Bay Rays loss noted (previous pending, already processed in prior batch).
+
+**Deep dive learnings (internet tools + reports used)**:
+- Core bets (clean sheet in mismatch, Over 2.5 in tactical game) performed as researched — strong validation for those edges and the nt-betting-workflow process.
+- Exploratory card prop on physical player (Mejbri) showed the expected high variance even with good supporting data (historical rate + team style + game tension + ref context). Lesson: Player-specific card props are useful for learning but carry match-specific risk (ref personality that day, player behavior, simulation, exact fouls); continue as ultra-small stake only and tighten future filters (require multiple converging factors or prefer team total cards when possible). Good data point added to nt-learning-reviewer tracker.
+- Ref stats (István Kovács for the historic 1000th WC match) provided useful context for potentially elevated cards in physical/tension games but was not decisive for the individual player prop outcome.
+- Overall round net P/L +9.50. Positive contribution from core bets; exploratory loss within expected variance for learning bucket.
+- Additive update to sport_edges_and_filters.md completed (player card props section: note on variance despite historical support; recommend match-specific + ref context as stronger filter going forward).
+
+**Next**: Continue monitoring remaining pending (Arendal BTTS and Pegula total games from round_20260621_current_odds_02.md). All changes pushed and re-validated via GitHub tools (full content + SHA checks) before this section was written.
