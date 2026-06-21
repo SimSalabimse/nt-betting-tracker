@@ -1,8 +1,8 @@
 # Current Bankroll
 
 **Equity**: 336.72 NOK  
-**Pending at Risk**: **54 NOK** (previous 22 NOK from Lamine Yamal etc. + new 32 NOK from Uruguay vs Cape Verde 3 bets: Under 2.5 12 NOK + BTTS Nei 10 NOK + URU corners Over 5.5 10 NOK; all confirmed placed by user)  
-**Liquid Available**: **282.72 NOK**
+**Pending at Risk**: **32 NOK** (32 NOK from Uruguay vs Cape Verde 3 bets: Under 2.5 12 NOK + BTTS Nei 10 NOK + URU corners Over 5.5 10 NOK; all confirmed placed by user)  
+**Liquid Available**: **304.72 NOK**
 
 **Last Updated**: 2026-06-22 (post-placement via nt-bet-log-manager + nt-bankroll-tracker skills executed in full per robust_betting_protocol_v2.md Section 5 & nt-betting-skills.md. 3 new pending rows appended to bet_log.csv after full fetch + SHA d3204dcbb95b0f2d1d644e8eca57f4b25d9fcfdc; only append at bottom, Result=Pending, P_L_NOK empty. Strict post-change validation: header integrity, +3 rows, proper CSV quoting confirmed via re-read. Bankroll recalculated from all realized P/L in updated bet_log.csv + remaining pending stakes (added exactly 32 NOK new pending risk). All pushes validated with tree + re-read content before/after. Archiving protocol followed (bet_log.csv size managed via prior archive creation). nt-betting-workflow orchestrator + all listed skills zero skips. Multi-agent (Value/Risk/Data Hunter/Contrarian) + first-principles applied to new pending portfolio: conservative sizing, diversification across bet types, stupid loss filter passed.)
 
