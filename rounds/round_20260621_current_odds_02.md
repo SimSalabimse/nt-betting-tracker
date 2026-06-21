@@ -102,3 +102,23 @@ All changes additive, validated, pushed per strict GitHub discipline (full conte
 
 ## User Query Follow-Up / Exploratory Notes
 No additional high-odds exploratory bet proposed in this round (scanned but insufficient data support per 2026-06-20 guidelines). All updates additive. Repo re-verified before/after this push. Ready for user confirmation on the 2 proposed bets.
+
+---
+
+## Post-Settlement Deep Dive (Arendal BTTS settlement - part of batch processed by post-settlement-learning-reviewer 2026-06-21)
+
+**Settled bet from this round**:
+- **Arendal vs Træff - Begge lag scorer Ja @1.38 stake 15 NOK** → **Win** total payout 20.70 NOK (P/L +5.70)
+
+  - Pre-bet hypothesis (from Stage 2): Close Norwegian 2. div match with high recent BTTS rates in H2H/form (both teams leaky, Træff scoring output, open expected). True prob est 74-80% > implied ~72.5% at 1.38 → slight +EV. Selected for clean diversification (BTTS vs tennis total in portfolio).
+  - Result vs hyp: Confirmed hit. Both teams scored as expected in the open/tactical contest.
+  - Key factors: Research on recent scoring rates and H2H BTTS tendency validated. Motivation/context aligned.
+  - Lesson: HUB/Norwegian lower division BTTS Ja remains reliable when form/H2H/xG support open styles. Good validation for core diversification leg. Continue with confidence in similar spots; track for nt-learning-reviewer promotion if pattern holds across 10+ settled.
+
+**Pegula vs Noskova Total games Over 22.5 still Pending** — no settlement report yet.
+
+**Batch context (cross-ref round_20260621_current_odds_03.md deep dive)**: This Arendal win + vG 180s win + Brann O3.5 loss processed together. Positive for darts props and HUB BTTS; caution note added for women's high overs. Net bankroll impact -0.60 NOK (see current_bankroll.md for full recalc 392.68 Equity / 24 NOK pending / 368.68 liquid).
+
+**Additive learning**: BTTS in Norwegian 2. div / HUB confirmed as solid edge when pre-research aligns. No change to filters needed; positive data point for tracker.
+
+All post-settlement-learning-reviewer steps completed for this file (parse, analysis, deep dive append, bankroll cross-ref). No skips per skill definition.
