@@ -134,4 +134,12 @@ This update codifies the workflow where Grok handles the intellectual heavy lift
 - With 98 bets data: Core football stable; exploration needs tighter filters/automation (implemented); repeat bet types fixed via diversification rule; min 10 NOK enforced; high-odds >4 treated as ultra-exploratory with deep dive requirement.
 - Changes pushed to sport_edges_and_filters.md and this playbook. nt-learning-reviewer and post-settlement-learning-reviewer skills now active in workflow.
 
+## 2026-06-21 Robust Protocol v2 Integration
+
+**Major Update**: Created and integrated `robust_betting_protocol_v2.md` as the master robustness layer. This protocol addresses all feedback points in detail (mandatory tool proof with explicit evidence in every response, active/automated learning from every outcome especially losses, bias reset + first-principles + multi-agent internal simulation for fresh evaluations and broader markets, standardized clean response template with bets table, bet log archiving protocol when file grows large, advanced risk management with stupid loss filter and explicit risk/reward calculations, skill reliability with exact references and pre-checks, self-updating proactive improvements, complete-before-reply discipline).
+
+**How to Use**: All future workflows, nt-betting-workflow skill executions, round file updates, and user responses must align with robust_betting_protocol_v2.md by the letter in full. It takes precedence for addressing gaps and making the system "just work" with minimal corrections. Existing playbook rules (diversification, min stake, exploration automation, post-settlement processes, autonomous decisions) are foundational and now strengthened by the v2 protocol.
+
+See robust_betting_protocol_v2.md for the complete detailed implementation. This update was performed following the Successful Push Workflow exactly: tree verified, full current content + SHA fetched, full new content provided (old + additive section), clear commit message, post-push verification planned.
+
 This is the living playbook. Update additively when processes improve.
