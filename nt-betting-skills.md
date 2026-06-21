@@ -96,3 +96,5 @@ This is the decisive, low-friction workflow we are now using.
 All skill and data changes continue to follow the strict discipline of full retrieval + GitHub push + re-validation before any user-facing reply.
 
 **2026-06-20 Update**: Added post-settlement-learning-reviewer and nt-learning-reviewer skills to address 98-bet review findings (duplicate bets, exploration automation, high-odds, min stake). Skills now fully integrated into workflow.
+
+**2026-06-21 Update**: nt-betting-workflow and betting-value-calculator skills successfully created, populated with full imperative instructions, and validated using skill-creator in /home/workdir/.grok/skills/. The provided current_odds_01.txt and current_odds_02.txt can now be processed under the full nt-betting-workflow (Stage 1 rough EV scan + Stage 2 deep research using betting-value-calculator for all EV math, diversification, and min-stake enforcement). All future interactions will use these skills by the letter.
