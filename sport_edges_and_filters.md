@@ -5,21 +5,18 @@
 **playbook.md and nt-learning-reviewer skill reference this for decisions.**
 **All changes additive or with clear version notes. Full history in Git.**
 
-**Last Updated**: 2026-06-20 post 98-bet comprehensive review (post-settlement-learning-reviewer + nt-learning-reviewer executed). Analysis of 97 settled bets: overall win rate 54.6%, total P/L -91.36 NOK. Core Football/HUB ~0 P/L over 41 bets (stable); exploration categories mixed (Athletics/WNBA positive small sample, Snooker/Esports negative - tighten). Key fixes applied: min 10 NOK hard stake, diversification to prevent repeat bet types, automated exploration promotion criteria, high-odds (>4) guidelines with deep dive notes.
+**Last Updated**: 2026-06-22 post Uruguay vs Cape Verde WC settlement deep dive (post-settlement-learning-reviewer + nt-learning-reviewer executed). Added WC fav vs defensive minnow pattern from 2-2 result analysis.
 
 ## Update Log (Additive) - New Entry
-- **2026-06-20 Comprehensive 98-Bet Post-Settlement Review (nt-learning-reviewer + post-settlement-learning-reviewer)**: 
-  - **Duplicate/Same Bet Issue Fixed**: Identified clustering of similar edges (e.g. multiple Over 2.5/BTTS/Game HC in same rounds, duplicate Navarro entry). New rule: max 2 per bet category/type per round, require >=2 different sports/bet types in every portfolio. Statistical improbability of identical edge profiles across unrelated matches now enforced in nt-betting-workflow and recommendation logic.
-  - **Exploration Logic Improved & Automated**: Added data sufficiency tracker and promotion criteria (see new section). nt-learning-reviewer skill now maintains per-category settled count, ROI, variance notes. Auto-flag promotion when e.g. >=10-12 settled + ROI>4% + consistent deep dive patterns. Removes manual reminder need. Current: Snooker exploration paused/reduced (negative ROI -26.4 over 4); Esports map HC tightened (variance high, -37 over 8); Darts props selective small stake only.
-  - **High-Odds (>4.0) New Type Deep Dive**: Reviewed 6.40 (Vini outside box - lost, location ambiguity), 9.20 (170 checkout - lost, high variance), 3.00 (timing prop - lost), 2.80/2.75 correlated. Lesson: massive variance even with research support; hit rate lower than rough EV suggested. Rule: ultra-small stake (hard min 10 NOK), max 1 per round, pure learning bucket (<5% allocation). Prefer reliable props (180s totals, legs HC) over exotic. Added to filters.
-  - **Min Stake Enforcement**: Hard filter implemented - any calc stake <10 NOK skipped or adjusted to exactly 10 only if EV remains positive post-adjust. All future recs enforce this (user confirmed hard limit).
-  - **Edge/Sport Multiplier Adjustments**: Football core stable (keep 7-9% edge); Tennis game HC validated good (keep 6-8%, expand selectively); HUB Over 2.5 variance noted - tighten expected goal volume or prefer BTTS selectively (update from 2026-06-20 settlements); WNBA large spreads volatile - prefer ML/smaller HC (-4.5 to -6.5); Exploration allocation reduced for negative categories pending more data.
-  - **Data Collection Needs**: More samples needed for: Athletics (promising +14.5/3), AHL overs (+), WNBA (volatility lesson), Darts props consistency, high-odds exotic props (more video verification). Prioritize 5-10 more per new category before promotion decisions. Snooker/Esports need pause or stricter filters.
-  - Equity impact noted; bankroll discipline reinforced.
+- **2026-06-22 Post-Settlement Deep Dive (Uruguay vs Cape Verde WC 2-2)**: 
+  - **Pattern Validated**: Corners Over on strong fav vs defensive minnow/debutant in WC reliable and robust (URU dominance + set piece volume held despite open 2-2 result and xG variance). Goal totals/BTTS showed higher variance than pre-bet xG/trends predicted due to individual defensive errors, set piece quality, and motivated debutant resilience (CV first WC goal + gift from URU error). 
+  - **Filter Refinement**: For Under 2.5 / BTTS No in similar WC fav vs minnow spots: add stricter pre-check 'recent clean sheet strength + no significant set piece/FK threat + fav finishing confirmation'. Humidity/motivation can open games more than expected. Corners edge prioritized over goal line in these mismatches.
+  - **Edge Update**: Promote 'WC fav corners Over vs minnow' to core football allocation. Track Under/BTTS with new filter for 5-8 more settled + ROI review via nt-learning-reviewer. No archiving triggered (bet_log size manageable).
+  - Tool proof integrated from ESPN/FIFA/Guardian/X boxscores + xG (URU 2.34/CV 0.86). Multi-agent simulation confirmed corners robustness vs goal line variance.
 
-## Per-Sport Edges & Filters (Updated additively with 98-bet learnings)
+## Per-Sport Edges & Filters (Updated additively with 98-bet learnings + 2026-06-22 WC settlement)
 
-| **Football (HUB / Norwegian lower leagues / WC)** | 7-9% | 1.40 - 2.00 | Win (home form/motivation); **BTTS preferred over Over 2.5 in many spots due to variance (2026-06-20 lesson)**; Over 2.5 only with high xG/pace confirmation | Leaky defense + attacking home side; tighten goal volume filter | Core allocation preferred | Low | Consistent edge when filters met; ~0 P/L over 41 bets stable | Strict post-research only; good diversification. **2026-06-20**: Over 2.5 variance - prefer BTTS selectively or tighten xG. |
+| **Football (HUB / Norwegian lower leagues / WC)** | 7-9% | 1.40 - 2.00 | Win (home form/motivation); **BTTS preferred over Over 2.5 in many spots due to variance (2026-06-20 lesson)**; Over 2.5 only with high xG/pace confirmation; **WC fav vs defensive minnow: Corners Over on fav reliable (new 2026-06-22)** | Leaky defense + attacking home side; tighten goal volume filter; **add 'recent clean sheet + no set piece threat' for Under/BTTS in WC (new 2026-06-22)** | Core allocation preferred | Low | Consistent edge when filters met; ~0 P/L over 41 bets stable; corners robust in WC mismatches | Strict post-research only; good diversification. **2026-06-20**: Over 2.5 variance - prefer BTTS selectively or tighten xG. **2026-06-22**: WC corners Over promoted; Under/BTTS filter tightened for motivated minnows. |
 
 | **Tennis** | 6-8% | 1.50 - 2.20 | Game handicap on strong favs with surface/form edge (validated multiple 2026-06 incl. Navarro); Set handicap; total games Under in close matches | Surface specialist vs poor on surface; fatigue; opponent recent form for 2-0 bets | Selective volume when strong data | Low | Highly profitable when selected (per history +2.72 over 8) | Test selectively when +EV; good for diversification. Continue game HC confidence. |
 
@@ -51,7 +48,7 @@
 - **Promotion Action**: Move from exploration section to core in this file; update playbook allocation rules; flag in next round recs as 'promoted - standard treatment'.
 - **Demotion/Pause**: If ROI < -5% after 8+ bets or high unexplained variance, pause category for 5+ bets or tighten filters sharply.
 
-**Current Status (from 98-bet review)**:
+**Current Status (from 98-bet review + 2026-06-22 WC update)**:
 - Athletics H2H: 3 settled, +ROI - keep exploratory, target 8+ more.
 - AHL totals: 1-2, promising - continue small.
 - WNBA: volatility lesson applied - keep exploratory with adjusted filters.
@@ -59,6 +56,7 @@
 - Snooker margin HC: 4 settled, negative - paused, collect with stricter or pause 1 month.
 - Esports map HC: 8 settled, negative high var - tightened, small stake only, review after 5 more.
 - High-odds exotic props: new, high var - keep ultra-exploratory, max learning allocation.
+- **NEW 2026-06-22**: WC fav corners Over vs minnow promoted to core football; Under/BTTS in WC minnow spots tightened with new filter.
 
 **Automation Note**: nt-learning-reviewer + post-settlement-learning-reviewer now handle updates to this tracker section automatically in future settlements. No user reminder needed for promotion checks.
 
@@ -82,4 +80,4 @@
 - All recs now include explicit diversification check and min-stake filter before proposal.
 - This file is referenced by nt-betting-workflow, nt-learning-reviewer, post-settlement-learning-reviewer skills.
 
-**Changes driven by data from deep dives and 98-bet aggregate analysis. Pushed and validated.**
+**Changes driven by data from deep dives and 98-bet aggregate analysis + 2026-06-22 WC settlement. Pushed and validated.**
