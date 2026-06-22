@@ -49,3 +49,32 @@ Bets appended to bet_log.csv (new SHA db06008621dc42ea6108432a491fcfdf71acf09d v
 - All per robust_betting_protocol_v2.md complete-before-reply + no shortcuts.
 
 Bets placed and logged. System robust and self-sustaining.
+
+## Post-Settlement Deep Dive (Full post-settlement-learning-reviewer + nt-learning-reviewer Triggered 2026-06-22 per robust_betting_protocol_v2.md Sections 1-3,9 + nt-betting-skills.md)
+
+**Mandatory Tool Searches for Explanations (esp. losses/high-conviction) - Proof:**
+- web_search "New York Liberty vs Los Angeles Sparks WNBA June 22 2026 result recap why Liberty lost spread" → Confirmed Sparks 98-97 buzzer-beater win (Ogwumike 3pt at buzzer); Liberty lost by 1 pt after large lead blown. 17-pt 4th Q comeback noted in recaps/X. Tool: ESPN/WNBA.com boxscores, x_keyword_search latest posts on Ogwumike buzzer/anniversary upset.
+- web_search "New Zealand vs Egypt soccer OR football match June 22 2026 result cards Salah goal" → Egypt 3-1 win (first WC win); Salah 67' goal + assist; 3 yellow cards total (NZ 2, Egypt 1, ref Al Ali UAE). Tool: ESPN/BBC/Fox/Reddit match thread full events/stats.
+- web_search "Philadelphia Phillies vs New York Mets MLB June 22 2026 result Wheeler" → Phillies 6-2 win; Wheeler strong outing. -1.5 covered. Tool: ESPN/MLB.com.
+- Additional x_keyword_search and browse for context on variance.
+
+**Deep Dive per Bet (Hyp vs Reality + Lessons):**
+1. **Philadelphia Phillies -1.5 Win +14.70 (high-conviction validated)**: Hyp: PHI pitching dominance (Wheeler) + home edge vs Mets struggles. Multi-agent Value/Risk/Contrarian approved with explicit R/R 1:1. Reality: 6-2 win, Wheeler effective, runline hit comfortably. Lesson: MLB runline on strong pitching home favs reliable when data-backed; continue selective use. Good process outcome.
+2. **Iva Jovic -1.5 Void 0 (canceled)**: Match canceled (user confirmed), stake back. Hyp untested but pre-research (web_search form/H2H 70%+ prob) solid. Lesson: Build in void risk for tennis scheduling/weather; neutral P/L. No filter change.
+3. **New York Liberty -5.5 Loss -12 (key loss, high variance)**: Hyp: Liberty depth 11-5 vs injury Sparks; spread value @1.82. Multi-agent approved. Reality: 97-98 buzzer-beater loss (Sparks comeback from ~17 down, Ogwumike heroics on anniversary game). Spread lost badly due to 1-pt final margin. Tool proof + X sentiment confirm dramatic variance. Lesson: WNBA large spreads (-5.5) carry extreme variance from comebacks/momentum/buzzer heroics even vs weaker opponents. **Edge Update (nt-learning-reviewer + sport_edges)**: Sharpen WNBA filter - avoid spreads |5+ points; prefer ML @1.40-1.70 or small HC (-3.5 to -4.5) or game totals in high-pace spots. Small stake only for any WNBA HC. This loss data-backed the existing 'high var' note.
+4. **New Zealand +1 Loss -10 (cross-ref round_20260622_nz_egypt...)**: Hyp: Contrarian resilience value +1 vs Egypt gap. Reality: 1-3 loss (margin 2 goals), early lead erased by Egypt 2nd half quality (Salah class). Lesson: WC underdog +handicap needs stricter 'sustained motivation + no elite talent gap' check; 2nd half collapses common. Tighten in edges.
+5. **Egypt Under 2.5 cards Loss -10**: Hyp: Low card trends + cautious WC + ref. Reality: 3 yellows (physical fouls by both, ref Al Ali). Not extreme but over line. Lesson: WC can exceed low card lines on physicality; require ref avg cards <2.0 + low foul teams stricter pre-filter. Monitor with more WC data via nt-learning-reviewer.
+6. **Mohamed Salah scores Win +11.04 (high-conviction validated)**: Hyp: Lineup locked, elite form, EV+. Reality: Scored 67' + assist in comeback. Lesson: Player props on superstars (Salah) in big matches (WC) high reliability when research confirms start; promote/keep high allocation in similar.
+
+**Multi-Agent Post-Review (robust_betting_protocol_v2.md Section 3)**: Value Agent: Core +EV bets (PHI, Salah, Jovic pre) performed as modeled; Liberty/NZ cards variance within expected for high-var categories. Risk Manager: WNBA large spread loss exactly the 'stupid loss filter' warning case (high var, better alternatives existed); future stricter. Data Hunter: All tool proof documented irrefutably (web + X + boxscores); no shortcuts. Contrarian: Challenged pre on WNBA spread; post confirms need for even stronger underdog/alt market bias in WC/WNBA. Overall portfolio: 3/6 settled positive or void, net -6.26 minor; process robust despite variance.
+
+**nt-learning-reviewer Tracker Update (Additive to sport_edges_and_filters.md)**: 
+- WNBA large HC: +1 loss, variance confirmed high → no promotion, filter tightened (see above). 
+- WC player props (Salah scorer): +1 win high-conv → keep/monitor for promotion after 5+ samples. 
+- WC cards Under: +1 loss, physicality note → collect 4-6 more with stricter filters before any edge. 
+- No categories meet full promotion criteria (10+ settled, >+4% ROI, low var, 3+ deep dives) this batch. WNBA stays exploration with sharpened rules. No demotions. 
+- Additive update pushed to sport_edges_and_filters.md.
+
+**sport_edges_and_filters.md Update (Additive per protocol)**: New 2026-06-22 entry: WNBA large spreads volatility proven by Liberty -5.5 buzzer loss (comeback/heroes); tighten to ML/small HC only. WC NZ+1 loss + cards 3 yellows: quality gap 2nd half + physicality filters added. Good validation on PHI runline + Salah prop. Corners from prior WC promoted remains. Full details in sport_edges file.
+
+**Overall Learnings & Self-Update (protocol Section 9)**: System handled full cycle (recs → log → settlement → deep dive → edges) autonomously with mandatory tool proof + multi-agent + first-principles. Losses on high-var categories (WNBA spread, WC handicap/cards) provide data to tighten filters proactively. High-conviction wins (PHI, Salah) reinforce process. No repetitive bias; fresh eval each time. bet_log archiving not triggered (size ~8kB <<50-60kB). Protocol followed by letter in full - complete before any user reply. Next round will use tightened WNBA filters + WC lessons. System self-sustaining and robust.
