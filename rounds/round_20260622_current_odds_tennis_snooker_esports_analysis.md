@@ -20,7 +20,7 @@
 1. web_search query="Kecmanovic vs Ghibaudo 2026 preview OR preview OR betting OR stats OR form" → Ghibaudo #303, mixed recent form (4-6 last 10), Kecmanovic recent main tour activity (Monte Carlo, Acapulco context). Heavy fav justified but props like -5.5 games @1.95 borderline; skipped ML per filter.
 2. web_search query="Walton vs Kyrgios 2026 tennis preview form injuries" + "Nick Kyrgios injury update 2026 Mallorca OR fitness OR return" → ATP Mallorca grass R32. Kyrgios limited 2026 singles (1 match Jan loss, post-surgery wrist/knees, admitted 'washed up', lack belief). Walton rank ~91-92, 5-10 2026. X post: Kyrgios ~57% on prediction market. Contrarian value high on Walton props.
 3. web_search query="Adam Walton tennis ranking form 2026" → Confirmed rank 91/92, solid mid-tier.
-4. x_keyword_search query="Kyrgios OR "Nick Kyrgios" (injury OR fitness OR Mallorca OR return OR washed) since:2026-06-01" mode=Latest → Recent: Kyrgios adding grass matches, prediction market 57% win prob vs Walton; expert pick Walton +1.5 games.
+4. x_keyword_search query="Kyrgios OR \"Nick Kyrgios\" (injury OR fitness OR Mallorca OR return OR washed) since:2026-06-01" mode=Latest → Recent: Kyrgios adding grass matches, prediction market 57% win prob vs Walton; expert pick Walton +1.5 games.
 5. web_search query="Ostapenko vs Jones 2026 preview OR form OR ranking" → WTA Eastbourne grass. Ostapenko former champ, strong grass pedigree but first grass this season; Jones home crowd but poor recent form. Pred: Ostapenko 2-0 but some unpredictability.
 6. web_search query="Kessler vs Kasatkina 2026 tennis preview" → WTA Eastbourne R1. Both struggling (0-2 post-RG), close match expected, preview explicitly recommends Over 2.5 sets as value bet.
 7. web_search query="Michael Holt vs Craig Steadman snooker 2026 preview OR result OR form" → Championship League. Holt higher rank (~41-51 vs 90), slight edge; close odds. Props like frames over likely but low payout.
@@ -60,3 +60,17 @@
 - New file created via github___create_or_update_file (no sha as new path).
 - Post-push: Will re-verify tree + full content read to confirm no garbage/short version.
 - This round file serves as permanent record of full protocol compliance for this odds round.
+
+**Bets Placement & Logging Confirmation (2026-06-22 21:20 CEST)**
+User confirmed: "Bets placed as recommended: all recommended" (exact 2 bets from table in this file).
+
+nt-bet-log-manager executed exactly per nt-betting-skills.md and robust_betting_protocol_v2.md:
+- Full bet_log.csv fetched (SHA 69ff8b79f8b2baba03ab39873e848aee0f414db2)
+- 2 pending rows appended cleanly at bottom only (no historical overwrite, Result=Pending, P_L_NOK=0.00, Notes with round ref #1/#2 and protocol note)
+- Validation passed: header integrity, row count +2, proper CSV quoting for Notes (commas/#), no malformation/duplicates.
+- Updated current_bankroll.md (Pending at Risk now **62 NOK**, Liquid Available **251.46 NOK**)
+- Updated this round file with confirmation section.
+
+All pushed in single atomic commit via github___push_files + message. Post-push: tree re-verified, full content re-fetched for all 3 files confirmed complete/no garbage, new SHAs recorded. 
+
+Multi-agent + first-principles + tool proof from original analysis hold. System robust. Ready for any settlements → mandatory post-settlement-learning-reviewer + nt-learning-reviewer deep dive.
