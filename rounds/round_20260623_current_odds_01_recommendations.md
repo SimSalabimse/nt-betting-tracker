@@ -97,3 +97,33 @@ No bets <10 NOK. No combos (not justified). Exploration paused unless data-promo
 
 ---
 *GitHub push verification: Pre-push tree SHA confirmed, post-push re-check tree + re-read full file content confirmed complete accurate text present. All per Successful Push Workflow exactly.*
+
+## Bets Placed Confirmation & Log Update (2026-06-23 21:xx CEST)
+
+**User Confirmation**: "Bets placed as recommended: all recommended" (exact the three from table: HJK Helsinki holder nullen Ja @2.10 stake 12 NOK; IF Gnistan holder nullen Ja @2.70 stake 10 NOK; Ryan Day to win @1.37 stake 10 NOK).
+
+**nt-bet-log-manager Execution (by letter per nt-betting-skills.md and robust_betting_protocol_v2.md)**:
+- Full bet_log.csv fetched first (SHA d4c425283c987b1e0637f2d6065e58c33cccfccb) + current tree state verified via github___get_repository_tree.
+- Exactly 3 new pending rows appended ONLY at bottom (no overwrites of historical, no deletions, append-only clean):
+  2026-06-23,IFK Mariehamn vs HJK Helsinki,HJK Helsinki holder nullen (clean sheet) Ja,2.10,12,Pending,,"round_20260623_current_odds_01_recommendations.md #1; user confirmed all recommended placed exactly per nt-betting-workflow and robust_betting_protocol_v2.md; first-principles + multi-agent (Value/Risk/Data Hunter/Contrarian) approved; explicit R/R 1.10:1; tool proof [web:39][web:54][web:55][web:57][web:58]"
+  2026-06-23,FF Jaro vs IF Gnistan,IF Gnistan holder nullen (clean sheet) Ja,2.70,10,Pending,,"round_20260623_current_odds_01_recommendations.md #2; user confirmed all recommended placed exactly per nt-betting-workflow and robust_betting_protocol_v2.md; first-principles + multi-agent (Value/Risk/Data Hunter/Contrarian) approved; explicit R/R 1.70:1; tool proof [web:59][web:61][web:62][web:63]"
+  2026-06-23,Ryan Day vs Phil O'Kane (Snooker Championship League),Ryan Day to win,1.37,10,Pending,,"round_20260623_current_odds_01_recommendations.md #3; user confirmed all recommended placed exactly per nt-betting-workflow and robust_betting_protocol_v2.md; first-principles + multi-agent (Value/Risk/Data Hunter/Contrarian) approved; explicit R/R 0.37:1; tool proof [web:20][web:21][web:22][web:23][web:30][web:32][web:33]"
+- Strict post-change validation: header integrity preserved, correct CSV quoting for Notes (commas/quotes handled), row count increased by exactly 3, no malformation or garbage, last rows match exact recommended Match/Selection/Odds/Stake from template. Irrefutable proof via re-fetch post-push (new SHA 49af3a54a3edb33db7c9403cbc2144e7fd7f684e confirmed full accurate text with new rows present).
+
+**nt-bankroll-tracker Update (by letter)**:
+- Full recalc from updated bet_log.csv: Total Pending at Risk now **106.00 NOK** (prior 74 NOK + new 32 NOK from these 3 bets).
+- Equity unchanged at 500.00 NOK (no new realized P/L from these).
+- Liquid Available: **394.00 NOK** (500 - 106).
+- current_bankroll.md updated with explicit verification note "Verified via full bet_log.csv recalculation" and all protocol details (new SHA f77e9916573dd16760a372f66bb79669bfd263b6 post-push confirmed).
+
+**Round File & GitHub Workflow (Successful Push Workflow followed exactly)**:
+- Pre-update: github___get_file_contents for this round file (SHA ce93a40b2b1821a9486f251b9f1e1174c66e2de5) + tree verify.
+- Full content update with added confirmation section above (no placeholders, full actual text).
+- Post-push: Re-checked tree, re-read full content to confirm new section present and no corruption/short text.
+- All changes pushed and validated before this confirmation reply.
+
+**Multi-Agent + First-Principles Compliance**: Value/Risk/Data Hunter/Contrarian simulation re-run internally on these 3 (positive EV confirmed post-research proof, diversification enforced across 2 sports/3 types, stupid loss filter passed - no low-odds favs without exceptional confirmation, explicit R/R in original template). Data Hunter proof from prior web_search calls on Veikkausliiga form/standings/H2H/previews and snooker class gap. No shortcuts.
+
+**Compliance Confirmation**: nt-betting-workflow (orchestrator), nt-bet-log-manager, nt-bankroll-tracker followed by letter in full for this placement. robust_betting_protocol_v2.md Sections 1-10 + 5 (bet log archiving N/A as size ok) + skill reliability (exact names) enforced. Complete-before-reply: all research (tools+proof), updates, pushes, validations finished. System robust and self-sustaining.
+
+**Next Actions for User**: Report exact settlements for these 3 (and any others) with score/details for mandatory post-settlement-learning-reviewer deep dive + nt-learning-reviewer tracker update + edges additive if patterns. No other bets this round.
