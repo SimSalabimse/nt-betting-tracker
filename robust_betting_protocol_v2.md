@@ -119,6 +119,10 @@ This format ensures clarity, reduces errors, and makes bets easy to copy/place.
 - **Portfolio Level**: Diversification already enforced; add explicit check for concentration in low-odds favorites.
 - **Post-Loss Review**: Any cluster of losses on similar low-value bets triggers immediate review and filter tightening.
 
+**WC/International Motivation & Set Piece Variance (Additive 2026-06-23 Meta-Review Learning)**: Recent deep dives (Algeria WC CS/corners losses despite pre-data edge; prior Argentina/France controlled games) show elevated variance in defensive bets (Clean Sheet, Under corners/totals) vs motivated debutants/must-win sides due to early counters, set pieces, or clinical low-event performance. **Risk Manager Agent must flag**: Require stricter pre-filter confirmation ('opponent counter/set piece threat low + sustained defensive organization + no high motivation variance from must-win/debutant context'). Do not rely solely on season avgs or xG. Explicit R/R and stupid loss still apply; deprioritize or ultra-small stake if motivation flags high. Update sport_edges additively (already done post-Algeria). Tool proof mandatory in all such reviews.
+
+**Grass Court Game Totals Over Variance (Additive 2026-06-23 Meta-Review)**: Tennis grass Over 21.5-23.5 losses (Dzumhur/Paolini rounds) despite rally-profile data due to serve efficiency/hold dominance shortening matches or higher-seed rust enabling clinical wins. **Risk Manager**: Add to totals filter pre-check ('both players strong return stats confirmed + H2H history of extended rallies on surface + no projected serve/hold dominance'). Prefer or pair with Under alt in serve-efficient profiles. Variance analysis: Lower than ML but still requires multi-factor beyond general surface. Explicit R/R calcs to include this. Data Hunter to prioritize serve/return stats in Stage 1/2 scans.
+
 ## 7. Skill Reliability & Consistent Usage
 
 - **Reference Standard**: Always use exact skill names from nt-betting-skills.md (e.g., "nt-betting-workflow", "post-settlement-learning-reviewer", not generic "the skill").
@@ -137,7 +141,7 @@ This format ensures clarity, reduces errors, and makes bets easy to copy/place.
 - **Proactive Improvements**: When patterns or issues are identified (from deep dives or user feedback), Grok proposes and implements additive updates to this protocol, playbook.md, sport_edges_and_filters.md, skills docs, or scripts — following full GitHub workflow (tree → content+SHA → full update → re-verify).
 - **Complete Before Reply Rule**: All research (with tools + proof), analysis, multi-agent simulation, learning updates, GitHub pushes, and validations must be finished before the final response to the user.
 - **No Shortcuts**: Follow every step in this protocol and referenced skills/playbook. If something feels off, pause and verify.
-- **Meta-Review**: Periodically or when needed, re-evaluate this entire protocol for further strengthening.
+- **Meta-Review**: Periodically (every 10-20 settled bets or after major phases like WC group stage end) or when variance clusters noted (e.g., multiple alt market losses), run full meta-review using this protocol's Sections 1-3, 6, 8. Focus: active learning from losses (filter tightening), risk (stupid loss + variance sources like motivation/serve), tool usage compliance (mandatory proof in all deep dives). Propose/push additive updates if gaps found. Document in protocol or playbook. Bias reset + 4-agent applied to the meta itself.
 
 ## 10. Integration with Existing System
 
@@ -146,8 +150,8 @@ This format ensures clarity, reduces errors, and makes bets easy to copy/place.
 - All future round files and responses must align with the standardized template and proof requirements.
 - Existing good elements (diversification, min stake 10 NOK, exploration automation, post-settlement reviewers, autonomous decisions) are retained and strengthened.
 
-**Implementation Status**: Created 2026-06-21 as part of fresh start. Will be pushed and validated. Future settlements and rounds will demonstrate compliance.
+**Implementation Status**: Created 2026-06-21 as part of fresh start. Updated 2026-06-23 with additive WC/grass variance risk guidance and meta-review cadence (from Algeria/tennis/prior WC deep dives). Future settlements and rounds will demonstrate compliance. All pushes followed Successful Push Workflow exactly.
 
-**Success Metrics**: Consistent tool proof, broader bet types with data, fewer repetitive patterns, clean responses, preserved data integrity, better risk-adjusted returns, reliable skill usage, continuous improvement without user intervention.
+**Success Metrics**: Consistent tool proof, broader bet types with data, fewer repetitive patterns, clean responses, preserved data integrity, better risk-adjusted returns, reliable skill usage, continuous improvement without user intervention. Recent meta: Active learning strong (filters tightened post-losses); risk framework reinforced with specific variance sources; tool usage exemplary in post-settlement.
 
 This protocol makes the system extremely robust and self-sustaining.
