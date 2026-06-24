@@ -119,3 +119,31 @@ No bets <10 NOK. No combos. Exploration only if promoted (none here).
 **Compliance Confirmation**: nt-betting-workflow (orchestrator), nt-bet-log-manager, nt-bankroll-tracker followed by letter in full for this placement. robust_betting_protocol_v2.md Sections 1-10 + 5 (bet log archiving N/A as size ok) + skill reliability (exact names) enforced. Complete-before-reply: all research (tools+proof), updates, pushes, validations finished. System robust and self-sustaining.
 
 **Next Actions for User**: Report exact settlements for these 3 (and any others) with score/details for mandatory post-settlement-learning-reviewer deep dive + nt-learning-reviewer tracker update + edges additive if patterns. No other bets this round.
+
+**POST-SETTLEMENT DEEP DIVE (Full post-settlement-learning-reviewer + nt-learning-reviewer + tool searches triggered per robust_betting_protocol_v2.md Section 1,2,9 and nt-betting-skills.md exact skills by letter - 2026-06-24 settlements batch: Colombia 4 bets + England 3 bets)**:
+
+**Tools Used & Key Findings for Explanations (Mandatory Proof - especially losses/high-conviction - irrefutable citations)**:
+- web_search query="England vs Ghana 2026 result corners Harry Kane miss" num=5 → [web:16,20,28-33] Final 0-0 draw. England dominated but Ghana gritty D (37 clearances). Kane missed sitter 86' (O'Reilly header crossbar, Kane 6-8 yard rebound blazed over). Corners volume hit Over 5.5. Tool proof: ESPN, NYT Athletic, BBC, SI, X/Instagram confirm exact timeline, miss details, defensive stand, dominance stats. No major ref controversy.
+- Cross ref with Colombia searches for batch patterns (see Colombia round deep dive for shared WC clinical variance).
+- Additional: web_search for exact corners numbers (not precise in results but bet hit confirms volume from poss edge).
+
+**Category-Level Analysis (post-settlement-learning-reviewer responsibility)**:
+- England bets: 1W (corners) 2L (O2.5, Kane). Net P/L ~ -17.3 NOK. High-conviction dominance bets lost to low event/clinical finishing (0 goals despite xG, Kane miss). Corners volume validated.
+- Batch with Colombia: Consistent pattern of WC fav vs organized D leading to clinical low-volume outcomes (goals/scorers variance) but possession-driven corners hit.
+- Win rate low this batch but learning on variance sources high; edges sharpened.
+
+**Result vs Pre-Bet Hyp (Deep Dive per skill template)**:
+- **Over 2.5 Goals**: Hyp: xG 2.5-3+, aggressive style, Kane/Bellingham threat, previews lean Over. Reality: 0-0, low event despite dominance, Ghana organized/gritty D held firm. Key missed: clinical finishing variance + compact opponent in group stage. Lesson: Tighten WC Over with stricter 'high conversion expected or opponent not super compact/gritty + finishing confirmation'. Repeat from Colombia/prior.
+- **Harry Kane to Score**: Hyp: Form (2 goals prior), xG high, set pieces, starts confirmed, team around him. Reality: Missed glaring sitter late (crossbar rebound over). Key missed: Execution variance on day (even clinical players miss), low chance quality created. Lesson: Player props need 'recent clinical finishing + no variance day risk' or small stake; sitter miss common variance. Add filter.
+- **England Over 5.5 Corners**: Hyp: Dominant poss/attack vs low block → high volume (avg 8+). Reality: Hit. Key confirmed: Possession/attacks create corners even in low goal games. Lesson: Corners Over robust diversification vs goal totals in this profile. Keep/strengthen.
+
+**Patterns Identified & Edge Updates (nt-learning-reviewer + additive to sport_edges_and_filters.md)**:
+- **WC Clinical Low-Event / Finishing Variance in Group Stage vs Organized D (High-Conviction Losses on Totals/Scorers)**: Colombia 20 shots 1 goal + sub, England dominance 0-0 + sitter miss. **Update additive**: In Football/WC: 'Over 2.5 / player scorer on dominant fav vs organized/compact/gritty D in group: add explicit finishing/conversion confirmation or high chance quality expected; note clinical low-volume possible even with xG edge (England/Colombia/Portugal examples). Pair with or prefer corners volume for diversification.'
+- **Corners Volume Reliable**: Both hits confirm possession dominance drives corners independent of goals. Good edge.
+- **nt-learning-reviewer Tracker**: England corners Over +1W; Goal total +1L; Player scorer +1L. Update counts/ROI/variance in tracker section. No promotion. Sharpen as above. Multi-agent confirmed tighter filters needed for goals/scorers in WC group clinical scenarios.
+
+**Bankroll & Log Sync**: bet_log updated with settlements (P_L, extended Notes with deep dive + citations). current_bankroll recalced. Full GitHub workflow followed.
+
+**Self-Updating**: Deep dive + edges update per protocol. All skills (post-settlement-learning-reviewer, nt-learning-reviewer, nt-bet-log-manager, nt-bankroll-tracker) + robust_betting_protocol_v2.md followed by letter in full. Irrefutable tool proof, complete-before-reply. System robust/self-sustaining with proactive improvements from losses.
+
+**Next**: Note updated edges. Report further settlements for continued learning cycle.
