@@ -34,6 +34,36 @@
 - **Post-Settlement (especially losses/high-conviction)**: Mandatory tool searches for "match result explanation", "what went wrong", stats confirmation, ref decisions, etc. Add to round file deep dive.
 - **Wider Bet Types**: Actively pursue value in cards, player cards, corners, props when data shows edge. Example: Japan match — if ref stats show low cards, Under cards could be strong; always check with tools.
 
+## 1.5 Prioritized Data Sources & Deep Historical Pattern Simulation (New - Addresses Lack of Good Data Collection)
+
+**Data Hunter Agent Mandatory Priority Order** (enforced in every Stage 1/2 scan, deep dive, and meta-review):
+
+1. **Dedicated Historical Stats Databases (Absolute Priority #1 - Core for all analysis, especially WC/international/favorites vs weaker)**:
+   - **FBref.com**: Primary for team/player historical stats, WC group stage results/tables/history, streaks (e.g. wins/draws/losses in specific match contexts like second group game), H2H, form, shooting/xG advanced metrics. Use for simulating patterns like "England second group stage WC results last 5 tournaments vs weaker opponents" via historical tables/search.
+   - **Transfermarkt.com**: Detailed player/club history, transfers, injuries, match-by-match data, WC appearances/performance history. Critical for motivation, fitness, historical context.
+   - **Understat.com**: xG/xA expected metrics for realistic simulation of scoring patterns and variance.
+   - **WhoScored.com**: Detailed match ratings, event data, historical stats for deep pattern analysis.
+   - **Sofascore.com**: Comprehensive live/historical stats, performance metrics, heatmaps for simulation.
+   - Official FIFA/competition archives for exact WC historical results, group stage specifics.
+
+2. **Supplementary Reliable Sources**: Official league/competition sites for additional context.
+
+3. **Real-time/News (Secondary only)**: X searches for breaking injuries/news *after* stats foundation. Use sparingly.
+
+**Deprioritize/Blacklist for Core Data**: Reddit (user opinions, echo chambers, biased). YouTube (often superficial, highlight-focused, not rigorous historical data). Use only for supplementary sentiment if explicitly needed; never as primary source for edges or simulation.
+
+**Deep Historical Pattern Simulation Protocol (Mandatory)**:
+- In every analysis (especially WC/group stage, favorites vs weaker, motivation-heavy matches): Explicitly search and simulate historical patterns using Priority #1 sites.
+  - Examples: Team-specific streaks (e.g. England second WC group match results last 5 tournaments vs weaker opponents - query FBref/Wiki historical tables); motivation effects in must-win/debutant contexts; clinical finishing/set-piece variance in low-event games; H2H in similar scenarios.
+  - Method: browse_page on FBref historical pages or web_search "[team] [specific historical pattern e.g. second group stage World Cup last 5] results vs weaker" + Transfermarkt for context. Extract win/draw/loss rates, goal averages, key factors.
+  - Simulation: "Historical pattern shows X (e.g. low win rate or high variance) → Adjust probability/edge downward for favorite win or Over; flag in Risk Manager."
+- **Multi-Agent Integration**: Contrarian Agent specifically surfaces counter-historical patterns. Data Hunter provides proof. Risk Manager quantifies variance impact on R/R.
+- **Proof Requirement**: In response/round file: "Historical Pattern Search: [exact query on FBref/Transfermarkt] → Key Finding: [summary e.g. England 1 win in last 5 similar second group matches vs weaker] + simulation impact."
+- Post-settlement: Re-analyze with historical lens for lessons (e.g. if loss aligns with historical variance, tighten filter).
+- Update sport_edges_and_filters.md additively with validated historical insights.
+
+This ensures deep, evidence-based simulation over easy opinions/data, directly fixing reliance on superficial sources. Tool proof non-negotiable.
+
 ## 2. Active Learning & Edge Updates System
 
 - **Post-Settlement Deep Dive (Mandatory)**: Use/ trigger post-settlement-learning-reviewer skill + fresh tool searches. Document in round file: hypothesis vs reality, key factors, lessons for filters/edges.
@@ -51,11 +81,11 @@
 - **Multi-Agent Internal Simulation** (replaces Grok Heavy):
   - **Value Agent**: Pure +EV calculation, probability estimates, long-term edge focus.
   - **Risk Manager Agent**: Downside protection, risk/reward ratio, variance analysis, "stupid loss" filter.
-  - **Data Hunter Agent**: Ensures maximum tool usage, data quality, proof of research.
-  - **Contrarian Agent**: Challenges consensus, looks for mispriced underdogs, alternative markets (Under, cards, props), questions Over bias or repeat patterns.
+  - **Data Hunter Agent**: Ensures maximum tool usage, data quality, proof of research. **Mandatory: Enforce inclusion of non-core sports (darts, snooker, MLB, WNBA, esports) per sport_edges exploration quotas unless zero viable +EV after full scan.**
+  - **Contrarian Agent**: Challenges consensus, looks for mispriced underdogs, alternative markets (Under, cards, props), questions Over bias or repeat patterns. Surfaces historical counter-patterns.
   - These agents "debate" internally; final recommendation is the converged best portfolio with notes from each perspective documented.
 
-- **Explicit Market Breadth**: Every analysis must evaluate potential in Under, cards, player props, corners, etc. Document why certain types were or were not selected with data support.
+- **Explicit Market Breadth & Sports Diversification**: Every analysis must evaluate potential in Under, cards, player props, corners, etc. **Mandatory exploration**: At least 1-2 candidates from non-Football/Tennis sports in every round/portfolio unless data shows none viable. Document enforcement.
 
 ## 4. Standardized Clean Response Template (Fixes Messy Responses)
 
@@ -65,7 +95,7 @@ Use this exact structure for all bet recommendation responses:
 [1-2 sentence overview of opportunities and portfolio.]
 
 **Data Sources & Tool Proof**
-- Detailed list of tools used with queries/URLs and key extracted findings/proof. This is non-negotiable.
+- Detailed list of tools used with queries/URLs and key extracted findings/proof. This is non-negotiable. Include historical pattern searches explicitly.
 
 **Recommended Bets**
 | Match | Selection | Decimal Odds | Stake (NOK) | Est. EV / Conviction | Rationale (with data) | Risk Notes |
@@ -75,22 +105,23 @@ Use this exact structure for all bet recommendation responses:
 **Portfolio Summary**
 - Total Stake: XX NOK
 - Number of Bets: X
-- Diversification: [list sports/bet types — must meet rules]
+- Diversification: [list sports/bet types — must meet rules; note exploration from other sports enforced]
 - Blended Portfolio EV: X%
 - Max Single Bet Risk: XX NOK
 - Overall Risk Assessment: [low/moderate with justification]
 
 **Learning & Flags for Future**
-[Any new patterns, edge updates needed, or notes from multi-agent simulation.]
+[Any new patterns, edge updates needed, or notes from multi-agent simulation including historical insights.]
 
 **Next Actions for User**
 [Exact instructions for placing bets. Report settlements with details for deep dive.]
 
 This format ensures clarity, reduces errors, and makes bets easy to copy/place.
 
-## 5. Bet Log Archiving & Data Integrity Protocol (Fixes Large File Issues)
+## 5. Bet Log Archiving & Data Integrity Protocol (Fixes Large File Issues & Update Failures)
 
 - **Monitoring**: Before any bet_log.csv operation, check size/row count (via tool or script).
+
 - **Archiving Trigger**: When main bet_log.csv reaches ~100-150 lines or ~50-60kB (or proactively every major period):
   1. Create new archive file: bet_log_archive_up_to_YYYY-MM-DD.csv containing older settled bets (full copy of historical rows).
   2. Trim main bet_log.csv to keep only pending + recent ~40-50 settled bets.
@@ -98,6 +129,21 @@ This format ensures clarity, reduces errors, and makes bets easy to copy/place.
   4. Use nt-bet-log-manager or safe_bet_log_edit.py with full fetch + SHA + validation.
   5. Update current_bankroll.md, any references in playbook/README.
   6. Full Git push + re-verify tree/content.
+
+- **Settlement & Append Update Rules (Strengthened for Reliability - Addresses Update Failures & Breaking CSV)**:
+  - **Every single update (settlement or new pending append)**: 
+    1. Full fetch of current bet_log.csv content + exact current SHA.
+    2. Verify header matches EXACTLY: "Date,Match,Selection,Decimal_Odds,Stake_NOK,Result,P_L_NOK,Notes" before proceeding.
+    3. Use exclusively nt-bet-log-manager skill or scripts/safe_bet_log_edit.py for modifications (append-only for new, targeted Result/P_L/Notes append for settlements - no overwrites/deletions of historical).
+    4. Post-modification: Re-fetch full content. Confirm: 
+       - Header exact match.
+       - Row count increased only by expected number (no unexplained changes).
+       - No broken CSV (proper quoting for Notes with commas/quotes, no malformation/garbage).
+       - All historical rows untouched except precise targeted updates.
+    5. If ANY discrepancy found: Immediate rollback to pre-SHA version, re-apply update, re-verify. Document issue and fix in Notes or round file.
+    6. Update current_bankroll.md and round file only after successful bet_log verification.
+  - Never compromise data integrity. Full backup via Git history + explicit verification proof in every operation.
+
 - **Never compromise data**: Always backup first. Preserve every historical row forever in archives.
 - Enhance scripts/safe_bet_log_edit.py if needed for automated archiving support.
 
@@ -133,7 +179,7 @@ This format ensures clarity, reduces errors, and makes bets easy to copy/place.
 ## 8. First-Principles Thinking & Multi-Perspective Simulation
 
 - **Mandatory Start**: Every analysis begins with first-principles breakdown (fundamentals of the event, independent of odds or recent history).
-- **Internal Simulation**: Run the 4-agent debate (Value, Risk Manager, Data Hunter, Contrarian) as described in section 3. Document key arguments from each in the round file or response.
+- **Internal Simulation**: Run the 4-agent debate (Value, Risk Manager, Data Hunter, Contrarian) as described in section 3. Document key arguments from each in the round file or response. Include historical pattern simulation from Section 1.5.
 - **Outcome**: Recommendations are stress-tested from multiple angles for robustness.
 
 ## 9. Self-Updating & "Just Works" Robustness
@@ -141,7 +187,7 @@ This format ensures clarity, reduces errors, and makes bets easy to copy/place.
 - **Proactive Improvements**: When patterns or issues are identified (from deep dives or user feedback), Grok proposes and implements additive updates to this protocol, playbook.md, sport_edges_and_filters.md, skills docs, or scripts — following full GitHub workflow (tree → content+SHA → full update → re-verify).
 - **Complete Before Reply Rule**: All research (with tools + proof), analysis, multi-agent simulation, learning updates, GitHub pushes, and validations must be finished before the final response to the user.
 - **No Shortcuts**: Follow every step in this protocol and referenced skills/playbook. If something feels off, pause and verify.
-- **Meta-Review**: Periodically (every 10-20 settled bets or after major phases like WC group stage end) or when variance clusters noted (e.g., multiple alt market losses), run full meta-review using this protocol's Sections 1-3, 6, 8. Focus: active learning from losses (filter tightening), risk (stupid loss + variance sources like motivation/serve), tool usage compliance (mandatory proof in all deep dives). Propose/push additive updates if gaps found. Document in protocol or playbook. Bias reset + 4-agent applied to the meta itself.
+- **Meta-Review**: Periodically (every 10-20 settled bets or after major phases like WC group stage end) or when variance clusters noted (e.g., multiple alt market losses), run full meta-review using this protocol's Sections 1-3, 6, 8. Focus: active learning from losses (filter tightening), risk (stupid loss + variance sources like motivation/serve + historical patterns), tool usage compliance (mandatory proof in all deep dives including historical). Propose/push additive updates if gaps found. Document in protocol or playbook. Bias reset + 4-agent applied to the meta itself.
 
 ## 10. Integration with Existing System
 
@@ -150,8 +196,8 @@ This format ensures clarity, reduces errors, and makes bets easy to copy/place.
 - All future round files and responses must align with the standardized template and proof requirements.
 - Existing good elements (diversification, min stake 10 NOK, exploration automation, post-settlement reviewers, autonomous decisions) are retained and strengthened.
 
-**Implementation Status**: Created 2026-06-21 as part of fresh start. Updated 2026-06-23 with additive WC/grass variance risk guidance and meta-review cadence (from Algeria/tennis/prior WC deep dives). Future settlements and rounds will demonstrate compliance. All pushes followed Successful Push Workflow exactly.
+**Implementation Status**: Created 2026-06-21 as part of fresh start. Updated 2026-06-23 with additive WC/grass variance risk guidance and meta-review cadence. Updated 2026-06-24 with Prioritized Data Sources & Historical Pattern Simulation (Section 1.5), strengthened bet_log verification (Section 5), mandatory broader sports exploration (Section 3), and clean bankroll reset integration. All per user feedback on data collection, bet_log updates, sports breadth, and clean restart. Future settlements and rounds will demonstrate compliance. All pushes followed Successful Push Workflow exactly (tree verify, content+SHA, full update, post re-verify).
 
-**Success Metrics**: Consistent tool proof, broader bet types with data, fewer repetitive patterns, clean responses, preserved data integrity, better risk-adjusted returns, reliable skill usage, continuous improvement without user intervention. Recent meta: Active learning strong (filters tightened post-losses); risk framework reinforced with specific variance sources; tool usage exemplary in post-settlement.
+**Success Metrics**: Consistent tool proof (including historical), broader bet types with deep data, fewer repetitive patterns (enforced exploration), clean responses, preserved data integrity (verified CSV every update), better risk-adjusted returns, reliable skill usage, continuous improvement without user intervention. Clean restart with 500 NOK bankroll active.
 
-This protocol makes the system extremely robust and self-sustaining.
+This protocol makes the system extremely robust and self-sustaining. Clean restart complete.
