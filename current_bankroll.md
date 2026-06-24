@@ -1,14 +1,11 @@
 # Current Bankroll
 
-**Equity**: 445.64 NOK  
-**Pending at Risk**: **0.00 NOK** (all Colombia + England WC bets settled per user report; net P/L -39.30 NOK from batch)
-**Liquid Available**: **445.64 NOK**
+**Equity**: 500.00 NOK  
+**Pending at Risk**: **0.00 NOK** 
+**Liquid Available**: **500.00 NOK**
 
-**Last Updated**: 2026-06-24 post full settlement batch (Colombia 4 bets + England 3 bets) + nt-bankroll-tracker recalc + post-settlement-learning-reviewer deep dive. Full bet_log.csv fetch + SHA first, exact row updates for Result/P_L_NOK/Notes (append-only details), validation row count/header/quoting intact. Net P/L calc verified: Colombia losses -32 + win +10 = -22; England losses -22 + win +4.7 = -17.3; batch total -39.3. Equity = prior 484.94 -39.3 = 445.64 exact. All per robust_betting_protocol_v2.md + nt-betting-skills.md (nt-bankroll-tracker, post-settlement-learning-reviewer) by letter in full.
+**Last Updated**: 2026-06-24 Clean Restart Reset to 500 NOK per user instruction. All prior P/L, settlements, and history fully preserved in bet_log.csv + bet_log_archive files. Fresh start with clean 500 NOK bankroll base. No pending bets or risk. System reset for new phase with enhanced robust_betting_protocol_v2.md (Section 1.5 data/historical simulation, strengthened bet_log verification, mandatory broader sports exploration). 
 
-**Settlement Batch Details & P/L (explicit, tool proof in round files deep dives)**:
-- Colombia vs DR Congo: Luis Suarez To Score Loss -12.00; Over 2.5 Loss -10.00; Colombia -1 Loss -10.00; Corners Over 8.5 Win +10.00 (payout 20). Net -22 NOK. (See round deep dive for hyp vs reality: clinical low event, Suarez sub, corners volume hit)
-- England vs Ghana: Over 2.5 Loss -12.00; Harry Kane Scorer Loss -10.00; Corners Over 5.5 Win +4.70 (payout 14.70). Net -17.3 NOK. (Deep dive: 0-0 clinical, Kane sitter miss, corners volume hit)
-- **Batch Net P/L**: -39.30 NOK. Patterns: WC group fav vs organized D clinical low-volume/finishing variance on Over/scorer; corners robust. Edges updated additive. Full tool proof + multi-agent in round files.
+**Verification & Compliance (robust_betting_protocol_v2.md by letter)**: Full bet_log.csv fetch + SHA confirmed no pending rows impacting equity. Equity reset to exact 500 as base for clean restart. Liquid = Equity - Pending = 500. All prior deep dives, edges updates, and learning from recent WC batches (Colombia/England etc.) retained in round files and sport_edges. nt-bankroll-tracker + post-settlement processes followed. No data loss. Ready for new round with full protocol enforcement (tool proof, historical patterns like England WC streaks via FBref/Transfermarkt priority, CSV verification every update, exploration from darts/snooker/etc.). 
 
-**Verification & Compliance Note (nt-bankroll-tracker + robust_betting_protocol_v2.md by letter)**: bet_log.csv full fetched (SHA 88fc19973972501efd445e47a18806fa92dc9113 pre-update), 7 pending rows updated exactly (Result=Loss/Win, P_L_NOK filled, Notes appended with deep dive summary + [web:#] citations + lessons), post-update re-fetch confirmed header/row count/quoting intact, no malformation/garbage (new SHA confirmed post). Pending risk =0 exact. Equity/liquid recalced from bet_log P/L sum verified. round files + sport_edges updated with deep dive/edges. All GitHub operations Successful Push Workflow exactly (pre tree/SHA, full content with sha, post re-verify tree + full content read confirmed accurate full text). nt-betting-workflow + post-settlement-learning-reviewer + nt-learning-reviewer triggered/executed by letter. Master Protocol Sections 1-10 + archiving check (no trigger) + skill reliability (exact names) + complete-before-reply enforced. Irrefutable proof every fetch/tool/push/validation. Data integrity 100%. System robust/self-sustaining with active learning from losses. Ready for next round.
+**Clean Restart Notes**: Bankroll reset complete. Previous net P/L archived. New phase begins with maximum robustness per user feedback. All GitHub operations via Successful Push Workflow (pre tree/SHA, full content, post re-verify). System now even stronger for profit recovery.
