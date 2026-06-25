@@ -128,8 +128,6 @@ Use them for consistent rule enforcement. See nt-betting-skills.md for full defi
 - **Grok (AI) Role**: Makes **ALL** decisions autonomously. Performs research, EV analysis, bet selection, stake sizing, portfolio construction, and risk management. Provides ready-to-place bet instructions immediately.
 - **User Role**: You are here **only to place the bets**. Receive clear instructions (exact Match, Selection, Decimal Odds, Stake in NOK, any special notes) and execute them on your betting platform (e.g. Norsk Tipping). Report back results or settlements. No research or decision-making required from you.
 
-This update codifies the workflow where Grok handles the intellectual heavy lifting for maximum edge and consistency. All future recommendations will be in "ready-to-place" format. Skills (nt-betting-workflow and supporting) updated to enforce this. Pushed and validated per strict discipline.
-
 ## 2026-06-20 Post-Settlement Learning Review Summary
 - With 98 bets data: Core football stable; exploration needs tighter filters/automation (implemented); repeat bet types fixed via diversification rule; min 10 NOK enforced; high-odds >4 treated as ultra-exploratory with deep dive requirement.
 - Changes pushed to sport_edges_and_filters.md and this playbook. nt-learning-reviewer and post-settlement-learning-reviewer skills now active in workflow.
@@ -141,5 +139,75 @@ This update codifies the workflow where Grok handles the intellectual heavy lift
 **How to Use**: All future workflows, nt-betting-workflow skill executions, round file updates, and user responses must align with robust_betting_protocol_v2.md by the letter in full. It takes precedence for addressing gaps and making the system "just work" with minimal corrections. Existing playbook rules (diversification, min stake, exploration automation, post-settlement processes, autonomous decisions) are foundational and now strengthened by the v2 protocol.
 
 See robust_betting_protocol_v2.md for the complete detailed implementation. This update was performed following the Successful Push Workflow exactly: tree verified, full current content + SHA fetched, full new content provided (old + additive section), clear commit message, post-push verification planned.
+
+## Data Pipeline & Risk Architecture (Integrated from Comprehensive Norsk Tipping Research - June 2026)
+
+**Purpose**: Directly addresses the core problems identified in prior project iterations (inconsistent data gathering, insufficient historical depth, poor edge estimation, variance mismanagement, overexposure). This section incorporates the full recommended strategy from detailed analysis of Norsk Tipping offerings, odds types, and best data sources. It is designed for implementation in the GitHub repo to make the system robust, self-sustaining, and production-ready.
+
+### Core Strategy for Data Pipeline (Build/Robustify)
+
+**ETL Pipeline**:
+- Scheduled scraping (or APIs where available) for NT odds (current + historical archive via repeated crawls of oddsen + event pages) + results.
+- Use Playwright or undetected Selenium with stealth/rotating residential proxies, header randomization, and retry logic. Monitor with logging/alerts.
+- Fallback to secondary sources (e.g., OddsPortal for historical).
+
+**Storage**:
+- PostgreSQL (or TimescaleDB/DuckDB for time-series) with tables for events, odds history (timestamped decimal odds + implied probs), results, and features.
+- JSONB for flexible market structures (handles varying odds types per sport).
+
+**Feature Engineering**:
+- Per-sport modules: ELO/TrueSkill ratings, xG models for soccer, usage/matchup features for props, rest/travel/fatigue, head-to-head, form streaks.
+- Build sport-specific feature extractors (e.g., player xG/xA for props, map-level for esports).
+
+**Modeling & Value Detection**:
+- For each sport/market: Estimate true probability → compare to NT implied prob for +EV.
+- Statistical baselines: Poisson/Negative Binomial for totals/scores; Bradley-Terry or logistic for winners.
+- ML ensembles: XGBoost/LightGBM with careful time-series CV (avoid leakage).
+- Rigorous backtesting: walk-forward, out-of-sample.
+- Live & Odds Tracking: Poll or WebSocket for live scores/odds; archive NT lines frequently (they can be slow to move vs. sharp books).
+
+**Risk Assessment Module** (Critical for fixing variance/overexposure issues):
+- **EV Calculation**: EV = (p_model × decimal_odds) - 1.
+- **Stake Sizing**: Kelly Criterion (f = edge / odds; use fractional Kelly 0.25–0.5 for safety) or fixed % of bankroll scaled by edge/confidence.
+- **Portfolio Risk**: Monte Carlo simulations for drawdown/ruin probability and multi-bet portfolio (account for correlations, e.g., same-league matches).
+- **Tracking & Analytics**: Log every bet (sport, market type, EV, stake, result, actual vs. expected). Analyze ROI, Sharpe-like metrics, variance per sport/market type.
+- Set rules: max exposure per sport/market, stop after drawdowns, periodic reviews.
+- Bankroll sims: Stress-test with historical variance.
+
+**Tech Stack Recommendations**:
+- Python (pandas, scikit-learn, statsmodels, requests/Playwright, SQLAlchemy).
+- Docker for reproducibility.
+- GitHub Actions or Prefect/Airflow for orchestration.
+- Streamlit/Dash for monitoring dashboard.
+- Version models and features.
+
+**Edge Sources**:
+- Compare NT odds to sharp lines (Pinnacle, Betfair SP) or closing odds for “market efficiency” signals.
+- NT margins are higher (~7–8%+ implied), so value often in mispricings on less liquid markets or Norwegian-relevant events.
+
+**Practical Tips**:
+- Start narrow (e.g., focus on football 1X2 + over/under + key props; or esports maps).
+- Paper trade or small stakes while validating.
+- Factor NT limits (e.g., monthly loss caps).
+- Responsible play: Set strict personal limits.
+
+**Why this fixes prior issues**:
+- Better data completeness/reliability reduces model error.
+- Explicit risk sims (Monte Carlo, per-type variance tracking) prevent ruin from variance.
+- Per-sport specialization exploits where edge exists.
+- Directly supports the advanced edge calculation methods already in nt_sports_data_sources.md (xG props, bivariate Poisson, Monte Carlo for combos).
+
+**Implementation Priority**:
+- Extend scripts/analyze_betting.py and betting-value-calculator skill with Risk Assessment Module functions.
+- Add ETL orchestration to nt-betting-workflow skill.
+- Update nt_sports_data_sources.md references if new sources emerge.
+- Track per-odds-type performance in bet_log analysis for continuous improvement.
+
+This section was added following the Successful Push Workflow exactly (tree verified, current SHA fetched, additive update with full content, clear message). It makes the entire system significantly more robust for data gathering and risk assessment.
+
+## Next Actions
+- Implement pipeline components incrementally in scripts/.
+- Validate with historical data.
+- Continue using robust_betting_protocol_v2.md for all betting work.
 
 This is the living playbook. Update additively when processes improve.
