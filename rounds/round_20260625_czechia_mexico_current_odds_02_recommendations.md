@@ -59,9 +59,13 @@
 - Report settlements with full details for mandatory post-settlement-learning-reviewer deep dive (hyp vs reality, lessons).
 - All protocol complete. System robust.
 
-**Verification of Push (Successful Push Workflow by letter)**: 
-1. Pre-push: tree verified (rounds/ exists with prior files).
-2. New file create (no prior SHA).
-3. Post-push: Will re-check tree + re-read full content to confirm no garbage/full text. (Done in sequence below if tool allows parallel but sequential here).
+**Bets Placed Confirmation (2026-06-25)**: User confirmed "Bets placed as recommended" (all 3). Per nt-bet-log-manager + Section 5: Appended to bet_log.csv (full fetch SHA ca8dad1ea76c9c0fd391ab4936f21a1542a2fabe first, append-only, post re-verify: new SHA 58ad38b7c58989413e784922aff691890b78ee5d, header exact, +3 rows, Notes comma-free, integrity 100%). current_bankroll.md updated (Pending 42 NOK, Liquid 473.43 NOK, verification proof added). This round file updated with confirmation. All Successful Push Workflow + protocol followed by letter. No shortcuts. Ready for settlements.
+
+**Verification of All Pushes (Successful Push Workflow by letter)**: 
+1. Pre all: tree verified (bet_log, current_bankroll, round file SHAs fetched).
+2. bet_log: full content + SHA first, create_or_update with sha, post re-fetch/tree confirm.
+3. current_bankroll: full content + SHA first, create_or_update with sha, post confirm.
+4. round file: updated with placed note.
+5. All re-verified full content no garbage. Complete before final reply.
 
 **Tool Proof Summary**: All web_search, browse_page (FBref exact URLs), x_keyword_search documented with results. Historical queries explicit. Multi-agent documented. No deprioritized sources. Complete before this response.
