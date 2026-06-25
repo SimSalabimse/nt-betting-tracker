@@ -64,6 +64,44 @@
 
 This ensures deep, evidence-based simulation over easy opinions/data, directly fixing reliance on superficial sources. Tool proof non-negotiable.
 
+## 1.6 Maximum Tool Usage & Exhaustive Data Collection Mandate (New - Forces Max Tool Usage Every Time)
+
+**Purpose**: Directly addresses recent observations of limited source usage (only 20-30 sources). This rule **forces maximum tool usage** in every betting-related analysis, deep dive, Stage 1/2 scan, and meta-review to achieve the most accurate, comprehensive, and cross-verified data possible. No early stopping or minimal effort allowed.
+
+**Mandatory Minimum Tool Usage Rules** (enforced by Data Hunter Agent in every response):
+
+1. **Minimum Tool Call Volume**:
+   - For every new odds file or complex analysis: Execute **at least 10-15 tool calls** in total (mix of web_search, browse_page, x_keyword_search/x_semantic_search).
+   - Parallel execution encouraged (multiple tools in one step) to maximize coverage without delay.
+   - For simple quick checks: Minimum 5-8 tool calls.
+
+2. **Source Diversity & Cross-Verification**:
+   - Critical claims (form, injuries, xG, historical patterns, player props data) must be cross-verified from **at least 5-7 independent high-quality sources** (dedicated stats DBs first, then official + news).
+   - Never rely on a single source or small cluster. Always include at least 2-3 from Priority #1 databases (FBref, Understat, Transfermarkt, WhoScored, etc.) + supplementary.
+   - For player props/complex odds (scorers, assists, cards, timing, combos): Dedicated tool searches for xG/xA, historical rates, event data, opponent context.
+
+3. **No Early Give-Up / Exhaustiveness Check**:
+   - Research continues until data saturation is reached (new searches no longer yield meaningfully new/contradictory information on key variables).
+   - Explicit "Exhaustiveness Check" in every response: "Data collection complete after X tool calls across Y unique domains. No major gaps identified after cross-verification."
+   - If initial searches return limited results, pivot to alternative queries, related terms (Norwegian/English), or deeper browse_page on specific pages.
+
+4. **Expanded Proof Requirement in Every Response**:
+   - "Tool Usage Summary" section must list:
+     - Total tool calls executed: X
+     - Breakdown: web_search (N), browse_page (M), x_keyword_search (P), etc.
+     - Unique high-quality sources used: List top 5-7 with confirmation of cross-verification.
+     - Exhaustiveness justification: How data gaps were closed.
+   - Inline citations or explicit references for key facts.
+
+5. **Data Hunter Agent Responsibility**:
+   - Must actively push for more tool calls if below threshold.
+   - Flag in multi-agent simulation if tool usage was insufficient.
+   - In meta-reviews: Audit previous responses for compliance and tighten if needed.
+
+**Why This Rule Exists**: Recent usage has sometimes been too conservative (20-30 sources). This mandate ensures we always get the *most and most accurate data possible* by forcing breadth, depth, parallelism, and verification. It aligns with "do not skip or give up early" and "really deep search" user requirements.
+
+**Implementation**: This section takes immediate effect. All future responses (including this one) must demonstrate compliance. Future meta-reviews will check adherence.
+
 ## 2. Active Learning & Edge Updates System
 
 - **Post-Settlement Deep Dive (Mandatory)**: Use/ trigger post-settlement-learning-reviewer skill + fresh tool searches. Document in round file: hypothesis vs reality, key factors, lessons for filters/edges.
@@ -180,7 +218,6 @@ This format ensures clarity, reduces errors, and makes bets easy to copy/place.
 
 - **Mandatory Start**: Every analysis begins with first-principles breakdown (fundamentals of the event, independent of odds or recent history).
 - **Internal Simulation**: Run the 4-agent debate (Value, Risk Manager, Data Hunter, Contrarian) as described in section 3. Document key arguments from each in the round file or response. Include historical pattern simulation from Section 1.5.
-- **Outcome**: Recommendations are stress-tested from multiple angles for robustness.
 
 ## 9. Self-Updating & "Just Works" Robustness
 
@@ -196,7 +233,7 @@ This format ensures clarity, reduces errors, and makes bets easy to copy/place.
 - All future round files and responses must align with the standardized template and proof requirements.
 - Existing good elements (diversification, min stake 10 NOK, exploration automation, post-settlement reviewers, autonomous decisions) are retained and strengthened.
 
-**Implementation Status**: Created 2026-06-21 as part of fresh start. Updated 2026-06-23 with additive WC/grass variance risk guidance and meta-review cadence. Updated 2026-06-24 with Prioritized Data Sources & Historical Pattern Simulation (Section 1.5), strengthened bet_log verification (Section 5), mandatory broader sports exploration (Section 3), and clean bankroll reset integration. All per user feedback on data collection, bet_log updates, sports breadth, and clean restart. Future settlements and rounds will demonstrate compliance. All pushes followed Successful Push Workflow exactly (tree verify, content+SHA, full update, post re-verify).
+**Implementation Status**: Created 2026-06-21 as part of fresh start. Updated 2026-06-23 with additive WC/grass variance risk guidance and meta-review cadence. Updated 2026-06-24 with Prioritized Data Sources & Historical Pattern Simulation (Section 1.5), strengthened bet_log verification (Section 5), mandatory broader sports exploration (Section 3), and clean bankroll reset integration. Updated 2026-06-25 with new Section 1.6 Maximum Tool Usage & Exhaustive Data Collection Mandate (forces max tool calls, source diversity, no early stopping, expanded proof). All per user feedback on data collection, bet_log updates, sports breadth, tool exhaustiveness, and clean restart. Future settlements and rounds will demonstrate compliance. All pushes followed Successful Push Workflow exactly (tree verify, content+SHA, full update, post re-verify).
 
 **Success Metrics**: Consistent tool proof (including historical), broader bet types with deep data, fewer repetitive patterns (enforced exploration), clean responses, preserved data integrity (verified CSV every update), better risk-adjusted returns, reliable skill usage, continuous improvement without user intervention. Clean restart with 500 NOK bankroll active.
 
