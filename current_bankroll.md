@@ -1,10 +1,10 @@
 # Current Bankroll
 
-**Equity**: 471.77 NOK  
+**Equity**: 473.77 NOK  
 
 **Pending at Risk**: **22.00 NOK** (F1 Lindblad 10 NOK + Aces Wings +5.5 12 NOK after settling 10 bets per this post-settlement batch)  
 
-**Liquid Available**: **449.77 NOK**
+**Liquid Available**: **451.77 NOK**
 
 **Last Updated**: 2026-06-26 post full post-settlement + nt-learning-reviewer + tool searches historical multi-agent per robust_betting_protocol_v2.md Sections 1-10 by letter complete-before-reply. Net P/L from batch -10.66 NOK (wins +46.34 losses -57.00). All verifications done.
 
