@@ -2,13 +2,13 @@
 
 **Equity**: 494.43 NOK  
 
-**Pending at Risk**: **124.00 NOK** (previous 74 NOK + Japan Over 2.5 15 NOK + BTTS Yes 15 NOK + Ueda score 10 NOK + Isak score 10 NOK)  
+**Pending at Risk**: **146.00 NOK** (previous 124 NOK + new Wings +5.5 12 NOK + Rock flest 180s 10 NOK per nt-bet-log-manager append)  
 
-**Liquid Available**: **370.43 NOK**
+**Liquid Available**: **348.43 NOK**
 
-**Last Updated**: 2026-06-26 (post user confirmation of Japan vs Sweden recommended bets and nt-bet-log-manager append per robust_betting_protocol_v2.md Section 5 + nt-betting-workflow skill complete)
+**Last Updated**: 2026-06-26 (post user confirmation of all recommended bets + nt-bet-log-manager append of Wings +5.5 and Rock flest 180s per robust_betting_protocol_v2.md Section 5 + nt-betting-workflow + nt-bankroll-tracker skill complete)
 
-**Current Pending Bets (verified in bet_log.csv new SHA 07773bac5ccc9a1edfdb32bafcd22f3ef25b0839)**:
+**Current Pending Bets (verified in bet_log.csv new SHA 1a6ba29a3de88f250ffbdbb8974b8d246b7903d0)**:
 - Kawkab Athletic Club of Marrakech vs FUS Rabat (Botola Pro) Over 2.5 Goals 10 NOK @2.55: Pending | Recommended per round_20260625_current_odds_01.md full protocol.
 - Cuiaba EC MT vs Londrina EC PR (Serie B) Cuiaba EC MT to win 12 NOK @1.75: Pending | Recommended per round_20260625_current_odds_01.md full protocol. All filters passed. User confirmed placement.
 - Toronto Tempo vs Los Angeles Sparks (WNBA) Toronto Tempo to win 10 NOK @1.80: Pending | Recommended per round_20260625_current_odds_01.md full protocol. All filters passed. User confirmed placement.
@@ -20,13 +20,15 @@
 - Japan vs Sweden (FIFA World Cup 2026 Group F) Both Teams To Score Yes 15 NOK @1.62: Pending | Recommended per robust_betting_protocol_v2.md full protocol. Stage 1 and 2 deep research plus Section 1.5 FBref historical simulation and multi-agent completed. BTTS Yes edge confirmed with both attacks clinical and Sweden defense leaky per FBref data. All filters and risk rules passed. User confirmed placement on 2026-06-26.
 - Japan vs Sweden (FIFA World Cup 2026 Group F) Ayase Ueda To Score 10 NOK @2.60: Pending | Recommended per robust_betting_protocol_v2.md full protocol. Stage 1 and 2 deep research plus Section 1.5 FBref historical simulation and multi-agent completed. Ayase Ueda To Score edge confirmed with hot form 2 goals already and clinical finishing vs leaky defense per FBref. All filters and risk rules passed. User confirmed placement on 2026-06-26.
 - Japan vs Sweden (FIFA World Cup 2026 Group F) Alexander Isak To Score 10 NOK @2.60: Pending | Recommended per robust_betting_protocol_v2.md full protocol. Stage 1 and 2 deep research plus Section 1.5 FBref historical simulation and multi-agent completed. Alexander Isak To Score edge confirmed with strong G+A contributions and attack potency vs Japan backline per FBref. All filters and risk rules passed. User confirmed placement on 2026-06-26.
+- Las Vegas Aces vs Dallas Wings (WNBA) Dallas Wings +5.5 12 NOK @1.77: Pending | H2H Wings dominance and Aces injuries support per protocol recs. WNBA handicap value. Recommended in round_20260626_current_odds_darts_wnba_esports_snooker_tennis.md and confirmed placed by user.
+- Josh Rock vs Jim Long (Darts US Masters) Rock Josh Flest 180s 10 NOK @1.35: Pending | Class gap number 8 vs 81 supports 180s prop per protocol recs. Darts prop value. Recommended in round_20260626_current_odds_darts_wnba_esports_snooker_tennis.md and confirmed placed by user.
 
 **Verification & Compliance (robust_betting_protocol_v2.md Section 5 by letter - irrefutable proof)**: 
-1. Pre bet_log update for Japan bets: Full fetch bet_log.csv + exact current SHA ce8ce57a0f9ca4b6db19640acf0a446904a038e0. Header verified EXACT match.
-2. Used github___create_or_update_file on bet_log.csv with full reconstructed content (all prior rows + 4 new Japan pending rows at bottom with no-comma Notes per user request for CSV integrity) + correct sha. Append-only no overwrites or historical changes.
-3. Post-update: Re-fetch confirmed new SHA 07773bac5ccc9a1edfdb32bafcd22f3ef25b0839 header exact, row count increased by exactly 4, no malformation, all historical untouched, new Notes clean no commas anywhere, proper quoting preserved.
-4. Bankroll recalc explicit (nt-bankroll-tracker): Equity unchanged 494.43 NOK. Pending at Risk = 74 + 50 = 124 NOK. Liquid Available = 494.43 - 124 = 370.43 NOK. Cross-checked vs bet_log.csv pending sum (exact match including all Japan rows).
-5. Updated this file + round_20260626_current_odds_01.md with Japan confirmation + proof. All pushes validated post re-verify tree + full content read (no garbage or short versions).
-6. nt-bet-log-manager skill logic followed exactly + nt-betting-workflow complete. All per Sections 1-10 + skills exact. Complete-before-reply. Irrefutable every step.
+1. Pre bet_log update: Full fetch bet_log.csv + exact current SHA 07773bac5ccc9a1edfdb32bafcd22f3ef25b0839. Header verified EXACT match.
+2. Used github___create_or_update_file on bet_log.csv with full reconstructed content (all prior rows + 2 new pending rows at bottom with no-comma Notes per user request for CSV integrity) + correct sha. Append-only no overwrites or historical changes.
+3. Post-update: Re-fetch confirmed new SHA 1a6ba29a3de88f250ffbdbb8974b8d246b7903d0 header exact, row count increased by exactly 2, no malformation, all historical untouched, new Notes clean no commas anywhere, proper quoting preserved.
+4. Bankroll recalc explicit (nt-bankroll-tracker): Equity unchanged 494.43 NOK. Pending at Risk = 124 + 22 = 146 NOK. Liquid Available = 494.43 - 146 = 348.43 NOK. Cross-checked vs bet_log.csv pending sum (exact match including new Wings and Rock rows).
+5. Updated this file + round_20260626_current_odds_darts_wnba_esports_snooker_tennis.md with placed confirmation + proof. All pushes validated post re-verify tree + full content read (no garbage or short versions).
+6. nt-bet-log-manager + nt-bankroll-tracker skill logic followed exactly + nt-betting-workflow complete. All per Sections 1-10 + skills exact. Complete-before-reply. Irrefutable every step.
 
-**Post-Update Learning Summary**: User confirmed all 4 Japan vs Sweden recommended bets placed. 4 new pending appended per nt-bet-log-manager flow exact with no-comma Notes. System self-correcting per protocol. Broader sports and filters enforced. Ready for settlements and mandatory deep dives. No changes to edges needed yet (pending data).
+**Post-Update Learning Summary**: User confirmed all recommended bets placed (Wings +5.5 and Rock flest 180s). 2 new pending appended per nt-bet-log-manager flow exact with no-comma Notes. System self-correcting per protocol. Broader sports and filters enforced. Ready for settlements and mandatory deep dives. No changes to edges needed yet (pending data).
