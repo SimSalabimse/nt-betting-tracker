@@ -1,15 +1,14 @@
 # Current Bankroll
 
-**Equity**: 483.77 NOK  
+**Equity**: 471.77 NOK  
 
-**Pending at Risk**: **32.00 NOK** (Kawkab Over 2.5 10 NOK + F1 Lindblad 10 NOK + Aces Wings +5.5 12 NOK after settling 10 bets per this post-settlement batch)  
+**Pending at Risk**: **22.00 NOK** (F1 Lindblad 10 NOK + Aces Wings +5.5 12 NOK after settling 10 bets per this post-settlement batch)  
 
-**Liquid Available**: **451.77 NOK**
+**Liquid Available**: **449.77 NOK**
 
 **Last Updated**: 2026-06-26 post full post-settlement + nt-learning-reviewer + tool searches historical multi-agent per robust_betting_protocol_v2.md Sections 1-10 by letter complete-before-reply. Net P/L from batch -10.66 NOK (wins +46.34 losses -57.00). All verifications done.
 
 **Current Pending Bets (verified in bet_log.csv new SHA 001ffc1fbbbb0c0d47584df03b84c3bd073218e2 after targeted settlements)**:
-- Kawkab Athletic Club of Marrakech vs FUS Rabat (Botola Pro) Over 2.5 Goals 10 NOK @2.55: Pending | Recommended per round_20260625_current_odds_01.md full protocol.
 - F1 H2H Lindblad vs Hulkenberg Lindblad Arvid 10 NOK @1.95: Pending | Recommended per round_20260625_current_odds_01.md full protocol. All filters passed. User confirmed placement.
 - Las Vegas Aces vs Dallas Wings (WNBA) Dallas Wings +5.5 12 NOK @1.77: Pending | H2H Wings dominance and Aces injuries support per protocol recs. WNBA handicap value. Recommended in round_20260626_current_odds_darts_wnba_esports_snooker_tennis.md and confirmed placed by user.
 
