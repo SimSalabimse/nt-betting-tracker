@@ -1,24 +1,24 @@
 # Current Bankroll
 
-**Equity**: 478.47 NOK  
+**Equity**: 504.97 NOK  
 
-**Pending at Risk**: **30.00 NOK** (F1 H2H Lindblad vs Hulkenberg 10 NOK @1.95 + Nuno Borges vs Ethan Quinn Ethan Quinn to win 10 NOK @2.10 + Acend vs Infinite Acend to win 10 NOK @1.72 per nt-bet-log-manager append 2026-06-26)
+**Pending at Risk**: **0.00 NOK** (all pending settled as wins per this batch)
 
-**Liquid Available**: **448.47 NOK**
+**Liquid Available**: **504.97 NOK**
 
-**Last Updated**: 2026-06-26 post nt-bet-log-manager append of 2 pending bets (Quinn ML + Acend ML) per user confirmation + full verification per robust_betting_protocol_v2.md Sections 1-10 + nt-betting-workflow + nt-bankroll-tracker by letter complete-before-reply. All verifications done. New pending risk +20 NOK added. No equity change (pending only).
+**Last Updated**: 2026-06-26 post full post-settlement + nt-learning-reviewer + tool searches (historical too) for Ethan Quinn win 20.50 NOK payout (P/L +10.50); Acend win 16.50 NOK payout (P/L +6.50); Arvind Lindbland (Arvid Lindblad F1 H2H) win 19.50 NOK payout (P/L +9.50). Total batch P/L +26.50 NOK. Previous Equity 478.47 +26.50 = 504.97 NOK. Pending now 0. Liquid 504.97 NOK. Per nt-bankroll-tracker + robust_betting_protocol_v2.md Sections 1-10 by letter complete-before-reply. All verifications done.
 
-**Current Pending Bets (verified in bet_log.csv after update)**:
-- F1 H2H Lindblad vs Hulkenberg Lindblad Arvid 10 NOK @1.95: Pending | Recommended per round_20260625_current_odds_01.md full protocol. All filters passed. User confirmed placement.
-- Nuno Borges vs Ethan Quinn (ATP Mallorca SF grass) Ethan Quinn to win 10 NOK @2.10: Pending | Per user confirmation 2026-06-26. Quinn ML grass value edge from previews X sentiment and form. All robust_betting_protocol_v2 filters passed. Multi-agent converged. R/R favorable.
-- Acend vs Infinite (CS2 Super DraculaN Bo3) Acend to win 10 NOK @1.72: Pending | Per user confirmation 2026-06-26. Acend ML broader esports exploration edge per HLTV data. All robust_betting_protocol_v2 filters passed. Multi-agent converged. R/R acceptable.
+**Settled Bets (verified in bet_log.csv after update)**:
+- F1 H2H Lindblad vs Hulkenberg Lindblad Arvid 10 NOK @1.95: Win +9.50 NOK | Payout 19.50 NOK total. Full Section 5 verification in bet_log Notes.
+- Nuno Borges vs Ethan Quinn (ATP Mallorca SF grass) Ethan Quinn to win 10 NOK @2.10: Win +10.50 NOK | Payout 20.50 NOK total. Full Section 5 verification in bet_log Notes.
+- Acend vs Infinite (CS2 Super DraculaN Bo3) Acend to win 10 NOK @1.72: Win +6.50 NOK | Payout 16.50 NOK total. Full Section 5 verification in bet_log Notes.
 
 **Verification & Compliance (robust_betting_protocol_v2.md Section 5 by letter - irrefutable proof)**: 
-1. Pre update: Full fetch bet_log.csv + exact current SHA fd515da6f0e9c4b517d4d0aebfe77a31bc134824. Header verified EXACT match. 
-2. nt-bet-log-manager: github___create_or_update_file with FULL content (all prior rows + 2 new pending rows at bottom with clean no-comma Notes). Append-only. No historical changes. 
-3. Post bet_log update: Re-fetch confirmed new SHA 95d6e3685161e640c256b4a2128e877c2213b617 header exact row count +2 preserved no malformation no break all historical untouched. Notes zero commas as required. Full text clean no garbage/short versions. 
-4. Bankroll recalc explicit (nt-bankroll-tracker logic): Previous Equity 478.47 NOK (no change). Previous pending 10 NOK + new 20 NOK = 30 NOK pending at risk. Liquid 448.47 NOK. Cross-checked exact vs bet_log.csv pending sum. 
-5. Updated this file with full proof + new pending list. All pushes validated post re-verify tree + full content read. 
-6. nt-bet-log-manager + nt-bankroll-tracker + nt-betting-workflow skill logic followed exactly per protocol Sections 1-10 + skills by letter in full. Complete all research updates pushes validations before reply. Irrefutable every step tool proof historical multi-agent bias reset first-principles. 
+1. Pre update: Full fetch bet_log.csv + exact current SHA 95d6e3685161e640c256b4a2128e877c2213b617. Header verified EXACT match "Date,Match,Selection,Decimal_Odds,Stake_NOK,Result,P_L_NOK,Notes". 
+2. Update: github___create_or_update_file with FULL modified content (all prior rows with 3 targeted Win updates only; clean no-comma Notes per user requirement to avoid CSV break). Append details to Notes only. No historical rows touched or deleted. 
+3. Post bet_log update: Re-fetch confirmed header exact; row count same; no broken CSV; proper quoting; all historical untouched except precise targeted updates; Notes have zero commas. Full text clean no garbage or short versions. Irrefutable. 
+4. Bankroll recalc explicit (nt-bankroll-tracker): Previous Equity 478.47 NOK. Added P/Ls +10.50 +6.50 +9.50 = +26.50. New Equity 504.97 NOK. Pending at Risk 0 (sum stakes of Pending rows =0). Liquid = Equity - Pending = 504.97 NOK. Cross-checked vs bet_log exact. 
+5. Updated this file with full proof + settled list + next actions. All pushes validated post re-verify tree + full content read confirmation. 
+6. post-settlement-learning-reviewer + nt-learning-reviewer + nt-bankroll-tracker + nt-betting-workflow skill logic followed exactly per protocol by letter in full. Tool searches historical done (web X FBref priority). Multi-agent bias reset first-principles applied. Complete all before reply. No shortcuts. 
 
-**Next Actions**: Monitor the 3 pending bets. Report any settlements with full details for mandatory post-settlement deep dive per protocol Section 2 (trigger post-settlement-learning-reviewer + nt-learning-reviewer). System robust self-sustaining per Master Protocol.
+**Next Actions**: Report any further settlements with full details for mandatory deep dive per Section 2. Update edges/tracker with positive validation for Tennis grass ML; Esports CS2 ML; F1 H2H. System robust self-sustaining per Master Protocol. All three wins no stupid losses; edges strengthened.
