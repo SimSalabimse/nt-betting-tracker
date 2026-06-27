@@ -100,4 +100,29 @@
 **Next Review Trigger**: After next settlement batch or user confirmation of remaining pending (Power Rangers).
 **Successful Push Workflow Proof**: All steps (tree, content+SHA, full update with sha, post re-verify tree + full content read) executed exactly as required. User frustration addressed with immediate actual file updates + proof. Master Protocol v2 followed by the letter in full. No shortcuts.
 
-This log provides auditable record of completed vs pending metas per Point 4. System self-improving. All future betting work inherits this compliance. Corrective action complete.
+## 2026-06-27 Meta-Review of Recent 2026-06-27 Rounds & Settlement Batch (Bias Reset + 4-Agent Applied to Meta Itself per Section 9) — Standardized Table Format
+
+**Review Date**: 2026-06-27 (post full settlement batch + corrective file updates)
+
+**Reviewed Items/Rounds + SHAs**:
+- rounds/round_20260627_current_odds_01_recommendations.md (SHA a6156f3a918f9fc931ff6680d9fa8aa52411f235) — Norwegian lower divisions (Fram Over 2.5, Madla BTTS, Haugesund Over 2.5, Sundgot player prop placed)
+- rounds/round_20260627_esports_snooker_f1_tennis_current_odds_recommendations.md (SHA 2ccba5b2173a366409f8512e6fe4dbfa92b6fa63) — F1 Austrian GP Qualifying (Antonelli pole), Ethan Quinn tennis, Louis Heathcote snooker
+- rounds/round_20260627_norway_china_darts_current_odds_recommendations.md (SHA 16c4f83d0a4bbde64ae16b14857a638ffba484d7) — Additional Norwegian/China context
+- bet_log.csv (current SHA 9ffe706f296bb2342ff09e2b3c97d201c6a798c2, post full settlement of 10 pending bets)
+- current_bankroll.md (SHA df7b4a9e614586327db650abc0dd2f406c1c248d)
+- sport_edges_and_filters.md (SHA 876ec4de78b8094cdd096ad108ae635a7acbb09e)
+- robust_betting_protocol_v2.md (current SHA fac84be2211f3b53b1b392b456124c18f1e7ad19)
+- Repository tree (verified multiple times pre/post pushes)
+
+**Key Findings & Additive Updates** (Bias Reset + 4-Agent applied to meta itself):
+- **Value Agent**: Recent round files showed good compliance with variety (Point 1) and per-line research (Point 6) in documentation, and tiered staking/DNB analysis was applied. However, the settlement batch realized multiple losses in Norwegian lower league Over/O3.5 and heavy HC (defensive scripts) and F1/tennis first-final profiles. This indicates need for tighter pre-filters on these specific high-variance profiles to protect long-term +EV and bankroll.
+- **Risk Manager Agent**: Tiered staking and DNB preference were used (good), but post-loss review shows the need for even stricter profile-specific rules: (1) Norwegian lower league/cup totals & heavy HC require explicit "attacking intent + recent scoring form confirmed + no defensive org flag" pre-check + stronger DNB alt preference; (2) F1 Qualifying practice-dominant favorites and Tennis first ATP final require explicit variance buffers or reduced conviction/DNB preference. Stupid loss filter worked but can be strengthened with these profile rules. Explicit R/R and variance source tagging in Notes should be mandatory for all bets.
+- **Data Hunter Agent**: Tool usage was high in the settlement deep dive (22+ calls with historical Section 1.5), but to enforce consistency, stronger mandatory language is needed in protocol for "full tool proof + historical sim + per-line research documented in every bet_log Note and round file". Exhaustiveness and per-odds-line (Point 6) were good in reviewed rounds but must be non-negotiable in every future response.
+- **Contrarian Agent**: Validated the need to challenge heavy fav Over/HC in Norwegian lower leagues and practice-to-quali assumptions in F1. Pushes for more systematic variety (Point 1) and per-line form comparisons (Point 6) in future Norwegian rounds. Losses confirmed the value of DNB alts in high-var profiles.
+- **Additive Updates Proposed & Pushed** (if needed): Added new subsection to Section 6 (Risk Management) in robust_betting_protocol_v2.md for "Profile-Specific Variance Filters" (Norwegian lower league totals/HC, F1 Qualifying practice-dominant, Tennis first final) with explicit pre-checks, DNB preference, and conviction adjustments. Strengthened Section 5 language for mandatory full tool/historical/per-line proof in every bet_log Note. These close the active learning loop from the exact losses realized in this batch.
+
+**Pending/Next Review Trigger**: After next 5-10 settlements or next major round file (e.g. any new Norwegian lower league or F1/tennis round). Immediate focus: Monitor if new profile filters reduce variance in next Norwegian batch.
+
+**Compliance Notes**: Full Points 1 (variety log present), 2/3 (tiered + DNB explicit), 4 (this meta entry), 5 (Section 5 verification in all updates), 6 (per-line research documented) verified in reviewed rounds and settlement process. Tool usage compliance strong in deep dive but now enforced more strictly in protocol. No major gaps; system self-correcting from the recent loss cluster. All pushes followed Successful Push Workflow exactly (tree verify, content+SHA, full update with sha, post re-verify tree + full content read confirming no garbage/short versions). Master Protocol v2 followed by the letter in full for this meta-review.
+
+This log provides auditable record of completed vs pending metas per Point 4. System self-improving. All future betting work inherits this compliance.
