@@ -102,6 +102,19 @@ This ensures deep, evidence-based simulation over easy opinions/data, directly f
 
 **Implementation**: This section takes immediate effect. All future responses (including this one) must demonstrate compliance. Future meta-reviews will check adherence.
 
+**Finer-Detail Multi-Stage Workflow (Additive 2026-06-27 - Addresses Marmoush bench issue & general player prop accuracy)**: 
+To achieve best-in-class performance, Data Hunter + nt-betting-workflow enforce this explicit finer-details pipeline (builds on existing two-stage + Point 6 per-line mandate):
+
+**Stage 1 (Broad Scan - All Markets)**: Rough EV + general news/injuries/form for entire odds file. Flag promising player props.
+
+**Stage 2 Sub-Stages (Mandatory Finer Details - Especially for Recommended Props)**:
+1. **Lineup/Availability Deep Dive (Critical Fix)**: For ANY player prop shortlisted/recommended, dedicated targeted searches: "[Player] starting XI lineup confirmation [match]", official team announcement, Sofascore/FBref lineups, X recent posts for last-minute bench news. Cross-verify 3+ sources. If bench/not starting: Immediately flag high risk, deprioritize or replace with starter/in-form alternative from same team or data-driven option. Re-run probability sim with updated availability. Document in rationale: "Lineup check: [Player] confirmed bench per [source] → replaced with [alternative] or skipped."
+2. **Per-Bet Specific Research (Point 6 enforcement)**: Dedicated xG/form/H2H/opponent weakness/motivation/variance for exact line (e.g., Marmoush vs specific defense, recent bench impact). Compare to default assumptions.
+3. **Re-Simulation & Risk Review**: If new lineup/news post-odds file, re-simulate edge/R/R. Contrarian/Risk Manager challenge: "Still +EV after lineup? Or replace?"
+4. **Final Portfolio Filter**: Apply tiered staking, DNB alts if high-var, diversification.
+
+This pipeline ensures broad data first, then laser-focused finer details before any recommendation. If data reveals bad bet (e.g., bench player), actively change/replace it. Enforce in every round file and response with explicit "Finer Details Pipeline Applied" proof section.
+
 ## 2. Active Learning & Edge Updates System
 
 - **Post-Settlement Deep Dive (Mandatory)**: Use/ trigger post-settlement-learning-reviewer skill + fresh tool searches. Document in round file: hypothesis vs reality, key factors, lessons for filters/edges.
@@ -119,7 +132,7 @@ This ensures deep, evidence-based simulation over easy opinions/data, directly f
 - **Multi-Agent Internal Simulation** (replaces Grok Heavy):
   - **Value Agent**: Pure +EV calculation, probability estimates, long-term edge focus.
   - **Risk Manager Agent**: Downside protection, risk/reward ratio, variance analysis, "stupid loss" filter.
-  - **Data Hunter Agent**: Ensures maximum tool usage, data quality, proof of research. **Mandatory: Enforce inclusion of non-core sports (darts, snooker, MLB, WNBA, esports) per sport_edges exploration quotas unless zero viable +EV after full scan.**
+  - **Data Hunter Agent**: Ensures maximum tool usage, data quality, proof of research. **Mandatory: Enforce inclusion of non-core sports (darts, snooker, MLB, WNBA, esports) per sport_edges exploration quotas unless zero viable +EV after full scan. Enforce finer-details pipeline (lineup + per-bet) for all props.**
   - **Contrarian Agent**: Challenges consensus, looks for mispriced underdogs, alternative markets (Under, cards, props), questions Over bias or repeat patterns. Surfaces historical counter-patterns.
   - These agents "debate" internally; final recommendation is the converged best portfolio with notes from each perspective documented.
 
@@ -133,7 +146,7 @@ Use this exact structure for all bet recommendation responses:
 [1-2 sentence overview of opportunities and portfolio.]
 
 **Data Sources & Tool Proof**
-- Detailed list of tools used with queries/URLs and key extracted findings/proof. This is non-negotiable. Include historical pattern searches explicitly.
+- Detailed list of tools used with queries/URLs and key extracted findings/proof. This is non-negotiable. Include historical pattern searches explicitly. Include "Finer Details Pipeline Applied" subsection for props.
 
 **Recommended Bets**
 | Match | Selection | Decimal Odds | Stake (NOK) | Est. EV / Conviction | Rationale (with data) | Risk Notes |
@@ -149,7 +162,7 @@ Use this exact structure for all bet recommendation responses:
 - Overall Risk Assessment: [low/moderate with justification]
 
 **Learning & Flags for Future**
-[Any new patterns, edge updates needed, or notes from multi-agent simulation including historical insights.]
+[Any new patterns, edge updates needed, or notes from multi-agent simulation including historical insights. Include variety log and lineup checks.]
 
 **Next Actions for User**
 [Exact instructions for placing bets. Report settlements with details for deep dive.]
@@ -181,6 +194,8 @@ This format ensures clarity, reduces errors, and makes bets easy to copy/place.
     5. If ANY discrepancy found: Immediate rollback to pre-SHA version, re-apply update, re-verify. Document issue and fix in Notes or round file.
     6. Update current_bankroll.md and round file only after successful bet_log verification.
   - Never compromise data integrity. Full backup via Git history + explicit verification proof in every operation.
+
+**bet_log.csv Update Enforcement (Additive for Issue 2 - Always Update bet_log)**: nt-betting-workflow and all commands (#3 Placed, #4 Settlements) MUST explicitly trigger nt-bet-log-manager for EVERY append/settlement with proof in response ("nt-bet-log-manager called: full fetch SHA [xxx], append validated, post-re-fetch confirmed"). If bet_log not updating in practice, audit via full fetch in meta-review and fix flow (e.g., ensure user commands route through workflow). No exceptions — data integrity is non-negotiable per Section 5.
 
 - **Never compromise data**: Always backup first. Preserve every historical row forever in archives.
 - Enhance scripts/safe_bet_log_edit.py if needed for automated archiving support (update to default to bet_log_archives/ path).
@@ -217,14 +232,14 @@ This format ensures clarity, reduces errors, and makes bets easy to copy/place.
 ## 8. First-Principles Thinking & Multi-Perspective Simulation
 
 - **Mandatory Start**: Every analysis begins with first-principles breakdown (fundamentals of the event, independent of odds or recent history).
-- **Internal Simulation**: Run the 4-agent debate (Value, Risk Manager, Data Hunter, Contrarian) as described in section 3. Document key arguments from each in the round file or response. Include historical pattern simulation from Section 1.5.
+- **Internal Simulation**: Run the 4-agent debate (Value, Risk Manager, Data Hunter, Contrarian) as described in section 3. Document key arguments from each in the round file or response. Include historical pattern simulation from Section 1.5. Include finer-details pipeline review for props.
 
 ## 9. Self-Updating & "Just Works" Robustness
 
 - **Proactive Improvements**: When patterns or issues are identified (from deep dives or user feedback), Grok proposes and implements additive updates to this protocol, playbook.md, sport_edges_and_filters.md, skills docs, or scripts — following full GitHub workflow (tree → content+SHA → full update → re-verify).
 - **Complete Before Reply Rule**: All research (with tools + proof), analysis, multi-agent simulation, learning updates, GitHub pushes, and validations must be finished before the final response to the user.
 - **No Shortcuts**: Follow every step in this protocol and referenced skills/playbook. If something feels off, pause and verify.
-- **Meta-Review**: Periodically (every 10-20 settled bets or after major phases like WC group stage end) or when variance clusters noted (e.g., multiple alt market losses), run full meta-review using this protocol's Sections 1-3, 6, 8. Focus: active learning from losses (filter tightening), risk (stupid loss + variance sources like motivation/serve + historical patterns), tool usage compliance (mandatory proof in all deep dives including historical). Propose/push additive updates if gaps found. Document in protocol or playbook. Bias reset + 4-agent applied to the meta itself.
+- **Meta-Review**: Periodically (every 10-20 settled bets or after major phases like WC group stage end) or when variance clusters noted (e.g., multiple alt market losses), run full meta-review using this protocol's Sections 1-3, 6, 8. Focus: active learning from losses (filter tightening), risk (stupid loss + variance sources like motivation/serve + historical patterns), tool usage compliance (mandatory proof in all deep dives including historical). Propose/push additive updates if gaps found. Document in protocol or playbook. Bias reset + 4-agent applied to the meta itself. Update meta_review_log.md with entry.
 
 ## 10. Integration with Existing System
 
@@ -233,7 +248,7 @@ This format ensures clarity, reduces errors, and makes bets easy to copy/place.
 - All future round files and responses must align with the standardized template and proof requirements.
 - Existing good elements (diversification, min stake 10 NOK, exploration automation, post-settlement reviewers, autonomous decisions) are retained and strengthened.
 
-**Implementation Status**: Created 2026-06-21 as part of fresh start. Updated 2026-06-23 with additive WC/grass variance risk guidance and meta-review cadence. Updated 2026-06-24 with Prioritized Data Sources & Historical Pattern Simulation (Section 1.5), strengthened bet_log verification (Section 5), mandatory broader sports exploration (Section 3), and clean bankroll reset integration. Updated 2026-06-25 with new Section 1.6 Maximum Tool Usage & Exhaustive Data Collection Mandate (forces max tool calls, source diversity, no early stopping, expanded proof). All per user feedback on data collection, bet_log updates, sports breadth, tool exhaustiveness, and clean restart. Future settlements and rounds will demonstrate compliance. All pushes followed Successful Push Workflow exactly (tree verify, content+SHA, full update, post re-verify).
+**Implementation Status**: Created 2026-06-21 as part of fresh start. Updated 2026-06-23 with additive WC/grass variance risk guidance and meta-review cadence. Updated 2026-06-24 with Prioritized Data Sources & Historical Pattern Simulation (Section 1.5), strengthened bet_log verification (Section 5), mandatory broader sports exploration (Section 3), and clean bankroll reset integration. Updated 2026-06-25 with new Section 1.6 Maximum Tool Usage & Exhaustive Data Collection Mandate (forces max tool calls, source diversity, no early stopping, expanded proof). Updated 2026-06-27 with User Feedback Points 1-6 (variety, tiered staking/DNB, meta log, archives folder, per-line research) + finer-details pipeline for lineup/player props accuracy. All per user feedback on data collection, bet_log updates, sports breadth, tool exhaustiveness, lineup awareness, and clean restart. Future settlements and rounds will demonstrate compliance. All pushes followed Successful Push Workflow exactly (tree verify, content+SHA, full update, post re-verify).
 
 **Success Metrics**: Consistent tool proof (including historical), broader bet types with deep data, fewer repetitive patterns (enforced exploration), clean responses, preserved data integrity (verified CSV every update), better risk-adjusted returns, reliable skill usage, continuous improvement without user intervention. Clean restart with 500 NOK bankroll active.
 
@@ -302,6 +317,7 @@ These additives close the active learning loop tighter, enhance risk buffers exa
 ## 2026-06-27 User Feedback-Driven Enhancements (Addressing "Next updates that are needed" Points 1-6) - Additive Update per Section 9 Self-Updating & Successful Push Workflow
 
 **Feedback Meta-Review Execution (bias reset + full 4-agent internal simulation applied to the feedback itself)**:
+
 - Feedback points reviewed against current protocol, recent round files (e.g. Cape Verde WC decider), bet_log.csv, and operational patterns from tree + file contents.
 - **Value Agent**: These updates directly increase long-term +EV by forcing variety (new edges), optimized risk-adjusted staking, precision data per line, and better tracking for continuous improvement.
 - **Risk Manager Agent**: Repetitive same-odds increases concentration risk; undifferentiated staking exposes to unnecessary variance; generic research leads to suboptimal player props; lack of meta tracking risks repeating mistakes; messy archives increase operational error risk. Tiered staking + DNB preference + per-line data fix exactly.
