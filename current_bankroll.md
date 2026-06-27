@@ -1,17 +1,17 @@
 # Current Bankroll
 
-**Equity**: 457.81 NOK  
+**Equity**: 467.31 NOK  
 
-**Pending at Risk**: **10.00 NOK** (F1 H2H Lindblad vs Hulkenberg only; all other prior pending settled in this batch per user report and bet_log update)
+**Pending at Risk**: **0.00 NOK** (all prior pending settled in batches)
 
-**Liquid Available**: **447.81 NOK**
+**Liquid Available**: **467.31 NOK**
 
-**Last Updated**: 2026-06-27 full post-settlement batch (Spain/Uruguay + CV/KSA + The Bug Dota) + nt-bankroll-tracker recalc per robust_betting_protocol_v2.md Section 5 nt-bet-log-manager + nt-learning-reviewer flow. All verifications done.
+**Last Updated**: 2026-06-27 Lindblad F1 H2H win settlement + full post-settlement batch (Spain/Uruguay + CV/KSA + The Bug Dota) + nt-bankroll-tracker recalc per robust_betting_protocol_v2.md Section 5 nt-bet-log-manager + nt-learning-reviewer flow. All verifications done.
 
-**Pending Bets (verified in bet_log.csv after full fetch new SHA fa381b5da2b2cb9ef0af0332382e49706502aaf4)**:
-- F1 H2H Lindblad vs Hulkenberg Lindblad Arvid 10 NOK @1.95: Pending
+**Pending Bets**: None (F1 H2H Lindblad settled win; all others previously settled).
 
-**Settled in this batch (added to bet_log with full protocol Notes)**:
+**Settled in recent batches (full protocol Notes in bet_log.csv)**:
+- F1 H2H Lindblad vs Hulkenberg Lindblad Arvid 10 NOK @1.95: Win +9.50 (payout 19.50)
 - Spain vs Uruguay Mikel Oyarzabal To Score 12 NOK @2.25: Loss -12.00
 - Spain vs Uruguay Under 2.5 Total Goals 12 NOK @1.77: Win +9.24 (payout 21.24)
 - Cape Verde vs Saudi Arabia Cape Verde to win 20 NOK @2.65: Loss -20.00
@@ -19,13 +19,13 @@
 - Cape Verde vs Saudi Arabia Dailon Livramento score or assist AND CV win 10 NOK @3.85: Loss -10.00
 - The Bug vs 4 Anchors and Ilmeria Dota 2 Bo3 Over 2.5 Maps 12 NOK @2.00: Loss -12.00
 
-**P/L from this settlement batch**: -33.96 NOK (wins 20.04; losses 54.00). Prior Equity 491.77 -> new 457.81. Pending reduced by 81 NOK settled stakes.
+**P/L from Lindblad settlement**: +9.50 NOK. Prior Equity 457.81 -> new 467.31. Pending reduced to 0.
 
 **Verification & Compliance (robust_betting_protocol_v2.md Section 5 by letter - irrefutable proof)**: 
-1. Pre update: Full fetch bet_log.csv + exact current SHA dcf577c1ec68b0df69b4b680472eb90a729505c4 (from prior). Header verified EXACT match "Date,Match,Selection,Decimal_Odds,Stake_NOK,Result,P_L_NOK,Notes". No commas in any Notes (rephrased with periods/semicolons only per user instruction; verified in new content). 
-2. bet_log validation post settlement updates: Re-fetch new SHA fa381b5da2b2cb9ef0af0332382e49706502aaf4 confirmed. Header exact. Row count increased by exactly 1 (The Bug appended for completeness; 5 targeted updates to existing pending). No broken CSV no malformation. Historical rows untouched. Proper quoting preserved. Irrefutable. All 6 settlements included with full tool/historical/multi-agent proof in Notes. 
-3. Bankroll recalc explicit (nt-bankroll-tracker): Prior Equity 491.77 Pending 91.00. New P/L -33.96. New Equity 457.81. New Pending 10.00 (F1 only). Liquid 447.81. Cross-checked vs bet_log exact pending stakes sum + settled P/L. 
-4. Updated this file with full proof + complete pending list + settled summary + next actions. All pushes validated post re-verify tree + full content read confirmation. 
-5. nt-bet-log-manager + nt-bankroll-tracker + post-settlement-learning-reviewer + nt-learning-reviewer skill logic followed exactly per protocol by letter in full (full fetch first SHA verify header targeted/append validation no commas in Notes; edges/tracker updated). No shortcuts. Complete all before reply. 
+1. Pre update: Full fetch bet_log.csv + exact current SHA fa381b5da2b2cb9ef0af0332382e49706502aaf4 (from prior). Header verified EXACT match. No commas in any Notes (rephrased with periods/semicolons only per user instruction; verified in new content). 
+2. bet_log validation post Lindblad settlement update: Re-fetch new SHA 29171f0fe533f995a9a8ab6146c43ee6f8ff77fb confirmed. Header exact. Row count preserved (targeted update only). No broken CSV no malformation. Historical rows untouched. Proper quoting preserved. Irrefutable. F1 row now Win with full tool/historical/4-agent/deep dive proof in Notes. All settlements complete and correct. 
+3. Bankroll recalc explicit (nt-bankroll-tracker): Prior Equity 457.81 Pending 10.00. New P/L +9.50. New Equity 467.31. New Pending 0.00. Liquid 467.31. Cross-checked vs bet_log exact pending stakes sum + settled P/L. 
+4. Updated this file with full proof + complete settled summary + next actions. All pushes validated post re-verify tree + full content read confirmation. 
+5. nt-bet-log-manager + nt-bankroll-tracker + post-settlement-learning-reviewer + nt-learning-reviewer skill logic followed exactly per protocol by letter in full (full fetch first SHA verify header targeted update validation no commas in Notes; edges/tracker updated). No shortcuts. Complete all before reply. 
 
-**Next Actions**: Monitor remaining F1 pending. Report any further settlements for mandatory deep dive + nt-learning-reviewer + bankroll update + Git push. All Master Protocol followed by letter in full. Complete-before-reply discipline maintained. nt-learning-reviewer triggered: tracker/edges updated additively in sport_edges_and_filters.md with +1L scorer/combo/win variance; +1W U2.5 validated; esports totals reinforced tighten.
+**Next Actions**: No pending bets. Report any new settlements or new rounds for mandatory deep dive + nt-learning-reviewer + bankroll/edges/round updates per protocol. All Master Protocol followed by letter in full. Complete-before-reply discipline maintained. nt-learning-reviewer triggered for F1 H2H +1W.
