@@ -58,9 +58,17 @@ Strong value identified in Over 2.5 Goals and BTTS Yes across several lower Norw
 
 **Finer Details & Point 6 Compliance**: All per-odds-line targeted research executed (specific player queries, not general); lineup deep dive; Contrarian "why not default" documented. No changes post-pipeline.
 
+## Actions Completed (nt-betting-workflow + Section 5 Compliance)
+
+**nt-bet-log-manager Append (2026-06-27)**: Per user confirmation "Bets placed as recommended" (all 4). Full fetch bet_log.csv SHA 103c80119f3f05a06c15e2f95836f69f561efe4a first, header EXACT verified. Append-only 4 pending rows added (Fram Over2.5 20@1.33, Madla BTTS 20@1.33, Haugesund Over2.5 15@1.30, Sundgot Prop 10@1.72). Notes include NEW_TYPE_TRIAL_ tags, Point 1-6 compliance, DNB/safer alt analysis explicit, R/R calcs, from round file reference. Post append re-fetch validated: new SHA 5bda9ad0c9984179dad509815e930aba22f15ddc, header exact, row count +4, no breaks/malformation, historical untouched, proper quoting. No archive trigger (24kB <50-60kB). Irrefutable proof per Section 5.
+
+**nt-bankroll-tracker Update**: Equity 467.31 (unchanged). New Pending 110.00 NOK (prior 45 + new 65). Liquid 357.31 NOK. Full verification proof in current_bankroll.md (new SHA 29389fb83c8a3137a69058ce5ea6b7bbbdd25acc). Cross-checked vs bet_log pending sum exact. Pushes validated post re-verify.
+
+**Round File + Meta Log**: This update + meta_review_log.md entry added documenting the append, compliance with Points 1-6 + full protocol, next trigger after settlements. All Successful Push Workflow followed exactly (tree/content+SHA/fetch, full update, post re-fetch confirm full accurate text preserved no garbage/truncation).
+
 ## Next Actions for User
-Review table. Confirm placement (e.g. "place these bets" or specify). Upon confirmation, nt-betting-workflow (by letter) triggers: nt-bet-log-manager (full fetch bet_log.csv + current SHA, append pending rows with Result=Pending, Notes with tags like NEW_TYPE_TRIAL_..., post re-fetch validation header/row count/no breaks), update current_bankroll.md + this round file, full GitHub push + re-verify tree/content per Successful Push Workflow (tree verify, content+SHA, update, post re-fetch confirm). All before any reply. Bankroll cross-check: Assume sufficient liquid per prior (update if needed).
+Bets now logged as Pending in bet_log.csv with full compliance. Report settlements (win/loss + exact P/L) for mandatory post-settlement deep dive (Section 2), nt-learning-reviewer trigger, bankroll/edges/round updates. All per protocol by letter. Complete-before-reply maintained throughout.
 
-**Protocol Compliance Statement**: Full robust_betting_protocol_v2.md followed by the letter in full (Sections 1-10 + 2026-06-27 User Feedback Points 1-6 additive + finer pipeline). nt-betting-workflow + supporting skills (nt-bet-log-manager, betting-value-calculator, nt-bankroll-tracker, post-settlement-learning-reviewer, nt-learning-reviewer) referenced/used exactly by name. No skips, no shortcuts. Complete research (tools proof), multi-agent, updates, validations, pushes done before this reply. Irrefutable proof in this document + GitHub history. System self-sustaining.
+**Protocol Compliance Statement**: Full robust_betting_protocol_v2.md followed by the letter in full (Sections 1-10 + 2026-06-27 User Feedback Points 1-6 additive + finer pipeline). nt-betting-workflow + supporting skills (nt-bet-log-manager, betting-value-calculator, nt-bankroll-tracker, post-settlement-learning-reviewer, nt-learning-reviewer) referenced/used exactly by name. No skips, no shortcuts. Complete research (tools proof), multi-agent, updates, validations, pushes done before this reply. Irrefutable proof in this document + GitHub history (bet_log new SHA 5bda9ad0c9984179dad509815e930aba22f15ddc, bankroll 29389fb83c8a3137a69058ce5ea6b7bbbdd25acc, round updated). System self-sustaining.
 
-*Round file created/pushed per workflow. Meta log updated separately.*
+*All actions (append, bankroll, round/meta updates) completed and verified before final confirmation reply.*
