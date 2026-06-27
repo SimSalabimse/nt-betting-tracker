@@ -1,0 +1,29 @@
+# Betting Commands (Updated 2026-06-27 per robust_betting_protocol_v2.md)
+
+**Core Instructions (Mandatory)**: Always follow robust_betting_protocol_v2.md by the letter in full for *all* betting-related work. Use nt-betting-workflow skill + exact supporting skills from nt-betting-skills.md (nt-bet-log-manager, post-settlement-learning-reviewer, nt-learning-reviewer, betting-value-calculator, nt-bankroll-tracker, etc.). Mandatory tool calls with explicit proof in every response (web_search, browse_page, x_keyword_search/x_semantic_search etc. for ALL promising markets including props/cards/corners/player-specific lines — per-odds-line targeted research required per new Point 6). First-principles thinking + multi-agent internal simulation (Value Agent, Risk Manager Agent, Data Hunter Agent, Contrarian Agent). Output ONLY in the standardized clean response template with bets table. Enforce diversification (broader sports exploration), min 10 NOK stake, tiered staking + DNB preference for bankroll preservation (new Points 2/3), stupid loss filter, explicit risk/reward calculations. Log bet type variety exploration and new types tried (new Point 1). Use bet_log_archives/ subfolder for archives (new Point 5). Update meta_review_log.md after reviews (new Point 4). Complete ALL research, tool calls/proof, updates, GitHub pushes, and validations BEFORE any reply to user. No shortcuts.
+
+1. Start New Round Analysis (Primary Command):
+
+Analyze the attached/current odds file for this round using the full robust_betting_protocol_v2.md by the letter in full (especially new 2026-06-27 User Feedback-Driven Enhancements section covering Points 1-6: bet type variety/new types logging + results, tiered staking + mandatory DNB/safer alt analysis for high-var profiles like WC must-qualify/Cape Verde example, per-odds-line targeted/specific research with player form comparisons instead of general sources, historical FBref/Transfermarkt patterns + simulation per Section 1.5, bet_log_archives/ folder, meta log tracking). Follow nt-betting-workflow skill completely + all supporting skills by exact names. Use mandatory tool calls with explicit proof (web_search, browse_page, x_keyword_search etc. for all promising markets including props, cards, corners, player-specific lines — dedicated per-line research mandatory). First-principles + multi-agent simulation (Value, Risk Manager, Data Hunter, Contrarian). Output ONLY in the standardized clean response template. Recommend ready-to-place bets in table. Enforce diversification (broader sports), min 10 NOK, tiered staking + DNB preference, stupid loss filter, explicit risk/reward calcs. Document variety exploration and new types in Learning section + bet_log tags. Complete all research/updates/validations/pushes before replying.
+
+2. For Late/Odds Updates or Specific File:
+
+Re-analyze the latest odds file (or provided text) for updates using robust_betting_protocol_v2.md fully (new 2026-06-27 sections too). nt-betting-workflow + all skills by the letter. Tool proof (incl. historical patterns + per-line targeted research) mandatory. Fresh first-principles evaluation + multi-agent. Standardized template output. Include any new high-value opportunities from broader markets and variety exploration.
+
+3. After Placing Bets (Confirmation & Log Update):
+
+Bets placed as recommended: [paste exact list or confirm "all recommended"]. Use nt-bet-log-manager skill to append pending rows to bet_log.csv (full fetch of current content + exact current SHA first, append-only, strict validation per Section 5 — header exact match, row count correct, no broken CSV, Notes properly quoted without breaking commas). Update current_bankroll.md and round file. Follow robust_betting_protocol_v2.md completely (archive trigger to bet_log_archives/ subfolder if applicable). Verify everything (re-fetch + tree) before confirming.
+
+4. After Settlements/Results:
+
+Settlements: [paste details e.g. Match - Selection - Result - P/L]. Trigger full post-settlement-learning-reviewer + nt-learning-reviewer skills + tool searches (incl. historical patterns per Section 1.5) for explanations (especially losses/high-conviction). Deep dive in round file. Update edges if patterns, archive if needed (to bet_log_archives/ per protocol). Update bet_log with full verification steps per Section 5. Update bankroll/round/edges/meta_review_log.md if applicable. robust_betting_protocol_v2.md by the letter. Standardized summary + learnings.
+
+5. Bankroll/Log Check or Archiving:
+
+Verify current_bankroll.md and bet_log.csv status (full fetch + SHA). Run archiving protocol if approaching limits per robust_betting_protocol_v2.md Section 5 — create new archives in bet_log_archives/ subfolder for clean organization. Full validation, push via workflow, re-verify tree/content.
+
+6. Full System Review/Improvement:
+
+Run meta-review of recent rounds using robust_betting_protocol_v2.md (bias reset + 4-agent applied to meta itself per Section 9). Update/create meta_review_log.md with standardized table (Review Date | Reviewed Items/Rounds + SHAs | Key Findings & Additive Updates | Pending/Next Review Trigger | Compliance Notes). Propose and push additive updates if needed (via Successful Push Workflow: tree verify, content+SHA get, full update with sha, post re-verify). Focus on active learning from losses (filter tightening), risk management (tiered staking/DNB), tool usage compliance (mandatory proof), variety enforcement (Point 1), per-line research (Point 6). Complete all before any summary reply.
+
+**Notes**: These commands ensure the system remains extremely robust, self-sustaining, and aligned with the latest protocol. Always reference new 2026-06-27 rules explicitly in actions. No commas in Notes that break CSV. GitHub pushes always follow Successful Push Workflow exactly.
