@@ -20,6 +20,8 @@ Responsibilities:
 - Triggers **post-settlement-learning-reviewer** after settlements and **nt-learning-reviewer** for exploration tracking/promotion.
 - Does **not** require the user to run local scripts for routine bet additions.
 
+**2026-06-28 CLEAN RESTART UPDATE (Autonomous Mode Enforcement)**: nt-betting-workflow now **immediately executes bet_log append (pending rows) + bankroll reserve using full SHA workflow + verifies BEFORE any user-facing output**. For settlements: auto deep-dive (post-settlement-learning-reviewer + nt-learning-reviewer), auto decide archive if size threshold, auto meta if trigger, all pushes/verifies first, summary only after. User only needs to reply for changes or to report results. No more confirmation tokens for routine. Force commands in Betting_Commands.txt for explicit compliance audit when needed.
+
 ## nt-bet-log-manager
 Handles all mutations of bet_log.csv on the GitHub mirror with strict safety.
 
@@ -30,6 +32,8 @@ Key rules it enforces:
 - Strict post-change validation: header integrity, correct row count, proper CSV quoting (especially Notes with commas/quotes), no malformation.
 - Creates timestamped backup before modifications.
 - Supports both singles and occasional combos when EV justifies it.
+
+**2026-06-28 CLEAN RESTART UPDATE (Autonomous Mode Enforcement)**: nt-bet-log-manager now called **autonomously** by nt-betting-workflow (full fetch + SHA + append pending + post re-fetch verify + reserve stakes) **before any user-facing text**. Same for settlements (targeted updates + long proof Notes with variance source + historical re-sim). No skipped pushes. Force commands available for audit.
 
 The local `safe_bet_log_edit.py` is the equivalent tool for when the user wants to edit their local master copy manually.
 
@@ -50,6 +54,8 @@ Formulas:
 - Liquid Available = Equity − Pending at Risk
 
 After every addition or settlement, it recalculates and updates the md file with an explicit verification note ("Verified via full bet_log.csv recalculation").
+
+**2026-06-28 CLEAN RESTART UPDATE (Autonomous Mode Enforcement)**: nt-bankroll-tracker now called **autonomously** (recalc + verification note) immediately after any bet_log update, before any output. 500 NOK clean baseline enforced for fresh start tracking.
 
 ## post-settlement-learning-reviewer (NEW 2026-06-20 Skill)
 **Purpose**: Execute comprehensive deep dive review immediately after any settlement batch is reported. Ensures continuous learning from the now 98+ bet dataset.
@@ -91,6 +97,8 @@ After every addition or settlement, it recalculates and updates the md file with
 6. On settlements: post-settlement-learning-reviewer runs deep dive → triggers nt-learning-reviewer for tracker/promotion → updates learning files.
 7. Grok replies to user with confirmation and updated status.
 
+**2026-06-28 CLEAN RESTART UPDATE (Autonomous Mode Enforcement)**: Steps 3-4 now happen **immediately and autonomously** (full SHA workflow + verifies) **before any user-facing output**. User only replies for changes or results. Force commands in Betting_Commands.txt for explicit compliance when needed. No more skipped pushes or local-only updates.
+
 This is the decisive, low-friction workflow we are now using.
 
 All skill and data changes continue to follow the strict discipline of full retrieval + GitHub push + re-validation before any user-facing reply.
@@ -126,3 +134,5 @@ All EVs positive after conservative estimates. Portfolio EV blended ~15%+. **Tot
 If confirmed: nt-bet-log-manager flow would fetch bet_log.csv + SHA, append pending rows at 10-12 NOK, update bankroll/round file, push with full workflow verification.
 
 **Verification note**: All steps used skills by the letter in full. No skips. This correction push followed Successful Push Workflow exactly: tree verified, content+SHA fetched (sha 223d791b9a47d495c9d17ace658a80fc32c34483), full corrected content provided to create_or_update_file with correct sha, post-push tree + full content re-read confirmed (see below). User correction acknowledged — stakes error fixed, rules re-applied strictly.
+
+**2026-06-28 CLEAN RESTART NOTE**: All skills now enforce autonomous mode (bet_log/bankroll updates before any output), clean restart baseline (500 NOK, header-only bet_log), per-sport checklists, variety enforcement, tiered staking/DNB, per-line targeted research, doubles logic, and force commands for compliance audit. Master Protocol v2 followed by the letter in full.
