@@ -1,25 +1,39 @@
 # NT Betting Tracker Playbook
 
+**⚠️ CLEAN RESTART 2026-06-28 NOTE (HIGHEST PRIORITY)**: 
+**robust_betting_protocol_v2.md is now the MASTER protocol for ALL betting-related work.** 
+Follow it by the letter in full — no skipping, no shortcuts. This playbook is historical/supplementary reference only. Do not follow playbook.md for current operations (per explicit user instruction in clean restart process). All rules, workflows, autonomous mode, per-sport checklists, variety enforcement, tiered staking/DNB, per-line research, doubles logic, force commands, and data integrity are in robust_betting_protocol_v2.md Sections 1-10 + 2026-06-28 additive. 
+
+**Current Clean State (2026-06-28)**:
+- Root: Active files only (bet_log.csv = header-only for fresh start, current_bankroll.md = 500 NOK baseline, robust_betting_protocol_v2.md, README.md, nt-*.md files, Betting_Commands.txt with force commands, sport_edges_and_filters.md, meta_review_log.md).
+- `rounds/`: All round analysis/recommendation files.
+- `bet_log_archives/`: All historical bet_log archives + full pre-clean-restart snapshots of bet_log.csv and current_bankroll.md.
+- `scripts/`: Automation.
+
+All previous structure references updated. Autonomous mode active (bet_log/bankroll updates before any output). Master Protocol followed exactly.
+
+---
+
 **Project Goal**: Systematic, high-EV sports betting with strict bankroll management, deep research, and reliable data tracking. Focus on value, discipline, and long-term edge.
 
 ## File Structure (Current Clean State)
 
 - **Root level**:
-  - `bet_log.csv` — Master log of all bets (pending + settled). **Never edit directly** — always use the safe script.
-  - `bet_log_archive_up_to_2026-06-11.csv` — Historical archive.
-  - `current_bankroll.md` — Current equity, pending risk, liquid available.
-  - `sport_edges_and_filters.md` — Evolving edges, filters, and learnings. **Now includes automated exploration promotion tracker and high-odds guidelines.**
-  - `analyze_betting.py` — Analysis and backtesting script.
-  - `README.md`, `grok_skill_integration.md`, `nt-betting-skills.md`
+  - `bet_log.csv` — Master log of all bets (pending + settled). **Never edit directly** — always use the safe script or nt-bet-log-manager skill (autonomous updates enforced).
+  - `current_bankroll.md` — Current equity, pending risk, liquid available (reset to 500 NOK clean baseline 2026-06-28).
+  - `sport_edges_and_filters.md` — Evolving edges, filters, and learnings.
+  - `README.md`, `grok_skill_integration.md`, `nt-betting-skills.md`, `robust_betting_protocol_v2.md` (MASTER)
 
 - **`rounds/` folder** (primary location for all round-related files):
   - All detailed round files, full research notes, recommendations, and processed analysis are now consolidated here.
 
+- **`bet_log_archives/`**:
+  - All historical bet_log archives + clean restart snapshots.
+
 - **`scripts/`**:
   - `safe_bet_log_edit.py` — The single authoritative tool for all bet_log.csv modifications.
-  - `analyze_betting.py` (symlink or copy at root for convenience if needed).
 
-**Note**: The structure has been cleaned up. All round files are now in `rounds/`. Existing Notes references in bet_log.csv have been preserved by keeping historical file names consistent.
+**Note**: The structure has been cleaned up for 2026-06-28 clean restart. All round files in `rounds/`. All bet_log archives in `bet_log_archives/`. bet_log.csv trimmed to header for fresh start. current_bankroll.md reset to 500 NOK. Autonomous mode active.
 
 ## Core Betting Workflow
 
@@ -203,11 +217,15 @@ See robust_betting_protocol_v2.md for the complete detailed implementation. This
 - Update nt_sports_data_sources.md references if new sources emerge.
 - Track per-odds-type performance in bet_log analysis for continuous improvement.
 
-This section was added following the Successful Push Workflow exactly (tree verified, current SHA fetched, additive update with full content, clear message). It makes the entire system significantly more robust for data gathering and risk assessment.
+**Implementation Status**: This section was added following the Successful Push Workflow exactly (tree verified, current SHA fetched, additive update with full content, clear message). It makes the entire system significantly more robust for data gathering and risk assessment.
 
-## Next Actions
+**Next Actions**
 - Implement pipeline components incrementally in scripts/.
 - Validate with historical data.
 - Continue using robust_betting_protocol_v2.md for all betting work.
 
 This is the living playbook. Update additively when processes improve.
+
+---
+**CLEAN RESTART 2026-06-28 COMPLETION NOTE (ADDITIVE)**: 
+All clean restart actions completed: bet_log.csv archived full then trimmed to header-only; current_bankroll.md archived then reset to 500 NOK baseline; all remaining root bet_log_archive_*.csv and backups moved to bet_log_archives/ and root versions deleted; robust_betting_protocol_v2.md, Betting_Commands.txt, README.md, nt_sports_data_sources.md updated with autonomous mode, per-sport checklists (soccer lineups/motivation/H2H/form/weather/ref/VAR/xG/historical priority + other sports), force commands, variety enforcement, tiered staking/DNB, per-line research, doubles logic. Multiple Successful Push Workflow verifies passed. Root perfectly clean. Autonomous mode active (bet_log/bankroll updates before any output). Master Protocol followed by the letter in full. System maximally robust and self-sustaining.
