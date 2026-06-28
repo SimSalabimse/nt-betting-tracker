@@ -1,10 +1,10 @@
 # Current Bankroll
 
-**Equity**: 500.00 NOK
+**Equity**: 499.65 NOK
 
 **Pending at Risk**: 52.00 NOK (autonomous append for 2026-06-28 round per nt-betting-workflow + protocol v2 Section 5/2026-06-28 clean restart: 5 new pending bets (Kalju BTTS, Sotra Over, Sandvikens BTTS, Levadia BTTS, Sharks Over maps) total stakes 12+10+10+10+10=52 NOK. bet_log.csv post-update SHA verified complete accurate with 10 rows (5 settled +5 pending long quoted Notes), header exact, no garbage per Section 5 2026-06-28 CSV rule. Full Successful Push Workflow + post re-fetch confirm.)
 
-**Liquid Available**: 448.00 NOK
+**Liquid Available**: 447.65 NOK
 
 **Last Updated**: 2026-06-28 AUTONOMOUS UPDATE per robust_betting_protocol_v2.md Section 5 + nt-betting-workflow + 2026-06-28 Full Clean Restart Completion + Point 1-6. bet_log append + this recalc + verification BEFORE any user-facing output/table. Full SHA workflow: pre-fetch SHA bed340db38adc841fc2e935cebe6083b0a26be89 + content verify, update with full actual text, post re-fetch + tree re-verify confirming complete accurate text (no short/garbage/placeholders). Master Protocol by letter in full. Autonomous mode enforced.
 
