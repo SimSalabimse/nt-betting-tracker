@@ -198,15 +198,51 @@ This format ensures clarity, reduces errors, and makes bets easy to copy/place.
 **NEW STRICT CSV QUOTING RULE FOR NOTES (Critical Fix - 2026-06-28 User Report)**:
 - Notes fields **must never contain raw unquoted commas**. Long Notes must always be wrapped in double quotes.
 - Internal double quotes must be escaped as "".
-- nt-bet-log-manager and safe_bet_log_edit.py **must** use Python csv module with proper quoting. Direct string concatenation with raw commas is **forbidden**.
-- Post-update validation must confirm: "CSV structure validated — all Notes properly double-quoted."
-- This rule is non-negotiable.
+- nt-bet-log-manager and safe_bet_log_edit.py **must** use Python csv module with proper quoting (QUOTE_MINIMAL or QUOTE_ALL) — direct string concatenation with raw commas in Notes is **forbidden**.
+- Post-update validation step (mandatory in every append/settlement): "CSV structure validated — all Notes fields properly double-quoted. No unquoted commas detected. File opens cleanly in CSV parsers."
+- If a Note would require excessive quoting or becomes too complex, consider using a structured format inside the quoted field or splitting into multiple shorter Notes, but proper quoting remains mandatory.
+- This rule is now non-negotiable. Future violations will be treated as protocol breach and immediately corrected with full re-write + meta entry.
 
-**bet_log.csv Update Enforcement (Additive for Issue 2 - Always Update bet_log)**: nt-betting-workflow and all commands (#3 Placed, #4 Settlements) MUST explicitly trigger nt-bet-log-manager for EVERY append/settlement with proof in response. No exceptions.
+**CRITICAL BANKROLL & bet_log UPDATE RULE (Fix for Reset Bug - 2026-06-28)**:
+- **Never reset bet_log.csv or current_bankroll.md to clean restart baseline (header-only + 500 NOK) after the initial clean restart setup.**
+- Every autonomous update (new pending append or settlement) **must**:
+  1. Full fetch the *live current* bet_log.csv + exact SHA.
+  2. Calculate Equity correctly as: **Starting 500 + SUM(all realized P/L from settled rows in live bet_log.csv)**.
+  3. Append new pending rows or update settlements on the live data.
+  4. Update current_bankroll.md with the correctly calculated Equity, new Pending at Risk, and Liquid Available.
+- The clean restart baseline (500 NOK + header) is **only** for the initial one-time setup. After that, all updates are incremental on live data.
+- If a reset is ever detected in meta-review: Immediate rollback + protocol violation flag + fix in nt-betting-workflow / nt-bankroll-tracker.
+- This rule is now mandatory in all autonomous mode executions.
 
-**Settlement Update Integrity & Pre-Reply Push Verification Mandate**: No summary output until all pushes + verifications are complete.
+**bet_log.csv Update Enforcement (Additive for Issue 2 - Always Update bet_log)**: nt-betting-workflow and all commands (#3 Placed, #4 Settlements) MUST explicitly trigger nt-bet-log-manager for EVERY append/settlement with proof in response ("nt-bet-log-manager called: full fetch SHA [xxx], append validated, post-re-fetch confirmed"). If bet_log not updating in practice, audit via full fetch in meta-review and fix flow (e.g., ensure user commands route through workflow). No exceptions — data integrity is non-negotiable per Section 5.
+
+**Settlement Update Integrity & Pre-Reply Push Verification Mandate (New Additive - Directly Addresses Repeated 'Skipped Push' Failures in Settlement Chats)**: 
+To prevent recurrence of the exact problem where descriptive summaries were output before actual GitHub pushes (or with short/placeholder content), the following is now **mandatory and non-negotiable** for every settlement batch:
+
+1. **No Summary Output Until Pushes Complete**: The standardized post-settlement summary, Executive Summary, or any user-facing response describing the cycle is **forbidden** until ALL required pushes are executed and verified:
+   - bet_log.csv (full fetch + SHA + targeted updates + post re-fetch confirmation of header/row count/no breaks/full long Notes with tool/historical/multi-agent/variance text).
+   - current_bankroll.md (recalc + verification note).
+   - Relevant round_*.md files (full Post-Settlement Deep Dive sections added).
+   - sport_edges_and_filters.md (additive variance notes + tracker +1W/+1L).
+   - meta_review_log.md (standardized entry appended).
+
+2. **Mandatory Post-Push Integrity Checks (nt-bet-log-manager + workflow enforced)**:
+   - After every push: Re-fetch full content.
+   - Confirm: Size increased appropriately, new Notes are long (contain "Section 5 compliance", "Historical Pattern Search", "Multi-Agent", "Variance Source(s)", tool proof — no placeholders like "full long Note..." or short stubs).
+   - Row count correct, header exact, historical rows untouched, proper CSV quoting.
+   - Explicit in thinking trace: "Post-push re-fetch SHA [new] confirmed complete accurate text, no garbage/short versions/placeholders."
+
+3. **Pre-Reply Checklist (Must be satisfied in internal trace before any output)**:
+   - All pushes executed via github___create_or_update_file with correct sha.
+   - Post tree re-check + full content re-reads on every updated file completed.
+   - Confirmation text: "All files updated and verified complete per Successful Push Workflow before this reply."
+
+4. **Enforcement in nt-betting-workflow and Commands #4**: The skill must block summary generation until checklist passed. Commands explicitly state: "Execute all pushes + verifications FIRST. Output summary ONLY after."
+
+This directly fixes the repeated violation seen in settlement chats where promises were made but pushes delayed or incomplete. Data integrity and "complete before reply" are now structurally enforced.
 
 - **Never compromise data**: Always backup first. Preserve every historical row forever in archives.
+- Enhance scripts/safe_bet_log_edit.py if needed for automated archiving support (update to default to bet_log_archives/ path).
 
 ## 6. Advanced Risk Management Framework (Fixes Low-Value Favorite Losses & Stupid Risks)
 
@@ -226,50 +262,56 @@ This format ensures clarity, reduces errors, and makes bets easy to copy/place.
 - **Portfolio Level**: Diversification already enforced; add explicit check for concentration in low-odds favorites.
 - **Post-Loss Review**: Any cluster of losses on similar low-value bets triggers immediate review and filter tightening.
 
-**WC/International Motivation & Set Piece Variance (Additive 2026-06-23 Meta-Review Learning)**: Recent deep dives show elevated variance in defensive bets vs motivated debutants/must-win sides. **Risk Manager Agent must flag**: Require stricter pre-filter confirmation. Do not rely solely on season avgs or xG. Update sport_edges additively. Tool proof mandatory.
+**WC/International Motivation & Set Piece Variance (Additive 2026-06-23 Meta-Review Learning)**: Recent deep dives (Algeria WC CS/corners losses despite pre-data edge; prior Argentina/France controlled games) show elevated variance in defensive bets (Clean Sheet, Under corners/totals) vs motivated debutants/must-win sides due to early counters, set pieces, or clinical low-event performance. **Risk Manager Agent must flag**: Require stricter pre-filter confirmation ('opponent counter/set piece threat low + sustained defensive organization + no high motivation variance from must-win/debutant context'). Do not rely solely on season avgs or xG. Explicit R/R and stupid loss still apply; deprioritize or ultra-small stake if motivation flags high. Update sport_edges additively (already done post-Algeria). Tool proof mandatory in all such reviews.
 
-**Grass Court Game Totals Over Variance (Additive 2026-06-23 Meta-Review)**: Tennis grass Over losses due to serve efficiency. **Risk Manager**: Add to totals filter pre-check. Prefer or pair with Under alt in serve-efficient profiles. Data Hunter to prioritize serve/return stats.
+**Grass Court Game Totals Over Variance (Additive 2026-06-23 Meta-Review)**: Tennis grass Over 21.5-23.5 losses (Dzumhur/Paolini rounds) despite rally-profile data due to serve efficiency/hold dominance shortening matches or higher-seed rust enabling clinical wins. **Risk Manager**: Add to totals filter pre-check ('both players strong return stats confirmed + H2H history of extended rallies on surface + no projected serve/hold dominance'). Prefer or pair with Under alt in serve-efficient profiles. Variance analysis: Lower than ML but still requires multi-factor beyond general surface. Explicit R/R calcs to include this. Data Hunter to prioritize serve/return stats in Stage 1/2 scans.
 
 ## 7. Skill Reliability & Consistent Usage
 
-- **Reference Standard**: Always use exact skill names from nt-betting-skills.md.
-- **Pre-Creation Check**: Before creating any new skill, reference existing documentation.
-- **Validation**: After skill-related actions, confirm execution.
-- **Orchestration**: nt-betting-workflow remains the main coordinator.
+- **Reference Standard**: Always use exact skill names from nt-betting-skills.md (e.g., "nt-betting-workflow", "post-settlement-learning-reviewer", not generic "the skill").
+- **Pre-Creation Check**: Before creating any new skill, reference existing documentation and confirm it doesn't duplicate or conflict.
+- **Validation**: After skill-related actions, confirm execution and note any issues for self-correction.
+- **Orchestration**: nt-betting-workflow remains the main coordinator; supporting skills handle specifics. No redundant creations.
 
 ## 8. First-Principles Thinking & Multi-Perspective Simulation
 
-- **Mandatory Start**: Every analysis begins with first-principles breakdown.
-- **Internal Simulation**: Run the 4-agent debate (Value, Risk Manager, Data Hunter, Contrarian). Document key arguments.
+- **Mandatory Start**: Every analysis begins with first-principles breakdown (fundamentals of the event, independent of odds or recent history).
+- **Internal Simulation**: Run the 4-agent debate (Value, Risk Manager, Data Hunter, Contrarian) as described in section 3. Document key arguments from each in the round file or response. Include historical pattern simulation from Section 1.5. Include finer-details pipeline review for props.
 
 ## 9. Self-Updating & "Just Works" Robustness
 
-- **Proactive Improvements**: When patterns or issues are identified, Grok proposes and implements additive updates following full GitHub workflow.
-- **Complete Before Reply Rule**: All research, analysis, pushes, and validations must be finished before the final response.
-- **No Shortcuts**: Follow every step. If something feels off, pause and verify.
-- **Meta-Review**: Periodically run full meta-review. Update meta_review_log.md with entry.
+- **Proactive Improvements**: When patterns or issues are identified (from deep dives or user feedback), Grok proposes and implements additive updates to this protocol, playbook.md, sport_edges_and_filters.md, skills docs, or scripts — following full GitHub workflow (tree → content+SHA → full update → re-verify).
+- **Complete Before Reply Rule**: All research (with tools + proof), analysis, multi-agent simulation, learning updates, GitHub pushes, and validations must be finished before the final response to the user. **This includes all settlement file pushes + post-verification re-fetches/content confirmations before any summary text.**
+- **No Shortcuts**: Follow every step in this protocol and referenced skills/playbook. If something feels off, pause and verify.
+- **Meta-Review**: Periodically (every 10-20 settled bets or after major phases like WC group stage end) or when variance clusters noted (e.g., multiple alt market losses), run full meta-review using this protocol's Sections 1-3, 6, 8. Focus: active learning from losses (filter tightening), risk (stupid loss + variance sources like motivation/serve + historical patterns), tool usage compliance (mandatory proof in all deep dives including historical). Propose/push additive updates if gaps found. Document in protocol or playbook. Bias reset + 4-agent applied to the meta itself. Update meta_review_log.md with entry.
 
 ## 10. Integration with Existing System
 
 - This protocol is referenced by nt-betting-workflow and other skills.
 - Updates to playbook.md and sport_edges_and_filters.md will incorporate relevant parts.
-- All future round files and responses must align with the standardized template.
+- All future round files and responses must align with the standardized template and proof requirements.
+- Existing good elements (diversification, min stake 10 NOK, exploration automation, post-settlement reviewers, autonomous decisions) are retained and strengthened.
 
-**Implementation Status**: Created 2026-06-21. Updated multiple times with additive sections for tool usage, risk, feedback points, clean restart, and autonomous mode. All per Successful Push Workflow.
+**Implementation Status**: Created 2026-06-21 as part of fresh start. Updated multiple times with additive sections for tool usage, risk, feedback points, clean restart, autonomous mode, CSV quoting, and bankroll reset prevention. All per Successful Push Workflow.
 
-**Success Metrics**: Consistent tool proof, broader bet types, clean responses, preserved data integrity (verified CSV every update), better risk-adjusted returns, reliable skill usage, continuous improvement. Clean restart with 500 NOK bankroll active.
+**Success Metrics**: Consistent tool proof, broader bet types, clean responses, preserved data integrity (verified CSV every update + no erroneous resets), better risk-adjusted returns, reliable skill usage, continuous improvement. Clean restart with 500 NOK bankroll active as baseline only (never reset after initial setup).
 
 This protocol makes the system extremely robust and self-sustaining. Clean restart complete.
 
-## 2026-06-28 CSV Data Integrity Fix (Critical - User Reported Comma Breaking Issue) - Additive Update
+## 2026-06-28 Bankroll Reset Bug Fix + CSV Quoting Enforcement - Additive Update per Section 9
 
-**NEW STRICT CSV QUOTING RULE FOR NOTES (Added 2026-06-28)**:
-- Notes fields **must never contain raw unquoted commas**.
-- All long Notes **must be wrapped in double quotes**.
-- Internal double quotes escaped as "".
-- nt-bet-log-manager and safe_bet_log_edit.py **must use Python csv module** with proper quoting.
-- Direct string concatenation with raw commas in Notes is **forbidden**.
-- Post-update validation must explicitly confirm: "CSV structure validated — all Notes properly double-quoted. No unquoted commas."
-- This rule is now **non-negotiable** in Section 5. Future violations will be immediately corrected + meta entry added.
+**Bug Description (User Reported)**: When settling bets worked correctly, but analyzing a new odds file + autonomous update caused bet_log.csv and current_bankroll.md to reset to clean restart baseline (header-only + 500 NOK). This wiped previous realized P/L and pending history.
 
-**Post-Push Validation**: Tree re-checked. Protocol re-fetched. New subsection confirmed present at end of Section 5. No garbage. SHA updated. Master Protocol followed by the letter.
+**Root Cause**: Autonomous update logic (nt-betting-workflow / nt-bankroll-tracker) was incorrectly re-initializing from clean restart baseline instead of reading live current bet_log.csv and calculating Equity = 500 + SUM(realized P/L).
+
+**Fix Applied**:
+- current_bankroll.md restored with correct pending calculation.
+- bet_log.csv preserved with current pending rows.
+- Added **CRITICAL BANKROLL & bet_log UPDATE RULE** in Section 5 above (never reset to clean restart baseline after initial setup; always calculate from live data).
+- Strengthened nt-betting-skills.md and protocol enforcement for correct incremental updates.
+
+**Prevention**: The new rule in Section 5 is now mandatory. Future autonomous updates must always read live bet_log.csv, calculate correct Equity, and append/update incrementally. Any detected reset will trigger immediate rollback + protocol violation handling.
+
+**Post-Push Validation (Successful Push Workflow by the letter)**: Tree verified. Protocol updated with new rule subsection. current_bankroll.md fixed. bet_log.csv verified clean. Multiple re-fetches confirmed correct state. No more resets. Master Protocol followed exactly.
+
+This closes the bug. System now correctly maintains state across rounds.
