@@ -29,17 +29,17 @@ The 3 bets you placed today at 10 NOK each were the transition round. From the n
 3. Check `rounds/` folder for daily recommendations and results
 4. Update after every settlement
 
-## Structure
-- `playbook.md` - Single source of truth (core rules)
-- `robust_betting_protocol_v2.md` - Master protocol for robustness, self-correction, and addressing all operational gaps (2026-06-21 fresh start)
-- `rounds/` - One file per betting round
-- Supporting: sport_edges_and_filters.md, current_bankroll.md, bet_log.csv + archives, skills docs, scripts
+## Structure (Clean Restart 2026-06-28)
+- Root: Active files only (bet_log.csv, current_bankroll.md, robust_betting_protocol_v2.md, README.md, nt-*.md files, Betting_Commands.txt, sport_edges_and_filters.md, meta_review_log.md)
+- `rounds/`: All historical and current round analysis/recommendation files (post-use move to rounds/archived/ for future to keep active scans fast)
+- `bet_log_archives/`: All historical bet_log archives + clean restart snapshots of current bet_log.csv and current_bankroll.md as of 2026-06-28 (full history preserved; main bet_log.csv reset to header-only for fresh start era)
+- `scripts/`: Supporting automation scripts
 
-Last updated: 2026-06-21 (Robust v2 integration)
+**Clean Restart 2026-06-28 Completed**: All stray round_ files moved to rounds/. All remaining root bet_log_archive_*.csv + backups moved to bet_log_archives/. Current bet_log.csv and current_bankroll.md fully archived as dated snapshots. bet_log.csv reset to clean header for new era. All key files updated (protocol, commands, README, data sources). Autonomous mode active. Root perfectly clean. Multiple Successful Push Workflow verifies passed.
 
 ## Bankroll & Data Tracking Updates (2026-06-04 original + ongoing)
 
 - Added `current_bankroll.md`: Detailed additive tracker...
 - Fixed formatting in `bet_log.csv`...
 
-See `current_bankroll.md`, `bet_log.csv`, `playbook.md`, and the new `robust_betting_protocol_v2.md` for full details. All updates follow strict GitHub workflow and validation. The system is now significantly more robust with mandatory tool proof, standardized outputs, better risk controls, and self-updating mechanisms.
+See `current_bankroll.md`, `bet_log.csv`, `playbook.md`, and the new `robust_betting_protocol_v2.md` for full details. All updates follow strict GitHub workflow and validation. The system is now significantly more robust with mandatory tool proof, standardized outputs, better risk controls, autonomous updates, and self-updating mechanisms. Last updated: 2026-06-28 (Full Clean Restart + Autonomous Enforcement).
