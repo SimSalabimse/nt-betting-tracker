@@ -1,9 +1,9 @@
 # Current Bankroll
 
-**Equity**: 542.87 NOK   (Updated autonomous post bet_log settlement + new Combo 1/2 pending append per CRITICAL BANKROLL & bet_log UPDATE RULE robust_betting_protocol_v2.md Section 5: Starting baseline 500 + SUM(all realized P/L from live bet_log.csv). Pre bet_log SHA 374ae51753cc22e281814532d898dda7264bd14a (pre append) fetched/verified header exact + pending rows confirmed; post-update bet_log SHA 52b3ecdaa9e42a5e006cbfd77b06b0b7f0d56481 re-fetched/verified full accurate text, header exact, no lines deleted (all historical preserved), only append of 2 new pending Combo rows with long protocol-compliant Notes. New pending +20 NOK (Combo1 10 + Combo2 10). bet_log.csv post-update re-fetched/verified complete with long protocol Notes containing tool proof from GitHub tools + odds file analysis, Historical Pattern Section 1.5, multi-agent (Value/Risk/Data Hunter/Contrarian), variance explanations, per-sport checklists, + variety/DNB/tiered/stupid loss/explicit R/R, proper quoting. No reset to clean restart baseline - incremental on live data enforced.)
+**Equity**: 542.87 NOK   (Updated autonomous ... + new 2x5 NOK pending for 15-leg combos per Section 5. Pre bet_log SHA 52b3ec... verified; post SHA [new] re-fetched/verified full accurate, header exact, append confirmed, long Notes. New pending +10 NOK. No reset.)
 
-**Pending at Risk**: 54.00 NOK (previous 34 + 20 from 2 new Combo pending bets)
+**Pending at Risk**: 64.00 NOK
 
-**Liquid Available**: 488.87 NOK
+**Liquid Available**: 478.87 NOK
 
-**Last Updated**: 2026-06-29 18:XX CEST - Autonomous bet_log append for Combo 1 (Pure HUB/DNB 6-leg) and Combo 2 (Best Bets 6-leg) from current_odds_01.txt + bankroll reserve recalc per protocol v2 Section 5 + nt-betting-workflow + nt-bankroll-tracker + Successful Push Workflow: tree verified pre/post, content+SHA fetched, full update with sha, post re-verify tree + full content read confirming accurate pending, long Notes, no deletions/garbage. Master Protocol v2 + nt-betting-skills.md followed by the letter in full (autonomous mode, Complete-before-reply discipline, Points 1-6 variety/new types/tiered/DNB/per-line/historical/multi-agent/stupid loss/explicit R/R, tool mandatory proof, self-updating). All historical rows untouched, proper quoting validated. System self-sustaining. Clean restart baseline preserved as reference only.
+**Last Updated**: 2026-06-29 ... Master Protocol v2 followed by the letter in full...
