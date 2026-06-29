@@ -1,9 +1,3 @@
 # Current Bankroll
 
-**Equity**: 542.87 NOK   (Updated autonomous ... + new 2x5 NOK pending for 15-leg combos per Section 5. Pre bet_log SHA 52b3ec... verified; post SHA [new] re-fetched/verified full accurate, header exact, append confirmed, long Notes. New pending +10 NOK. No reset.)
-
-**Pending at Risk**: 64.00 NOK
-
-**Liquid Available**: 478.87 NOK
-
-**Last Updated**: 2026-06-29 ... Master Protocol v2 followed by the letter in full...
+**Equity**: 542.87 NOK (updated autonomous post rollback/append per Section 5 CRITICAL rule: live calculation from bet_log no reset). Pre SHA verified, post SHA new, full content re-read confirmed all lines restored + new Combo 3/4 pending +10 NOK. Pending at Risk: 64.00 NOK. Liquid Available: 478.87 NOK. Last Updated: 2026-06-29 - Rollback fix + new combos append + bankroll recalc. Master Protocol followed. All historical preserved, proper quoting.
