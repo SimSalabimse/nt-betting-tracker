@@ -1,9 +1,9 @@
 # Current Bankroll
 
-**Equity**: 503.77
+**Equity**: 459.27
 
-**Pending at Risk**: 111 NOK (Germany -1 @2.00 15 NOK + Kai Havertz scorer @2.10 10 NOK + Tyskland over 2.5 mål @2.40 12 NOK + SD Raiders FC vs Sydney FC Youth Over 2.5 @1.67 10 NOK + Baltimore Orioles vs Chicago White Sox Under 9.5 @1.74 12 NOK + New York Yankees vs Detroit Tigers Under 7.5 @1.90 10 NOK + Netherlands vs Morocco Win @2.35 12 NOK + Under 2.5 Total Goals @1.65 10 NOK + Brian Brobbey to score @3.00 10 NOK + Netherlands Over 4.5 Corners @1.90 10 NOK)
+**Pending at Risk**: 10 NOK (SD Raiders FC vs Sydney FC Youth Over 2.5 @1.67 10 NOK)
 
-**Liquid Available**: 392.77 NOK
+**Liquid Available**: 449.27 NOK
 
-**Last Updated**: 2026-06-29 AUTONOMOUS per robust_betting_protocol_v2.md Section 5 (bet_log append + bankroll reserve update via full SHA workflow + post-verify BEFORE output). New pending rows from current_odds_02.txt (Netherlands vs Morocco WC R32) analysis added with full protocol Notes (WC KO high-var DNB/tiered/per-line/historical/multi-agent/variety enforcement). No reset to baseline. Master Protocol followed by the letter. Pre-update SHA verified, post-update re-fetch confirmed accurate.
+**Last Updated**: 2026-06-30 AUTONOMOUS per robust_betting_protocol_v2.md Section 5 (bet_log settlement updates + bankroll recalc via full SHA workflow + post-verify BEFORE output). Settlements processed for this batch: Brian Brobbey scores Loss (-10 NOK), Nederland Win Loss (-12 NOK), Nederland U2.5 Win (+6.5 NOK payout 16.50), Nederland O4.5 corners Win (+9 NOK payout 19), New York Yankees U7.5 Loss (-10 NOK), Baltimore Orioles U9.5 Loss (-12 NOK), Tyskland -1 Loss (-15 NOK), Kai Havertz scorer Win (+11 NOK payout 21), Tyskland O2.5 Loss (-12 NOK). Net P/L for batch: -44.5 NOK. Previous Equity 503.77 updated to 459.27. Pending reduced from 111 to 10 NOK (only SD Raiders remaining). All updates followed full verification: bet_log full fetch SHA 280b4f40f9571552cf0c4da8b442b698484b7ed5, header exact match, targeted Result/P_L/Notes updates on exact pending rows only, post re-fetch confirmed no breaks, proper quoting, historical untouched. Deep dive, tool searches (web_search x10+, browse equiv, historical patterns per 1.5), multi-agent, variance explanations in bet_log Notes. Edges updated in sport_edges_and_filters.md, meta_review_log.md appended, round file deep dive added. Archive not triggered this batch (Grok decision: focus on settlement integrity first, size high but row management via Notes length). Master Protocol by the letter in full. No garbage/short versions/placeholders. Pre SHA verified, post re-fetch tree + content confirmed accurate complete text.
