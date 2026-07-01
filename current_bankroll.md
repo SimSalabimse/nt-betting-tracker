@@ -12,4 +12,6 @@
 
 **Settlement Note (Short)**: Settled 10 pending bets 2026-07-01. Wins: Spania U19 -1 (+18.90), Bencic 2-0 (+7.50), Baltimore U10.5 (+11.55), Kane scorer (+11.25), Lei (+4.70) = +53.9. Losses: Eskilsminne Draw (-12), England O6.5 corners (-10), Ilves DNB (-15), England BTTS No (-12), Nakashima -1.5 (-12) = -61. Net -7.1 NOK. Equity updated per user Equity rule (only on settlements). Short note only. Full SHA workflow + Full Content Rule followed. Archive snapshot created post-settlement.
 
+**Post bet_log settle + archive verify (2026-07-01)**: bet_log.csv updated to settled rows with concise short Notes (result+outcome vs pred+1 lesson) per Short Notes Rule. Full archive created at bet_log_archives/bet_log_archive_up_to_2026-07-01.csv (exact copy). Equity re-verified: SUM(P_L_NOK from bet_log) = -7.1 confirms calc. No pending. All autonomous before output. Protocol followed by letter (nt-bet-log-manager logic via GitHub tools). | Short verification note only.
+
 **How Equity Stays Correct**: Baseline 500 + cumulative realized P/L from all settled bets in bet_log.csv. On Win: +profit (P/L). On Loss: -stake. Never reset or manual edit outside settlements. Verified via full SHA workflow.
