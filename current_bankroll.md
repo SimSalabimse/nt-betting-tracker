@@ -4,7 +4,7 @@
 
 **Current Equity**: 530.5 NOK (verified from previous updates; full recalc from bet_log.csv P/L sum recommended on next settlement batch for exact match. Note: User preferred method - Equity adjusted ONLY on settlements by adding P/L profit on wins or subtracting stake on losses. Pending not deducted until settled. This keeps it always correct.)
 
-**Pending at Risk**: 94 NOK (sum of stakes for Result=Pending rows; update when new pending added or settled)
+**Pending at Risk**: 0 NOK (sum of stakes for Result=Pending rows; update when new pending added or settled)
 
 **Liquid Available**: Equity - Pending at Risk
 
