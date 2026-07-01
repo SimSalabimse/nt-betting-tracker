@@ -10,4 +10,4 @@
 
 **Last Updated**: 2026-07-02
 
-**Update Note (Short)**: Autonomous append per nt-betting-workflow + robust_betting_protocol_v2.md (full SHA verify tree+content before/after + post re-verify). Added 34 NOK pending risk for 3 value bets (BTTS No, Over 2.5, Balogun scorer). Equity unchanged per rule (pending not deducted). bet_log recalc verified. Short note only. No bloat.
+**Update Note (Short)**: Autonomous append per nt-betting-workflow + robust_betting_protocol_v2.md (full SHA verify tree+content before/after + post re-verify). Added 34 NOK pending risk for 3 value bets (BTTS No, Over 2.5, Balogun scorer). Equity unchanged per rule (pending not deducted). bet_log recalc verified. Short note only. No bloat. Post-settlement-learning-reviewer + nt-learning-reviewer triggered for Belgia uavgjort/U0.5/0-0 losses; edges/patterns updated additive; bankroll verified no numeric shift (losses already in Equity calc). Full workflow followed.
