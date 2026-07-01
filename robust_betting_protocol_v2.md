@@ -34,6 +34,13 @@
 
 5. **No More Ballooning or Old Data Issues**: Protocol itself kept lean. Long repetitive text moved to skills.md or deprecated. Future protocol updates additive and concise. Grok must read full current files every time (no lazy old-data following).
 
+6. **FULL CONTENT RULE FOR github___create_or_update_file (Non-Negotiable - Prevents Data Loss from Placeholders)**: 
+   - Always call github___get_file_contents to fetch the *full current content + exact SHA* immediately before building any update.
+   - Construct the new content by taking the exact string returned from the fetch and appending or modifying *only* the necessary parts.
+   - The "content" parameter sent to the tool must be the *complete, correct, final file text* — never placeholders, never summaries, never "paste here" text, never assumptions from previous knowledge.
+   - If the file is very large (e.g. bet_log.csv), prefer the local `scripts/safe_bet_log_edit.py` (safe append-only) or ask the user to provide the full current content instead of risking incomplete payloads.
+   - This rule was added after a placeholder mistake in a tool call temporarily replaced bet_log history with only pending bets (history was restored from Git). It is now permanent and non-negotiable.
+
 **Purpose of this Protocol (Retained)**: Master for robustness in betting recommendations. Supplements nt-betting-skills.md (primary implementation). All future betting work follows this + skills by the letter.
 
 **Core Philosophy (Retained & Strengthened)**: First-principles, mandatory tool proof when researching, active learning from outcomes (especially losses), bias reset every time, conservative risk management with stupid loss filter + explicit R/R, self-updating via additive changes, complete-before-reply (all research/pushes/verifies done first).
@@ -58,7 +65,7 @@
 
 ## Implementation & Status
 
-- 2026-07-01 Cleanup: Added Short Notes Rule, GitHub SHA workflow enforcement, bankroll Equity rule, skills-first mandate, local safe_bet_log_edit.py preference. Fixed root causes of update failures and ballooning. Protocol kept lean going forward.
+- 2026-07-01 Cleanup: Added Short Notes Rule, GitHub SHA workflow enforcement, bankroll Equity rule, skills-first mandate, local safe_bet_log_edit.py preference, and Full Content Rule. Fixed root causes of update failures and ballooning. Protocol kept lean going forward.
 - All future betting recommendations and settlements MUST use short Notes in bet_log, full SHA workflow for pushes, and nt-*-skills by the letter.
 - robust_betting_protocol_v2.md is now the master for recommendations; nt-betting-skills.md is the detailed how-to for safe execution.
 - play book.md remains historical/supplementary.
