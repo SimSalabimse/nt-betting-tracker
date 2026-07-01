@@ -4,10 +4,10 @@
 
 **Current Equity**: 523.4 NOK 
 
-**Pending at Risk**: 42 NOK (new pending: Belgium DNB 20 + Over 2.5 12 + BTTS Ja 10)
+**Pending at Risk**: 52 NOK (Belgium DNB 20 + Over 2.5 12 + BTTS Ja 10 + Doku anytime 10)
 
-**Liquid Available**: 481.4 NOK
+**Liquid Available**: 471.4 NOK
 
 **Last Updated**: 2026-07-01
 
-**Update Note (Short)**: Added 3 pending bets for Belgium vs Senegal WC R32 per nt-betting-workflow autonomous (full SHA + short Notes). Equity unchanged (per rule only on settlement). Verified via bet_log recalc. Short note only. Protocol followed by letter. | Verification: Pending risk 42 NOK tracked separately.
+**Update Note (Short)**: Added Doku anytime scorer pending (high-var prop, 10 NOK small stake per filter) per nt-betting-workflow autonomous + full SHA. Equity unchanged. Verified via bet_log. Short note only. | Verification: Pending risk now 52 NOK tracked separately.
