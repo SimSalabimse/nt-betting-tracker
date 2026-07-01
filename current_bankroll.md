@@ -4,10 +4,10 @@
 
 **Current Equity**: 528.6 NOK 
 
-**Pending at Risk**: 35 NOK (3 pending ET bets from current_odds_02 analysis: ET Draw 15 + 0-0 10 + Under0.5 10)
+**Pending at Risk**: 69 NOK (prev 35 ET + new 34 for USA-Bosnia: BTTS Nei 12 + Over 2.5 12 + Balogun 10)
 
-**Liquid Available**: 493.6 NOK
+**Liquid Available**: 459.6 NOK
 
 **Last Updated**: 2026-07-02
 
-**Update Note (Short)**: Autonomous append per nt-betting-workflow + robust_betting_protocol_v2.md (full SHA verify tree+content before/after). Added pending risk 35 NOK for ET value bets. Equity unchanged (pending not deducted per rule). Verified full bet_log recalc. Short note only. No bloat.
+**Update Note (Short)**: Autonomous append per nt-betting-workflow + robust_betting_protocol_v2.md (full SHA verify tree+content before/after + post re-verify). Added 34 NOK pending risk for 3 value bets (BTTS No, Over 2.5, Balogun scorer). Equity unchanged per rule (pending not deducted). bet_log recalc verified. Short note only. No bloat.
