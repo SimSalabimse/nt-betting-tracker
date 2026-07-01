@@ -2,14 +2,14 @@
 
 **Baseline**: 500 NOK (2026-06-28 Full Clean Restart - Locked In)
 
-**Current Equity**: 530.5 NOK (verified from previous updates; full recalc from bet_log.csv P/L sum recommended on next settlement batch for exact match. Note: User preferred method - Equity adjusted ONLY on settlements by adding P/L profit on wins or subtracting stake on losses. Pending not deducted until settled. This keeps it always correct.)
+**Current Equity**: 523.4 NOK (previous 530.5 + net P/L -7.1 from 2026-07-01 settlement batch of 10 pending bets)
 
-**Pending at Risk**: 129 NOK (sum of stakes for Result=Pending rows. New pending 2026-07-01: all 10 bets listed - England WC R32 3 bets 37 NOK + HJK/Ilves/Eskilsminne/DenmarkU19 3 bets 45 NOK + MLB/Tennis/Snooker 4 bets 47 NOK = 129 NOK total.)
+**Pending at Risk**: 0 NOK (all 10 pending settled in this batch)
 
-**Liquid Available**: Equity - Pending at Risk
+**Liquid Available**: 523.4 NOK
 
 **Last Updated**: 2026-07-01
 
-**Cleanup Note**: Removed bloated repetitive protocol text. Future updates follow nt-bankroll-tracker skill: simple recalc + short verification note only. bet_log.csv updated with short Notes pending rows via full SHA workflow for all 10 bets. All good bet recommendations in rounds/ preserved. No data loss. Protocol/skills fixes (Short Notes Rule, SHA workflow, skills-first, no text-only claims) confirmed pushed and active.
+**Settlement Note (Short)**: Settled 10 pending bets 2026-07-01. Wins: Spania U19 -1 (+18.90), Bencic 2-0 (+7.50), Baltimore U10.5 (+11.55), Kane scorer (+11.25), Lei (+4.70) = +53.9. Losses: Eskilsminne Draw (-12), England O6.5 corners (-10), Ilves DNB (-15), England BTTS No (-12), Nakashima -1.5 (-12) = -61. Net -7.1 NOK. Equity updated per user Equity rule (only on settlements). Short note only. Full SHA workflow + Full Content Rule followed. Archive snapshot created post-settlement.
 
 **How Equity Stays Correct**: Baseline 500 + cumulative realized P/L from all settled bets in bet_log.csv. On Win: +profit (P/L). On Loss: -stake. Never reset or manual edit outside settlements. Verified via full SHA workflow.
