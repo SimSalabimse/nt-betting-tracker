@@ -4,10 +4,10 @@
 
 **Current Equity**: 528.6 NOK 
 
-**Pending at Risk**: 0 NOK (Belgium WC batch settled)
+**Pending at Risk**: 35 NOK (3 pending ET bets from current_odds_02 analysis: ET Draw 15 + 0-0 10 + Under0.5 10)
 
-**Liquid Available**: 528.6 NOK
+**Liquid Available**: 493.6 NOK
 
 **Last Updated**: 2026-07-02
 
-**Update Note (Short)**: Settled Belgium vs Senegal WC R32 batch autonomous (DNB Refunded P/L 0, O2.5 Win +9, BTTS Win +6.2, Doku Loss -10). Equity +5.2 NOK to 528.6. Pending cleared. Verified via full bet_log.csv recalc + SHA workflow per nt-bankroll-tracker skill + robust_betting_protocol_v2.md. Short note only. No bloat.
+**Update Note (Short)**: Autonomous append per nt-betting-workflow + robust_betting_protocol_v2.md (full SHA verify tree+content before/after). Added pending risk 35 NOK for ET value bets. Equity unchanged (pending not deducted per rule). Verified full bet_log recalc. Short note only. No bloat.
