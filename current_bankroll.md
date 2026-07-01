@@ -2,12 +2,12 @@
 
 **Baseline**: 500 NOK (2026-06-28 Full Clean Restart - Locked In)
 
-**Current Equity**: 523.4 NOK 
+**Current Equity**: 528.6 NOK 
 
-**Pending at Risk**: 52 NOK (Belgium DNB 20 + Over 2.5 12 + BTTS Ja 10 + Doku anytime 10)
+**Pending at Risk**: 0 NOK (Belgium WC batch settled)
 
-**Liquid Available**: 471.4 NOK
+**Liquid Available**: 528.6 NOK
 
-**Last Updated**: 2026-07-01
+**Last Updated**: 2026-07-02
 
-**Update Note (Short)**: Added Doku anytime scorer pending (high-var prop, 10 NOK small stake per filter) per nt-betting-workflow autonomous + full SHA. Equity unchanged. Verified via bet_log. Short note only. | Verification: Pending risk now 52 NOK tracked separately.
+**Update Note (Short)**: Settled Belgium vs Senegal WC R32 batch autonomous (DNB Refunded P/L 0, O2.5 Win +9, BTTS Win +6.2, Doku Loss -10). Equity +5.2 NOK to 528.6. Pending cleared. Verified via full bet_log.csv recalc + SHA workflow per nt-bankroll-tracker skill + robust_betting_protocol_v2.md. Short note only. No bloat.
