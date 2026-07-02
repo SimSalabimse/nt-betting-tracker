@@ -1,55 +1,38 @@
 # NT Betting System (New Automated Version)
 
-This folder contains the foundation for a more automated betting tracking system.
+This folder contains prepared infrastructure for a more automated betting system.
 
-## Important Note on the Database
+## Current Status (Important)
 
-The actual database file (`bets.db`) is **not committed** to this repository. This is intentional because binary database files do not version well in Git.
+**CSV logging is currently active.**
 
-**How to initialize the database locally:**
+We are using the original `bet_log.csv` + `current_bankroll.md` system with `scripts/safe_bet_log_edit.py` for updates.
 
-Run this command once after cloning the repository:
+The new scripts in this folder (`nt_betting_system/scripts/`) are built and ready, but SQLite (`bets.db`) logging is currently on hold. We may return to it later.
+
+## How Logging Currently Works
+
+- Recommended bets are logged into `bet_log.csv` using short notes.
+- Updates are done via `scripts/safe_bet_log_edit.py` (preferred) or full SHA workflow on GitHub.
+- `current_bankroll.md` is updated with correct Equity rule after settlements.
+
+## Prepared Scripts (For Future Use)
+
+- `process_odds_file.py` — Main entry point
+- `recommend_from_odds_file.py` — Adaptive research (targeted vs deep)
+- `full_settlement_flow.py` — Full settlement + bankroll + stats
+- `generate_performance_report.py` — Creates performance reports
+
+## How to Initialize (If We Return to SQLite Later)
 
 ```bash
 python3 nt_betting_system/scripts/initialize_db.py
 ```
 
-This will create your local `bets.db` file using the schema.
+## Summary
 
-## Goals
-- Reduce manual work for logging, settlement, bankroll tracking, and statistics
-- Grok handles script execution and file updates
-- User only provides odds files and settlement results
+- Current active system: CSV (`bet_log.csv`)
+- New scripts: Ready but not active yet
+- SQLite: On hold for now
 
-## Current Structure
-
-- `schema.sql` — Database structure
-- `scripts/` — Python scripts that Grok uses to manage the system
-- `initialize_db.py` — Script to create the local database
-
-## Key Scripts (Grok executes these)
-
-- `process_odds_file.py` — Main entry point when you provide an odds file
-- `recommend_from_odds_file.py` — Handles adaptive research (targeted vs deep mode)
-- `add_pending_bets.py` — Logs recommended bets
-- `full_settlement_flow.py` — Handles settlements + bankroll + stats refresh
-- `generate_performance_report.py` — Creates `performance_report.md`
-- `update_bankroll.py` — Updates equity after settlements
-
-## How the System is Intended to Work
-
-1. You provide an odds file
-2. Grok analyzes it using adaptive research
-3. Grok recommends bets + stakes
-4. Grok logs the bets into your local SQLite database
-5. You place the recommended bets
-6. When you provide settlement results, Grok updates everything (results, bankroll, learning, and refreshes the performance report)
-
-## Current Status (2026-07-02)
-
-- Schema and core scripts are in place
-- Adaptive research mode logic exists (targeted vs deep)
-- Full end-to-end autonomous logging is still being improved
-- `bets.db` must be created locally by running the initialize script
-
-All changes to scripts and documentation are tracked in Git. The actual betting data lives in your local `bets.db`.
+All script improvements and documentation are kept for future use.
