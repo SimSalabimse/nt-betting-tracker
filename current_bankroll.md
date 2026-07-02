@@ -4,10 +4,10 @@
 
 **Current Equity**: 502.10 NOK 
 
-**Pending at Risk**: 10 NOK (remaining Niemann golf pending)
+**Pending at Risk**: 35 NOK (Niemann golf 10 + Portugal vs Kroatia WC R32 DNB 15 + BTTS 10)
 
-**Liquid Available**: 492.10 NOK
+**Liquid Available**: 467.10 NOK
 
-**Last Updated**: 2026-07-02 full post-settlement-learning-reviewer batch (Cincinnati Reds U6.5 loss -10, Spania O0.5 1H win +9.24, Spania U2.5 loss -12, Spania BTTS win +8.64, Lamine Yamal loss -10. Net batch P/L -14.12. Equity = 500 + SUM(realized P/L settled in bet_log.csv). Adjusted ONLY on settlements per Equity rule. Short note enforced.
+**Last Updated**: 2026-07-02 autonomous pending append for Portugal vs Kroatia WC R32 (DNB + BTTS). Previous post-settlement batch net -14.12. Equity = 500 + SUM(realized P/L settled in bet_log.csv). Adjusted ONLY on settlements per Equity rule. Short note enforced.
 
-**Update Note (Short)**: nt-bankroll-tracker autonomous recalc post bet_log.csv settlements + verify (full SHA workflow + tree re-check + content re-read). post-settlement-learning-reviewer + nt-bet-log-manager + robust_betting_protocol_v2.md + nt-betting-skills.md followed by the letter in full. All research, logging, pushes, verifications complete before user output. Master Protocol v2. Short Notes Rule applied.
+**Update Note (Short)**: nt-bankroll-tracker autonomous recalc post bet_log pending + full SHA workflow + tree re-check + content re-read verify. +25 NOK new pending risk. robust_betting_protocol_v2.md + nt-betting-skills.md + nt-bankroll-tracker followed by letter in full. All complete before output. Master Protocol v2. Short Notes Rule applied.
