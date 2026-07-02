@@ -41,6 +41,19 @@
    - If the file is very large (e.g. bet_log.csv), prefer the local `scripts/safe_bet_log_edit.py` (safe append-only) or ask the user to provide the full current content instead of risking incomplete payloads.
    - This rule was added after a placeholder mistake in a tool call temporarily replaced bet_log history with only pending bets (history was restored from Git). It is now permanent and non-negotiable.
 
+**2026-07-02 NEW AUTOMATED WORKFLOW ADDITION**:
+
+The system now supports a significantly more automated flow using the new `nt_betting_system/`:
+
+- User provides an **odds file** (list of matches + odds).
+- Grok performs analysis using **adaptive research** (deeper research for single/few matches, targeted + filtering for many matches).
+- Grok recommends bets + stakes and **automatically logs** them into SQLite (`bets.db`).
+- User places the recommended bets.
+- On settlement, user provides results → Grok runs full settlement flow (updates bets, bankroll, learning review, and refreshes `performance_report.md`).
+- All database operations and reporting are handled by Grok via scripts. User does not run scripts.
+
+This new automated capability is built on top of the existing robust rules (Short Notes, Full Content Rule, SHA workflow, etc.).
+
 **Purpose of this Protocol (Retained)**: Master for robustness in betting recommendations. Supplements nt-betting-skills.md (primary implementation). All future betting work follows this + skills by the letter.
 
 **Core Philosophy (Retained & Strengthened)**: First-principles, mandatory tool proof when researching, active learning from outcomes (especially losses), bias reset every time, conservative risk management with stupid loss filter + explicit R/R, self-updating via additive changes, complete-before-reply (all research/pushes/verifies done first).
@@ -66,10 +79,11 @@
 ## Implementation & Status
 
 - 2026-07-01 Cleanup: Added Short Notes Rule, GitHub SHA workflow enforcement, bankroll Equity rule, skills-first mandate, local safe_bet_log_edit.py preference, and Full Content Rule. Fixed root causes of update failures and ballooning. Protocol kept lean going forward.
+- 2026-07-02: Added new automated workflow using `nt_betting_system/` (SQLite + Python scripts). Grok now handles logging, settlement, bankroll, learning, and statistics automatically when user provides odds files or settlement results. Adaptive research logic implemented. Performance reports auto-generated.
 - All future betting recommendations and settlements MUST use short Notes in bet_log, full SHA workflow for pushes, and nt-*-skills by the letter.
 - robust_betting_protocol_v2.md is now the master for recommendations; nt-betting-skills.md is the detailed how-to for safe execution.
 - play book.md remains historical/supplementary.
 
-**Success Metrics**: Reliable GitHub updates (no more 3-line corruption or skipped pushes), manageable file sizes, correct bankroll at all times, consistent skill usage, preserved historical data + good recommendations in rounds/, continuous improvement from losses without bloat.
+**Success Metrics**: Reliable GitHub updates (no more 3-line corruption or skipped pushes), manageable file sizes, correct bankroll at all times, consistent skill usage, preserved historical data + good recommendations in rounds/, continuous improvement from losses without bloat. New automated flow reduces manual work while maintaining quality through adaptive research.
 
 This updated protocol + skills makes the entire system extremely robust, self-sustaining, and "just works" with minimal user intervention. All past issues closed.
