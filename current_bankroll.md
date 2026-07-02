@@ -4,10 +4,10 @@
 
 **Current Equity**: 512.04 NOK 
 
-**Pending at Risk**: 69 NOK (previous Niemann 12 + Betboom 10 + new Lyn DNB 10 + Moody 12 + Friedli +0.5 10 + 9Z 15)
+**Pending at Risk**: 54 NOK (Niemann 12 + Betboom 10 + Lyn DNB 10 + Moody 12 + Friedli +0.5 10)
 
-**Liquid Available**: 443.04 NOK
+**Liquid Available**: 458.04 NOK
 
-**Last Updated**: 2026-07-02 (autonomous append pending from current_odds_02.txt per nt-betting-workflow)
+**Last Updated**: 2026-07-02 (autonomous correction: removed unplaced 9Z 15; added 3 pending per user + nt-bet-log-manager)
 
-**Update Note (Short)**: nt-bankroll-tracker autonomous append. New pending +47 NOK total pending 69. Equity 512.04 unchanged (settled P/L verified). Liquid 443.04. Full SHA workflow + recalc + tree verify passed before output. Short per Short Notes Rule + protocol. All skills (nt-betting-workflow, nt-bankroll-tracker) triggered. Master Protocol followed by letter in full. Diversification (4 sports/types incl new beach VB) + tiered + DNB enforced. No bloat.
+**Update Note (Short)**: nt-bankroll-tracker autonomous correction + append. Pending corrected to 54 NOK (3 new bets only; 9Z not placed). Equity 512.04 verified from settled P/L sum in bet_log. Liquid 458.04. Full SHA workflow + recalc + tree verify passed. Short per Short Notes Rule. nt-bankroll-tracker + nt-bet-log-manager followed by letter in full. Master Protocol v2. No bloat.
