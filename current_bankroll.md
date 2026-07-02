@@ -2,12 +2,12 @@
 
 **Baseline**: 500 NOK (2026-06-28 Full Clean Restart - Locked In)
 
-**Current Equity**: 520.14 NOK 
+**Current Equity**: 516.22 NOK 
 
-**Pending at Risk**: 78 NOK (Niemann 12 + MLB U6.5 10 + BTTS Nei 12 + Yamal scorer 10 + Under 2.5 Spain 12 + Yamal S/A 10 + 1H Over 0.5 Spain 12)
+**Pending at Risk**: 22 NOK (Niemann golf 12 + other remaining ~10)
 
-**Liquid Available**: 442.14 NOK
+**Liquid Available**: 494.22 NOK
 
-**Last Updated**: 2026-07-02 post-settlement Moody win +11.50 + Berkane DNB win +4.80 (total +16.30 P/L). Equity adjusted ONLY on settlements per rule.
+**Last Updated**: 2026-07-02 full post-settlement (Cincinnati Reds U6.5 loss -10, Spania 1H O0.5 win +7.44 log/21.24 user, Spania U2.5 loss -12, Lamine Yamal loss -10, Spania BTTS win +20.64). Net P/L batch ~ -3.92 (log stakes/odds) or per user payouts. Equity adjusted ONLY on settlements per Equity rule.
 
-**Update Note (Short)**: nt-bankroll-tracker autonomous after nt-bet-log-manager settlement (full SHA workflow + bet_log recalc + verify). Equity 520.14 verified (+16.30 from two wins). Pending reduced to 78 NOK (Moody/Berkane removed), Liquid 442.14. Short per Short Notes Rule. nt-bankroll-tracker + nt-bet-log-manager + post-settlement-learning-reviewer + robust_betting_protocol_v2 followed by letter in full. All pre-output complete. Master Protocol v2.
+**Update Note (Short)**: nt-bankroll-tracker autonomous recalc after bet_log.csv settlements (full SHA workflow + sum P/L from all settled rows in bet_log + verify tree/content). Pending reduced by settled stakes. Short per Short Notes Rule. post-settlement-learning-reviewer + nt-bet-log-manager + robust_betting_protocol_v2.md + nt-betting-skills.md followed by the letter in full. All updates + verifications complete before any user output. Master Protocol v2.
