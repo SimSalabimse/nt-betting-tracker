@@ -1,44 +1,56 @@
-# Betting Commands (Updated 2026-07-01 Cleanup - Skills First, Short Notes, Reliable Updates)
+# Betting Commands (Updated 2026-07-02 - New Automated System + Skills First)
 
-**Core Instructions (Mandatory)**: Use nt-betting-workflow skill + exact supporting skills from nt-betting-skills.md (nt-bet-log-manager, post-settlement-learning-reviewer, nt-learning-reviewer, betting-value-calculator, nt-bankroll-tracker, etc.) by the letter in full. **Short Notes Rule strictly enforced** in all bet_log.csv work (see nt-betting-skills.md). Mandatory tool calls with explicit proof only when doing research (web_search, browse_page, x_keyword_search etc. for promising markets). First-principles + multi-agent internal simulation when analyzing. Output in clean tables when recommending. Enforce diversification, min 10 NOK stake, tiered staking + DNB preference, stupid loss filter, explicit risk/reward. Log variety/new types. Use bet_log_archives/ when archiving. Update meta_review_log.md after reviews. Complete ALL research, updates, GitHub pushes (full SHA workflow), and validations BEFORE any reply. No shortcuts.
+**Core Instructions (Mandatory)**: Use nt-betting-workflow skill + exact supporting skills from nt-betting-skills.md by the letter in full. **Short Notes Rule strictly enforced**. Mandatory tool calls with explicit proof when researching. First-principles + multi-agent simulation. Clean tables for recommendations. Enforce diversification, tiered staking + DNB preference, stupid loss filter. Complete ALL research, updates, GitHub pushes (full SHA workflow), and validations BEFORE any reply. No shortcuts.
 
-**PREFERRED RELIABLE UPDATE METHOD (FIX FOR PAST GITHUB ISSUES)**: 
-- For bet_log.csv or current_bankroll.md changes: Use nt-bet-log-manager logic or run `scripts/safe_bet_log_edit.py` locally on your master copy (append-only or targeted settle, atomic, validated, short Notes). Grok proposes exact lines/diffs if needed.
-- GitHub remote updates: Only via full Successful Push Workflow (tree verify → get content+SHA → github___create_or_update_file with full clean content + sha → re-fetch + tree verify). Short content only to avoid truncation/ballooning.
-- Fallback if GitHub feels flaky: Local master CSV + script + optional push of result.
+**NEW AUTOMATED SYSTEM (nt_betting_system/)**: 
+The system now has a new automated layer in `nt_betting_system/` (SQLite + Python scripts). Grok handles logging, settlement, bankroll, learning, and statistics automatically. User only provides odds files and settlement results. All database operations are done by Grok via scripts (you do not run scripts).
 
-**AUTONOMOUS MODE (where applicable)**: bet_log append (pending) + bankroll reserve via full SHA or local script BEFORE user-facing output. Settlements trigger reviewers. User replies only for changes/results.
+**PREFERRED RELIABLE UPDATE METHOD**: 
+- For bet_log.csv or current_bankroll.md: Prefer `scripts/safe_bet_log_edit.py` locally or full SHA workflow on GitHub.
+- New automated flow uses `nt_betting_system/scripts/` (especially `process_odds_file.py`, `full_settlement_flow.py`, `generate_performance_report.py`).
+- Always follow Successful Push Workflow: tree verify → get content+SHA → github___create_or_update_file with full clean content + sha → re-verify.
+
+**AUTONOMOUS MODE**: Grok now handles bet_log append (pending), bankroll, settlement flow, and stats updates via scripts BEFORE user-facing output when using the new system.
 
 1. Start New Round Analysis (Primary Command):
 
-Analyze the attached/current odds file using nt-betting-workflow skill completely + all supporting skills by exact names. Use mandatory tool calls with explicit proof for promising lines (per-line targeted research). First-principles + multi-agent simulation (Value, Risk Manager, Data Hunter, Contrarian). Output ONLY in clean response template with bets table. Enforce diversification (broader sports), min 10 NOK, tiered staking + DNB preference, stupid loss filter, explicit risk/reward calcs. Document variety exploration and new types. **AUTONOMOUS**: Immediately update bet_log.csv (pending rows, short Notes) + current_bankroll.md (short note, correct Equity rule) with full SHA workflow or local safe script + post-verify BEFORE outputting table. Complete all before replying.
+Provide an odds file (or attach current odds). Grok will:
+- Use adaptive research (`recommend_from_odds_file.py` + `process_odds_file.py`): Deeper research for single/few matches, targeted + strong filtering for many matches.
+- Apply edges, stupid loss filter, tiered staking + DNB preference.
+- Automatically log recommended bets into SQLite (`bets.db`) with short notes.
+- Update bankroll (Pending at Risk).
+- Output clean recommendation table.
+
+All logging happens autonomously before the final reply.
 
 2. For Late/Odds Updates or Specific File:
 
-Re-analyze using nt-betting-workflow + skills by the letter. Tool proof mandatory. Fresh first-principles + multi-agent. Clean template output. **AUTONOMOUS update of bet_log/bankroll if new pending (short Notes).**
+Same as above. Grok re-analyzes with adaptive mode and updates the database automatically.
 
-3. After Placing Bets (Confirmation & Log Update):
+3. After Placing Bets:
 
-Bets placed as recommended: [paste exact list or confirm "all recommended"]. Use nt-bet-log-manager skill or `scripts/safe_bet_log_edit.py` (full fetch/SHA first or local master, append-only, short Notes, strict validation). Update current_bankroll.md (short note) and round file. Verify everything (re-fetch + tree or local validate) before confirming.
+Confirm bets placed. Grok updates any additional logging if needed via scripts. Short notes only.
 
 4. After Settlements/Results:
 
-Settlements: [paste details e.g. Match - Selection - Result - P/L]. Trigger full post-settlement-learning-reviewer + nt-learning-reviewer skills + tool searches for explanations (losses/high-conviction). Deep dive in round file (concise). Update edges if patterns (additive). Update bet_log with targeted short note via safe logic. Update bankroll/round/edges/meta_review_log.md (short notes). Standardized summary + learnings.
+Provide settlement details. Grok runs `full_settlement_flow.py` which:
+- Updates bet results + short settlement notes in SQLite.
+- Updates bankroll (correct Equity rule).
+- Triggers learning review.
+- Automatically refreshes `performance_report.md` (easy-to-read stats).
 
-5. Bankroll/Log Check or Archiving:
+5. Bankroll / Stats Check:
 
-Verify current_bankroll.md and bet_log.csv status (full fetch + SHA or local validate). Run archiving to bet_log_archives/ if size/rows threshold met. Full validation, push via workflow or local script, re-verify.
+Ask for current status. Grok can read from SQLite or `performance_report.md` and `current_bankroll.md`.
 
-6. Full System Review/Improvement:
+6. Full System Review:
 
-Run meta-review of recent rounds. Update/create meta_review_log.md with standardized table (Review Date | Reviewed Items/Rounds + SHAs | Key Findings & Additive Updates | Pending/Next Review Trigger | Compliance Notes). Propose and push additive updates if needed (full SHA workflow). Focus on active learning from losses (filter tightening), risk management (tiered/DNB), tool usage, variety, per-line research. Complete all before any summary reply.
+Run meta-review. Update edges if needed. Grok maintains `performance_report.md` and can generate deeper breakdowns on request.
 
-**Notes**: These commands ensure the system remains extremely robust, self-sustaining, and aligned with skills. Short Notes Rule mandatory to prevent ballooning/corruption. GitHub pushes always follow Successful Push Workflow exactly. **AUTONOMOUS MODE**: Grok handles routine bet_log/bankroll (short Notes) without user tokens. Use force commands below only for explicit override/audit.
+**Notes**: The new `nt_betting_system/` makes routine operations (logging, settlement, stats) much more automated while keeping all quality and robustness rules. Short Notes Rule and Full Content Rule remain mandatory. GitHub pushes always follow the Successful Push Workflow exactly.
 
-**FORCE COMPLIANCE COMMANDS (Copy-Paste Exactly When Needed)**:
+**FORCE COMPLIANCE COMMANDS**:
 
-**FORCE_SKILLS_COMPLIANCE**: Read nt-betting-skills.md in full (especially Short Notes Rule, nt-bet-log-manager, nt-bankroll-tracker correct Equity rule, post-settlement-learning-reviewer, nt-learning-reviewer). Confirm you followed every line with proof (tree, get SHA, full clean content push, re-verify). Use short Notes only. Complete-before-reply. No protocol bloat in Notes or bankroll.
+**FORCE_SKILLS_COMPLIANCE**: Read nt-betting-skills.md + new nt_betting_system/README.md in full. Confirm Short Notes, correct Equity rule, full SHA workflow, and new automated scripts usage.
 
-**FORCE_FILE_UPDATE_v2**: Use Successful Push Workflow exactly (github___get_file_contents for current content + SHA first, then github___create_or_update_file with full actual text + correct sha + clear message, then re-fetch + tree verify to confirm no garbage/short versions). Provide proof in response. Prefer local safe_bet_log_edit.py for bet_log when possible.
-
-**FORCE_SETTLEMENT**: Trigger post-settlement-learning-reviewer + nt-learning-reviewer. Update bet_log (targeted, short Notes) and bankroll (correct Equity rule) via full workflow or local script. All pushes/verifies first. Output summary only after.
+**FORCE_NEW_SYSTEM_UPDATE**: Use `nt_betting_system/scripts/` for automated flows. Always verify tree + get SHA before any GitHub update. Complete all pushes and verifications before replying.
