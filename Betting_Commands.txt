@@ -1,56 +1,47 @@
-# Betting Commands (Updated 2026-07-02 - New Automated System + Skills First)
+# Betting Commands (Best Version - Updated 2026-07-02)
 
-**Core Instructions (Mandatory)**: Use nt-betting-workflow skill + exact supporting skills from nt-betting-skills.md by the letter in full. **Short Notes Rule strictly enforced**. Mandatory tool calls with explicit proof when researching. First-principles + multi-agent simulation. Clean tables for recommendations. Enforce diversification, tiered staking + DNB preference, stupid loss filter. Complete ALL research, updates, GitHub pushes (full SHA workflow), and validations BEFORE any reply. No shortcuts.
+## Core Rules (Always Active)
+- Follow `robust_betting_protocol_v2.md` and `nt-betting-skills.md` by the letter.
+- Short Notes Rule is mandatory in all bet logging.
+- I (Grok) run all scripts in `nt_betting_system/scripts/`. You do not run scripts.
+- Use adaptive research: deeper analysis for single/few matches, targeted + strong filtering for many matches.
+- I will log everything autonomously into SQLite and update stats/bankroll.
+- Complete all work (research + logging + pushes) before giving final output.
 
-**NEW AUTOMATED SYSTEM (nt_betting_system/)**: 
-The system now has a new automated layer in `nt_betting_system/` (SQLite + Python scripts). Grok handles logging, settlement, bankroll, learning, and statistics automatically. User only provides odds files and settlement results. All database operations are done by Grok via scripts (you do not run scripts).
+## Best Primary Command (Use This Most Often)
 
-**PREFERRED RELIABLE UPDATE METHOD**: 
-- For bet_log.csv or current_bankroll.md: Prefer `scripts/safe_bet_log_edit.py` locally or full SHA workflow on GitHub.
-- New automated flow uses `nt_betting_system/scripts/` (especially `process_odds_file.py`, `full_settlement_flow.py`, `generate_performance_report.py`).
-- Always follow Successful Push Workflow: tree verify → get content+SHA → github___create_or_update_file with full clean content + sha → re-verify.
+"Run full analysis on the attached/current odds file using the new automated system.
 
-**AUTONOMOUS MODE**: Grok now handles bet_log append (pending), bankroll, settlement flow, and stats updates via scripts BEFORE user-facing output when using the new system.
+Use adaptive research mode:
+- Many matches → strong filtering first, then targeted research on survivors.
+- Few matches or single match → switch to deeper research mode.
 
-1. Start New Round Analysis (Primary Command):
+Apply stupid loss filter, DNB preference on high-variance profiles, tiered staking, and explicit risk/reward.
 
-Provide an odds file (or attach current odds). Grok will:
-- Use adaptive research (`recommend_from_odds_file.py` + `process_odds_file.py`): Deeper research for single/few matches, targeted + strong filtering for many matches.
-- Apply edges, stupid loss filter, tiered staking + DNB preference.
-- Automatically log recommended bets into SQLite (`bets.db`) with short notes.
-- Update bankroll (Pending at Risk).
-- Output clean recommendation table.
+Autonomous mode is active: Log all recommended bets into SQLite with short notes, update bankroll, and refresh stats.
 
-All logging happens autonomously before the final reply.
+I will place every bet you recommend.
 
-2. For Late/Odds Updates or Specific File:
+Output only in clean standardized format with bets table."
 
-Same as above. Grok re-analyzes with adaptive mode and updates the database automatically.
+## Other Useful Commands
 
-3. After Placing Bets:
+**For Late Odds or Small Number of Matches:**
+"Re-analyze the current odds using deep research mode. Focus on quality over quantity. Log recommendations autonomously."
 
-Confirm bets placed. Grok updates any additional logging if needed via scripts. Short notes only.
+**After I Place Bets:**
+"Bets placed as recommended. Confirm logging is complete."
 
-4. After Settlements/Results:
+**After Settlements:**
+"Here are the settlement results: [paste details]. Run full settlement flow, update learning, refresh performance_report.md, and give summary."
 
-Provide settlement details. Grok runs `full_settlement_flow.py` which:
-- Updates bet results + short settlement notes in SQLite.
-- Updates bankroll (correct Equity rule).
-- Triggers learning review.
-- Automatically refreshes `performance_report.md` (easy-to-read stats).
+**Stats / Bankroll Check:**
+"Show me current performance from performance_report.md and current_bankroll.md."
 
-5. Bankroll / Stats Check:
+**Full System Review:**
+"Run meta review of recent performance. Update edges if clear patterns appear. Refresh all reports."
 
-Ask for current status. Grok can read from SQLite or `performance_report.md` and `current_bankroll.md`.
-
-6. Full System Review:
-
-Run meta-review. Update edges if needed. Grok maintains `performance_report.md` and can generate deeper breakdowns on request.
-
-**Notes**: The new `nt_betting_system/` makes routine operations (logging, settlement, stats) much more automated while keeping all quality and robustness rules. Short Notes Rule and Full Content Rule remain mandatory. GitHub pushes always follow the Successful Push Workflow exactly.
-
-**FORCE COMPLIANCE COMMANDS**:
-
-**FORCE_SKILLS_COMPLIANCE**: Read nt-betting-skills.md + new nt_betting_system/README.md in full. Confirm Short Notes, correct Equity rule, full SHA workflow, and new automated scripts usage.
-
-**FORCE_NEW_SYSTEM_UPDATE**: Use `nt_betting_system/scripts/` for automated flows. Always verify tree + get SHA before any GitHub update. Complete all pushes and verifications before replying.
+## Notes
+- The new `nt_betting_system/` makes routine work (logging, settlement, stats) automatic.
+- Always verify tree + get SHA before any GitHub file update.
+- Short Notes only. No bloat.
