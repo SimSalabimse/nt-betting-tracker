@@ -31,8 +31,24 @@ Output only in clean standardized format with bets table."
 
 ## Other Useful Commands
 
-**After Settlements:**
-"Here are the settlement results: [paste details]. Trigger full post-settlement-learning-reviewer. Update bet_log.csv with short notes, update bankroll, and give summary."
+**After Settlements (Strict Version):**
+"Here are the settlement results: [paste details].
+
+Trigger full post-settlement-learning-reviewer. Do a proper structured deep dive:
+- Analyze what worked vs what failed (especially losses).
+- Identify clear patterns or variance sources.
+- Update edges in sport_edges_and_filters.md if meaningful patterns appear (additive only).
+
+Update bet_log.csv with short, high-quality settlement notes.
+Update current_bankroll.md correctly.
+
+Before giving the final summary, confirm that bet_log.csv was actually updated (show proof via tree + re-read if needed).
+
+Then give a clean summary with:
+- Batch performance
+- Key lessons / patterns found
+- Any edge updates made
+- Next actions"
 
 **Stats / Performance Check:**
 "Show current performance and bankroll status."
@@ -41,6 +57,7 @@ Output only in clean standardized format with bets table."
 "Run meta review. Update edges if needed."
 
 ## Notes
-- Short Notes only in bet_log.csv.
+- Short Notes only in bet_log.csv (concise: Result + outcome vs prediction + 1 key lesson).
 - Prefer `scripts/safe_bet_log_edit.py` for bet_log updates when possible.
 - All GitHub pushes must follow the full Successful Push Workflow with verification.
+- Post-settlement learning must be real and structured — not generic.
