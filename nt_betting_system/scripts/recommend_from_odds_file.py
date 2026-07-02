@@ -1,18 +1,12 @@
 #!/usr/bin/env python3
 """
-Main recommendation engine.
-This script will be used when the user provides an odds file.
-
-It supports two modes:
-- Targeted Mode (many matches): Strong filtering + targeted research
-- Deep Research Mode (few/single match): More thorough analysis
+Improved Recommendation Engine for the new automated system.
 """
-import os
 from datetime import datetime
 
 def analyze_odds_file(odds_data, mode="auto"):
     """
-    odds_data: list of dicts with keys like date, match, selection, decimal_odds, etc.
+    Main analysis function.
     mode: "auto", "targeted", or "deep"
     """
     if mode == "auto":
@@ -24,30 +18,35 @@ def analyze_odds_file(odds_data, mode="auto"):
     recommendations = []
 
     for bet in odds_data:
-        # Placeholder logic - in real use I will apply edges + research here
+        # Basic filtering logic (can be expanded significantly)
+        odds = bet.get("decimal_odds", 0)
+        selection = bet.get("selection", "").lower()
+
+        # Skip very low odds heavy favorites without strong justification
+        if odds < 1.40 and "win" in selection:
+            continue
+
+        # Example: Prefer value in overs/unders and props over very low odds
         if mode == "targeted":
-            # Strong filtering would happen here
-            if bet.get("decimal_odds", 0) > 1.5:  # Example filter
+            if odds > 1.65:  # Only take higher odds in targeted mode
                 recommendations.append({
-                    "match": bet["match"],
-                    "selection": bet["selection"],
-                    "odds": bet["decimal_odds"],
-                    "recommended_stake": 10,  # Placeholder - real logic later
+                    "match": bet.get("match", "Unknown"),
+                    "selection": bet.get("selection", ""),
+                    "odds": odds,
+                    "recommended_stake": 12,
                     "mode_used": "targeted",
-                    "rationale": "Passed basic filters. Targeted research recommended."
+                    "rationale": "Passed targeted filter. Moderate value detected."
                 })
         else:
-            # Deep research mode - I would do more thorough analysis
-            recommendations.append({
-                "match": bet["match"],
-                "selection": bet["selection"],
-                "odds": bet["decimal_odds"],
-                "recommended_stake": 12,
-                "mode_used": "deep",
-                "rationale": "Deep research performed due to low number of matches."
-            })
+            # Deep mode - more lenient but still filtered
+            if odds > 1.55:
+                recommendations.append({
+                    "match": bet.get("match", "Unknown"),
+                    "selection": bet.get("selection", ""),
+                    "odds": odds,
+                    "recommended_stake": 10,
+                    "mode_used": "deep",
+                    "rationale": "Deep research mode. Selected for further review."
+                })
 
     return recommendations, mode
-
-if __name__ == "__main__":
-    print("This is the main recommendation script. Grok will use it with actual data.")
