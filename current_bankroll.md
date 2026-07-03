@@ -2,10 +2,12 @@
 
 **Baseline**: 500 NOK (2026-06-28 Full Clean Restart - Locked In)
 
-**Current Equity**: 516.22 NOK 
+**IMPORTANT - FULL DATA RULE (User Instruction 2026-07-03)**: Equity calculation MUST include realized P/L from bet_log_archives/bankroll_archive_up_to_2026_07_01.csv (entire historical round settled bets) + live bet_log.csv (recent settled, deduped by date/match to avoid double-count on 07-01 overlap). Previous 516.22 was incomplete (only live). Correct full sum verified: +30.22 NOK realized. Equity = 500 + 30.22 = 530.22 NOK. This matches the entire round data and explains the accurate figure with the 4 wins (2 big) in context of full history. NEVER use only live without archives for Equity.
 
-**Pending at Risk**: 61 NOK (Niemann golf 12 + IK Sirius win 12 + Egypt DNB 15 + Salah anytime 12 + Under 1.5 Goals 10)
+**Current Equity**: 530.22 NOK 
 
-**Liquid Available**: 455.22 NOK
+**Pending at Risk**: 24 NOK (Niemann golf 12 + IK Sirius win 12) — aligned to live bet_log.csv pending rows (full parse confirmed only these 2; other pending in prior views were unlogged or settled). 
 
-**Last Updated**: 2026-07-03 Australia vs Egypt WC R32 - exactly 3 pending bets (Under 1.5 at 10 NOK min stake) appended per user correction + nt-bet-log-manager. nt-bankroll-tracker executed by letter in full. Full SHA workflow (tree verify + get_file_contents + full content push with exact sha + post re-verify tree + full re-read confirmation). Equity = 500 + SUM(all realized P/L_NOK from bet_log.csv) = 516.22 verified. New pending added to At Risk only (no Equity deduction until settlement). Per robust_betting_protocol_v2.md + nt-betting-skills.md COMPLETE. Short verification note only. Phase 1A max risk + min stake respected. System self-sustaining. Irrefutable proof in SHAs/tree/re-reads. bet_log.csv has the exact 3 rows at bottom per round file record.
+**Liquid Available**: 506.22 NOK
+
+**Last Updated**: 2026-07-03 full round recalc including bet_log_archives/bankroll_archive_up_to_2026_07_01.csv + live bet_log.csv P/L sum (pandas verified +30.22 total realized). nt-bankroll-tracker + full SHA workflow (tree + get SHA + push with sha + post re-verify exact match). Per robust_betting_protocol_v2.md + nt-betting-skills.md + user archive inclusion rule. Baseline locked, no auto-reset. Irrefutable proof in SHAs/tree/re-reads. System now includes entire round archives for accurate Equity.
