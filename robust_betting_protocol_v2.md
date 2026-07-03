@@ -13,11 +13,12 @@
    - Prefer local `scripts/safe_bet_log_edit.py` (append-only or targeted settle, atomic write, validation, short Notes) for bet_log when GitHub feels flaky. Grok proposes exact lines/diffs; user applies locally then optional push.
    - Short content payloads only to prevent truncation.
 
-2. **Bankroll Correctness (User-Preferred Rule Enforced + 2026-07-03 NO AUTO-RESET UPDATE)**:
-   - Equity = locked baseline (see current_bankroll.md for exact current locked value + full IMPORTANT NO AUTO-RESET RULE) + SUM(all realized P/L from settled bets in live bet_log.csv).
+2. **Bankroll Correctness (User-Preferred Rule Enforced + 2026-07-03 NO AUTO-RESET + FULL ARCHIVE DATA UPDATE)**:
+   - Equity = locked baseline (see current_bankroll.md for exact current locked value + full IMPORTANT NO AUTO-RESET RULE + FULL DATA RULE) + SUM(all realized P/L from settled bets in live bet_log.csv + relevant bet_log_archives/*.csv files since clean restart, deduped to avoid overlap).
+   - The entire round/history MUST include P/L from bet_log_archives/bankroll_archive_up_to_2026_07_01.csv (and similar archives) + live bet_log.csv. Previous only-live calc (516.22) was incomplete/wrong. Full combined verified sum used for accurate Equity (e.g. 530.22 NOK reflecting full data + recent 4 wins/2 big).
    - Adjust Equity ONLY on settlements: +P/L profit on Win, -stake on Loss. NEVER reset Equity or baseline to 500 (or re-anchor) unless user EXPLICITLY requests "reset baseline", "adjust baseline for deposit/withdrawal", or "lock in profits as new baseline".
    - Pending at Risk tracked separately but NEVER subtracted from Equity until settled.
-   - nt-bankroll-tracker skill + short verification note only. No bloated text. Baseline locked per user instruction to prevent any future unwanted reset to 500 without consent.
+   - nt-bankroll-tracker skill + short verification note only. No bloated text. Baseline locked per user instruction to prevent any future unwanted reset to 500 without consent. Full archive inclusion mandatory for correct Equity.
 
 3. **Skills First (nt-betting-workflow, nt-bet-log-manager, nt-bankroll-tracker, post-settlement-learning-reviewer, nt-learning-reviewer, betting-value-calculator)**:
    - Follow nt-betting-skills.md by the letter in full for all operations.
@@ -28,7 +29,7 @@
    - Always call github___get_file_contents to fetch the *full current content + exact SHA* immediately before building any update.
    - Construct the new content by taking the exact string returned from the fetch and appending or modifying *only* the necessary parts.
    - The "content" parameter sent to the tool must be the *complete, correct, final file text* — never placeholders, never summaries, never "paste here" text, never assumptions from previous knowledge.
-   - If the file is very large (e.g. bet_log.csv), prefer the local `scripts/safe_bet_log_edit.py` (safe append-only) or ask the user to provide the full current content instead of risking incomplete payloads.
+   - If the file is very large (e.g. bet_log.csv or archives), prefer the local `scripts/safe_bet_log_edit.py` (safe append-only) or ask the user to provide the full current content instead of risking incomplete payloads.
    - This rule was added after a placeholder mistake in a tool call temporarily replaced bet_log history with only pending bets (history was restored from Git). It is now permanent and non-negotiable.
 
 **Notes Column in bet_log.csv - DEPRECATED (2026-07-03)**
@@ -48,12 +49,12 @@ After every settlement batch, the following is mandatory:
 - Record learning in the relevant **round file** (not in bet_log.csv).
 - Update `sport_edges_and_filters.md` additively if meaningful patterns are found.
 - Actually update `bet_log.csv` (without notes) and verify the update succeeded.
-- Update `current_bankroll.md` correctly.
+- Update `current_bankroll.md` correctly (full archive + live P/L).
 - Provide a clean summary including batch performance, key lessons, and any edge updates made.
 
 This is non-negotiable.
 
-**Analyze Correctly Going Forward - Standing Rule (2026-07-03)**
+**Analyze Correctly Going Forward - Standing Rule (2026-07-03)**:
 
 When analyzing odds files, the following is now strictly enforced:
 - Use adaptive research mode properly: Strong filtering first, **then targeted deep research** on the shortlist (not just generic filtering).
@@ -76,7 +77,7 @@ The system now supports a significantly more automated flow using the new `nt_be
 - Grok performs analysis using **adaptive research** (deeper research for single/few matches, targeted + filtering for many matches).
 - Grok recommends bets + stakes and logs them into `bet_log.csv`.
 - User places the recommended bets.
-- On settlement, user provides results → Grok must run proper post-settlement learning, record in round file, update files correctly, and verify updates.
+- On settlement, user provides results → Grok must run proper post-settlement learning, record in round file, update files correctly (full data), and verify updates.
 
 **Purpose of this Protocol (Retained)**: Master for robustness in betting recommendations. Supplements nt-betting-skills.md (primary implementation). All future betting work follows this + skills by the letter.
 
@@ -90,7 +91,7 @@ The system now supports a significantly more automated flow using the new `nt_be
 
 **Standardized Clean Response Template**: Executive Summary, Data Sources & Tool Proof, Recommended Bets table, Portfolio Summary, Learning & Flags, Next Actions. Clean tables only.
 
-**Bet Log & Bankroll Integrity**: See Section 5 rules above + nt-bet-log-manager + safe_bet_log_edit.py. Never reset live data. Proper quoting. Full verify after every change. Notes column removed (learning now in round files).
+**Bet Log & Bankroll Integrity**: See Section 5 rules above + nt-bet-log-manager + safe_bet_log_edit.py. Never reset live data. Proper quoting. Full verify after every change. Notes column removed (learning now in round files). Equity calc always includes relevant archives + live.
 
 **Advanced Risk Management**: Stupid loss filter (low-odds favorites require high EV + confirmation), explicit R/R calcs, tiered stakes, post-loss review for filter tightening.
 
@@ -110,7 +111,8 @@ The system now supports a significantly more automated flow using the new `nt_be
   - Added standing rule "Analyze Correctly Going Forward" to prevent overly conservative or shallow analysis.
   - Updated protocol to reference `long_term_staking_plan.md`.
   - Added explicit NO AUTO-RESET RULE for baseline/Equity to current_bankroll.md, skills, and this protocol per user request (prevents reset to 500 without explicit consent).
-- All future betting recommendations and settlements MUST follow the new rules (no notes in bet_log, learning in round files, balanced analysis, locked baseline with explicit-only adjustment).
+  - Added FULL ARCHIVE DATA RULE for Equity calc (must include bet_log_archives/ files like bankroll_archive_up_to_2026_07_01.csv + live bet_log.csv) to fix incomplete only-live calc (516.22 was wrong; correct 530.22 with full round data).
+- All future betting recommendations and settlements MUST follow the new rules (no notes in bet_log, learning in round files, balanced analysis, locked baseline with explicit-only adjustment, full archive + live for Equity).
 - robust_betting_protocol_v2.md is the master for recommendations; nt-betting-skills.md is the detailed how-to.
 - `long_term_staking_plan.md` defines long-term staking progression.
 
