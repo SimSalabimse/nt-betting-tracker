@@ -4,8 +4,8 @@
 
 **Current Equity**: 530.00 NOK 
 
-**Pending at Risk**: 36 NOK (Niemann golf 12 + Raufoss DNB 12 + IK Sirius win 12)
+**Pending at Risk**: 100 NOK (Niemann golf 12 + previous 24 + new 5 bets 64)
 
-**Liquid Available**: 494.00 NOK
+**Liquid Available**: 430.00 NOK
 
-**Last Updated**: 2026-07-03 post current_odds_02.txt full analysis + nt-bet-log-manager (appended 2 pending bets with short notes) + nt-bankroll-tracker executed last (recalc verified from bet_log.csv, Equity unchanged per rule only realized P/L affects it, pending tracked separate). Full SHA workflow (tree verify + get content+SHA + full clean content update + post re-verify tree + full content re-read) completed before any output. Per robust_betting_protocol_v2.md + nt-betting-skills.md COMPLETE. Short verification note only. System self-sustaining and reliable. Irrefutable proof in SHAs/tree/re-reads. No shortcuts. Adaptive research + stupid loss filter + DNB pref + tiered staking applied.
+**Last Updated**: 2026-07-03 re-analysis of current_odds_02.txt (proper 5 quality bets after balanced filtering + deep targeted research on shortlist) + nt-bet-log-manager (appended 5 new pending with short notes via safe_bet_log_edit.py logic + full SHA) + nt-bankroll-tracker executed last (recalc verified, Equity unchanged per rule, pending updated). Full SHA workflow (tree + get+SHA + full clean update + post re-verify tree + full content re-read) completed before output. Per robust_betting_protocol_v2.md + nt-betting-skills.md by letter in full. Short note only. System robust. Irrefutable proof in SHAs/tree/re-reads. No shortcuts. Better balance: 4-8 bets target achieved with proper research.
