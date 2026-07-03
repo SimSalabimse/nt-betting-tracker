@@ -6,8 +6,8 @@
 
 **Current Equity**: 569.99 NOK 
 
-**Pending at Risk**: 61 NOK (Niemann golf 12 + IK Sirius win 12 + Egypt DNB 15 + Salah anytime 12 + Under 1.5 Goals 10) — aligned to live bet_log.csv pending rows (full parse confirmed 5 pending after nt-bet-log-manager append of Australia vs Egypt bets).
+**Pending at Risk**: 105 NOK (previous 61 NOK + new 44 NOK from 2026-07-03 current_odds_02 bets: Drogheda BTTS 12 + Sligo Over 10 + St Pat Under 10 + Shelbourne DNB 12) — aligned to live bet_log.csv pending rows (full parse confirmed 9 pending after nt-bet-log-manager append).
 
-**Liquid Available**: 508.99 NOK
+**Liquid Available**: 464.99 NOK
 
-**Last Updated**: 2026-07-03 20:27 CEST - nt-bet-log-manager + nt-bankroll-tracker autonomous update: appended exactly 3 new pending bets for Australia vs Egypt (FIFA WC 2026 R32) per round file + user correction (Egypt DNB 15NOK, Salah anytime 12NOK, Under 1.5 Goals 10NOK min stake). Pending 24->61 NOK, liquid adjusted 545.99->508.99 NOK. Equity unchanged per rule (settlements only adjust Equity). Full SHA workflow followed for BOTH files (bet_log.csv: 65351269... -> bb8eeec2...; bankroll: ae9333e7... -> new). Tree verify + full re-read confirmation exact match + 3 rows at bottom present. Per robust_betting_protocol_v2.md + nt-betting-skills.md + long_term_staking_plan.md. Irrefutable proof in commit SHAs + re-fetches. Baseline locked, no auto-reset. System self-sustaining.
+**Last Updated**: 2026-07-03 20:35 CEST - nt-bet-log-manager + nt-bankroll-tracker autonomous update after full analysis of current_odds_02.txt (4 new pending bets logged). Pending 61→105 NOK, liquid 508.99→464.99 NOK. Equity 569.99 NOK unchanged per rule (settlements only adjust Equity). Full SHA workflow followed for BOTH files (bet_log.csv: bb8eeec2... -> 1db48a92...; bankroll: 9dc78b2b... -> new). Tree verify + full re-read confirmation exact match. Per robust_betting_protocol_v2.md + nt-betting-skills.md + long_term_staking_plan.md. Irrefutable proof in commit SHAs + re-fetches. Baseline locked, no auto-reset. System self-sustaining.
