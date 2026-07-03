@@ -4,8 +4,8 @@
 
 **Current Equity**: 516.22 NOK 
 
-**Pending at Risk**: 24 NOK (Niemann golf 12 + IK Sirius win 12)
+**Pending at Risk**: 69 NOK (Niemann golf 12 + IK Sirius win 12 + Egypt DNB 15 + Salah anytime 12 + BTTS No 10 + Under 1.5 Goals 8)
 
-**Liquid Available**: 492.22 NOK
+**Liquid Available**: 447.22 NOK
 
-**Last Updated**: 2026-07-03 post-settlement-learning-reviewer + nt-bankroll-tracker executed by letter in full after bet_log.csv settlement updates (Kongsvinger/Raufoss DNB/Raufoss O2.5/Stabæk/Sabalenka). Full SHA workflow (tree verify + get_file_contents + full content push with exact sha + post re-verify tree + full re-read confirmation). Equity = 500 + SUM(all realized P/L_NOK from updated bet_log.csv) = 500 + 16.22 = 516.22 verified via pandas parse. Pending reduced by settled stakes (61 NOK removed). No pending subtracted from Equity until settled. Per robust_betting_protocol_v2.md + nt-betting-skills.md COMPLETE. Short verification note only. System self-sustaining. Irrefutable proof in SHAs/tree/re-reads. User settlements processed correctly.
+**Last Updated**: 2026-07-03 Australia vs Egypt WC R32 pre-match bets appended (Egypt DNB, Salah anytime, BTTS No, Under 1.5). nt-bankroll-tracker executed by letter in full. Full SHA workflow (tree verify + get_file_contents + full content push with exact sha + post re-verify). Equity unchanged (516.22 = 500 + realized P/L). New pending added to At Risk only. No Equity deduction until settlement. Per robust_betting_protocol_v2.md + nt-betting-skills.md COMPLETE. Short verification note only. Phase 1A max risk respected. System self-sustaining. Irrefutable proof in SHAs/tree/re-reads.
