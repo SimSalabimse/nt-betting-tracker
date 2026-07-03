@@ -22,7 +22,7 @@ Date,Match,Selection,Decimal_Odds,Stake_NOK,Result,P_L_NOK
 2026-07-02,"BMW International Open (DP World Tour) Golf","Joaquin Niemann to win",7.80,12,Pending,
 2026-07-02,"Arthur Fery vs Otto Virtanen (Wimbledon)","Fery to win",2.20,10,Win,12.00
 2026-07-02,"Betboom Team vs Big (XSE Pro League CS2)","Betboom Team to win",1.40,10,Win,4.00
-2026-07-02,"Lyn vs Åsane (Norway 1. Division)"," Åsane DNB (Uavgjort tilbakebetales)",2.45,10,Loss,-10.00
+2026-07-02,"Lyn vs Åsane (Norway 1. Division)","Åsane DNB (Uavgjort tilbakebetales)",2.45,10,Loss,-10.00
 2026-07-02,"Moody, Stan vs Carrington, Stuart (HUB Snooker)","Moody, Stan to win",1.65,12,Win,7.80
 2026-07-02,"Friedli J / Jordan J vs Caldwell C / Schalk C (Beach Volleyball)","Friedli J / Jordan J +0.5",1.85,10,Loss,-10.00
 2026-07-02,"RS Berkane vs Wydad AC (Botola Pro)","RS Berkane DNB (Uavgjort tilbakebetales)",1.40,12,Win,4.80
@@ -38,18 +38,18 @@ Date,Match,Selection,Decimal_Odds,Stake_NOK,Result,P_L_NOK
 2026-07-03,"Switzerland vs Algeria (FIFA WC 2026 R32)","Breel Embolo to score (anytime)",2.55,10,Win,15.50
 2026-07-03,"Switzerland vs Algeria (FIFA WC 2026 R32)","Begge lag scorer Ja",1.90,12,Loss,-12.00
 2026-07-03,"Raufoss vs Strømmen","Raufoss DNB (Uavgjort tilbakebetales)",1.77,12,Win,9.24
-2026-07-03,"IK Sirius vs Mjällby","IK Sirius to win",1.60,12,Pending,
+2026-07-03,"IK Sirius vs Mjällby","IK Sirius to win",1.60,12,Loss,-12.00
 2026-07-03,"Raufoss vs Strømmen","Over 2.5 Goals",1.45,12,Loss,-12.00
 2026-07-03,"Kongsvinger vs Sogndal","Kongsvinger to win",1.58,15,Win,8.70
 2026-07-03,"Ranheim vs Stabæk","Stabæk to win",2.10,12,Win,13.30
 2026-07-03,"Sabalenka vs Ostapenko","Sabalenka to win",1.25,10,Win,2.20
-2026-07-03,"Australia vs Egypt (FIFA WC 2026 R32)","Egypt DNB (Uavgjort tilbakebetales)",1.60,15,Pending,
-2026-07-03,"Australia vs Egypt (FIFA WC 2026 R32)","Mohamed Salah to score (anytime)",2.60,12,Pending,
-2026-07-03,"Australia vs Egypt (FIFA WC 2026 R32)","Under 1.5 Goals",2.40,10,Pending,
-2026-07-03,"Drogheda United vs Bohemians Dublin FC (Irish Premier Division)","BTTS Ja",1.67,12,Pending,
-2026-07-03,"Sligo Rovers vs Shamrock Rovers (Irish Premier Division)","Over 2.5 Goals",1.70,10,Pending,
-2026-07-03,"Saint Patrick´s Athletic FC vs Galway United FC (Irish Premier Division)","Under 2.5 Goals",2.05,10,Pending,
-2026-07-03,"Shelbourne FC vs Dundalk (Irish Premier Division)","Shelbourne DNB (Uavgjort tilbakebetales)",1.42,12,Pending,
-2026-07-03,"Australia vs Egypt (FIFA WC 2026 R32) Extra Time","Ekstraomganger: Uavgjort (go to penalties)",1.62,15,Pending,
-2026-07-03,"Australia vs Egypt (FIFA WC 2026 R32) Extra Time","Over 0.5 Goals in Extra Time",1.97,10,Pending,
-2026-07-03,"Australia vs Egypt (FIFA WC 2026 R32) Extra Time","Over 2.5 Corners in Extra Time",1.65,12,Pending,
+2026-07-03,"Australia vs Egypt (FIFA WC 2026 R32)","Egypt DNB (Uavgjort tilbakebetales)",1.60,15,Refunded,0
+2026-07-03,"Australia vs Egypt (FIFA WC 2026 R32)","Mohamed Salah to score (anytime)",2.60,12,Loss,-12.00
+2026-07-03,"Australia vs Egypt (FIFA WC 2026 R32)","Under 1.5 Goals",2.40,10,Loss,-10.00
+2026-07-03,"Drogheda United vs Bohemians Dublin FC (Irish Premier Division)","BTTS Ja",1.67,12,Loss,-12.00
+2026-07-03,"Sligo Rovers vs Shamrock Rovers (Irish Premier Division)","Over 2.5 Goals",1.70,10,Win,7.00
+2026-07-03,"Saint Patrick´s Athletic FC vs Galway United FC (Irish Premier Division)","Under 2.5 Goals",2.05,10,Loss,-10.00
+2026-07-03,"Shelbourne FC vs Dundalk (Irish Premier Division)","Shelbourne DNB (Uavgjort tilbakebetales)",1.42,12,Win,5.02
+2026-07-03,"Australia vs Egypt (FIFA WC 2026 R32) Extra Time","Ekstraomganger: Uavgjort (go to penalties)",1.62,15,Win,8.70
+2026-07-03,"Australia vs Egypt (FIFA WC 2026 R32) Extra Time","Over 0.5 Goals in Extra Time",1.97,10,Loss,-10.00
+2026-07-03,"Australia vs Egypt (FIFA WC 2026 R32) Extra Time","Over 2.5 Corners in Extra Time",1.65,12,Win,9.24
