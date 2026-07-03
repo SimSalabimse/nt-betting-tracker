@@ -4,15 +4,7 @@
 
 **Critical New Rules (Non-Negotiable - Immediate Effect)**:
 
-1. **SHORT NOTES RULE (Root Fix for Ballooning, Truncation, Corruption, Update Failures)**: 
-   - ALL bet_log.csv Notes MUST be concise: Result + brief explanation (outcome vs pre-bet prediction) + 1 key lesson or variance source.
-   - Max recommended ~300-400 characters. 
-   - **FORBIDDEN in Notes**: Long protocol text, full multi-agent simulations, exhaustive tool lists, SHA proofs, repetitive Section 5/9 text, "AUTONOMOUS per protocol..." walls of text.
-   - Historical long Notes preserved in Git history + bet_log_archives/. 
-   - Future appends/settlements use SHORT Notes ONLY. This directly fixes the ballooning that caused truncation to 3 lines, garbage comments, and GitHub update breaks.
-   - Enforced in nt-bet-log-manager, safe_bet_log_edit.py, and all workflows.
-
-2. **GitHub Update Reliability (Successful Push Workflow Mandatory - Never Skip)**:
+1. **GitHub Update Reliability (Successful Push Workflow Mandatory - Never Skip)**:
    - Every file change (bet_log, bankroll, protocol, skills, rounds, etc.): 
      a. Verify current state with github___get_repository_tree.
      b. Get specific file content + exact current SHA with github___get_file_contents.
@@ -21,25 +13,30 @@
    - Prefer local `scripts/safe_bet_log_edit.py` (append-only or targeted settle, atomic write, validation, short Notes) for bet_log when GitHub feels flaky. Grok proposes exact lines/diffs; user applies locally then optional push.
    - Short content payloads only to prevent truncation.
 
-3. **Bankroll Correctness (User-Preferred Rule Enforced)**:
+2. **Bankroll Correctness (User-Preferred Rule Enforced)**:
    - Equity = 500 NOK baseline + SUM(all realized P/L from settled bets in live bet_log.csv).
    - Adjust Equity ONLY on settlements: +P/L profit on Win, -stake on Loss.
    - Pending at Risk tracked separately but NEVER subtracted from Equity until settled.
    - nt-bankroll-tracker skill + short verification note only. No bloated text.
 
-4. **Skills First (nt-betting-workflow, nt-bet-log-manager, nt-bankroll-tracker, post-settlement-learning-reviewer, nt-learning-reviewer, betting-value-calculator)**:
+3. **Skills First (nt-betting-workflow, nt-bet-log-manager, nt-bankroll-tracker, post-settlement-learning-reviewer, nt-learning-reviewer, betting-value-calculator)**:
    - Follow nt-betting-skills.md by the letter in full for all operations.
    - nt-bet-log-manager: Full fetch + SHA before any change, append-only or targeted short-Notes update, never delete/overwrite historical, proper quoting, validation.
    - All autonomous updates (bet_log append + bankroll) happen BEFORE any user-facing output, with full workflow verify.
 
-5. **No More Ballooning or Old Data Issues**: Protocol itself kept lean. Long repetitive text moved to skills.md or deprecated. Future protocol updates additive and concise. Grok must read full current files every time (no lazy old-data following).
-
-6. **FULL CONTENT RULE FOR github___create_or_update_file (Non-Negotiable - Prevents Data Loss from Placeholders)**: 
+4. **FULL CONTENT RULE FOR github___create_or_update_file (Non-Negotiable - Prevents Data Loss from Placeholders)**: 
    - Always call github___get_file_contents to fetch the *full current content + exact SHA* immediately before building any update.
    - Construct the new content by taking the exact string returned from the fetch and appending or modifying *only* the necessary parts.
    - The "content" parameter sent to the tool must be the *complete, correct, final file text* — never placeholders, never summaries, never "paste here" text, never assumptions from previous knowledge.
    - If the file is very large (e.g. bet_log.csv), prefer the local `scripts/safe_bet_log_edit.py` (safe append-only) or ask the user to provide the full current content instead of risking incomplete payloads.
    - This rule was added after a placeholder mistake in a tool call temporarily replaced bet_log history with only pending bets (history was restored from Git). It is now permanent and non-negotiable.
+
+**Notes Column in bet_log.csv - DEPRECATED (2026-07-03)**
+
+The Notes column in `bet_log.csv` has been removed per user request.
+- All future logging will **not** include notes in the main bet_log file.
+- Learning records, variance analysis, reasoning, and post-settlement reviews will now be stored in **round files** instead.
+- Historical notes in existing rows have been cleaned (set to empty).
 
 **Post-Settlement Learning Requirements (Strengthened)**:
 
@@ -48,12 +45,22 @@ After every settlement batch, the following is mandatory:
 - Perform actual tool searches (web_search, browse_page, etc.) to investigate why bets won or lost, especially losses.
 - Conduct a structured deep dive (not generic text).
 - Identify clear patterns or variance sources.
+- Record learning in the relevant **round file** (not in bet_log.csv).
 - Update `sport_edges_and_filters.md` additively if meaningful patterns are found.
-- Actually update `bet_log.csv` with short, high-quality settlement notes **and verify** the update succeeded (tree + re-read content).
+- Actually update `bet_log.csv` (without notes) and verify the update succeeded.
 - Update `current_bankroll.md` correctly.
 - Provide a clean summary including batch performance, key lessons, and any edge updates made.
 
-This is non-negotiable. Responses that only claim to follow the workflow without actually performing tool searches and real file updates are not acceptable.
+This is non-negotiable.
+
+**Analyze Correctly Going Forward - Standing Rule (2026-07-03)**
+
+When analyzing odds files, the following is now strictly enforced:
+- Use adaptive research mode properly: Strong filtering first, **then targeted deep research** on the shortlist (not just generic filtering).
+- Aim for balanced volume: Typically 4–8 quality bets from a mixed file (avoid both under-betting like only 2 bets and over-betting low-quality lines).
+- Always perform proper multi-perspective simulation + tool proof on shortlisted bets.
+- Execute nt-bet-log-manager and nt-bankroll-tracker **last**, with full SHA workflow verification.
+- Never leave bet_log.csv or current_bankroll.md unupdated when bets are recommended.
 
 **Long-Term Staking Plan**
 
@@ -61,17 +68,15 @@ The long-term staking, risk management, and progression strategy is defined in t
 
 **`long_term_staking_plan.md`**
 
-This file contains the phased progression with NOK milestones, hybrid triggers (Equity amount or number of settled bets), and rules for gradually introducing doubles and systems. All staking decisions must follow the current phase defined in that document.
-
 **2026-07-02 NEW AUTOMATED WORKFLOW ADDITION**:
 
 The system now supports a significantly more automated flow using the new `nt_betting_system/`:
 
 - User provides an **odds file** (list of matches + odds).
 - Grok performs analysis using **adaptive research** (deeper research for single/few matches, targeted + filtering for many matches).
-- Grok recommends bets + stakes and logs them into `bet_log.csv` with short notes.
+- Grok recommends bets + stakes and logs them into `bet_log.csv`.
 - User places the recommended bets.
-- On settlement, user provides results → Grok must run proper post-settlement learning (including tool searches), update files correctly, and verify updates.
+- On settlement, user provides results → Grok must run proper post-settlement learning, record in round file, update files correctly, and verify updates.
 
 **Purpose of this Protocol (Retained)**: Master for robustness in betting recommendations. Supplements nt-betting-skills.md (primary implementation). All future betting work follows this + skills by the letter.
 
@@ -85,26 +90,29 @@ The system now supports a significantly more automated flow using the new `nt_be
 
 **Standardized Clean Response Template**: Executive Summary, Data Sources & Tool Proof, Recommended Bets table, Portfolio Summary, Learning & Flags, Next Actions. Clean tables only.
 
-**Bet Log & Bankroll Integrity (Updated with Short Notes + SHA Workflow)**: See Section 5 rules above + nt-bet-log-manager + safe_bet_log_edit.py. Never reset live data. Proper quoting. Full verify after every change.
+**Bet Log & Bankroll Integrity**: See Section 5 rules above + nt-bet-log-manager + safe_bet_log_edit.py. Never reset live data. Proper quoting. Full verify after every change. Notes column removed (learning now in round files).
 
-**Advanced Risk Management**: Stupid loss filter (low-odds favorites require high EV + confirmation), explicit R/R calcs, tiered stakes, post-loss review for filter tightening. WC motivation/set-piece and grass totals variance notes retained as examples.
+**Advanced Risk Management**: Stupid loss filter (low-odds favorites require high EV + confirmation), explicit R/R calcs, tiered stakes, post-loss review for filter tightening.
 
-**Active Learning**: post-settlement-learning-reviewer + nt-learning-reviewer for deep dives **with mandatory tool searches**, edge updates in sport_edges_and_filters.md (additive, concise), promotion/demotion of categories based on data.
+**Active Learning**: post-settlement-learning-reviewer + nt-learning-reviewer for deep dives with mandatory tool searches. Learning recorded in round files. Edge updates in sport_edges_and_filters.md (additive).
 
-**Self-Updating**: Identify issues (like past GitHub/ballooning problems) and implement fixes proactively via full SHA workflow. Update this protocol, skills.md, Betting_Commands.txt additively when needed.
+**Self-Updating**: Identify issues and implement fixes proactively via full SHA workflow.
 
 **Complete Before Reply**: All tool calls, analysis, multi-agent, learning updates, GitHub pushes (with verify), and validations finished before final output.
 
 ## Implementation & Status
 
-- 2026-07-01 Cleanup: Added Short Notes Rule, GitHub SHA workflow enforcement, bankroll Equity rule, skills-first mandate, local safe_bet_log_edit.py preference, and Full Content Rule. Fixed root causes of update failures and ballooning. Protocol kept lean going forward.
-- 2026-07-02: Strengthened post-settlement requirements to mandate real tool usage during learning reviews and actual verification of file updates (not just claims). CSV logging is currently active. New scripts in nt_betting_system/ are kept for potential future use.
-- 2026-07-03: Created `long_term_staking_plan.md` with a smoother phased progression using hybrid triggers (Equity amount or number of settled bets). The protocol now references this file as the source of truth for long-term staking and risk management.
-- All future betting recommendations and settlements MUST use short Notes in bet_log, full SHA workflow for pushes, and nt-*-skills by the letter.
-- robust_betting_protocol_v2.md is now the master for recommendations; nt-betting-skills.md is the detailed how-to for safe execution.
-- `long_term_staking_plan.md` defines the long-term staking progression.
-- play book.md remains historical/supplementary.
+- 2026-07-01 Cleanup: Added GitHub SHA workflow enforcement, bankroll Equity rule, skills-first mandate, local safe_bet_log_edit.py preference, and Full Content Rule.
+- 2026-07-02: Strengthened post-settlement requirements.
+- 2026-07-03: 
+  - Removed Notes column from `bet_log.csv` entirely (historical notes cleaned).
+  - Learning records now stored in round files instead of bet_log.csv.
+  - Added standing rule "Analyze Correctly Going Forward" to prevent overly conservative or shallow analysis.
+  - Updated protocol to reference `long_term_staking_plan.md`.
+- All future betting recommendations and settlements MUST follow the new rules (no notes in bet_log, learning in round files, balanced analysis).
+- robust_betting_protocol_v2.md is the master for recommendations; nt-betting-skills.md is the detailed how-to.
+- `long_term_staking_plan.md` defines long-term staking progression.
 
-**Success Metrics**: Reliable GitHub updates, actual tool usage during learning reviews, correct and verified file updates after settlements, manageable file sizes, correct bankroll at all times, consistent skill usage, preserved historical data, and meaningful learning from losses.
+**Success Metrics**: Reliable GitHub updates, correct file structure, proper analysis volume and depth, correct and verified file updates, consistent skill usage, and meaningful learning from losses (recorded in round files).
 
-This updated protocol + skills makes the entire system extremely robust, self-sustaining, and "just works" with minimal user intervention. All past issues closed.
+This updated protocol makes the system more robust and aligned with user preferences.
