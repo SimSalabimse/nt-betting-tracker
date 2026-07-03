@@ -13,11 +13,11 @@
    - Prefer local `scripts/safe_bet_log_edit.py` (append-only or targeted settle, atomic write, validation, short Notes) for bet_log when GitHub feels flaky. Grok proposes exact lines/diffs; user applies locally then optional push.
    - Short content payloads only to prevent truncation.
 
-2. **Bankroll Correctness (User-Preferred Rule Enforced)**:
-   - Equity = 500 NOK baseline + SUM(all realized P/L from settled bets in live bet_log.csv).
-   - Adjust Equity ONLY on settlements: +P/L profit on Win, -stake on Loss.
+2. **Bankroll Correctness (User-Preferred Rule Enforced + 2026-07-03 NO AUTO-RESET UPDATE)**:
+   - Equity = locked baseline (see current_bankroll.md for exact current locked value + full IMPORTANT NO AUTO-RESET RULE) + SUM(all realized P/L from settled bets in live bet_log.csv).
+   - Adjust Equity ONLY on settlements: +P/L profit on Win, -stake on Loss. NEVER reset Equity or baseline to 500 (or re-anchor) unless user EXPLICITLY requests "reset baseline", "adjust baseline for deposit/withdrawal", or "lock in profits as new baseline".
    - Pending at Risk tracked separately but NEVER subtracted from Equity until settled.
-   - nt-bankroll-tracker skill + short verification note only. No bloated text.
+   - nt-bankroll-tracker skill + short verification note only. No bloated text. Baseline locked per user instruction to prevent any future unwanted reset to 500 without consent.
 
 3. **Skills First (nt-betting-workflow, nt-bet-log-manager, nt-bankroll-tracker, post-settlement-learning-reviewer, nt-learning-reviewer, betting-value-calculator)**:
    - Follow nt-betting-skills.md by the letter in full for all operations.
@@ -109,7 +109,8 @@ The system now supports a significantly more automated flow using the new `nt_be
   - Learning records now stored in round files instead of bet_log.csv.
   - Added standing rule "Analyze Correctly Going Forward" to prevent overly conservative or shallow analysis.
   - Updated protocol to reference `long_term_staking_plan.md`.
-- All future betting recommendations and settlements MUST follow the new rules (no notes in bet_log, learning in round files, balanced analysis).
+  - Added explicit NO AUTO-RESET RULE for baseline/Equity to current_bankroll.md, skills, and this protocol per user request (prevents reset to 500 without explicit consent).
+- All future betting recommendations and settlements MUST follow the new rules (no notes in bet_log, learning in round files, balanced analysis, locked baseline with explicit-only adjustment).
 - robust_betting_protocol_v2.md is the master for recommendations; nt-betting-skills.md is the detailed how-to.
 - `long_term_staking_plan.md` defines long-term staking progression.
 
