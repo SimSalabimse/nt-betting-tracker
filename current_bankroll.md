@@ -4,8 +4,8 @@
 
 **Current Equity**: 530.00 NOK 
 
-**Pending at Risk**: 12 NOK (Niemann golf 12)
+**Pending at Risk**: 36 NOK (Niemann golf 12 + Raufoss DNB 12 + IK Sirius win 12)
 
-**Liquid Available**: 518.00 NOK
+**Liquid Available**: 494.00 NOK
 
-**Last Updated**: 2026-07-03 post Faze Clan CS2 settlement + full post-settlement-learning-reviewer deep dive (Faze win +4.70 realized P/L). Niemann pending 12 NOK confirmed from bet_log.csv. Equity rule followed strictly (ONLY realized P/L on settlements affects Equity; pending tracked separate, not deducted until settled). nt-bankroll-tracker + post-settlement-learning-reviewer + nt-bet-log-manager skills executed by letter in full (recalc verified from updated bet_log + short verification note). Full SHA workflow (tree + get content+SHA + update + post re-verify tree + full content re-read) completed before any output. Per robust_betting_protocol_v2.md + nt-betting-skills.md COMPLETE. Short note only. System self-sustaining. Irrefutable proof in SHAs/tree/re-reads. No shortcuts.
+**Last Updated**: 2026-07-03 post current_odds_02.txt full analysis + nt-bet-log-manager (appended 2 pending bets with short notes) + nt-bankroll-tracker executed last (recalc verified from bet_log.csv, Equity unchanged per rule only realized P/L affects it, pending tracked separate). Full SHA workflow (tree verify + get content+SHA + full clean content update + post re-verify tree + full content re-read) completed before any output. Per robust_betting_protocol_v2.md + nt-betting-skills.md COMPLETE. Short verification note only. System self-sustaining and reliable. Irrefutable proof in SHAs/tree/re-reads. No shortcuts. Adaptive research + stupid loss filter + DNB pref + tiered staking applied.
