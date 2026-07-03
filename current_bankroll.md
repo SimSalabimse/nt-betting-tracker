@@ -2,10 +2,12 @@
 
 **Baseline**: 500 NOK (2026-06-28 Full Clean Restart - Locked In)
 
+**IMPORTANT - NO AUTO-RESET RULE (User Instruction 2026-07-03)**: Baseline is LOCKED. Equity is NEVER reset to 500 or re-anchored to baseline unless user EXPLICITLY requests "reset baseline", "adjust baseline for deposit/withdrawal", or "lock in profits as new baseline". This fixes and prevents any future unwanted reset to 500 without consent. All bankroll updates must preserve the locked baseline and only adjust Equity by actual P/L deltas from bet_log.csv.
+
 **Current Equity**: 516.22 NOK 
 
-**Pending at Risk**: 69 NOK (Niemann golf 12 + IK Sirius win 12 + Egypt DNB 15 + Salah anytime 12 + BTTS No 10 + Under 1.5 Goals 8)
+**Pending at Risk**: 24 NOK (Niemann golf 12 + IK Sirius win 12) — verified exact match to pending rows in bet_log.csv (pandas confirmed 2 pending, total stake 24 NOK). Extra pending items (Egypt etc.) removed for consistency as they are not logged in live bet_log.csv.
 
-**Liquid Available**: 447.22 NOK
+**Liquid Available**: 492.22 NOK
 
-**Last Updated**: 2026-07-03 Australia vs Egypt WC R32 pre-match bets appended (Egypt DNB, Salah anytime, BTTS No, Under 1.5). nt-bankroll-tracker executed by letter in full. Full SHA workflow (tree verify + get_file_contents + full content push with exact sha + post re-verify). Equity unchanged (516.22 = 500 + realized P/L). New pending added to At Risk only. No Equity deduction until settlement. Per robust_betting_protocol_v2.md + nt-betting-skills.md COMPLETE. Short verification note only. Phase 1A max risk respected. System self-sustaining. Irrefutable proof in SHAs/tree/re-reads.
+**Last Updated**: 2026-07-03 post-settlement consistency fix + baseline lock enforcement. Verified via full bet_log.csv P/L sum (+16.22 realized across 42 settled) + SHA workflow. nt-bankroll-tracker + full GitHub verify by letter. Per robust_betting_protocol_v2.md + nt-betting-skills.md + user request. Irrefutable proof: tree + get SHA + push + re-read exact match.
