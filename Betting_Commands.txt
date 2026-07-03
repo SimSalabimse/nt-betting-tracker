@@ -1,16 +1,16 @@
-# Betting Commands (Best Version - CSV Logging Active)
+# Betting Commands (Updated 2026-07-03 - Notes Removed, Round Files for Learning)
 
 ## Core Rules (Always Active)
-- Follow `robust_betting_protocol_v2.md` and `nt-betting-skills.md` by the letter in full.
-- **Short Notes Rule is mandatory** in all bet_log.csv work.
-- Use `scripts/safe_bet_log_edit.py` for safe, validated updates to bet_log.csv (append-only or targeted settlement).
+- Follow `robust_betting_protocol_v2.md`, `nt-betting-skills.md`, and `long_term_staking_plan.md` by the letter in full.
+- Notes column has been **removed** from `bet_log.csv`. All learning, variance analysis, and post-settlement reviews are recorded in **round files**.
+- Use `scripts/safe_bet_log_edit.py` for safe, validated updates to bet_log.csv when needed.
 - All GitHub updates must follow the Successful Push Workflow: tree verify → get content + SHA → full clean content push with correct sha → re-verify.
-- Complete all research, logging, and pushes before giving final output.
+- Complete all research, logging, pushes, and verifications before giving final output.
+- **Analyze Correctly Going Forward** (Standing Rule): Strong filtering must be followed by proper targeted deep research on the shortlist. Aim for balanced volume (typically 4–8 quality bets from mixed files). Overly conservative or shallow analysis is not acceptable.
 
 ## Current Logging Method: CSV (Active)
 
-We are currently using `bet_log.csv` + `current_bankroll.md` as the live system.
-The new `nt_betting_system/` scripts are prepared for future use but CSV logging is active now.
+We are currently using `bet_log.csv` + `current_bankroll.md` as the live system. Learning records live in round files.
 
 ## Best Primary Command (Recommended)
 
@@ -22,8 +22,9 @@ Use adaptive research mode:
 
 Apply stupid loss filter, DNB preference on high-variance profiles, tiered staking, and explicit risk/reward.
 
-Log all recommended bets into bet_log.csv with short notes using safe logic.
+Log all recommended bets into bet_log.csv.
 Update current_bankroll.md correctly (Equity rule).
+Record detailed reasoning and learning in the round file.
 
 I will place every bet you recommend.
 
@@ -37,27 +38,31 @@ Output only in clean standardized format with bets table."
 Trigger full post-settlement-learning-reviewer. Do a proper structured deep dive:
 - Analyze what worked vs what failed (especially losses).
 - Identify clear patterns or variance sources.
+- Record learning in the round file.
 - Update edges in sport_edges_and_filters.md if meaningful patterns appear (additive only).
 
-Update bet_log.csv with short, high-quality settlement notes.
+Update bet_log.csv (no notes).
 Update current_bankroll.md correctly.
 
 Before giving the final summary, confirm that bet_log.csv was actually updated (show proof via tree + re-read if needed).
 
 Then give a clean summary with:
 - Batch performance
-- Key lessons / patterns found
+- Key lessons / patterns found (from round file)
 - Any edge updates made
 - Next actions"
 
 **Stats / Performance Check:**
 "Show current performance and bankroll status."
 
+This command shows the latest from `meta_review_log.md`, round files, and current_bankroll.md. A dedicated `performance_report.md` with charts is planned but not yet active.
+
 **Full System Review:**
 "Run meta review. Update edges if needed."
 
 ## Notes
-- Short Notes only in bet_log.csv (concise: Result + outcome vs prediction + 1 key lesson).
+- No notes in bet_log.csv (column removed).
+- All learning goes into round files.
 - Prefer `scripts/safe_bet_log_edit.py` for bet_log updates when possible.
 - All GitHub pushes must follow the full Successful Push Workflow with verification.
-- Post-settlement learning must be real and structured — not generic.
+- Post-settlement learning must be real, structured, and recorded in round files.
