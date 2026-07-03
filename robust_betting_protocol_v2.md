@@ -55,6 +55,14 @@ After every settlement batch, the following is mandatory:
 
 This is non-negotiable. Responses that only claim to follow the workflow without actually performing tool searches and real file updates are not acceptable.
 
+**Long-Term Staking Plan**
+
+The long-term staking, risk management, and progression strategy is defined in the separate file:
+
+**`long_term_staking_plan.md`**
+
+This file contains the phased progression with NOK milestones, hybrid triggers (Equity amount or number of settled bets), and rules for gradually introducing doubles and systems. All staking decisions must follow the current phase defined in that document.
+
 **2026-07-02 NEW AUTOMATED WORKFLOW ADDITION**:
 
 The system now supports a significantly more automated flow using the new `nt_betting_system/`:
@@ -91,8 +99,10 @@ The system now supports a significantly more automated flow using the new `nt_be
 
 - 2026-07-01 Cleanup: Added Short Notes Rule, GitHub SHA workflow enforcement, bankroll Equity rule, skills-first mandate, local safe_bet_log_edit.py preference, and Full Content Rule. Fixed root causes of update failures and ballooning. Protocol kept lean going forward.
 - 2026-07-02: Strengthened post-settlement requirements to mandate real tool usage during learning reviews and actual verification of file updates (not just claims). CSV logging is currently active. New scripts in nt_betting_system/ are kept for potential future use.
+- 2026-07-03: Created `long_term_staking_plan.md` with a smoother phased progression using hybrid triggers (Equity amount or number of settled bets). The protocol now references this file as the source of truth for long-term staking and risk management.
 - All future betting recommendations and settlements MUST use short Notes in bet_log, full SHA workflow for pushes, and nt-*-skills by the letter.
 - robust_betting_protocol_v2.md is now the master for recommendations; nt-betting-skills.md is the detailed how-to for safe execution.
+- `long_term_staking_plan.md` defines the long-term staking progression.
 - play book.md remains historical/supplementary.
 
 **Success Metrics**: Reliable GitHub updates, actual tool usage during learning reviews, correct and verified file updates after settlements, manageable file sizes, correct bankroll at all times, consistent skill usage, preserved historical data, and meaningful learning from losses.
