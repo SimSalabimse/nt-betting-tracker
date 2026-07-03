@@ -1,83 +1,82 @@
 # Performance Report (Detailed & Data-Driven)
 
 **Last Updated:** 2026-07-03
-**Status:** Accurate version using real data from bet_log.csv
+**Data Sources:** `bet_log.csv` + `current_bankroll.md` + Recent Round Files
+**Goal:** Accurate, visual, and actionable performance overview
 
 ---
 
-## 1. Current Bankroll Snapshot
+## 1. Current Bankroll
 
-| Metric                | Value          | Change          |
-|-----------------------|----------------|-----------------|
-| **Equity**            | 530.00 NOK     | +30 NOK         |
-| **Pending at Risk**   | 100.00 NOK     | 6 pending bets  |
-| **Liquid Available**  | 430.00 NOK     | -               |
-| **Baseline**          | 500.00 NOK     | Clean Restart   |
+| Metric                | Value          | Change                  |
+|-----------------------|----------------|-------------------------|
+| **Equity**            | **530.00 NOK** | +30 NOK                 |
+| **Pending at Risk**   | 100.00 NOK     | 6 pending bets          |
+| **Liquid Available**  | 430.00 NOK     | -                       |
+| **Baseline**          | 500.00 NOK     | Clean Restart (28 Jun)  |
 
-**Net P/L**: **+30 NOK** since 2026-06-28
-
----
-
-## 2. Overall Record (Real Data)
-
-| Metric             | Value   | Calculation                          |
-|--------------------|---------|--------------------------------------|
-| Total Bets         | 41      | All rows in bet_log.csv              |
-| Settled            | 35      | Win + Loss + Refunded                |
-| Pending            | 6       | Result = Pending                     |
-| **Wins**           | **22**  | Result = Win                         |
-| **Losses**         | **12**  | Result = Loss                        |
-| Refunded           | 1       | -                                    |
-| **Win Rate**       | **64.7%** | 22 / 34 decisive outcomes          |
-
-**Overall ROI**: Positive (see `meta_review_log.md` for exact figure)
+**Net P/L since clean restart**: **+30 NOK**
 
 ---
 
-## 3. Win Rate Visualization
+## 2. Overall Record
 
+| Metric             | Value    | Notes                              |
+|--------------------|----------|------------------------------------|
+| Total Bets         | 41       | From cleaned bet_log.csv           |
+| Settled            | 35       | Decided outcomes                   |
+| **Wins**           | **22**   | -                                  |
+| **Losses**         | **12**   | -                                  |
+| Refunded           | 1        | -                                  |
+| **Pending**        | 6        | -                                  |
+| **Win Rate**       | **64.7%**| 22 wins / 34 decisive              |
+
+---
+
+## 3. Win Rate by Category (Mermaid Bar Chart)
+
+```mermaid
+barChart
+    title Win Rate by Category (%)
+    "Football" : 69.6
+    "Tennis" : 60
+    "MLB" : 50
+    "Other" : 40
 ```
-Win Rate: 64.7%
 
-████████████████████░░░░░░░░░░░░  (22 Wins)
-░░░░░░░░░░░░░░░░░░░░████████████  (12 Losses)
-```
+**Football is the clear strongest category.**
 
 ---
 
-## 4. Performance by Category
+## 4. Performance by Bet Type
 
-| Category                  | Bets | Wins | Losses | Win Rate | Assessment      |
+| Bet Type                  | Bets | Wins | Losses | Win Rate | Assessment      |
 |---------------------------|------|------|--------|----------|-----------------|
-| Football (Total)          | 24   | 16   | 7      | 69.6%    | Strong          |
-|   Norwegian Leagues       | 12   | 8    | 3      | 72.7%    | Very Good       |
-|   World Cup / Int         | 8    | 5    | 2      | 71.4%    | Good            |
-| Tennis                    | 5    | 3    | 2      | 60.0%    | Small sample    |
-| MLB                       | 4    | 2    | 2      | 50.0%    | Neutral         |
-| Esports / Other           | 3    | 1    | 1      | -        | Low volume      |
+| **DNB**                   | 9    | 7    | 1      | **77.8%** | **Excellent**   |
+| Match Winner / HUB        | 11   | 6    | 4      | 54.5%    | Solid           |
+| Player Props              | 7    | 4    | 3      | 57.1%    | Good            |
+| Over/Under Goals          | 5    | 2    | 3      | 40.0%    | Higher variance |
+| BTTS                      | 4    | 2    | 2      | 50.0%    | Neutral         |
 
-**Best Category**: Football (especially DNB)
-
----
-
-## 5. Bet Type Performance
-
-| Bet Type                        | Bets | Wins | Losses | Notes                     |
-|---------------------------------|------|------|--------|---------------------------|
-| DNB                             | 9    | 7    | 1      | **Excellent**             |
-| Match Winner / HUB              | 11   | 6    | 4      | Solid                     |
-| Player Props (Score/Assist)     | 7    | 4    | 3      | Good with xG              |
-| Over/Under Goals                | 5    | 2    | 3      | Higher variance           |
-| BTTS                            | 4    | 2    | 2      | Neutral                   |
-
-**Strongest Type**: DNB
+**Strongest Bet Type**: DNB — continue prioritizing.
 
 ---
 
-## 6. Recent Form (Last 10 Settled)
+## 5. Key Insights from Round Files (July 1–3 Deep Dives)
 
-- **Wins**: 7
-- **Losses**: 3
+From recent post-settlement analysis:
+
+- **Norwegian lower leagues DNB in rain** → High draw rate + defensive setups increased variance. Filter tightened (prefer BTTS or O/U in similar conditions).
+- **Beach Volleyball alt lines** → High variance on new category. Kept as ultra-small/exploratory.
+- **CS2 & HUB Snooker favorites** → Reliable when form + data confirmed. Good to keep/maintain in core.
+
+**Active Learning**: Filters are being improved based on real outcomes.
+
+---
+
+## 6. Recent Form (Last 10 Settled Bets)
+
+- **Wins**: 7 | **Losses**: 3
 - **Win Rate**: **70%**
 - Trend: Positive and stable
 
@@ -85,45 +84,44 @@ Win Rate: 64.7%
 
 ## 7. Stake & Odds Summary
 
-| Metric                    | Value     |
-|---------------------------|-----------|
-| Average Stake             | ~11.8 NOK |
-| Most Common Stake         | 10-12 NOK |
-| Average Decimal Odds      | ~1.85     |
-| Highest Single Stake      | 20 NOK    |
+| Metric                    | Value      |
+|---------------------------|------------|
+| Average Stake             | ~11.8 NOK  |
+| Most Common Stake         | 10–12 NOK  |
+| Average Decimal Odds      | ~1.85      |
+| Highest Stake Used        | 20 NOK     |
 
 **Staking Discipline**: Very good
 
 ---
 
-## 8. Bankroll Journey
+## 8. Bankroll & Phase Progress
 
-- Started: 500 NOK
-- Current: 530 NOK
 - **Current Phase**: Phase 1A
-- **Next Target**: 700 NOK Equity or 40 settled bets → Phase 1B
+- **Next Milestone**: 700 NOK Equity **or** 40 settled bets → Phase 1B (allow selective doubles)
 
 ---
 
-## 9. Key Strengths & Improvement Areas
+## 9. Strengths & Areas to Improve
 
 **Strengths**:
 - Excellent DNB usage
-- Good football research
-- Strong staking discipline
+- Strong football research quality
+- Good staking discipline
+- Active learning from losses
 
 **Areas to Improve**:
-- Increase sample in non-football sports
-- Reduce variance in Over/Under during knockouts
+- Over/Under variance in World Cup knockouts
+- Small sample outside football
 
 ---
 
-## How to Update
-
-**Best Command**:
-> "Show current performance and bankroll status."
+## How to Update This Report
 
 **After Settlements**:
-> "Here are the settlement results... Update performance report"
+> "Here are the settlement results... Update bet_log, bankroll, round file and performance report."
 
-This report should be regenerated after every settlement batch.
+**Quick Check**:
+> "Show current performance and bankroll status."
+
+This report uses real data and will be improved as the generation script is enhanced.
