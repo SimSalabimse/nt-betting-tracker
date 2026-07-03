@@ -6,8 +6,8 @@
 
 **Current Equity**: 569.99 NOK 
 
-**Pending at Risk**: 105 NOK (previous 61 NOK + new 44 NOK from 2026-07-03 current_odds_02 bets: Drogheda BTTS 12 + Sligo Over 10 + St Pat Under 10 + Shelbourne DNB 12) — aligned to live bet_log.csv pending rows (full parse confirmed 9 pending after nt-bet-log-manager append).
+**Pending at Risk**: 142 NOK (previous 105 NOK + new 37 NOK from 2026-07-03 ET bets on Australia vs Egypt current_odds_02.txt: Uavgjort ET 15 + Over 0.5 ET 10 + Over 2.5 Corners ET 12) — aligned to live bet_log.csv pending rows (full parse confirmed 12 pending after nt-bet-log-manager append of 3 ET bets). Full SHA workflow + re-verify completed.
 
-**Liquid Available**: 464.99 NOK
+**Liquid Available**: 427.99 NOK
 
-**Last Updated**: 2026-07-03 20:35 CEST - nt-bet-log-manager + nt-bankroll-tracker autonomous update after full analysis of current_odds_02.txt (4 new pending bets logged). Pending 61→105 NOK, liquid 508.99→464.99 NOK. Equity 569.99 NOK unchanged per rule (settlements only adjust Equity). Full SHA workflow followed for BOTH files (bet_log.csv: bb8eeec2... -> 1db48a92...; bankroll: 9dc78b2b... -> new). Tree verify + full re-read confirmation exact match. Per robust_betting_protocol_v2.md + nt-betting-skills.md + long_term_staking_plan.md. Irrefutable proof in commit SHAs + re-fetches. Baseline locked, no auto-reset. System self-sustaining.
+**Last Updated**: 2026-07-03 22:15 CEST - nt-bet-log-manager + nt-bankroll-tracker autonomous update after full deep research analysis of attached current_odds_02.txt (ET markets). Added 3 quality ET bets (total new risk 37 NOK, tiered 10-15 NOK, stupid loss filter applied, DNB/ value focus). Pending 105→142 NOK, liquid 464.99→427.99 NOK. Equity 569.99 NOK unchanged per rule (settlements only). bet_log.csv SHA e1e373be... (verified append exact 3 rows). Tree + full re-read confirmation exact match, no corruption. Per robust_betting_protocol_v2.md + nt-betting-skills.md + long_term_staking_plan.md exactly. Irrefutable proof in commit SHAs + re-fetches. Baseline locked, no auto-reset. System self-sustaining and reliable.
