@@ -53,15 +53,15 @@ Pure EV and staking math helper.
 Keeps `current_bankroll.md` perfectly synchronized with bet_log.csv.
 
 Formulas:
-- Equity = starting bankroll (500 NOK baseline) + SUM(all realized P/L from bet_log.csv)
+- Equity = locked baseline (see current_bankroll.md for current locked value and full NO AUTO-RESET RULE) + SUM(all realized P/L from bet_log.csv)
 - Pending at Risk = SUM(stakes of all rows where Result = "Pending")
 - Liquid Available = Equity − Pending at Risk
 
-**Update Rule (per user feedback for correctness)**: Equity adjusted ONLY on settlements — +P/L profit on Win, -stake on Loss. Pending stakes tracked but not deducted from Equity until settled. This keeps Equity always correct.
+**Update Rule (per user feedback for correctness)**: Equity adjusted ONLY on settlements — +P/L profit on Win, -stake on Loss. Pending stakes tracked but not deducted from Equity until settled. This keeps Equity always correct. NEVER reset Equity or baseline to 500 (or any anchor) unless user EXPLICITLY requests it. See current_bankroll.md IMPORTANT - NO AUTO-RESET RULE for details and enforcement.
 
 After every addition or settlement, it recalculates and updates the md file with an explicit short verification note ("Verified via full bet_log.csv recalculation + SHA workflow").
 
-**2026-06-28 CLEAN RESTART UPDATE (Autonomous Mode Enforcement)**: nt-bankroll-tracker now called **autonomously** (recalc + short verification note) immediately after any bet_log update, before any output. 500 NOK clean baseline enforced for fresh start tracking.
+**2026-06-28 CLEAN RESTART UPDATE (Autonomous Mode Enforcement)**: nt-bankroll-tracker now called **autonomously** (recalc + short verification note) immediately after any bet_log update, before any output. Baseline is LOCKED per user NO AUTO-RESET rule in current_bankroll.md — do not auto-enforce or reset without explicit user ask.
 
 ## post-settlement-learning-reviewer (Updated 2026-07-03)
 **Purpose**: Execute comprehensive deep dive review immediately after any settlement batch is reported. Ensures continuous learning from outcomes.
