@@ -76,7 +76,7 @@ Date,Match,Selection,Decimal_Odds,Stake_NOK,Result,P_L_NOK
 2026-07-04,"Lewis Hamilton to win F1 race (British GP context / current form)","Hamilton to win",1.67,12,Loss,-12
 2026-07-04,"Bryne vs Sandnes Ulf (Norway 1. Divisjon)","Sandnes Ulf +1 (Handikap 3-veis 0:1)",1.82,15,Win,12.30
 2026-07-04,"Hødd vs Strømsgodset (Norway 1. Divisjon)","Over 2.5 Goals",1.35,25,Win,8.75
-2026-07-04,"Frances Tiafoe vs Alexander Bublik (Tennis)","Bublik to win",1.87,12,Pending,
+2026-07-04,"Frances Tiafoe vs Alexander Bublik (Tennis)","Bublik to win",1.87,12,Win,10.44
 2026-07-04,"Washington Nationals vs Pittsburgh Pirates (MLB incl. extras)","Pittsburgh Pirates to win",1.55,20,Win,11.00
 2026-07-04,"Canada vs Morocco (FIFA WC 2026 R16)","Over 2.5 mål",2.25,15,Win,19.50
 2026-07-04,"Canada vs Morocco (FIFA WC 2026 R16)","Jonathan David to score (anytime)",3.70,10,Loss,-10.00
@@ -84,13 +84,13 @@ Date,Match,Selection,Decimal_Odds,Stake_NOK,Result,P_L_NOK
 2026-07-04,"Canada vs Morocco (FIFA WC 2026 R16)","Marokko DNB (Uavgjort tilbakebetales)",1.30,12,Win,3.36
 2026-07-04,"Oklahoma City Thunder vs Memphis Grizzlies (NBA Summer League)","Over 182.5 (Totalt inkl. OT)",1.80,15,Win,12.00
 2026-07-04,"Sha'Carri Richardson vs Adaejah Hodge (100m H2H athletics)","Richardson, Sha'Carri",1.70,12,Loss,-12.00
-2026-07-04,"Seattle Mariners vs Toronto Blue Jays (MLB)","Under 7.5 (Totalt inkl. extras)",1.85,12,Pending,
+2026-07-04,"Seattle Mariners vs Toronto Blue Jays (MLB)","Under 7.5 (Totalt inkl. extras)",1.85,12,Loss,-12
 2026-07-04,"Gremio Novorizontino SP vs AC Goianiense GO (Brazil)","Gremio Novorizontino SP to win",1.87,15,Win,13.05
 2026-07-04,"Longford Town vs University College Dublin (Irish)","Over 2.5 Goals",1.70,12,Win,8.40
-2026-07-04,"Paraguay vs France (FIFA WC 2026 R16)","Frankrike -1 (Handikap 3-veis)",1.65,20,Pending,
-2026-07-04,"Paraguay vs France (FIFA WC 2026 R16)","Over 2.5 mål",1.67,20,Pending,
-2026-07-04,"Paraguay vs France (FIFA WC 2026 R16)","Begge lag scorer Nei",1.48,15,Pending,
-2026-07-04,"Paraguay vs France (FIFA WC 2026 R16)","Kylian Mbappe scorer mål",1.58,15,Pending,
-2026-07-04,"Paraguay vs France (FIFA WC 2026 R16)","Kylian Mbappe scorer & Frankrike vinner",1.62,12,Pending,
-2026-07-04,"Paraguay vs France (FIFA WC 2026 R16)","Ousmane Dembele scorer mål",2.25,12,Pending,
-2026-07-04,"Paraguay vs France (FIFA WC 2026 R16)","Michael Olise scorer mål",2.60,10,Pending,
+2026-07-04,"Paraguay vs France (FIFA WC 2026 R16)","Frankrike -1 (Handikap 3-veis)",1.65,20,Loss,-20
+2026-07-04,"Paraguay vs France (FIFA WC 2026 R16)","Over 2.5 mål",1.67,20,Loss,-20
+2026-07-04,"Paraguay vs France (FIFA WC 2026 R16)","Begge lag scorer Nei",1.48,15,Win,7.50
+2026-07-04,"Paraguay vs France (FIFA WC 2026 R16)","Kylian Mbappe scorer mål",1.58,15,Win,8.70
+2026-07-04,"Paraguay vs France (FIFA WC 2026 R16)","Kylian Mbappe scorer & Frankrike vinner",1.62,12,Win,7.44
+2026-07-04,"Paraguay vs France (FIFA WC 2026 R16)","Ousmane Dembele scorer mål",2.25,12,Loss,-12
+2026-07-04,"Paraguay vs France (FIFA WC 2026 R16)","Michael Olise scorer mål",2.60,10,Loss,-10
