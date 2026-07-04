@@ -22,7 +22,7 @@ Date,Match,Selection,Decimal_Odds,Stake_NOK,Result,P_L_NOK
 2026-07-02,"BMW International Open (DP World Tour) Golf","Joaquin Niemann to win",7.80,12,Pending,
 2026-07-02,"Arthur Fery vs Otto Virtanen (Wimbledon)","Fery to win",2.20,10,Win,12.00
 2026-07-02,"Betboom Team vs Big (XSE Pro League CS2)","Betboom Team to win",1.40,10,Win,4.00
-2026-07-02,"Lyn vs Åsane (Norway 1. Division)","Åsane DNB (Uavgjort tilbakebetales)",2.45,10,Loss,-10.00
+2026-07-02,"Lyn vs Åsane (Norway 1. Division)"," Åsane DNB (Uavgjort tilbakebetales)",2.45,10,Loss,-10.00
 2026-07-02,"Moody, Stan vs Carrington, Stuart (HUB Snooker)","Moody, Stan to win",1.65,12,Win,7.80
 2026-07-02,"Friedli J / Jordan J vs Caldwell C / Schalk C (Beach Volleyball)","Friedli J / Jordan J +0.5",1.85,10,Loss,-10.00
 2026-07-02,"RS Berkane vs Wydad AC (Botola Pro)","RS Berkane DNB (Uavgjort tilbakebetales)",1.40,12,Win,4.80
@@ -74,3 +74,7 @@ Date,Match,Selection,Decimal_Odds,Stake_NOK,Result,P_L_NOK
 2026-07-04,"Beijing Guoan vs Shandong Taishan FC","Beijing Guoan to win",1.70,12,Win,8.40
 2026-07-04,"Schoon R / Stam K vs Cavalcante Barbosa Silva R / Solberg Salgado C (FIVB Gstaad Beach Volleyball)","Schoon R / Stam K +6.5 (points handicap)",2.00,10,Win,10.00
 2026-07-04,"Lewis Hamilton to win F1 race (British GP context / current form)","Hamilton to win",1.67,12,Loss,-12
+2026-07-04,"Bryne vs Sandnes Ulf (Norway 1. Divisjon)","Sandnes Ulf +1 (Handikap 3-veis 0:1)",1.82,15,Pending,
+2026-07-04,"Hødd vs Strømsgodset (Norway 1. Divisjon)","Over 2.5 Goals",1.35,25,Pending,
+2026-07-04,"Frances Tiafoe vs Alexander Bublik (Tennis)","Bublik to win",1.87,12,Pending,
+2026-07-04,"Washington Nationals vs Pittsburgh Pirates (MLB incl. extras)","Pittsburgh Pirates to win",1.55,20,Pending,
