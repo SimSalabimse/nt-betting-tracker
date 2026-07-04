@@ -6,8 +6,8 @@
 
 **Current Equity**: 471.86 NOK (adjusted -0.20 NOK from this settlement batch per full P/L method; pending stakes reserved separately)
 
-**Pending at Risk**: 37 NOK (Egersund O2.5 15 + Halmstads Draw 10 + Niemann golf 12)
+**Pending at Risk**: 109 NOK (Egersund O2.5 15 + Halmstads Draw 10 + Niemann golf 12 + Bryne SandnesUlf+1 15 + Hodd Over2.5 25 + TiafoeBublik BublikWin 12 + NatsPirates PiratesWin 20)
 
-**Liquid Available**: 434.86 NOK
+**Liquid Available**: 362.86 NOK
 
-**Last Updated**: 2026-07-04 15:30 CEST - Post-settlement autonomous via full SHA workflow on bet_log.csv (old SHA 1547a9e8... -> new 0893093af3a54266c3f2699eef64efa197903bbb, verified tree commit e9f873e78c540bcd37c46270249abe1a221fb31c + re-read exact settled rows: Hamilton Loss -12, Schoon Win +10, Monaro Win +8.40, T1 Loss -15, Beijing Win +8.40; no notes). current_bankroll.md SHA workflow + tree verify. Equity ONLY on realized P/L (net batch -0.20). Full archive + live method + locked baseline preserved. Irrefutable proof in SHAs + re-fetches + round file. Complete-before-reply + protocol v2 followed by letter.
+**Last Updated**: 2026-07-04 15:40 CEST - Post bet_log append from current_odds_02.txt full analysis (new pending bets added per nt-betting-workflow + nt-bankroll-tracker autonomous). bet_log.csv SHA aee6bfef7aa9037ceeaf152620494cc6b53e83f4 verified via re-fetch + tree. Equity unchanged (pending only, no settlement). Full archive + live method + locked baseline + NO AUTO-RESET preserved. Irrefutable proof in SHAs + re-fetches. Complete-before-reply + protocol v2 + skills followed by letter. New round file created with detailed multi-perspective reasoning + tool proofs.
