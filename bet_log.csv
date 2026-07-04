@@ -53,18 +53,18 @@ Date,Match,Selection,Decimal_Odds,Stake_NOK,Result,P_L_NOK
 2026-07-03,"Australia vs Egypt (FIFA WC 2026 R32) Extra Time","Ekstraomganger: Uavgjort (go to penalties)",1.62,15,Win,8.70
 2026-07-03,"Australia vs Egypt (FIFA WC 2026 R32) Extra Time","Over 0.5 Goals in Extra Time",1.97,10,Loss,-10.00
 2026-07-03,"Australia vs Egypt (FIFA WC 2026 R32) Extra Time","Over 2.5 Corners in Extra Time",1.65,12,Win,9.24
-2026-07-03,"Argentina vs Cape Verde (FIFA WC 2026 R32)","Argentina -2",2.30,15,Pending,
-2026-07-03,"Argentina vs Cape Verde (FIFA WC 2026 R32)","Begge lag scorer Nei",1.38,18,Pending,
-2026-07-03,"Argentina vs Cape Verde (FIFA WC 2026 R32)","Argentina holder nullen Ja",1.40,15,Pending,
-2026-07-03,"Argentina vs Cape Verde (FIFA WC 2026 R32)","Lautaro Martinez scorer mål",1.72,12,Pending,
-2026-07-03,"Argentina vs Cape Verde (FIFA WC 2026 R32)","Over 2.5 mål",1.60,12,Pending,
-2026-07-03,"Minnesota Lynx vs New York Liberty (WNBA)","Minnesota Lynx -1.5",1.72,15,Pending,
-2026-07-03,"Las Vegas Aces vs Chicago Sky (WNBA)","Over 180.5",1.82,12,Pending,
-2026-07-03,"New York Yankees vs Minnesota Twins (MLB)","New York Yankees -1.5",1.82,12,Pending,
+2026-07-03,"Argentina vs Cape Verde (FIFA WC 2026 R32)","Argentina -2",2.30,15,Loss,-15
+2026-07-03,"Argentina vs Cape Verde (FIFA WC 2026 R32)","Begge lag scorer Nei",1.38,18,Loss,-18
+2026-07-03,"Argentina vs Cape Verde (FIFA WC 2026 R32)","Argentina holder nullen Ja",1.40,15,Loss,-15
+2026-07-03,"Argentina vs Cape Verde (FIFA WC 2026 R32)","Lautaro Martinez scorer mål",1.72,12,Loss,-12
+2026-07-03,"Argentina vs Cape Verde (FIFA WC 2026 R32)","Over 2.5 mål",1.60,12,Loss,-12
+2026-07-03,"Minnesota Lynx vs New York Liberty (WNBA)","Minnesota Lynx -1.5",1.72,15,Loss,-15
+2026-07-03,"Las Vegas Aces vs Chicago Sky (WNBA)","Over 180.5",1.82,12,Win,9.84
+2026-07-03,"New York Yankees vs Minnesota Twins (MLB)","New York Yankees -1.5",1.82,12,Win,9.84
 2026-07-03,"Bilibili Gaming vs T1 (LoL MSI)","T1 to win",1.67,15,Pending,
-2026-07-03,"Washington Spirit vs Houston Dash (NWSL)","Over 2.5 Goals",1.62,12,Pending,
-2026-07-03,"Colombia vs Ghana (FIFA WC 2026 R32)","Colombia -1",2.25,15,Pending,
-2026-07-03,"Colombia vs Ghana (FIFA WC 2026 R32)","Under 2.5 mål",1.77,15,Pending,
-2026-07-03,"Colombia vs Ghana (FIFA WC 2026 R32)","Colombia holder nullen Ja",1.77,12,Pending,
-2026-07-03,"Colombia vs Ghana (FIFA WC 2026 R32)","Luis Suarez scorer mål",2.15,15,Pending,
-2026-07-03,"Colombia vs Ghana (FIFA WC 2026 R32)","Begge lag scorer Nei",1.60,12,Pending,
+2026-07-03,"Washington Spirit vs Houston Dash (NWSL)","Over 2.5 Goals",1.62,12,Win,7.44
+2026-07-03,"Colombia vs Ghana (FIFA WC 2026 R32)","Colombia -1",2.25,15,Loss,-15
+2026-07-03,"Colombia vs Ghana (FIFA WC 2026 R32)","Under 2.5 mål",1.77,15,Win,11.55
+2026-07-03,"Colombia vs Ghana (FIFA WC 2026 R32)","Colombia holder nullen Ja",1.77,12,Win,9.24
+2026-07-03,"Colombia vs Ghana (FIFA WC 2026 R32)","Luis Suarez scorer mål",2.15,15,Loss,-15
+2026-07-03,"Colombia vs Ghana (FIFA WC 2026 R32)","Begge lag scorer Nei",1.60,12,Win,7.20
