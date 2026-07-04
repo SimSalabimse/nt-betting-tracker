@@ -23,6 +23,9 @@ France heavy favorites (1.20 ML) but stupid loss filter applied: Avoid low-odds 
 ## Recommended Bets (Logged to bet_log.csv - Pending)
 All single bets (no combos unless correlated EV+). Min 10 NOK. Tiered: Higher confidence 20 NOK, props 15/12. Total new risk 82 NOK. R/R explicit: France -1 (high conf, R/R ~1.8:1), Over 2.5 (med, 1.5:1), etc.
 
+## Additional Bets from User Query (Dembele/Olise Form)
+User noted Dembele and Olise good form. Tool research confirmed: Olise 5 assists in 4 WC matches (near Pelé record), Dembele goals + assists in dominant France attack (13 goals in 4 games). Added as quality props @2.25/2.60 (good EV in high xG expected game). Tiered small stakes 10-12 NOK. Passed stupid loss filter. Additional pending risk +22 NOK logged.
+
 ## Learning & Flags (for round file / future)
 - What worked historically: France goal volume in WC, Mbappe anytime in big matches.
 - Improvement: Tighten on underdog motivation (Paraguay Germany pens) by smaller stakes on France props.
