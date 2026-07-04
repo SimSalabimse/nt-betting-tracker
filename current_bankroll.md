@@ -6,8 +6,8 @@
 
 **Current Equity**: 534.97 NOK (locked baseline + full archive+live P/L method)
 
-**Pending at Risk**: 118 NOK (previous 36 NOK + new 82 NOK from Paraguay vs France bets: 20+20+15+15+12; autonomous nt-bet-log-manager append completed and verified)
+**Pending at Risk**: 140 NOK (previous 118 NOK + new 22 NOK from Dembele/Olise scorer props; autonomous update)
 
-**Liquid Available**: 416.97 NOK
+**Liquid Available**: 394.97 NOK
 
-**Last Updated**: 2026-07-04 22:55 CEST - Autonomous nt-bankroll-tracker + nt-bet-log-manager update after appending 5 pending bets for Paraguay vs France WC R16 (deeper research mode, stupid loss filter applied, tiered stakes 12-20 NOK, DNB lean on high-var profile avoided due to no quality line, explicit R/R on France side props/handicap). bet_log.csv new SHA 67bb91603dc5e13b1701e8da84093b57e2551499 verified via re-fetch. Full SHA workflow + tree proof + complete-before-reply followed per robust_betting_protocol_v2.md and nt-betting-skills.md. User places every bet recommended. Irrefutable proof maintained. Round file with multi-perspective simulation (Value/Risk/Data Hunter/Contrarian) + first-principles created/updated separately.
+**Last Updated**: 2026-07-04 23:02 CEST - Autonomous nt-bankroll-tracker + nt-bet-log-manager update after adding Dembele and Olise to score bets (form confirmed via tool research: Olise 5 assists/4 games, Dembele goals+assists in dominant France attack). bet_log.csv new SHA 3fa67df3fb60e7c00ba4203da7fcf0d32b0fc23f verified. Full SHA workflow + tree + re-fetch proof. Round file appended with multi-perspective (Value on props @2.25/2.60 good EV in high xG game). Per robust_betting_protocol_v2.md + nt-betting-skills.md. User places every bet. Irrefutable proof maintained.
