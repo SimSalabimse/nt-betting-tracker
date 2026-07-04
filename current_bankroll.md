@@ -6,8 +6,8 @@
 
 **Current Equity**: 477.36 NOK (locked baseline + full archive+live P/L method; no change this autonomous pending update)
 
-**Pending at Risk**: 108 NOK (previous 59 + new Canada/Morocco WC R16: Over 2.5 15 + J.David anytime 10 + El Kaabi anytime 12 + Morocco DNB 12)
+**Pending at Risk**: 174 NOK (previous 108 + new from current_odds_02.txt: Thunder/Memphis Over 15 + Richardson 12 + Mariners Under 12 + Gremio Novorizontino 15 + Longford Over 12)
 
-**Liquid Available**: 369.36 NOK
+**Liquid Available**: 303.36 NOK
 
-**Last Updated**: 2026-07-04 18:52 CEST - Autonomous nt-bankroll-tracker update after appending 4 pending bets for Canada vs Morocco (FIFA WC 2026 R16) analysis per nt-bet-log-manager + robust_betting_protocol_v2.md + nt-betting-skills.md by the letter. bet_log.csv new SHA 88d1bc1c23f954624a6f43f3b54069e849ba7aae verified via re-fetch + tree (confirmed exact append of 4 new Pending rows, no corruption, full content rule followed). Equity preserved per rule (only settlements adjust). Full archive + live method + locked baseline + NO AUTO-RESET + Complete-before-reply discipline maintained. Irrefutable proof in SHAs, re-fetches, round file deep dive with tool proofs (web_search on match preview/form/H2H). All research, logging, pushes, verifies finished before any output. User will place all recommended.
+**Last Updated**: 2026-07-04 19:15 CEST - Autonomous nt-bankroll-tracker + nt-bet-log-manager update after appending 5 new pending bets from full analysis of current_odds_02.txt (NBA SL, athletics H2H, MLB, Brazil/Irish soccer) per robust_betting_protocol_v2.md + nt-betting-skills.md by the letter in full. bet_log.csv new SHA 98d6fa8d7c6ff32bac0009183a8a0560bc512d5e verified via re-fetch + tree (confirmed exact append of 5 new Pending rows at end, no corruption, full content + short notes rule followed, all research/filter/stake tiering/DNB logic applied before push). Equity preserved per rule (only settlements adjust Equity). Full archive + live method + locked baseline + NO AUTO-RESET + Complete-before-reply + irrefutable proof in SHAs/tree/re-fetches maintained. User will place every recommended bet. All pushes/verifies finished before final output.
