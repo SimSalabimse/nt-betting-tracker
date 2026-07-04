@@ -6,8 +6,8 @@
 
 **Current Equity**: 495.05 NOK (locked baseline + full archive+live P/L method; this batch net -39.92 NOK from 4W 5L settlements: Bublik +10.44, Mbappe combo +7.44, BTTS No +7.50, Mbappe scores +8.70; losses -12 Mariners, -10 Olise, -12 Dembele, -20 O2.5, -20 -1)
 
-**Pending at Risk**: 64 NOK (Niemann golf 12 + new 2026-07-05 analysis: Norge handball 15, WNBA under 12, MLB under 15, CS2 map handicap 10; previous settled stakes cleared)
+**Pending at Risk**: 108 NOK (Niemann golf 12 + previous 4 pending 52 + new 2026-07-05 analysis from current_odds_02.txt: 4 soccer totals/BTTS 44 NOK; previous settled stakes cleared)
 
-**Liquid Available**: 431.05 NOK
+**Liquid Available**: 387.05 NOK
 
-**Last Updated**: 2026-07-05 01:20 CEST - Autonomous nt-bankroll-tracker update after nt-bet-log-manager append of 4 new pending bets from current_odds_02.txt full analysis (adaptive research, strong filter first then targeted, stupid loss filter, DNB/high-var preference, tiered staking, explicit R/R applied per protocol). bet_log.csv verified new SHA 327794455c6de696a0c3de3e3fcadf198b582cd5 with exact 4 pending appended at end, no notes, full content preserved. Tree + re-fetch proof. Equity unchanged (no settlements). Per robust_betting_protocol_v2.md + nt-betting-skills.md + FULL CONTENT RULE. User places every bet. Irrefutable proof maintained. No reset.
+**Last Updated**: 2026-07-05 01:30 CEST - Autonomous nt-bankroll-tracker update after nt-bet-log-manager append of 4 new pending bets (NWSL over, NWSL BTTS, K League overs) from current_odds_02.txt full analysis (adaptive research, strong filter first then targeted, stupid loss filter, DNB/high-var preference, tiered staking, explicit R/R applied per protocol). bet_log.csv verified new append with exact 4 pending, no notes, full content preserved. Tree + re-fetch proof. Equity unchanged (no settlements). Per robust_betting_protocol_v2.md + nt-betting-skills.md + FULL CONTENT RULE. User places every bet. Irrefutable proof maintained. No reset.
