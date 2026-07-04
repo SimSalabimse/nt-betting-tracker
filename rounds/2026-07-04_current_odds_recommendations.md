@@ -30,4 +30,8 @@
 
 **Autonomous Updates Completed** (before this file even): bet_log.csv appended with pending (full SHA workflow + verify), current_bankroll.md updated with new pending risk + verification note (full archive method preserved, Equity 472.06 unchanged until settle). All verified with tree + re-read exact content match. No corruption, full history intact. Per nt-bet-log-manager + robust_betting_protocol_v2.md + nt-betting-skills.md by letter.
 
-**Next**: User places bets. On settlement report results for post-settlement-learning-reviewer deep dive + round update.
+**User Update 2026-07-04 09:53 CEST**: User confirmed placement of the 4 recommended bets. All remain Pending in bet_log.csv awaiting results. No settlement yet. Full workflow followed for confirmation note.
+
+**Non-Football Sections Review (from same odds file)**: Reviewed F1 (constructors/drivers incl. Hamilton 1.67 / Antonelli 3.00 / Ferrari 1.57), 6 snooker matches (Maguire/Kazakov, Carter/Whelan, Williams/Ng, Jones/Crowley, Jones/Whelan, Williams/Kazakov — many heavy favorites e.g. 1.27 triggering stupid loss filter), ~8 beach volleyball matches (multiple 1.18-1.37 heavy favs + some closer like 2.60/1.37 pairs filtered). After targeted research (player form, recent results, world rankings/H2H via tools) and strict filtering (low-odds favs skipped, value on secondary lines insufficient after sim), **no additional recommendations pass quality thresholds this round** (maintain balanced volume + high bar). Limited edge in researched non-football without stronger mispricing. If user wants deeper dive on specific (e.g. one snooker frame bet or beach vol +handicap), provide details or new odds file.
+
+**Portfolio Status**: 4 pending football bets (49 NOK at risk). Bankroll verified (Equity 472.06, Pending 76). Ready for more when clear value appears or new odds provided. Quality > quantity per protocol.
