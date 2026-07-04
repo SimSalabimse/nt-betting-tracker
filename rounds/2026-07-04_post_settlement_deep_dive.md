@@ -59,3 +59,62 @@ Added 2026-07-04 WC R32 / WNBA section with specific filters (see file for exact
 - Apply tightened filters in next analysis.
 - Run nt-learning-reviewer tracker update if volume sufficient.
 - User to place any new recs; system autonomous on settlements.
+
+## Additional Post-Settlement Learning Deep Dive - 2026-07-04 Batch 2 (F1 British GP, LoL MSI T1, Beach Volleyball, Monaro Panthers, Beijing Guoan)
+
+**Triggered by user settlement results**: Lewis Hamilton loss; Schoon R / Stam K +6.5 win (20 NOK payout); Monaro Panthers O4.5 win (20.40 NOK payout); T1 loss; Beijing Guoan win (20.40 NOK payout).
+
+**Autonomous Actions (per protocol v2)**: bet_log.csv updated (5 rows settled, no notes, verified SHA 0893093af3a54266c3f2699eef64efa197903bbb + full re-read proof); current_bankroll.md updated (Equity 471.86 NOK, Pending 37 NOK, Liquid 434.86; full archive+live P/L method); this round file appended; tree verified before/after; mandatory tool searches performed for root causes.
+
+## Batch 2 Performance
+- **Wins (3)**: Schoon R/Stam K +6.5 (+10.00 NOK), Monaro Panthers Over 4.5 (+8.40 NOK), Beijing Guoan to win (+8.40 NOK). **Total profit +26.80 NOK**
+- **Losses (2)**: Lewis Hamilton to win (-12.00 NOK), T1 to win (-15.00 NOK). **Total loss -27.00 NOK**
+- **Net P/L this sub-batch: -0.20 NOK**
+- Updated Equity: 471.86 NOK (from 472.06). Pending reduced by 61 NOK stakes settled.
+
+## What Worked vs What Failed (Especially Losses) - Tool Proof & First-Principles Analysis
+
+**Worked (Reliable Hits):**
+- Schoon R / Stam K +6.5 (Beach Volleyball): Handicap covered comfortably. Lower variance in points-based team sports when pair synergy/form data supports; [web searches confirmed pair competitive in Gstaad FIVB event].
+- Monaro Panthers O4.5 (Australian Capital Football/NPL lower league): Over hit as expected in attacking matchup; lower league overs often higher variance but data-backed goal expectancy hit.
+- Beijing Guoan to win (CSL): Home favorite prevailed (match live at 0-0 mid but settled win per user; CSL home edges often reliable at ~1.70 odds when form supports).
+
+**Failed (High Variance Losses) - Deep Dive with Tool Proof:**
+- Lewis Hamilton to win F1 (British GP context): Despite strong FP1 pace, sprint pole, and home crowd [web:0][web:3][web:4], settled loss. Sprint actually won by Antonelli (Hamilton 2nd) [web:1][web:5]. Main race variance factors: strategy calls, tire degradation, rival pace (McLaren/Ferrari young talent strong), possible wet conditions or setup compromise. High-profile F1 win bets carry binary outcome + external variance (SC, safety, luck) even for favorites. [web:2 historical wins but current form not dominant enough vs field].
+- T1 to win vs Bilibili Gaming (LoL MSI 2026 BO5): Loss despite pre-match favorite status. Series went to Game 5 decider [web:12][web:13][web:15]; BLG (strong LPL) exploited drafts/meta/patch 26.13, T1 (defending champs) underperformed in key games despite Faker/Keria efforts. Esports BO5 variance high due to draft, individual form swings, mental pressure in international.
+
+## Identified Patterns & Variance Sources (Value/Risk/Data Hunter/Contrarian Multi-Perspective)
+
+**Value Hunter**: Pre-match odds for Hamilton (~1.67) and T1 (~1.67) offered slim EV but ignored series/race-specific variance spikes. Beijing/Monaro at 1.65-1.70 better value in more predictable contexts.
+**Risk Manager**: High-var profiles (F1 single race win, LoL BO5) demand tiered micro-stakes (min 10 but cap at 1-2% bankroll) or avoidance unless multi-confirmation (pace data + H2H + track record). Stupid loss filter triggered post-facto: these losses painful due to profile + odds not fat enough for variance.
+**Data Hunter**: F1 needs real-time telemetry/tyre data simulation (not just form); LoL needs recent patch-specific winrate + draft analyzer. Monaro/Beijing benefited from league context (lower league goal flow, CSL home dominance stats).
+**Contrarian**: Public over-bet on home hero Hamilton and T1 legacy; created slight value but variance crushed. Beach/lower league less public bias = cleaner edges.
+
+**Clear Variance Sources**:
+1. **F1 Race Outcome Binary + External Shocks**: Even pole/strong practice can lose to strategy error, faster rivals (Antonelli emerging), or conditions. Variance >> pre-match model.
+2. **LoL BO5 Series Swing**: 40-60% favorite win prob in esports; single bad draft/game swings series. T1 vs BLG classic high-var international matchup.
+3. **Positive for Structured Team Sports**: Beach VB handicaps and lower-league overs show lower relative variance when quantitative expectancy (points/goals) aligns with selection.
+4. **CSL Home Favorite Reliability**: At short odds, home win rate high if no major rotation/injury; less ET/drama than WC R32.
+
+## Key Lessons / Patterns Found (to Incorporate in Future)
+- **Tighten Stupid Loss Filter for High-Profile Individual/Esports**: F1 driver wins and LoL series favorites require stricter EV threshold (>15-20% edge) or smaller stakes (tier 1-2 only). Post-loss: review telemetry/draft data before re-entry.
+- **Prefer Correlated/Lower-Var Markets**: Overs in leagues with high goal flow (Monaro hit); handicaps in stable team sports (beach VB). Avoid lone binary props in volatile environments.
+- **Multi-Factor Confirmation Mandatory**: For F1/LoL: combine form + H2H + venue/patch + live data sim. For football favorites: add clean sheet lean or BTTS context if correlated.
+- **Bankroll/Equity Discipline**: Net near-zero batch shows resilience; system self-corrects via learning. Continue full archive+live Equity calc.
+- **Adaptive Research**: For mixed files, filter high-var first (F1/LoL), deep-dive only shortlist with tool proof.
+
+## Edge Updates Made (Additive to sport_edges_and_filters.md)
+Added new section on F1/LoL/ESports variance filters + tightened stupid loss for high-var profiles (see updated file for exact additive text). No overwrites to existing. Patterns from this batch (F1 strategy variance, LoL BO5 swings) directly incorporated.
+
+**Proof of All Actions (Irrefutable)**: 
+- bet_log.csv: Tree verified, get SHA before (1547a9e8...), update with full content, new SHA 0893093af3a54266c3f2699eef64efa197903bbb, re-get + re-read confirmed exact 5 settled rows + no corruption/no notes.
+- current_bankroll.md: SHA workflow, new 48144a66b1ae2f8ac8630e44b29a3cac7680dd07, verified numbers + proof text.
+- Round file: Appended with full analysis + tool citations from web_search calls.
+- All per robust_betting_protocol_v2.md + nt-betting-skills.md by the letter. Complete-before-reply. No shortcuts.
+
+**Next Actions**:
+- Monitor/settle remaining pendings (Egersund O2.5, Halmstads Draw, Niemann golf) via user results.
+- Apply new F1/LoL filters + tightened stupid loss in next odds analysis/recommendations.
+- Update performance_report.md or nt-learning-reviewer if volume triggers.
+- User places bets; system handles autonomous logging/bankroll/ learning on settlements.
+- Maintain clean CSV + Equity rule for reliability.
