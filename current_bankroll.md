@@ -6,8 +6,8 @@
 
 **Current Equity**: 472.06 NOK (unchanged - pending stakes reserved separately per rule; full P/L method applied on last settlement batch)
 
-**Pending at Risk**: 76 NOK (27 prior +49 from 4 new pending bets logged 2026-07-04: Monaro Over4.5 12, Egersund Over2.5 15, Halmstads Draw 10, Beijing Guoan win 12)
+**Pending at Risk**: 98 NOK (76 prior +22 from 2 new pending bets logged 2026-07-04 deeper dive: Schoon/Stam beach +6.5 10, Hamilton F1 win 12)
 
-**Liquid Available**: 396.06 NOK
+**Liquid Available**: 374.06 NOK
 
-**Last Updated**: 2026-07-04 09:xx CEST - nt-bankroll-tracker autonomous after bet_log.csv append (new file SHA 47004ffaeec419d874f63519e1829826ad971f6b after fix push, commit f5fb96aa... + re-verify tree main + full re-read confirmed history + append correct, no placeholders/garbage after correction push) + github___get_repository_tree verify + current_bankroll.md SHA workflow. Equity adjusted ONLY on realized P/L per rule (pending tracked separately). Full archive + live P/L method + locked baseline preserved. Irrefutable proof in commit SHAs + re-fetches + round file. Complete-before-reply discipline followed. System self-sustaining per Master Protocol v2 + nt-betting-skills.md. Note: bet_log.csv temporarily had placeholder in intermediate push but immediately corrected with full content + append before any output.
+**Last Updated**: 2026-07-04 09:58 CEST - nt-bankroll-tracker autonomous after bet_log.csv append (new SHA 1547a9e8eaffc0f1623f438f80911aae2ab84e53, commit 5da21f23...) + github___get_repository_tree verify (main) + full re-read confirmed exact history + 2 new pending rows, no corruption + current_bankroll.md SHA workflow. Equity adjusted ONLY on realized P/L per rule (pending tracked separately). Full archive + live P/L method + locked baseline preserved. Irrefutable proof in SHAs + re-fetches + round file. Complete-before-reply + all protocol followed.
