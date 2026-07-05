@@ -96,15 +96,17 @@ Date,Match,Selection,Decimal_Odds,Stake_NOK,Result,P_L_NOK
 2026-07-04,"Paraguay vs France (FIFA WC 2026 R16)","Michael Olise scorer mål",2.60,10,Loss,-10
 2026-07-05,"Norge vs Japan (HUB Handball)","Norge -0.5",1.74,15,Loss,-15
 2026-07-05,"Seattle Storm vs Portland Fire (WNBA)","Under 172.5 (incl. OT)",1.77,12,Win,9.24
-2026-07-05,"Faze Clan vs Eyeballers (CS2)","Faze Clan -1.5 (maps)",2.10,10,Pending,
+2026-07-05,"Faze Clan vs Eyeballers (CS2)","Faze Clan -1.5 (maps)",2.10,10,Loss,-10
 2026-07-05,"North Carolina Courage vs Seattle Reign FC (NWSL)","Over 2.5 Goals",1.72,12,Win,8.64
 2026-07-05,"San Diego Wave FC vs Gotham FC (NWSL)","Over 2.5 Goals",2.05,10,Loss,-10
 2026-07-05,"FC Seoul vs Incheon United FC (K League 1)","Over 2.5 Goals",1.95,12,Loss,-12
 2026-07-05,"Gimcheon Sangmu FC vs Jeju SK FC (K League 1)","Over 2.5 Goals",1.95,10,Loss,-10
 2026-07-05,"IFK Göteborg vs AIK","Over 2.5 Goals",1.67,15,Win,10.05
-2026-07-05,"Odd vs Haugesund","Haugesund DNB (Uavgjort tilbakebetales)",1.95,12,Pending,
-2026-07-05,"Elfsborg vs Hammarby","Over 2.5 Goals",1.67,15,Pending,
-2026-07-05,"Kalmar vs Örgryte IS","Over 2.5 Goals",1.52,12,Pending,
-2026-07-05,"Tour de France 2026 Stage 2 (Tarragona - Barcelona hilly puncheur/Montjuic)","Uno-X rytter topp 10? Ja",2.10,15,Pending,
-2026-07-05,"F1 British Grand Prix 2026 (Silverstone)","Blir det Safety Car Periode? Ja",1.45,12,Pending,
-2026-07-05,"F1 British Grand Prix 2026 (Silverstone)","Antonelli, Andrea Kimi raskeste runde",2.00,10,Pending,
+2026-07-05,"Odd vs Haugesund","Haugesund DNB (Uavgjort tilbakebetales)",1.95,12,Win,11.40
+2026-07-05,"Elfsborg vs Hammarby","Over 2.5 Goals",1.67,15,Win,10.05
+2026-07-05,"Kalmar vs Örgryte IS","Over 2.5 Goals",1.52,12,Win,6.24
+2026-07-05,"Tour de France 2026 Stage 2 (Tarragona - Barcelona hilly puncheur/Montjuic)","Uno-X rytter topp 10? Ja",2.10,15,Win,16.50
+2026-07-05,"F1 British Grand Prix 2026 (Silverstone)","Blir det Safety Car Periode? Ja",1.45,12,Win,5.40
+2026-07-05,"F1 British Grand Prix 2026 (Silverstone)","Antonelli, Andrea Kimi raskeste runde",2.00,10,Win,10.00
+2026-07-05,"Elfsborg vs Hammarby","BTTS Ja",1.55,10,Win,5.50
+2026-07-05,"Naomi Osaka match","Over 22.5 games",2.10,10,Loss,-10
