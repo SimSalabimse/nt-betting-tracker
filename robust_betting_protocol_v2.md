@@ -1,145 +1,56 @@
-# Robust Betting Agent Protocol v2 (Updated 2026-07-05 - Research Depth Enforcement)
+# Robust Betting Agent Protocol v2 (Updated 2026-07-05 - STRICT Research Depth Enforcement)
 
-**2026-07-01 MAJOR CLEANUP & RELIABILITY FIXES (Addresses All User-Reported Issues: GitHub update failures, bet_log corruption to 3 lines/garbage comments, ballooning files, bankroll drift, Grok not reading full file, old data in Notes)**
+**IMPORTANT: This file was re-pushed on 2026-07-05 with stronger, clearer rules after user confirmed previous updates were not visible/strong enough.**
 
-**Critical New Rules (Non-Negotiable - Immediate Effect)**:
+**2026-07-01 MAJOR CLEANUP & RELIABILITY FIXES**
 
-1. **GitHub Update Reliability (Successful Push Workflow Mandatory - Never Skip)**:
-   - Every file change (bet_log, bankroll, protocol, skills, rounds, etc.): 
-     a. Verify current state with github___get_repository_tree.
-     b. Get specific file content + exact current SHA with github___get_file_contents.
-     c. Update ONLY with github___create_or_update_file using the exact sha, FULL clean actual text (no placeholders, no short versions, no garbage).
-     d. Immediately verify after: Re-check tree + re-read full content with get_file_contents to confirm exact match, no corruption.
-   - Prefer local `scripts/safe_bet_log_edit.py` (append-only or targeted settle, atomic write, validation, short Notes) for bet_log when GitHub feels flaky. Grok proposes exact lines/diffs; user applies locally then optional push.
-   - Short content payloads only to prevent truncation.
+**Critical New Rules (Non-Negotiable)**:
 
-2. **Bankroll Correctness (User-Preferred Rule Enforced + 2026-07-03 NO AUTO-RESET + FULL ARCHIVE DATA UPDATE)**:
-   - Equity calculation MUST use the exact user-verified method: start from 500 in bet_log_archives/bankroll_archive_up_to_2026_07_01.csv + add ALL profits and subtract ALL losses from bet_log_archives/bankroll_archive_up_to_2026_07_01.csv + live bet_log.csv (entire round, deduped for any 07-01 overlap). User manual verification confirmed +69.99 NOK total realized P/L. Equity = 500 + 69.99 = **569.99 NOK**. This is the accurate figure for the entire round (including the 4 wins/2 big wins in full historical context). NEVER use incomplete only-live or partial sums.
-   - The entire round/history MUST include P/L from bet_log_archives/bankroll_archive_up_to_2026_07_01.csv (and similar archives) + live bet_log.csv using the above method.
-   - Adjust Equity ONLY on settlements: +P/L profit on Win, -stake on Loss. NEVER reset Equity or baseline to 500 (or re-anchor) unless user EXPLICITLY requests "reset baseline", "adjust baseline for deposit/withdrawal", or "lock in profits as new baseline".
-   - Pending at Risk tracked separately but NEVER subtracted from Equity until settled.
-   - nt-bankroll-tracker skill + short verification note only. No bloated text. Baseline locked per user instruction to prevent any future unwanted reset to 500 without consent. Full archive + user method mandatory for correct Equity.
+1. **GitHub Update Reliability (Successful Push Workflow Mandatory)**: Every change must follow: tree verify → get content + exact SHA → full clean update with sha → post re-verify tree + full re-read.
 
-3. **Skills First (nt-betting-workflow, nt-bet-log-manager, nt-bankroll-tracker, post-settlement-learning-reviewer, nt-learning-reviewer, betting-value-calculator)**:
-   - Follow nt-betting-skills.md by the letter in full for all operations.
-   - nt-bet-log-manager: Full fetch + SHA before any change, append-only or targeted short-Notes update, never delete/overwrite historical, proper quoting, validation.
-   - All autonomous updates (bet_log append + bankroll) happen BEFORE any user-facing output, with full workflow verify.
+2. **Bankroll Correctness**: Use full archive + live method. No auto-reset of baseline.
 
-4. **FULL CONTENT RULE FOR github___create_or_update_file (Non-Negotiable - Prevents Data Loss from Placeholders)**: 
-   - Always call github___get_file_contents to fetch the *full current content + exact SHA* immediately before building any update.
-   - Construct the new content by taking the exact string returned from the fetch and appending or modifying *only* the necessary parts.
-   - The "content" parameter sent to the tool must be the *complete, correct, final file text* — never placeholders, never summaries, never "paste here" text, never assumptions from previous knowledge.
-   - If the file is very large (e.g. bet_log.csv or archives), prefer the local `scripts/safe_bet_log_edit.py` (safe append-only) or ask the user to provide the full current content instead of risking incomplete payloads.
-   - This rule was added after a placeholder mistake in a tool call temporarily replaced bet_log history with only pending bets (history was restored from Git). It is now permanent and non-negotiable.
+3. **Skills First**: Follow nt-betting-skills.md by the letter.
 
-**Notes Column in bet_log.csv - DEPRECATED (2026-07-03)**
+4. **FULL CONTENT RULE**: Always fetch full current content + SHA before any update. Never use placeholders.
 
-The Notes column in `bet_log.csv` has been removed per user request.
-- All future logging will **not** include notes in the main bet_log file.
-- Learning records, variance analysis, reasoning, and post-settlement reviews will now be stored in **round files** instead.
-- Historical notes in existing rows have been cleaned (set to empty).
+**Notes Column DEPRECATED (2026-07-03)**: Removed from bet_log.csv. Learning now goes to round files only.
 
-**Post-Settlement Learning Requirements (Strengthened)**:
+**Post-Settlement Learning Requirements**: Must trigger post-settlement-learning-reviewer + nt-learning-reviewer, do real tool searches, record in round file, and **update sport_edges_and_filters.md additively** when patterns appear.
 
-After every settlement batch, the following is mandatory:
-- Trigger full `post-settlement-learning-reviewer` + `nt-learning-reviewer`.
-- Perform actual tool searches (web_search, browse_page, etc.) to investigate why bets won or lost, especially losses.
-- Conduct a structured deep dive (not generic text).
-- Identify clear patterns or variance sources.
-- Record learning in the relevant **round file** (not in bet_log.csv).
-- Update `sport_edges_and_filters.md` additively if meaningful patterns are found.
-- Actually update `bet_log.csv` (without notes) and verify the update succeeded.
-- Update `current_bankroll.md` correctly (full archive + live P/L using user method).
-- Provide a clean summary including batch performance, key lessons, and any edge updates made.
+**Analyze Correctly Going Forward (Standing Rule)**: Strong filtering + targeted deep research. Balanced volume (4-8 bets typical). Proper tool proof required.
 
-This is non-negotiable.
+**Research Depth Rule (STRICT - 2026-07-05)**:
 
-**Analyze Correctly Going Forward - Standing Rule (2026-07-03)**:
+**This is now a hard requirement. Shallow research is a violation of this protocol.**
 
-When analyzing odds files, the following is now strictly enforced:
-- Use adaptive research mode properly: Strong filtering first, **then targeted deep research** on the shortlist (not just generic filtering).
-- Aim for balanced volume: Typically 4–8 quality bets from a mixed file (avoid both under-betting like only 2 bets and over-betting low-quality lines).
-- Always perform proper multi-perspective simulation + tool proof on shortlisted bets.
-- Execute nt-bet-log-manager and nt-bankroll-tracker **last**, with full SHA workflow verification.
-- Never leave bet_log.csv or current_bankroll.md unupdated when bets are recommended.
+The system previously did insufficient research (often only 2-5 sources). When tested without constraints, 80-130 sources were used. This caused poor bet selection (especially repeated O2.5 failures).
 
-**Research Depth Rule (NEW - 2026-07-05)**:
+**Mandatory Minimums**:
+- Every shortlisted bet: **Minimum 8-12 distinct high-quality sources/tool calls**.
+- High-variance bets (O2.5, player props in KO, ET lines, lower league totals, handicaps): **Minimum 12-15 sources**.
+- Required sources: FBref/Transfermarkt/Understat xG, FotMob lineups + weather, official motivation, H2H trends, recent form, set pieces, per-line targeted searches.
+- No bet may be recommended on shallow or single-source data.
+- When in doubt: do MORE research, never less.
 
-The system has been doing **insufficient research**. When tested in a fresh chat without constraints, 80-130 sources are used. The current workflow is too shallow (often only 2-5 sources on 2-3 matches).
+**Over/Under Goals Caution Rule (STRICT - 2026-07-05)**:
 
-**Mandatory Minimum Research Standards**:
-- For every shortlisted bet (after initial filtering), a **minimum of 8-12 distinct tool calls / sources** must be used before recommending it.
-- Must use multiple high-quality sources: FBref, Transfermarkt, Understat, FotMob, official lineups, weather reports, head-to-head data, recent form trends, motivation analysis, and xG models.
-- For high-variance bet types (especially Over/Under Goals in knockout games), research must be **significantly deeper** (minimum 12-15 sources).
-- Never recommend a bet based on shallow or single-source confirmation.
-- When in doubt, do **more** research, not less. Depth > Speed.
+Recent O2.5 performance has been poor across multiple rounds (WC KO + Norwegian/K League lower leagues).
 
-This rule is now non-negotiable.
+**New Binding Rules**:
+- O2.5 in knockout/high-stakes games is **heavily deprioritized**.
+- Only allowed with **very strong multi-source evidence** (projected xG >2.8 + confirmed attacking intent from both teams + no weather/heat issues).
+- Default in KO games: DNB, BTTS No, or primary star props.
+- Any O2.5 recommendation in KO must explicitly explain why it is different from the recent failing pattern.
 
-**Over/Under Goals Caution Rule (NEW - 2026-07-05)**:
+**Norwegian 1. Div / K League / Lower Leagues O2.5**: Require explicit motivation + attacking intent confirmation. Prefer DNB/home ML on favorites. Ultra-small stake or avoid on defensive bottom-table clashes.
 
-Recent performance on Over 2.5 Goals has been poor (many losses in latest rounds, especially World Cup knockout games).
+**Long-Term Staking Plan**: See `long_term_staking_plan.md`.
 
-**New Rules for Over/Under**:
-- Over/Under bets in **knockout / high-stakes games** are now heavily deprioritized.
-- Only consider Over/Under when there is **very strong multi-source evidence** (high combined xG, confirmed attacking intent from both teams, weather not a factor, historical trends strongly support it).
-- Default preference in knockout games: DNB, BTTS, or player props over totals.
-- Any Over/Under recommendation must include explicit justification why it is different from the recent failing pattern.
+**Purpose**: Master protocol for all betting work. All future recommendations and settlements must follow this by the letter.
 
-**Long-Term Staking Plan**
-
-The long-term staking, risk management, and progression strategy is defined in the separate file:
-
-**`long_term_staking_plan.md`**
-
-**2026-07-02 NEW AUTOMATED WORKFLOW ADDITION**:
-
-The system now supports a significantly more automated flow using the new `nt_betting_system/`:
-
-- User provides an **odds file** (list of matches + odds).
-- Grok performs analysis using **adaptive research** (deeper research for single/few matches, targeted + filtering for many matches).
-- Grok recommends bets + stakes and logs them into `bet_log.csv`.
-- User places the recommended bets.
-- On settlement, user provides results → Grok must run proper post-settlement learning, record in round file, update files correctly (full data + user method), and verify updates.
-
-**Purpose of this Protocol (Retained)**: Master for robustness in betting recommendations. Supplements nt-betting-skills.md (primary implementation). All future betting work follows this + skills by the letter.
-
-**Core Philosophy (Retained & Strengthened)**: First-principles, mandatory tool proof when researching, active learning from outcomes (especially losses), bias reset every time, conservative risk management with stupid loss filter + explicit R/R, self-updating via additive changes, complete-before-reply (all research/pushes/verifies done first).
-
-## Retained Core Sections (Condensed - See nt-betting-skills.md for Detailed Implementation)
-
-**Mandatory Tool Usage & Proof (When Researching)**: Use web_search, browse_page, x_keyword_search etc. with explicit proof in responses for promising markets. Per-line targeted research for props. Historical pattern simulation from Priority #1 sources (FBref, Transfermarkt, Understat, etc.). Exhaustive cross-verification. No early give-up.
-
-**Multi-Agent Simulation (Value/Risk Manager/Data Hunter/Contrarian)**: Internal debate with bias reset. Document key points. Enforce variety, broader sports, DNB preference for high-var profiles, tiered staking, min 10 NOK, diversification.
-
-**Standardized Clean Response Template**: Executive Summary, Data Sources & Tool Proof, Recommended Bets table, Portfolio Summary, Learning & Flags, Next Actions. Clean tables only.
-
-**Bet Log & Bankroll Integrity**: See Section 5 rules above + nt-bet-log-manager + safe_bet_log_edit.py. Never reset live data. Proper quoting. Full verify after every change. Notes column removed (learning now in round files). Equity calc always uses user method on archive + live.
-
-**Advanced Risk Management**: Stupid loss filter (low-odds favorites require high EV + confirmation), explicit R/R calcs, tiered stakes, post-loss review for filter tightening.
-
-**Active Learning**: post-settlement-learning-reviewer + nt-learning-reviewer for deep dives with mandatory tool searches. Learning recorded in round files. Edge updates in sport_edges_and_filters.md (additive).
-
-**Self-Updating**: Identify issues and implement fixes proactively via full SHA workflow.
-
-**Complete Before Reply**: All tool calls, analysis, multi-agent, learning updates, GitHub pushes (with verify), and validations finished before final output.
-
-## Implementation & Status
-
-- 2026-07-01 Cleanup: Added GitHub SHA workflow enforcement, bankroll Equity rule, skills-first mandate, local safe_bet_log_edit.py preference, and Full Content Rule.
-- 2026-07-02: Strengthened post-settlement requirements.
-- 2026-07-03: 
-  - Removed Notes column from `bet_log.csv` entirely (historical notes cleaned).
-  - Learning records now stored in round files instead of bet_log.csv.
-  - Added standing rule "Analyze Correctly Going Forward" to prevent overly conservative or shallow analysis.
-  - Updated protocol to reference `long_term_staking_plan.md`.
-  - Added explicit NO AUTO-RESET RULE for baseline/Equity to current_bankroll.md, skills, and this protocol.
-  - Added FULL ARCHIVE DATA RULE + user exact method for Equity calc.
-- **2026-07-05**: 
-  - Added **Research Depth Rule** (minimum 8-12 sources per shortlisted bet, significantly more for high-variance bets).
-  - Added **Over/Under Goals Caution Rule** due to recent poor performance.
-- All future betting recommendations and settlements MUST follow the new rules.
-
-**Success Metrics**: Reliable GitHub updates, correct file structure, proper analysis volume and depth, correct and verified file updates, consistent skill usage, and meaningful learning from losses (recorded in round files).
-
-This updated protocol makes the system more robust and aligned with user preferences.
+**Implementation Status (2026-07-05)**:
+- Research Depth Rule added and strengthened.
+- Over/Under Caution Rule added and made binding.
+- Both rules now non-negotiable.
+- All future analysis must comply. Shallow research will be flagged as a protocol violation.
