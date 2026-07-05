@@ -1,4 +1,4 @@
-# Robust Betting Agent Protocol v2 (2026-07-01 Cleanup Update - Reliable GitHub, Short Notes, Skills First)
+# Robust Betting Agent Protocol v2 (Updated 2026-07-05 - Research Depth Enforcement)
 
 **2026-07-01 MAJOR CLEANUP & RELIABILITY FIXES (Addresses All User-Reported Issues: GitHub update failures, bet_log corruption to 3 lines/garbage comments, ballooning files, bankroll drift, Grok not reading full file, old data in Notes)**
 
@@ -63,6 +63,29 @@ When analyzing odds files, the following is now strictly enforced:
 - Execute nt-bet-log-manager and nt-bankroll-tracker **last**, with full SHA workflow verification.
 - Never leave bet_log.csv or current_bankroll.md unupdated when bets are recommended.
 
+**Research Depth Rule (NEW - 2026-07-05)**:
+
+The system has been doing **insufficient research**. When tested in a fresh chat without constraints, 80-130 sources are used. The current workflow is too shallow (often only 2-5 sources on 2-3 matches).
+
+**Mandatory Minimum Research Standards**:
+- For every shortlisted bet (after initial filtering), a **minimum of 8-12 distinct tool calls / sources** must be used before recommending it.
+- Must use multiple high-quality sources: FBref, Transfermarkt, Understat, FotMob, official lineups, weather reports, head-to-head data, recent form trends, motivation analysis, and xG models.
+- For high-variance bet types (especially Over/Under Goals in knockout games), research must be **significantly deeper** (minimum 12-15 sources).
+- Never recommend a bet based on shallow or single-source confirmation.
+- When in doubt, do **more** research, not less. Depth > Speed.
+
+This rule is now non-negotiable.
+
+**Over/Under Goals Caution Rule (NEW - 2026-07-05)**:
+
+Recent performance on Over 2.5 Goals has been poor (many losses in latest rounds, especially World Cup knockout games).
+
+**New Rules for Over/Under**:
+- Over/Under bets in **knockout / high-stakes games** are now heavily deprioritized.
+- Only consider Over/Under when there is **very strong multi-source evidence** (high combined xG, confirmed attacking intent from both teams, weather not a factor, historical trends strongly support it).
+- Default preference in knockout games: DNB, BTTS, or player props over totals.
+- Any Over/Under recommendation must include explicit justification why it is different from the recent failing pattern.
+
 **Long-Term Staking Plan**
 
 The long-term staking, risk management, and progression strategy is defined in the separate file:
@@ -110,11 +133,12 @@ The system now supports a significantly more automated flow using the new `nt_be
   - Learning records now stored in round files instead of bet_log.csv.
   - Added standing rule "Analyze Correctly Going Forward" to prevent overly conservative or shallow analysis.
   - Updated protocol to reference `long_term_staking_plan.md`.
-  - Added explicit NO AUTO-RESET RULE for baseline/Equity to current_bankroll.md, skills, and this protocol per user request (prevents reset to 500 without explicit consent).
-  - Added FULL ARCHIVE DATA RULE + user exact method (start 500 in archive + all P/L archive + live) for Equity calc to fix all incomplete prior figures (correct verified 569.99 NOK for entire round).
-- All future betting recommendations and settlements MUST follow the new rules (no notes in bet_log, learning in round files, balanced analysis, locked baseline with explicit-only adjustment, full archive + user method for Equity).
-- robust_betting_protocol_v2.md is the master for recommendations; nt-betting-skills.md is the detailed how-to.
-- `long_term_staking_plan.md` defines long-term staking progression.
+  - Added explicit NO AUTO-RESET RULE for baseline/Equity to current_bankroll.md, skills, and this protocol.
+  - Added FULL ARCHIVE DATA RULE + user exact method for Equity calc.
+- **2026-07-05**: 
+  - Added **Research Depth Rule** (minimum 8-12 sources per shortlisted bet, significantly more for high-variance bets).
+  - Added **Over/Under Goals Caution Rule** due to recent poor performance.
+- All future betting recommendations and settlements MUST follow the new rules.
 
 **Success Metrics**: Reliable GitHub updates, correct file structure, proper analysis volume and depth, correct and verified file updates, consistent skill usage, and meaningful learning from losses (recorded in round files).
 
