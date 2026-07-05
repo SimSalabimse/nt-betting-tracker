@@ -22,7 +22,7 @@ Date,Match,Selection,Decimal_Odds,Stake_NOK,Result,P_L_NOK
 2026-07-02,"BMW International Open (DP World Tour) Golf","Joaquin Niemann to win",7.80,12,Pending,
 2026-07-02,"Arthur Fery vs Otto Virtanen (Wimbledon)","Fery to win",2.20,10,Win,12.00
 2026-07-02,"Betboom Team vs Big (XSE Pro League CS2)","Betboom Team to win",1.40,10,Win,4.00
-2026-07-02,"Lyn vs Åsane (Norway 1. Division)"," Åsane DNB (Uavgjort tilbakebetales)",2.45,10,Loss,-10.00
+2026-07-02,"Lyn vs Åsane (Norway 1. Division)","Åsane DNB (Uavgjort tilbakebetales)",2.45,10,Loss,-10.00
 2026-07-02,"Moody, Stan vs Carrington, Stuart (HUB Snooker)","Moody, Stan to win",1.65,12,Win,7.80
 2026-07-02,"Friedli J / Jordan J vs Caldwell C / Schalk C (Beach Volleyball)","Friedli J / Jordan J +0.5",1.85,10,Loss,-10.00
 2026-07-02,"RS Berkane vs Wydad AC (Botola Pro)","RS Berkane DNB (Uavgjort tilbakebetales)",1.40,12,Win,4.80
@@ -94,10 +94,10 @@ Date,Match,Selection,Decimal_Odds,Stake_NOK,Result,P_L_NOK
 2026-07-04,"Paraguay vs France (FIFA WC 2026 R16)","Kylian Mbappe scorer & Frankrike vinner",1.62,12,Win,7.44
 2026-07-04,"Paraguay vs France (FIFA WC 2026 R16)","Ousmane Dembele scorer mål",2.25,12,Loss,-12
 2026-07-04,"Paraguay vs France (FIFA WC 2026 R16)","Michael Olise scorer mål",2.60,10,Loss,-10
-2026-07-05,"Norge vs Japan (HUB Handball)","Norge -0.5",1.74,15,Pending,
-2026-07-05,"Seattle Storm vs Portland Fire (WNBA)","Under 172.5 (incl. OT)",1.77,12,Pending,
+2026-07-05,"Norge vs Japan (HUB Handball)","Norge -0.5",1.74,15,Loss,-15
+2026-07-05,"Seattle Storm vs Portland Fire (WNBA)","Under 172.5 (incl. OT)",1.77,12,Win,9.24
 2026-07-05,"Faze Clan vs Eyeballers (CS2)","Faze Clan -1.5 (maps)",2.10,10,Pending,
-2026-07-05,"North Carolina Courage vs Seattle Reign FC (NWSL)","Over 2.5 Goals",1.72,12,Pending,
-2026-07-05,"San Diego Wave FC vs Gotham FC (NWSL)","Over 2.5 Goals",2.05,10,Pending,
+2026-07-05,"North Carolina Courage vs Seattle Reign FC (NWSL)","Over 2.5 Goals",1.72,12,Win,8.64
+2026-07-05,"San Diego Wave FC vs Gotham FC (NWSL)","Over 2.5 Goals",2.05,10,Loss,-10
 2026-07-05,"FC Seoul vs Incheon United FC (K League 1)","Over 2.5 Goals",1.95,12,Pending,
 2026-07-05,"Gimcheon Sangmu FC vs Jeju SK FC (K League 1)","Over 2.5 Goals",1.95,10,Pending,
