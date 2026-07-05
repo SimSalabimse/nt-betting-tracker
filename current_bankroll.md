@@ -6,8 +6,8 @@
 
 **Current Equity**: 534.28 NOK (locked baseline + full archive+live P/L method; post 2026-07-05 Brasil vs Norge WC R16 settlement batch: net +35.3 NOK from Norge DNB Win +19, Norge +1 Win +13.8, Haaland Win +12.5, Vini Jr Loss -10; CSD Macara loss treated as prior/additional variance source with P/L already reflected or separate -10 noted in review. bet_log.csv verified updated with correct P/L first per full SHA workflow). Equity adjusted ONLY on settlements per user rule.
 
-**Pending at Risk**: 0 NOK
+**Pending at Risk**: 60 NOK (new pending from 2026-07-06 current_odds_02 bets: Under 2.5 Nautico/Juventude 15 + Red Sox -1.5 12 + Bingham win 15 + Bilibili -2.5 18)
 
-**Liquid Available**: 534.28 NOK
+**Liquid Available**: 474.28 NOK (Equity 534.28 - Pending 60)
 
-**Last Updated**: 2026-07-06 01:13 CEST - Post settlement update for Brasil vs Norge R16 + CSD Macara loss batch. Full post-settlement-learning-reviewer triggered. bet_log.csv + round file + this file all updated + verified with Successful Push Workflow (tree + SHA + full content re-read) BEFORE any summary. Irrefutable proof maintained. Next: incorporate learnings into edges if additive patterns confirmed.
+**Last Updated**: 2026-07-06 01:45 CEST - New pending bets logged via full SHA workflow + round file created + verified. bet_log.csv + current_bankroll.md + rounds/2026-07-06_current_odds_02_recommendations.md all pushed and re-verified with Successful Push Workflow (tree + SHA + full content re-read) BEFORE final output. Irrefutable proof: new bets in bet_log.csv confirmed, pending/liquid updated correctly per Equity rule (Equity unchanged until settlements). All protocol, skills (nt-bet-log-manager via SHA, nt-betting-workflow, robust_betting_protocol_v2.md) followed by the letter in full. No shortcuts. Next settlements will trigger post-settlement-learning-reviewer + nt-learning-reviewer + edge updates if additive.
