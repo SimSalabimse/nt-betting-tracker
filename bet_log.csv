@@ -19,7 +19,7 @@ Date,Match,Selection,Decimal_Odds,Stake_NOK,Result,P_L_NOK
 2026-07-01,"Belgium vs Senegal (FIFA WC 2026 R32) Extra Time","Extra Time Draw (Uavgjort)",1.95,15,Loss,-15
 2026-07-01,"Belgium vs Senegal (FIFA WC 2026 R32) Extra Time","Extra Time 0-0 Correct Score",2.35,10,Loss,-10
 2026-07-01,"Belgium vs Senegal (FIFA WC 2026 R32) Extra Time","Extra Time Under 0.5 Goals",2.35,10,Loss,-10
-2026-07-02,"BMW International Open (DP World Tour) Golf","Joaquin Niemann to win",7.80,12,Pending,
+2026-07-02,"BMW International Open (DP World Tour) Golf","Joaquin Niemann to win",7.80,12,Loss,-12
 2026-07-02,"Arthur Fery vs Otto Virtanen (Wimbledon)","Fery to win",2.20,10,Win,12.00
 2026-07-02,"Betboom Team vs Big (XSE Pro League CS2)","Betboom Team to win",1.40,10,Win,4.00
 2026-07-02,"Lyn vs Åsane (Norway 1. Division)","Åsane DNB (Uavgjort tilbakebetales)",2.45,10,Loss,-10.00
@@ -99,9 +99,9 @@ Date,Match,Selection,Decimal_Odds,Stake_NOK,Result,P_L_NOK
 2026-07-05,"Faze Clan vs Eyeballers (CS2)","Faze Clan -1.5 (maps)",2.10,10,Pending,
 2026-07-05,"North Carolina Courage vs Seattle Reign FC (NWSL)","Over 2.5 Goals",1.72,12,Win,8.64
 2026-07-05,"San Diego Wave FC vs Gotham FC (NWSL)","Over 2.5 Goals",2.05,10,Loss,-10
-2026-07-05,"FC Seoul vs Incheon United FC (K League 1)","Over 2.5 Goals",1.95,12,Pending,
-2026-07-05,"Gimcheon Sangmu FC vs Jeju SK FC (K League 1)","Over 2.5 Goals",1.95,10,Pending,
-2026-07-05,"IFK Göteborg vs AIK","Over 2.5 Goals",1.67,15,Pending,
+2026-07-05,"FC Seoul vs Incheon United FC (K League 1)","Over 2.5 Goals",1.95,12,Loss,-12
+2026-07-05,"Gimcheon Sangmu FC vs Jeju SK FC (K League 1)","Over 2.5 Goals",1.95,10,Loss,-10
+2026-07-05,"IFK Göteborg vs AIK","Over 2.5 Goals",1.67,15,Win,10.05
 2026-07-05,"Odd vs Haugesund","Haugesund DNB (Uavgjort tilbakebetales)",1.95,12,Pending,
 2026-07-05,"Elfsborg vs Hammarby","Over 2.5 Goals",1.67,15,Pending,
 2026-07-05,"Kalmar vs Örgryte IS","Over 2.5 Goals",1.52,12,Pending,
