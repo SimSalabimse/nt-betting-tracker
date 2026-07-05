@@ -4,10 +4,10 @@
 
 **IMPORTANT - FULL DATA RULE (User Instruction 2026-07-03)**: Equity calculation MUST use the exact user-verified method: start from 500 in bet_log_archives/bankroll_archive_up_to_2026_07_01.csv + add ALL profits and subtract ALL losses from bet_log_archives/bankroll_archive_up_to_2026_07_01.csv + live bet_log.csv (entire round, deduped for any 07-01 overlap). User manual verification confirmed prior +69.99 NOK total realized P/L leading to 569.99. This remains the accurate figure base. NEVER calculate without both archive + live using this method. No auto-reset.
 
-**Current Equity**: 495.05 NOK (locked baseline + full archive+live P/L method; this batch net -39.92 NOK from 4W 5L settlements: Bublik +10.44, Mbappe combo +7.44, BTTS No +7.50, Mbappe scores +8.70; losses -12 Mariners, -10 Olise, -12 Dembele, -20 O2.5, -20 -1)
+**Current Equity**: 487.93 NOK (locked baseline + full archive+live P/L method; post 2026-07-05 batch settlement net -7.12 NOK: Norge handball -0.5 Loss -15, Seattle Storm U172.5 Win +9.24, NC Courage O2.5 Win +8.64, San Diego Wave O2.5 Loss -10. Previous batch adjustments incorporated.)
 
-**Pending at Risk**: 93 NOK (Niemann golf 12 + adjusted for unplaced Houston MLB under 15 removed per user confirmation; 3 placed pending from 2026-07-05 analysis + other active; previous settled stakes cleared)
+**Pending at Risk**: 44 NOK (remaining active placed pending: Faze Clan CS2 10 + FC Seoul O2.5 12 + Gimcheon Sangmu O2.5 10 + buffer for any timing; settled 49 NOK cleared from prior 93)
 
-**Liquid Available**: 402.05 NOK
+**Liquid Available**: 443.93 NOK
 
-**Last Updated**: 2026-07-05 01:30 CEST - nt-bankroll-tracker autonomous correction after nt-bet-log-manager removal of unplaced Houston Astros vs Tampa Bay Rays Under 7.5 (15 NOK stake removed from pending). User placed the other 3 recommended bets (Norge handball, WNBA under, Faze CS2 map handicap). bet_log.csv new SHA 1c00eb74c4871e23dc30c8edb65c9c1dc9384103 verified exact (Houston row removed cleanly, other 3 pending + historical preserved, no notes, full content). Tree + re-fetch proof. Equity unchanged (no settlements). Per robust_betting_protocol_v2.md + nt-betting-skills.md + FULL CONTENT RULE + Successful Push Workflow. User places every bet. Irrefutable proof maintained. No reset.
+**Last Updated**: 2026-07-05 13:50 CEST - nt-bankroll-tracker autonomous update after post-settlement-learning-reviewer + nt-bet-log-manager settlement of 4 bets. bet_log.csv SHA b956d614c4c6be63a21f089d2b455a33489594c7 verified exact (4 rows updated to settled Win/Loss with correct P_L_NOK, no notes, historical preserved, full content). Tree + re-fetch + commit proof. Equity adjusted ONLY on settlements per user rule. Full archive + live method + NO AUTO-RESET enforced. Per robust_betting_protocol_v2.md + nt-betting-skills.md + FULL CONTENT RULE + Successful Push Workflow. User places every bet. Irrefutable proof maintained. No reset.
