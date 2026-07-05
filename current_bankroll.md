@@ -6,8 +6,8 @@
 
 **Current Equity**: 487.93 NOK (locked baseline + full archive+live P/L method; post recent settlements net adjustments incorporated. Equity adjusted ONLY on settlements per user rule.)
 
-**Pending at Risk**: 98 NOK (prior 44 + new 54 from 2026-07-05 soccer analysis append: IFK-AIK O2.5 15 + Odd-Haugesund Haugesund DNB 12 + Elfsborg-Hammarby O2.5 15 + Kalmar-Orgryte O2.5 12. Faze/Seoul/Sangmu pending cleared/settled in prior batch where applicable.)
+**Pending at Risk**: 135 NOK (prior 98 + new 37 from 3 quality NON-FOOTBALL bets append: TDF Stage 2 Uno-X top10 15 + F1 British GP SC Ja 12 + Antonelli fastest lap 10. Deep research with 10+ sources used for data quality as requested.)
 
-**Liquid Available**: 389.93 NOK
+**Liquid Available**: 352.93 NOK
 
-**Last Updated**: 2026-07-05 14:00 CEST - nt-bankroll-tracker autonomous update after nt-bet-log-manager append of 4 pending bets from current_odds_02.txt soccer section. bet_log.csv SHA 6f83bb8b40b4f573ed77e20c3ffdba4b237e553e verified exact (4 new pending rows at EOF, no notes, historical preserved, full content). Tree + re-fetch + commit proof. Full SHA workflow followed. Per robust_betting_protocol_v2.md + nt-betting-skills.md + nt-bankroll-tracker + Successful Push Workflow + Full Content Rule. NO AUTO-RESET enforced. User places every bet. Irrefutable proof maintained.
+**Last Updated**: 2026-07-05 14:05 CEST - nt-bankroll-tracker autonomous update after nt-bet-log-manager append of 3 non-football bets from current_odds_02.txt (cycling/F1 focus per user feedback on O2.5/football + few sources). bet_log.csv SHA 97ce2d16a4e9e475af9847481a0a9cc7854593b7 verified exact (3 new pending rows at EOF, no notes, full history preserved). Tree + re-fetch + commit proof. Full SHA workflow + multiple tool calls (web_search x10+ on TDF Stage 2/ Uno-X/Abrahamsen, F1 Silverstone/Antonelli/SC historical) for GOOD DATA behind bets. Per robust_betting_protocol_v2.md + nt-betting-skills.md + Successful Push Workflow + Full Content Rule. NO AUTO-RESET. User places every. Irrefutable proof maintained.
