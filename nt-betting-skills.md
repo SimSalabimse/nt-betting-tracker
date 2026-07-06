@@ -1,37 +1,54 @@
-# NT Betting Skills (Updated 2026-07-05 - STRICT Research Depth Enforcement)
+# NT Betting Skills (Updated 2026-07-06 - Mandatory Edges Update + Stronger Enforcement)
 
-**IMPORTANT: This file was re-pushed on 2026-07-05 with stronger rules after user feedback that previous updates were not visible enough.**
+**IMPORTANT: This version strengthens the requirement to always update sport_edges_and_filters.md when patterns are found.**
 
-## Core Principle (Updated 2026-07-05)
+## Core Principle (Updated 2026-07-06)
 
-**Research Depth Rule (STRICT - Non-Negotiable)**:
-The system previously did too little research (often only 2-5 sources). This caused repeated poor decisions, especially on O2.5 bets.
+**Research Depth Rule (STRICT)**: Minimum 8-12 sources per shortlisted bet (12-15+ for high-variance). Shallow research is a protocol violation.
 
-**Mandatory Minimum Research Standards**:
-- Every shortlisted bet requires **minimum 8-12 distinct high-quality tool calls/sources**.
-- High-variance bets (O2.5, player props in KO, ET lines, lower league totals): **minimum 12-15 sources**.
-- Must include: FBref/Transfermarkt/Understat, FotMob lineups + weather, motivation reports, H2H, recent form, set pieces, and per-line targeted searches.
-- Shallow research is now a violation of this protocol. No exceptions.
+**Mandatory Edges Update Rule (NEW - 2026-07-06)**:
+- During every post-settlement review, if clear patterns or variance sources are identified, **updating sport_edges_and_filters.md additively is mandatory**, not optional.
+- The post-settlement-learning-reviewer must either make the additive update or explicitly document why no update was needed.
+- This fixes the previous issue where edges were only updated when "forced".
 
-## nt-betting-workflow (Main Orchestrator Skill)
+## nt-betting-workflow
 
-- Must enforce the Research Depth Rule strictly.
-- No bet may be recommended without meeting the minimum source requirements above.
-- Over/Under in knockout games is heavily deprioritized unless exceptional multi-source evidence exists.
+- Enforces Research Depth Rule strictly.
+- Over/Under in KO heavily deprioritized.
+- All recommendations must meet minimum source requirements.
 
-## nt-bet-log-manager
+## post-settlement-learning-reviewer (Updated 2026-07-06 - Stronger)
 
-Handles bet_log.csv safely. No Notes column. Learning goes to round files.
+**Mandatory Steps**:
+1. Perform real tool searches on why bets won/lost.
+2. Identify clear patterns and variance sources.
+3. Record structured learning in the round file.
+4. **If meaningful patterns exist**: Make an additive update to sport_edges_and_filters.md (this is now mandatory).
+5. Update nt-learning-reviewer tracker.
+6. Verify all file updates (bet_log, bankroll, round file, edges if applicable).
 
-## post-settlement-learning-reviewer (Updated 2026-07-05)
+Special attention to recurring weak areas (O2.5 in KO/lower leagues, high-var handicaps, player props in knockout).
 
-- Must perform real tool searches on losses.
-- Pay special attention to recurring weak areas (O2.5 variance).
-- Record learning in round file.
-- Update sport_edges_and_filters.md additively when patterns appear.
+## nt-learning-reviewer
 
-## How the Skills Work Together
+Maintains tracker and proposes promotions/demotions based on data.
 
-All steps must follow the new Research Depth Rule and Over/Under Caution Rule.
+## How the Skills Work Together (Updated 2026-07-06)
 
-**Over/Under Caution**: O2.5 in KO/high-variance profiles is heavily deprioritized. Default to DNB, BTTS No, or primary star props instead.
+**Settlement Flow (Mandatory Order)**:
+1. Analyze results + tool proof.
+2. Identify patterns/variance.
+3. Record in round file.
+4. **Update sport_edges_and_filters.md additively** (mandatory if patterns found).
+5. Update bet_log.csv (no notes).
+6. Update current_bankroll.md.
+7. Final summary only after all updates verified.
+
+**Odds File Analysis Flow**:
+1. Stage 1 rough scan + filtering.
+2. Stage 2 deep research (minimum source requirements enforced).
+3. Multi-perspective simulation.
+4. betting-value-calculator + staking.
+5. **bet_log.csv and current_bankroll.md updates only at the very end** (after all research and decisions).
+
+**Over/Under Caution**: O2.5 in KO/high-variance profiles heavily deprioritized. Default to DNB/BTTS No/primary star props.
