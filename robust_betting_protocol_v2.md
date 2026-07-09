@@ -1,6 +1,13 @@
-# Robust Betting Agent Protocol v2 (Updated 2026-07-06 - Full Enforcement + Mandatory Edges Update + Step-by-Step Workflows)
+# Robust Betting Agent Protocol v2 (Updated 2026-07-09 - Norsk Tipping Combo Rules + Phase 1B Active)
 
-**IMPORTANT: This file was updated on 2026-07-06 to include the Mandatory Edges Update Rule and explicit step-by-step workflows.**
+**IMPORTANT: Phase 1B is now the active staking phase (trigger met: >40 settled bets with stable/positive results).**
+
+**Norsk Tipping Combo Rules (Strictly Enforced)**:
+- Combos/doubles are only allowed in Phase 1B and later.
+- **Maximum 1 double per round** in Phase 1B (only on strong, multi-perspective researched cases).
+- **Critical Rule**: No two legs from the **same match** in any combo/double. This is a hard Norsk Tipping restriction.
+- All combos must be from **different matches**.
+- Before recommending any double, explicitly check and confirm the legs are from separate matches.
 
 **2026-07-01 MAJOR CLEANUP & RELIABILITY FIXES**
 
@@ -18,7 +25,7 @@
 - Perform real tool searches on why bets won or lost.
 - Identify clear patterns and variance sources.
 - Record learning in the round file.
-- **Mandatory**: If meaningful patterns exist, make an **additive update to sport_edges_and_filters.md** (this is no longer optional).
+- **Mandatory**: If meaningful patterns exist, make an **additive update to sport_edges_and_filters.md**.
 - Update bet_log.csv (no notes) and current_bankroll.md.
 - Verify all updates before giving any summary.
 
@@ -26,16 +33,14 @@
 
 **Research Depth Rule (STRICT - 2026-07-05)**:
 - Minimum 8-12 sources per shortlisted bet.
-- High-variance bets (O2.5, KO props, lower league totals, handicaps): Minimum 12-15 sources.
+- High-variance bets: Minimum 12-15 sources.
 - Shallow research is a violation of this protocol.
 
 **Over/Under Goals Caution Rule (STRICT - 2026-07-05)**:
 - O2.5 in knockout/high-stakes games is heavily deprioritized.
-- Only allowed with very strong multi-source evidence.
-- Default in KO games: DNB, BTTS No, or primary star props.
 
 **Mandatory Edges Update Rule (NEW - 2026-07-06)**:
-Updating sport_edges_and_filters.md additively is now **mandatory** during post-settlement when patterns are identified. The post-settlement-learning-reviewer must either perform the update or explicitly document why it was not needed.
+Updating sport_edges_and_filters.md additively is **mandatory** during post-settlement when patterns are identified.
 
 **Step-by-Step Workflows (NEW - 2026-07-06)**:
 
@@ -55,6 +60,6 @@ Updating sport_edges_and_filters.md additively is now **mandatory** during post-
 6. Update current_bankroll.md
 7. Final summary only after all updates verified
 
-**Long-Term Staking Plan**: See `long_term_staking_plan.md`.
+**Long-Term Staking Plan**: See `long_term_staking_plan.md` (Phase 1B is currently active).
 
-**Purpose**: Master protocol. All future work must follow this by the letter. Shallow research and skipping edges updates are now protocol violations.
+**Purpose**: Master protocol. All future work must follow this by the letter, including strict Norsk Tipping combo compliance (no same-match legs).
