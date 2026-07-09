@@ -1,54 +1,43 @@
-# NT Betting Skills (Updated 2026-07-06 - Mandatory Edges Update + Stronger Enforcement)
+# NT Betting Skills (Updated 2026-07-09 - Phase 1B Active + Strict Norsk Tipping Combo Rules)
 
-**IMPORTANT: This version strengthens the requirement to always update sport_edges_and_filters.md when patterns are found.**
+**Phase 1B is now the active staking phase** (trigger met: >40 settled bets with stable/positive results).
 
-## Core Principle (Updated 2026-07-06)
+**Norsk Tipping Combo Rules (Strictly Enforced)**:
+- Max 1 double per round in Phase 1B.
+- **No two legs from the same match** in any combo/double. This is a hard Norsk Tipping rule.
+- Before recommending any double, the system must explicitly verify and confirm the legs are from different matches.
 
-**Research Depth Rule (STRICT)**: Minimum 8-12 sources per shortlisted bet (12-15+ for high-variance). Shallow research is a protocol violation.
+## Core Principle
 
-**Mandatory Edges Update Rule (NEW - 2026-07-06)**:
-- During every post-settlement review, if clear patterns or variance sources are identified, **updating sport_edges_and_filters.md additively is mandatory**, not optional.
-- The post-settlement-learning-reviewer must either make the additive update or explicitly document why no update was needed.
-- This fixes the previous issue where edges were only updated when "forced".
+**Research Depth Rule (STRICT)**: Minimum 8-12 sources per shortlisted bet (12-15+ for high-variance). Shallow research is a violation.
+
+**Mandatory Edges Update Rule**: Updating `sport_edges_and_filters.md` is mandatory during post-settlement when patterns are found.
 
 ## nt-betting-workflow
 
-- Enforces Research Depth Rule strictly.
-- Over/Under in KO heavily deprioritized.
-- All recommendations must meet minimum source requirements.
+- Enforce Research Depth Rule strictly.
+- Enforce Norsk Tipping combo rules (no same-match legs).
+- Phase 1B rules: Max 1 double on strong cases only, 12-20 NOK stakes.
+- bet_log.csv and current_bankroll.md updates happen **only at the very end**.
 
-## post-settlement-learning-reviewer (Updated 2026-07-06 - Stronger)
+## post-settlement-learning-reviewer
 
-**Mandatory Steps**:
-1. Perform real tool searches on why bets won/lost.
-2. Identify clear patterns and variance sources.
-3. Record structured learning in the round file.
-4. **If meaningful patterns exist**: Make an additive update to sport_edges_and_filters.md (this is now mandatory).
-5. Update nt-learning-reviewer tracker.
-6. Verify all file updates (bet_log, bankroll, round file, edges if applicable).
+- Follow mandatory settlement workflow.
+- Make additive update to `sport_edges_and_filters.md` when patterns exist.
 
-Special attention to recurring weak areas (O2.5 in KO/lower leagues, high-var handicaps, player props in knockout).
+## How the Skills Work Together
 
-## nt-learning-reviewer
-
-Maintains tracker and proposes promotions/demotions based on data.
-
-## How the Skills Work Together (Updated 2026-07-06)
+**Odds File Analysis Flow (Mandatory Order)**:
+1. Stage 1 + Stage 2 research
+2. Multi-perspective simulation
+3. Calculate EV + staking (respect Phase 1B limits)
+4. Check combo legs are from different matches (if recommending double)
+5. bet_log + bankroll updates **last**
 
 **Settlement Flow (Mandatory Order)**:
-1. Analyze results + tool proof.
-2. Identify patterns/variance.
-3. Record in round file.
-4. **Update sport_edges_and_filters.md additively** (mandatory if patterns found).
-5. Update bet_log.csv (no notes).
-6. Update current_bankroll.md.
-7. Final summary only after all updates verified.
-
-**Odds File Analysis Flow**:
-1. Stage 1 rough scan + filtering.
-2. Stage 2 deep research (minimum source requirements enforced).
-3. Multi-perspective simulation.
-4. betting-value-calculator + staking.
-5. **bet_log.csv and current_bankroll.md updates only at the very end** (after all research and decisions).
-
-**Over/Under Caution**: O2.5 in KO/high-variance profiles heavily deprioritized. Default to DNB/BTTS No/primary star props.
+1. Analyze results
+2. Identify patterns
+3. Record in round file
+4. Update sport_edges_and_filters.md (mandatory if patterns found)
+5. Update bet_log.csv + current_bankroll.md
+6. Final summary only after verification
