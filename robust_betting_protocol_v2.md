@@ -1,65 +1,45 @@
-# Robust Betting Agent Protocol v2 (Updated 2026-07-09 - Norsk Tipping Combo Rules + Phase 1B Active)
+# Robust Betting Agent Protocol v2 (Updated 2026-07-09 - Phase 1B Volume + No Placeholder Output)
 
-**IMPORTANT: Phase 1B is now the active staking phase (trigger met: >40 settled bets with stable/positive results).**
+**IMPORTANT: Phase 1B is now the active staking phase** (trigger met: >40 settled bets with stable/positive results).
 
 **Norsk Tipping Combo Rules (Strictly Enforced)**:
-- Combos/doubles are only allowed in Phase 1B and later.
-- **Maximum 1 double per round** in Phase 1B (only on strong, multi-perspective researched cases).
-- **Critical Rule**: No two legs from the **same match** in any combo/double. This is a hard Norsk Tipping restriction.
-- All combos must be from **different matches**.
-- Before recommending any double, explicitly check and confirm the legs are from separate matches.
+- Max 1 double per round in Phase 1B (only on strong, researched cases).
+- No two legs from the same match in any combo/double.
 
-**2026-07-01 MAJOR CLEANUP & RELIABILITY FIXES**
+**Analyze Correctly Going Forward (Standing Rule - Strengthened 2026-07-09)**:
+- Strong filtering must be followed by proper targeted deep research on the shortlist.
+- **Target volume in Phase 1B**: Aim for **3–6 quality bets** per mixed file (not the bare minimum). Max 1 double allowed.
+- Overly conservative outputs (e.g. only 1 double or 1-2 bets from a large file) are **not acceptable**.
+- Proper tool proof + multi-perspective simulation required on all recommended bets.
+- Never output placeholder, garbage, or example data in tables. All numbers must be real calculations from the current odds file.
 
-**Critical New Rules (Non-Negotiable)**:
+**Research Depth Rule (STRICT)**:
+- Minimum 8-12 sources per shortlisted bet (12-15+ for high-variance).
+- Shallow research is a violation.
 
-1. **GitHub Update Reliability (Successful Push Workflow Mandatory)**
-2. **Bankroll Correctness** (full archive + live method, no auto-reset)
-3. **Skills First** — Follow nt-betting-skills.md by the letter
-4. **FULL CONTENT RULE** — Always fetch full current content + SHA before updating
-
-**Notes Column DEPRECATED (2026-07-03)**: Removed from bet_log.csv. All learning goes to round files.
-
-**Post-Settlement Learning Requirements (Updated 2026-07-06)**:
-- Must trigger full post-settlement-learning-reviewer + nt-learning-reviewer.
-- Perform real tool searches on why bets won or lost.
-- Identify clear patterns and variance sources.
-- Record learning in the round file.
-- **Mandatory**: If meaningful patterns exist, make an **additive update to sport_edges_and_filters.md**.
-- Update bet_log.csv (no notes) and current_bankroll.md.
-- Verify all updates before giving any summary.
-
-**Analyze Correctly Going Forward (Standing Rule)**: Strong filtering + targeted deep research. Balanced volume. Proper tool proof required.
-
-**Research Depth Rule (STRICT - 2026-07-05)**:
-- Minimum 8-12 sources per shortlisted bet.
-- High-variance bets: Minimum 12-15 sources.
-- Shallow research is a violation of this protocol.
-
-**Over/Under Goals Caution Rule (STRICT - 2026-07-05)**:
+**Over/Under Goals Caution Rule (STRICT)**:
 - O2.5 in knockout/high-stakes games is heavily deprioritized.
 
-**Mandatory Edges Update Rule (NEW - 2026-07-06)**:
-Updating sport_edges_and_filters.md additively is **mandatory** during post-settlement when patterns are identified.
+**Mandatory Edges Update Rule**:
+- Updating sport_edges_and_filters.md is mandatory during post-settlement when patterns are found.
 
-**Step-by-Step Workflows (NEW - 2026-07-06)**:
-
+**Step-by-Step Workflows**:
 **For Odds File Analysis (Mandatory Order)**:
 1. Stage 1 rough scan + filtering
 2. Stage 2 deep research (enforce minimum sources)
 3. Multi-perspective simulation
-4. betting-value-calculator + staking
+4. betting-value-calculator + staking (respect Phase 1B limits)
 5. bet_log.csv + current_bankroll.md updates **only at the very end**
 
 **For Settlements (Mandatory Order)**:
 1. Analyze results with tool proof
 2. Identify patterns + variance sources
 3. Record in round file
-4. **Mandatory** additive update to sport_edges_and_filters.md (if patterns found)
+4. **Mandatory** additive update to sport_edges_and_filters.md
 5. Update bet_log.csv (no notes)
 6. Update current_bankroll.md
 7. Final summary only after all updates verified
 
 **Long-Term Staking Plan**: See `long_term_staking_plan.md` (Phase 1B is currently active).
 
-**Purpose**: Master protocol. All future work must follow this by the letter, including strict Norsk Tipping combo compliance (no same-match legs).
+**Purpose**: Master protocol. All future work must follow this by the letter. Overly conservative betting and placeholder output are now violations.
