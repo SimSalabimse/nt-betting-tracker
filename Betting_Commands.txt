@@ -1,40 +1,34 @@
-# Betting Commands (Updated 2026-07-06 - Clear Step-by-Step Workflows + Mandatory Edges Update)
+# Betting Commands (Updated 2026-07-09 - Phase 1B Active + Norsk Tipping Combo Rules)
 
 ## Core Rules (Always Active)
-- Follow `robust_betting_protocol_v2.md`, `nt-betting-skills.md`, and `long_term_staking_plan.md` by the letter in full.
-- Research Depth Rule is mandatory (min 8-12 sources, 12-15+ for high-variance bets). Shallow research is a violation.
-- Update `sport_edges_and_filters.md` **additively and mandatorily** when patterns are found during post-settlement (no longer optional).
-- All GitHub updates follow Successful Push Workflow with full verification.
-- bet_log.csv and current_bankroll.md updates happen **at the very end** of odds analysis (after all research and decisions).
+- **Phase 1B is now active** (max 1 double per round on strong cases only, 12-20 NOK stakes).
+- **Norsk Tipping Rule**: No two legs from the same match in any combo/double. This must be explicitly checked before recommending any double.
+- Research Depth Rule is mandatory.
+- Update `sport_edges_and_filters.md` mandatorily when patterns are found.
+- bet_log.csv and current_bankroll.md updates happen **at the very end** of odds analysis.
 
-## Step-by-Step Workflow for Analyzing Odds Files (Mandatory Order)
+## Step-by-Step Workflow for Analyzing Odds Files
+1. Stage 1 rough scan + filtering
+2. Stage 2 deep research (Research Depth Rule enforced)
+3. Multi-perspective simulation
+4. betting-value-calculator + staking (respect Phase 1B limits)
+5. If recommending a double: explicitly verify legs are from **different matches**
+6. bet_log.csv + current_bankroll.md updates **only at the very end**
 
-1. **Stage 1**: Rough EV scan + strong filtering across all markets.
-2. **Stage 2**: Targeted deep research on shortlist (minimum source requirements enforced).
-3. Multi-perspective simulation (Value/Risk/Data Hunter/Contrarian).
-4. betting-value-calculator + explicit R/R + tiered staking.
-5. Diversification and min 10 NOK check.
-6. **Only at the very end**: Update bet_log.csv (pending bets) and current_bankroll.md.
-7. Verify all updates with tree + re-read before any user-facing output.
+## Step-by-Step Workflow for Settlements
+1. Analyze results with tool proof
+2. Identify patterns + variance sources
+3. Record in round file
+4. **Mandatory** additive update to `sport_edges_and_filters.md`
+5. Update bet_log.csv (no notes)
+6. Update current_bankroll.md
+7. Final summary only after all updates verified
 
-## Step-by-Step Workflow for Settlements (Mandatory Order)
+## Best Primary Command for Odds File
+"Run full analysis on the attached/current odds file. Use adaptive research mode with Research Depth Rule enforced. Phase 1B is active (max 1 double, 12-20 NOK). If recommending a double, explicitly confirm legs are from different matches. Follow mandatory workflow (research first, updates last). Output only in clean standardized format with bets table."
 
-1. Analyze results with tool proof (actual scores, conditions, explanations).
-2. Identify what worked vs failed (especially losses) + clear variance sources.
-3. Record structured deep dive in the round file.
-4. **Mandatory**: If meaningful patterns exist, make additive update to `sport_edges_and_filters.md`.
-5. Update bet_log.csv (Result + P_L_NOK only, no notes).
-6. Update current_bankroll.md correctly (full archive + live method).
-7. Update nt-learning-reviewer tracker if applicable.
-8. Final clean summary only **after** all file updates are verified.
+## Best Command for Settlements
+"Here are the settlement results: [paste]. Trigger full post-settlement-learning-reviewer. Follow the mandatory settlement workflow. Make additive update to sport_edges_and_filters.md if patterns found. Show proof of all updates before summary."
 
-## Best Primary Command
-"Run full analysis on the attached/current odds file using adaptive research mode. Enforce Research Depth Rule. Output only in clean standardized format with bets table. Execute nt-bet-log-manager and nt-bankroll-tracker **last**."
-
-## After Settlements Command
-"Here are the settlement results: [paste]. Trigger full post-settlement-learning-reviewer. Follow the mandatory settlement workflow above (analyze results first, update edges if patterns found, then bet_log + bankroll last). Show proof of all updates before summary."
-
-## Stats Command
+## Stats / Performance Command
 "Show current performance and bankroll status."
-
-**Note**: Facebook and similar low-quality social sources are **not** to be used for core data. Prioritize FBref, Understat, WhoScored, Transfermarkt, HLTV, official archives, etc. as per nt_sports_data_sources.md.
