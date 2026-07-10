@@ -1,43 +1,36 @@
-# NT Betting Skills (Updated 2026-07-09 - Phase 1B Active + Strict Norsk Tipping Combo Rules)
+# NT Betting Skills (Updated 2026-07-10 - Improved Combo Logic)
 
-**Phase 1B is now the active staking phase** (trigger met: >40 settled bets with stable/positive results).
+**Phase 1B is now the active staking phase**.
 
-**Norsk Tipping Combo Rules (Strictly Enforced)**:
-- Max 1 double per round in Phase 1B.
-- **No two legs from the same match** in any combo/double. This is a hard Norsk Tipping rule.
-- Before recommending any double, the system must explicitly verify and confirm the legs are from different matches.
+**Norsk Tipping Combo Rules**:
+- Max 1 double per round.
+- No same-match legs.
+- Only recommend a combo when there are **two solid uncorrelated bets** with clear positive EV on both legs and the double adds meaningful value.
 
 ## Core Principle
 
-**Research Depth Rule (STRICT)**: Minimum 8-12 sources per shortlisted bet (12-15+ for high-variance). Shallow research is a violation.
+**Research Depth Rule (STRICT)**: 8-12+ sources per bet.
 
-**Mandatory Edges Update Rule**: Updating `sport_edges_and_filters.md` is mandatory during post-settlement when patterns are found.
+**nt-betting-workflow**:
+- Enforce Research Depth Rule.
+- Look for combo opportunities after finding strong singles (only if quality pair exists).
+- Phase 1B target: 3-6 quality bets.
+- bet_log + bankroll updates **only at the very end**.
+- Never output broken or placeholder tables.
 
-## nt-betting-workflow
+**post-settlement-learning-reviewer**:
+- Mandatory edges update when patterns found.
 
-- Enforce Research Depth Rule strictly.
-- Enforce Norsk Tipping combo rules (no same-match legs).
-- Phase 1B rules: Max 1 double on strong cases only, 12-20 NOK stakes.
-- bet_log.csv and current_bankroll.md updates happen **only at the very end**.
-
-## post-settlement-learning-reviewer
-
-- Follow mandatory settlement workflow.
-- Make additive update to `sport_edges_and_filters.md` when patterns exist.
-
-## How the Skills Work Together
-
-**Odds File Analysis Flow (Mandatory Order)**:
-1. Stage 1 + Stage 2 research
+**Odds File Analysis Flow**:
+1. Stage 1 + Stage 2 deep research
 2. Multi-perspective simulation
-3. Calculate EV + staking (respect Phase 1B limits)
-4. Check combo legs are from different matches (if recommending double)
-5. bet_log + bankroll updates **last**
+3. Calculate EV + staking
+4. Check for strong combo (different matches + both legs solid)
+5. bet_log + bankroll updates last
 
-**Settlement Flow (Mandatory Order)**:
+**Settlement Flow**:
 1. Analyze results
-2. Identify patterns
-3. Record in round file
-4. Update sport_edges_and_filters.md (mandatory if patterns found)
-5. Update bet_log.csv + current_bankroll.md
-6. Final summary only after verification
+2. Record patterns in round file
+3. Update sport_edges_and_filters.md (mandatory)
+4. Update bet_log + bankroll
+5. Final summary after verification
