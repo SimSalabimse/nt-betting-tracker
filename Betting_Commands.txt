@@ -1,34 +1,26 @@
-# Betting Commands (Updated 2026-07-09 - Phase 1B Target Volume + No Placeholder Output)
+# Betting Commands (Updated 2026-07-10 - Improved Combo Logic + Consistent Volume)
 
 ## Core Rules (Always Active)
-- **Phase 1B is active**: Aim for **3–6 quality bets** per mixed file (not the bare minimum). Max 1 double allowed on strong cases only.
-- **Norsk Tipping Rule**: No two legs from the same match in any combo/double. Must be explicitly verified.
-- Research Depth Rule is mandatory.
-- Never output placeholder, garbage, or example data in tables — all numbers must be real.
-- bet_log.csv and current_bankroll.md updates happen **at the very end**.
+- **Phase 1B is active**: Aim for **3–6 quality bets** per mixed file.
+- Max 1 double only when there are two solid uncorrelated bets with clear positive EV on both legs.
+- No same-match legs in any combo.
+- Research Depth Rule mandatory.
+- Clean tables only (no placeholders).
+- bet_log + bankroll updates **at the very end**.
 
 ## Step-by-Step Workflow for Analyzing Odds Files
 1. Stage 1 rough scan + filtering
-2. Stage 2 deep research (Research Depth Rule enforced)
+2. Stage 2 deep research
 3. Multi-perspective simulation
-4. betting-value-calculator + staking (respect Phase 1B volume target)
-5. If recommending a double: confirm legs from different matches
+4. Calculate EV + staking
+5. Check for strong combo opportunity (different matches + both legs solid)
 6. bet_log.csv + current_bankroll.md updates **only at the very end**
 
-## Step-by-Step Workflow for Settlements
-1. Analyze results with tool proof
-2. Identify patterns + variance sources
-3. Record in round file
-4. **Mandatory** additive update to `sport_edges_and_filters.md`
-5. Update bet_log.csv (no notes)
-6. Update current_bankroll.md
-7. Final summary only after all updates verified
-
 ## Best Primary Command for Odds File
-"Run full analysis on the attached/current odds file. Use adaptive research mode with Research Depth Rule enforced. Phase 1B is active — aim for 3-6 quality bets (max 1 double on strong cases). If recommending a double, explicitly confirm legs are from different matches. Follow mandatory workflow (research first, updates last). Never use placeholder data in tables. Output only in clean standardized format with real bets table."
+"Run full analysis on the attached/current odds file. Use adaptive research mode with Research Depth Rule enforced. Phase 1B is active — aim for 3-6 quality bets. Only recommend a double if there are two solid uncorrelated bets from different matches with clear positive EV on both legs. Follow mandatory workflow (research first, updates last). Output only in clean standardized format with real bets table."
 
 ## Best Command for Settlements
-"Here are the settlement results: [paste]. Trigger full post-settlement-learning-reviewer. Follow the mandatory settlement workflow. Make additive update to sport_edges_and_filters.md if patterns found. Show proof of all updates before summary."
+"Here are the settlement results: [paste]. Trigger full post-settlement-learning-reviewer. Follow the mandatory settlement workflow. Update sport_edges_and_filters.md if patterns found. Show proof of all updates before summary."
 
 ## Stats Command
 "Show current performance and bankroll status."
