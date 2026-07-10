@@ -142,6 +142,6 @@ Date,Match,Selection,Decimal_Odds,Stake_NOK,Result,P_L_NOK
 2026-07-09,"Nomme Kalju vs Opponent (Meistriliiga)","Over 2.5 Goals",1.80,12,Loss,-12
 2026-07-09,"Dobbel: Criciuma EC SC + Tadej Pogacar not to win (TDF)","Criciuma Win & Pogacar Not Win Double",2.50,20,Loss,-20
 2026-07-09,"Criciuma EC SC vs Opponent (Brazil Serie)","Over 2.5 Goals",2.52,10,Win,15.20
-2026-07-10,"Tour de France 2026 Stage 7 (Hagetmau to Bordeaux)","Olav Kooij to win (strong recent form, stage 5 winner, high confidence, value at odds)",2.75,15,Pending,
-2026-07-10,"Tour de France 2026 Stage 7 (Hagetmau to Bordeaux)","Jasper Philipsen top 3 (best leadout, Bordeaux history, solid value)",1.65,12,Pending,
-2026-07-10,"Tour de France 2026 Stage 7 (Hagetmau to Bordeaux)","Biniam Girmay top 3 (reliable acceleration, momentum, positive EV)",2.50,10,Pending,
+2026-07-10,"Tour de France 2026 Stage 7 (Hagetmau to Bordeaux)","Olav Kooij to win (strong recent form, stage 5 winner, high confidence, value at odds)",2.75,15,Loss,-15
+2026-07-10,"Tour de France 2026 Stage 7 (Hagetmau to Bordeaux)","Jasper Philipsen top 3 (best leadout, Bordeaux history, solid value)",1.65,12,Loss,-12
+2026-07-10,"Tour de France 2026 Stage 7 (Hagetmau to Bordeaux)","Biniam Girmay top 3 (reliable acceleration, momentum, positive EV)",2.50,10,Win,15
