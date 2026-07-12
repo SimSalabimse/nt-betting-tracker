@@ -1,45 +1,112 @@
-# NT Betting Tracker
+# NT Betting Tracker v3
 
-This repository tracks our Norsk Tipping Oddsen betting system.
+Code-owned Norsk Tipping Oddsen system. You supply **odds** and **results**. The system owns stakes, phase, daily risk, portfolio construction, and bankroll math.
 
-## Purpose
-- Living playbook with all rules, sport edges, and decision logic
-- Versioned bet logs and post-mortems
-- Transparent tracking of bankroll, ROI, and lessons learned
-- **Moderate acceleration active**: 15-25 NOK flat stakes on high-conviction bets (allow 4-6 bets/round when good opportunities exist). Daily risk target ~60-100 NOK. Strict loss caps apply.
+## Your only jobs
 
-## Current Bankroll
-500 NOK (as of 2026-06-04)  [Note: See current_bankroll.md for latest ~393 NOK equity with pending]
+1. Set / accept starting bankroll baseline (locked in `config.yaml`: **500 NOK** era start 2026-06-28).
+2. Drop an odds file in `inbox/` → run recommend → place what is in `outbox/PLACE_THESE.md`.
+3. Drop results in `inbox/` → run settle.
 
-## Moderate Acceleration Rules (Active)
-**✅ Got it. Moderate acceleration confirmed.**
+## Commands
 
-Effective immediately:
-- **Flat 15-25 NOK** per high-conviction single (or system equivalent, always meeting the 10 NOK per leg/row minimum).
-- Allow **4-6 bets per round** when there are multiple good +EV opportunities (instead of max 3).
-- Daily portfolio risk target: **~60-100 NOK** max initially.
-- Strict daily loss caps + full review if hit still apply.
-- We stay in Phase 1 (Protect & Validate) but with this slightly faster ramp. Once bankroll hits ~1000 NOK and we have solid data (positive ROI over 20-40 bets), we accelerate further.
+```bash
+cd nt-betting-tracker
+python3 -m pip install -r requirements.txt
 
-The 3 bets you placed today at 10 NOK each were the transition round. From the next round onward we use the new 15-25 NOK range.
+python3 -m nt status          # equity, phase, daily cap
+python3 -m nt validate        # ledger integrity
+python3 -m nt refresh         # recompute state files
 
-## Quick Start
-1. Read `playbook.md` for full rules and strategy
-2. Check `robust_betting_protocol_v2.md` for the master robustness improvements (tool proof, risk management, clean templates, active learning, etc.)
-3. Check `rounds/` folder for daily recommendations and results
-4. Update after every settlement
+python3 -m nt recommend --odds inbox/my_odds.csv
+python3 -m nt recommend --odds inbox/my_odds.csv --dry-run   # no Pending rows
 
-## Structure (Clean Restart 2026-06-28)
-- Root: Active files only (bet_log.csv, current_bankroll.md, robust_betting_protocol_v2.md, README.md, nt-*.md files, Betting_Commands.txt, sport_edges_and_filters.md, meta_review_log.md)
-- `rounds/`: All historical and current round analysis/recommendation files (post-use move to rounds/archived/ for future to keep active scans fast)
-- `bet_log_archives/`: All historical bet_log archives + clean restart snapshots of current bet_log.csv and current_bankroll.md as of 2026-06-28 (full history preserved; main bet_log.csv reset to header-only for fresh start era)
-- `scripts/`: Supporting automation scripts
+python3 -m nt settle --results inbox/my_results.yaml
+```
 
-**Clean Restart 2026-06-28 Completed**: All stray round_ files moved to rounds/. All remaining root bet_log_archive_*.csv + backups moved to bet_log_archives/. Current bet_log.csv and current_bankroll.md fully archived as dated snapshots. bet_log.csv reset to clean header for new era. All key files updated (protocol, commands, README, data sources). Autonomous mode active. Root perfectly clean. Multiple Successful Push Workflow verifies passed.
+Templates: `inbox/odds_template.csv`, `inbox/results_template.yaml`.
 
-## Bankroll & Data Tracking Updates (2026-06-04 original + ongoing)
+## Bankroll (full era history)
 
-- Added `current_bankroll.md`: Detailed additive tracker...
-- Fixed formatting in `bet_log.csv`...
+```
+Equity = 500 + sum(settled P/L in data/bets.csv)
+```
 
-See `current_bankroll.md`, `bet_log.csv`, `playbook.md`, and the new `robust_betting_protocol_v2.md` for full details. All updates follow strict GitHub workflow and validation. The system is now significantly more robust with mandatory tool proof, standardized outputs, better risk controls, autonomous updates, and self-updating mechanisms. Last updated: 2026-06-28 (Full Clean Restart + Autonomous Enforcement).
+`data/bets.csv` is the **full current-era ledger**:
+
+- `source=era_archive` → rows from `bankroll_archive_up_to_2026_07_01.csv`
+- later rows → all bets after that archive  
+
+Pre-restart and other snapshots live under `history/archives/` (kept, not double-counted).
+
+## Daily risk cap (auto)
+
+```
+daily_cap = clamp(equity × phase.daily_risk_pct, phase.floor, phase.ceil)
+```
+
+Recomputed on every `status` / `recommend` / `settle`. It **changes when equity or phase changes**.
+
+At ~548 NOK equity in Phase **1B** this is about **66 NOK/day** (12% of equity, floor 55, ceil 80).
+
+Kill-switch: if today’s realized P/L ≤ −max(40, 8% of equity), no new bets.
+
+## Phase (auto)
+
+Hybrid but **safe**:
+
+- Equity ladder sets a base phase.
+- Settled-count may unlock **at most one phase above** equity phase (if rolling ROI is not terrible).
+- Prevents “193 bets → Phase 4 stakes” while bankroll is still ~550 NOK.
+
+## Odds &gt; 2.5 — still allowed when data supports
+
+**Not banned.** A selection at odds &gt; 2.5 is recommended only if:
+
+1. Evidence grade **A** (enough sources + `p_model` + summary + failure modes),
+2. EV after haircut ≥ high-odds minimum (default 8%),
+3. Optional extra EV if that odds band has bad historical ROI in *this* ledger,
+4. Stake uses `high_odds_stake_multiplier` (default 0.6×),
+5. Cap on high-odds bets per round.
+
+If the model’s probability and research support it, it will appear on the place slip.
+
+Put research packs in `evidence/*.json` (see `evidence/example.json`). You can also pass `p_model` in the odds CSV.
+
+## Layout (what is kept)
+
+| Path | Role |
+|------|------|
+| `config.yaml` | All rules and numbers |
+| `nt/` | CLI + engines |
+| `data/bets.csv` | Era ledger (archive + live) |
+| `data/state/` | Generated bankroll, phase, risk, status |
+| `data/edges.jsonl` | Append-only lessons |
+| `inbox/` / `outbox/` | Your I/O |
+| `evidence/` | Research packs for candidates |
+| `history/` | Full archives, old rounds, legacy docs |
+
+Legacy playbooks / skills / old scripts are under `history/` only — they are **not** control-plane.
+
+## Evidence JSON (minimal)
+
+```json
+{
+  "match": "Team A vs Team B",
+  "selection": "Team A DNB",
+  "p_model": 0.62,
+  "summary": "Form + H2H + lineup support",
+  "failure_modes": "Red card; key striker out late",
+  "sources": [
+    {"url": "https://fbref.com/...", "takeaway": "xG edge"},
+    {"url": "https://...", "takeaway": "no injuries"}
+  ]
+}
+```
+
+## Design principles
+
+1. **Code is law** — phase, risk, P/L, empty slips.
+2. **Empty slip is success** when nothing clears the bar.
+3. **Full history preserved** — active era in `data/bets.csv`, everything else in `history/`.
+4. **No profit guarantee** — process maximizes disciplined +EV attempts under NT rules.

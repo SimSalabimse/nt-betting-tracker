@@ -1,0 +1,7 @@
+# Prefer payout_nok (total returned including stake). Loss => 0. Refund => stake.
+results:
+  - match: "Example FC vs Sample United"
+    selection: "Example FC DNB"
+    payout_nok: 0
+    # or: outcome: loss | win | refund
+    notes: "optional short note"

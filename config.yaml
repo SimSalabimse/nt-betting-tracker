@@ -1,0 +1,143 @@
+# NT Betting Tracker — single source of numeric truth
+# Phase, risk caps, and stake bands change automatically via the phase engine.
+
+project:
+  name: nt-betting-tracker
+  currency: NOK
+  operator: Norsk Tipping Oddsen
+
+bankroll:
+  # Clean-restart era (2026-06-28). Full history kept under history/.
+  baseline_nok: 500.0
+  era_start: "2026-06-28"
+  # Equity = baseline + sum(settled P/L) over data/bets.csv
+  # data/bets.csv includes bankroll_archive_up_to_2026_07_01 + subsequent bets.
+  include_era_archive: true
+
+norsk_tipping:
+  min_stake_nok: 10.0
+  # Decimal odds only in this system
+  max_legs_in_combo: 3
+
+# Hybrid phase triggers: equity OR settled-count (with stability gate).
+# daily_risk = clamp(equity * daily_risk_pct, floor, ceil)  — recomputed every run.
+phases:
+  "1A":
+    label: Protect & Validate
+    enter_equity: 0
+    enter_settled: 0
+    stake_min: 10
+    stake_max: 15
+    max_bets_per_round: 4
+    max_doubles_per_round: 0
+    daily_risk_pct: 0.10
+    daily_risk_floor: 40
+    daily_risk_ceil: 55
+    next: "1B"
+  "1B":
+    label: Controlled volume + selective doubles
+    enter_equity: 700
+    enter_settled: 40
+    stake_min: 12
+    stake_max: 20
+    max_bets_per_round: 5
+    max_doubles_per_round: 1
+    daily_risk_pct: 0.12
+    daily_risk_floor: 55
+    daily_risk_ceil: 80
+    next: "2"
+  "2":
+    label: Normal doubles
+    enter_equity: 1200
+    enter_settled: 60
+    stake_min: 15
+    stake_max: 30
+    max_bets_per_round: 6
+    max_doubles_per_round: 2
+    daily_risk_pct: 0.10
+    daily_risk_floor: 70
+    daily_risk_ceil: 150
+    next: "3"
+  "3":
+    label: Systems allowed
+    enter_equity: 2500
+    enter_settled: 100
+    stake_min: 20
+    stake_max: 45
+    max_bets_per_round: 7
+    max_doubles_per_round: 2
+    daily_risk_pct: 0.08
+    daily_risk_floor: 100
+    daily_risk_ceil: 250
+    next: "4"
+  "4":
+    label: Mature
+    enter_equity: 5000
+    enter_settled: 150
+    stake_min: 20
+    stake_max: 80
+    max_bets_per_round: 8
+    max_doubles_per_round: 3
+    daily_risk_pct: 0.06
+    daily_risk_floor: 120
+    daily_risk_ceil: 400
+    next: null
+
+# Stability gate for count-based phase advance
+phase_stability:
+  min_rolling_settled: 20
+  min_rolling_roi: -0.05   # allow advance if not deep red
+  demote_if_rolling_roi_below: -0.12
+  demote_min_settled: 30
+
+risk:
+  # Kill-switch: no new bets if today's realized P/L <= -stop_day_loss_nok
+  # or open+planned risk would exceed daily cap.
+  stop_day_loss_pct_of_equity: 0.08
+  stop_day_loss_floor_nok: 40
+  # After this many consecutive settled losses, require grade A only
+  loss_streak_grade_a_only: 3
+
+selection:
+  # Model probability is haircut before EV (NT margin + optimism).
+  probability_haircut: 0.05
+  standard_min_ev: 0.03
+  # Odds > threshold are ALLOWED when evidence supports them — not banned.
+  high_odds_threshold: 2.5
+  high_odds_min_grade: A
+  high_odds_min_ev: 0.08
+  high_odds_stake_multiplier: 0.6
+  high_odds_max_per_round: 2
+  # If historical band ROI is terrible with enough sample, raise the bar further
+  band_penalty:
+    min_sample: 15
+    bad_roi_below: -0.10
+    extra_ev_required: 0.05
+  # Prefer bands that have shown edge in THIS book (soft prior, not hard ban)
+  band_prior_boost:
+    "<1.5": 0.02
+    "1.5-1.8": 0.0
+    "1.8-2.2": 0.015
+    "2.2-2.5": -0.01
+    "2.5-3.0": -0.02
+    ">=3.0": -0.03
+  min_research_sources:
+    default: 6
+    grade_A: 10
+    high_odds: 12
+  empty_slip_ok: true
+
+paths:
+  bets: data/bets.csv
+  state_dir: data/state
+  inbox: inbox
+  outbox: outbox
+  evidence: evidence
+  history: history
+  status: data/state/status.md
+  bankroll_md: data/state/current_bankroll.md
+  edges_jsonl: data/edges.jsonl
+  edges_summary: data/state/edges_summary.md
+
+git:
+  auto_commit: false   # set true only if you want CLI to commit

@@ -1,0 +1,12 @@
+.DS_Store
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+data/bets.csv.backup_*
+*.backup_*
+outbox/PLACE_THESE_*.md
+outbox/REJECTS_*.md
+outbox/SETTLEMENT_RECEIPT.md
+# keep templates and latest pointer if committed intentionally

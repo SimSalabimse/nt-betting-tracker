@@ -1,0 +1,2 @@
+date,match,selection,decimal_odds,sport,market_type,p_model,notes
+2026-07-12,Example FC vs Sample United,Example FC DNB,1.65,football,dnb,0.68,optional if evidence JSON used instead

@@ -1,0 +1,15 @@
+{
+  "baseline_nok": 500.0,
+  "realized_pl_nok": 47.57,
+  "equity_nok": 547.57,
+  "pending_at_risk_nok": 0.0,
+  "liquid_nok": 547.57,
+  "settled_count": 193,
+  "pending_count": 0,
+  "era_archive_bets": 47,
+  "post_archive_bets": 146,
+  "total_bets": 193,
+  "era_start": "2026-06-28",
+  "updated_at": "2026-07-12T18:06:58Z",
+  "formula": "equity = baseline + sum(settled P/L in data/bets.csv); archive+live included"
+}

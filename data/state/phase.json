@@ -1,0 +1,22 @@
+{
+  "phase_id": "1B",
+  "label": "Controlled volume + selective doubles",
+  "stake_min": 12.0,
+  "stake_max": 20.0,
+  "max_bets_per_round": 5,
+  "max_doubles_per_round": 1,
+  "daily_risk_pct": 0.12,
+  "daily_risk_floor": 55.0,
+  "daily_risk_ceil": 80.0,
+  "next": "2",
+  "equity_phase": "1A",
+  "count_phase": "4",
+  "rolling_roi": -0.011888111888111896,
+  "reasons": [
+    "equity_phase=1A (equity 547.57)",
+    "count_phase=4 (settled 193)",
+    "count unlock capped at equity+1 \u2192 1B"
+  ],
+  "equity_nok": 547.57,
+  "settled_count": 193
+}
