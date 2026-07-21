@@ -617,8 +617,104 @@ def cmd_research(args: argparse.Namespace) -> int:
     return 2
 
 
+def cmd_simulate_tennis(args: argparse.Namespace) -> int:
+    """Tennis sim → suggested p_model (does not place bets)."""
+    from nt.sim_tennis import TennisSimInputs, simulate_tennis
+
+    inp = TennisSimInputs(
+        match=getattr(args, "match", "") or "",
+        player_a=getattr(args, "player_a", "") or getattr(args, "home", "") or "",
+        player_b=getattr(args, "player_b", "") or getattr(args, "away", "") or "",
+        hold_a=float(getattr(args, "hold_a", 0.78) or 0.78),
+        hold_b=float(getattr(args, "hold_b", 0.78) or 0.78),
+        best_of=int(getattr(args, "best_of", 3) or 3),
+        elo_diff=getattr(args, "elo_diff", None),
+        source_quality=getattr(args, "source_quality", "medium") or "medium",
+        notes=getattr(args, "notes", "") or "",
+        selection=getattr(args, "selection", None),
+        odds_ref=getattr(args, "odds_ref", None),
+    )
+    result = simulate_tennis(inp)
+    print(json.dumps(result, indent=2, ensure_ascii=False) if getattr(args, "json", False) else (
+        f"# Tennis sim (suggestion only)\n\n"
+        f"**Match:** {result['match']}\n"
+        f"**p_model:** {result['p_model']} · conf {result['confidence']}\n"
+        f"**Markets:** {result['markets']}\n"
+        f"**Warnings:** {result['warnings']}\n"
+        f"\n_{result['disclaimer']}_\n"
+    ))
+    return 0
+
+
+def cmd_simulate_basketball(args: argparse.Namespace) -> int:
+    """Basketball sim → suggested p_model (does not place bets)."""
+    from nt.sim_basketball import BasketballSimInputs, simulate_basketball
+
+    inp = BasketballSimInputs(
+        match=getattr(args, "match", "") or "",
+        home=getattr(args, "home", "") or "",
+        away=getattr(args, "away", "") or "",
+        mean_margin=float(getattr(args, "margin", 0.0) or 0.0),
+        margin_sd=float(getattr(args, "margin_sd", 12.0) or 12.0),
+        mean_total=float(getattr(args, "mean_total", 220.0) or 220.0),
+        total_sd=float(getattr(args, "total_sd", 18.0) or 18.0),
+        handicap_line=getattr(args, "handicap_line", None),
+        total_line=getattr(args, "total_line", None),
+        source_quality=getattr(args, "source_quality", "medium") or "medium",
+        notes=getattr(args, "notes", "") or "",
+        selection=getattr(args, "selection", None),
+        odds_ref=getattr(args, "odds_ref", None),
+    )
+    if not inp.match and inp.home and inp.away:
+        inp.match = f"{inp.home} vs {inp.away}"
+    result = simulate_basketball(inp)
+    print(json.dumps(result, indent=2, ensure_ascii=False) if getattr(args, "json", False) else (
+        f"# Basketball sim (suggestion only)\n\n"
+        f"**Match:** {result['match']}\n"
+        f"**p_model:** {result['p_model']} · conf {result['confidence']}\n"
+        f"**Markets:** {result['markets']}\n"
+        f"**Warnings:** {result['warnings']}\n"
+        f"\n_{result['disclaimer']}_\n"
+    ))
+    return 0
+
+
+def cmd_failures(args: argparse.Namespace) -> int:
+    """Indexed past-failure rebuild / query."""
+    from nt.failure_index import query_failures, rebuild_failure_index
+
+    cfg = load_config()
+    sub = getattr(args, "failures_cmd", None) or getattr(args, "subcmd", None)
+    if sub == "rebuild" or getattr(args, "rebuild", False):
+        out = rebuild_failure_index(cfg)
+        print(json.dumps(out, indent=2))
+        return 0
+    rows = query_failures(
+        cfg,
+        q=getattr(args, "q", "") or "",
+        sport=getattr(args, "sport", None),
+        kind=getattr(args, "kind", None),
+        limit=int(getattr(args, "limit", 20) or 20),
+    )
+    if getattr(args, "json", False):
+        print(json.dumps({"n": len(rows), "hits": rows}, indent=2, ensure_ascii=False))
+    else:
+        print(f"# Failures query · {len(rows)} hits\n")
+        for r in rows:
+            print(
+                f"- [{r.get('kind')}] {r.get('match')} / {r.get('selection')} "
+                f"· {r.get('sport')} · {r.get('bet_id') or r.get('id')}"
+            )
+    return 0
+
+
 def cmd_simulate(args: argparse.Namespace) -> int:
     """Football match simulation → suggested p_model for evidence."""
+    sport = (getattr(args, "sport", None) or "football").lower()
+    if sport in ("tennis",):
+        return cmd_simulate_tennis(args)
+    if sport in ("basketball", "nba", "wnba"):
+        return cmd_simulate_basketball(args)
     from nt.sim_football import (
         SimInputs,
         load_sim_input_file,
@@ -947,15 +1043,35 @@ def main(argv: list[str] | None = None) -> int:
     p_ed.add_argument("--json", action="store_true")
     p_ed.set_defaults(func=cmd_edges)
 
-    # Football simulation (optional research tool → p_model suggestions)
+    # Simulation (optional research tools → p_model suggestions; never places)
     p_sim = sub.add_parser(
         "simulate",
-        help="Football Poisson/DC sim → suggested p_model (does not place bets)",
+        help="Quant sim → suggested p_model (football|tennis|basketball; does not place)",
+    )
+    p_sim.add_argument(
+        "--sport",
+        default="football",
+        choices=["football", "tennis", "basketball"],
+        help="Sport model (default football)",
     )
     p_sim.add_argument("--input", default=None, help="YAML/JSON SimInputs file")
     p_sim.add_argument("--match", default="")
     p_sim.add_argument("--home", default="")
     p_sim.add_argument("--away", default="")
+    # tennis
+    p_sim.add_argument("--player-a", default="", dest="player_a")
+    p_sim.add_argument("--player-b", default="", dest="player_b")
+    p_sim.add_argument("--hold-a", type=float, default=0.78, dest="hold_a")
+    p_sim.add_argument("--hold-b", type=float, default=0.78, dest="hold_b")
+    p_sim.add_argument("--best-of", type=int, default=3, dest="best_of")
+    p_sim.add_argument("--elo-diff", type=float, default=None, dest="elo_diff")
+    # basketball
+    p_sim.add_argument("--margin", type=float, default=0.0)
+    p_sim.add_argument("--margin-sd", type=float, default=12.0, dest="margin_sd")
+    p_sim.add_argument("--mean-total", type=float, default=220.0, dest="mean_total")
+    p_sim.add_argument("--total-sd", type=float, default=18.0, dest="total_sd")
+    p_sim.add_argument("--handicap-line", type=float, default=None, dest="handicap_line")
+    p_sim.add_argument("--total-line", type=float, default=None, dest="total_line")
     p_sim.add_argument("--lambda-home", type=float, default=None)
     p_sim.add_argument("--lambda-away", type=float, default=None)
     p_sim.add_argument("--home-xg-for", type=float, default=None)
@@ -983,6 +1099,18 @@ def main(argv: list[str] | None = None) -> int:
     p_sim.add_argument("--json", action="store_true")
     p_sim.add_argument("--no-write", action="store_true")
     p_sim.set_defaults(func=cmd_simulate)
+
+    p_fail = sub.add_parser("failures", help="Indexed past failures (rebuild / query)")
+    p_fail_sub = p_fail.add_subparsers(dest="failures_cmd")
+    p_fail_rb = p_fail_sub.add_parser("rebuild", help="Rebuild failure_index.json")
+    p_fail_rb.set_defaults(func=cmd_failures, failures_cmd="rebuild")
+    p_fail_q = p_fail_sub.add_parser("query", help="Query failure index")
+    p_fail_q.add_argument("--q", default="", help="Token query (AND)")
+    p_fail_q.add_argument("--sport", default=None)
+    p_fail_q.add_argument("--kind", default=None, help="bet|edge|evidence|review")
+    p_fail_q.add_argument("--limit", type=int, default=20)
+    p_fail_q.add_argument("--json", action="store_true")
+    p_fail_q.set_defaults(func=cmd_failures, failures_cmd="query")
 
     p_cal = sub.add_parser("calibrate", help="p_model vs outcome calibration")
     cal = p_cal.add_subparsers(dest="calibrate_cmd", required=True)

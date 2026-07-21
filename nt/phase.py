@@ -20,22 +20,15 @@ def _rolling_roi(rows: list[dict[str, str]], n: int) -> float | None:
 
 
 def _peak_equity(rows: list[dict[str, str]], baseline: float) -> float:
-    """Max end-of-day equity on the settled curve (Win/Loss/Refunded only)."""
-    settled = [r for r in rows if is_performance_settled(r.get("result"))]
-    if not settled:
-        return baseline
-    settled.sort(key=lambda r: (r.get("date") or "", r.get("updated_at") or r.get("created_at") or ""))
-    peak = baseline
-    cum = 0.0
-    by_date: dict[str, float] = {}
-    for r in settled:
-        cum += fnum(r.get("p_l_nok")) or 0.0
-        d = r.get("date") or ""
-        by_date[d] = baseline + cum
-    for eq in by_date.values():
-        if eq > peak:
-            peak = eq
-    return round(peak, 2)
+    """
+    Max equity HWM for phase demote — **same settlement-day curve** as
+    capital_v2 / risk size_mode (Europe/Oslo via updated_at).
+
+    Fail-closed single source of truth: never use match-date-only peak.
+    """
+    from nt.capital_v2 import peak_equity_settlement
+
+    return peak_equity_settlement(rows, float(baseline))
 
 
 def _phase_order(cfg: dict[str, Any]) -> list[str]:

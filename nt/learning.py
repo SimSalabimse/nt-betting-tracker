@@ -1037,4 +1037,9 @@ def diversification_limits(cfg: dict[str, Any]) -> dict[str, Any]:
         "min_non_football_per_round": int(div.get("min_non_football_per_round", 1)),
         "explore_min_ev": float(div.get("explore_min_ev", 0.012)),
         "prefer_explore_first": bool(div.get("prefer_explore_first", True)),
+        # P1 soft correlation
+        "max_per_league": int(div.get("max_per_league", 2)),
+        "max_per_script_family": int(div.get("max_per_script_family", 2)),
+        "ko_window_hours": float(div.get("ko_window_hours", 3)),
+        "max_per_ko_window": int(div.get("max_per_ko_window", 2)),
     }

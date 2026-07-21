@@ -49,6 +49,9 @@ class Recommendation:
     kickoff: str = ""
     # Phase 2.3: structured capital_v2 stake decision (in-memory; not JSONL yet)
     stake_decision: dict[str, Any] | None = None
+    # P1 soft correlation keys
+    league_key: str = "unknown"
+    script_family: str = "other"
 
 
 def _stake_for(
@@ -158,7 +161,62 @@ def _stake_for_capital_v2(
             "remaining_room": remaining_risk,
         },
     )
-    return decision.final_stake_nok, decision.to_audit_dict()
+    audit = decision.to_audit_dict()
+    final = float(decision.final_stake_nok)
+
+    # P2: optional fractional Kelly lift above unit (gated on liquid + Brier)
+    try:
+        from nt.kelly import fractional_kelly_stake
+
+        kcfg = dict(v2.get("kelly") or {})
+        if kcfg.get("enabled", True) and final >= floor:
+            liq = float(
+                risk.get("riskable_liquid_nok")
+                or risk.get("working_equity_nok")
+                or 0.0
+            )
+            active = float(decision.active_unit_nok or unit)
+            cal_n, brier = 0, None
+            try:
+                from nt.calibrate import load_calibration_quality
+
+                cq = load_calibration_quality(cfg)
+                cal_n = int(cq.get("n") or 0)
+                brier = cq.get("brier")
+            except Exception:
+                pass
+            k_stake, k_notes = fractional_kelly_stake(
+                p_model=float(p_model),
+                odds=float(odds),
+                liquid=liq,
+                active_unit=active,
+                min_stake=floor,
+                remaining_room=float(remaining_risk),
+                kelly_cfg=kcfg,
+                brier=float(brier) if brier is not None else None,
+                cal_n=cal_n,
+            )
+            cons = list(audit.get("constraints_applied") or [])
+            cons.extend(k_notes)
+            if k_stake is not None and k_stake > final + 1e-9:
+                final = float(int(k_stake))
+                audit["final_stake_nok"] = final
+                audit["recommended_stake_nok"] = max(
+                    float(audit.get("recommended_stake_nok") or 0), final
+                )
+                cons.append(f"kelly_applied:{final}")
+            audit["constraints_applied"] = cons
+            audit.setdefault("inputs", {})["kelly"] = {
+                "stake": k_stake,
+                "brier": brier,
+                "cal_n": cal_n,
+            }
+    except Exception as ex:  # noqa: BLE001
+        cons = list(audit.get("constraints_applied") or [])
+        cons.append(f"kelly_error:{ex}")
+        audit["constraints_applied"] = cons
+
+    return final, audit
 
 
 def rebalance_stakes(
@@ -366,16 +424,35 @@ def build_portfolio(
             if st["roi"] < float(band_cfg.get("bad_roi_below", -0.10)):
                 min_ev += float(band_cfg.get("extra_ev_required", 0.05))
 
+        # P1: process_error closed-loop temporary min_ev raise
+        pg_raise = 0.0
+        try:
+            from nt.process_gates import process_gate_raise
+
+            pg_raise = process_gate_raise(
+                cfg,
+                sport=c.sport or "",
+                market_key=str(adj.get("market_key") or ""),
+            )
+            if pg_raise > 0:
+                min_ev += pg_raise
+        except Exception:
+            pg_raise = 0.0
+
         if ev < min_ev:
+            reason = f"EV {ev:.3f} < min {min_ev:.3f}"
+            if pg_raise > 0:
+                reason += f" (process_gate:+{pg_raise:.3f})"
             rejects.append(
                 {
                     "match": c.match,
                     "selection": c.selection,
                     "odds": odds,
-                    "reason": f"EV {ev:.3f} < min {min_ev:.3f}",
+                    "reason": reason,
                     "grade": grade,
                     "high_odds": high,
                     "learning_ev_boost": adj.get("ev_boost"),
+                    "process_gate_raise": pg_raise or None,
                 }
             )
             continue
@@ -478,6 +555,21 @@ def build_portfolio(
             note_bits.append(c.notes[:120])
 
         mk = adj.get("market_key") or infer_market(c.selection or "", c.market_type or "")
+        from nt.portfolio_correlation import league_key as _league_key
+        from nt.portfolio_correlation import script_family as _script_family
+
+        lg = _league_key(
+            evidence=c.evidence if isinstance(c.evidence, dict) else None,
+            match=c.match or "",
+            sport=c.sport or "",
+            notes=c.notes or "",
+        )
+        sf = _script_family(
+            selection=c.selection or "",
+            market_type=c.market_type or "",
+            market_key=str(mk or ""),
+            evidence=c.evidence if isinstance(c.evidence, dict) else None,
+        )
         rec = Recommendation(
             match=c.match,
             selection=c.selection,
@@ -502,6 +594,8 @@ def build_portfolio(
             match_date=(c.date or "").strip()[:10],
             kickoff=(c.kickoff or "").strip(),
             stake_decision=stake_decision,
+            league_key=lg,
+            script_family=sf,
         )
         scored.append(rec)
 
@@ -530,6 +624,21 @@ def build_portfolio(
     max_match = int(div_lim.get("max_per_match", 1))
     max_football = int(div_lim.get("max_football_per_round", 1))
     min_non_football = int(div_lim.get("min_non_football_per_round", 1))
+    max_league = int(div_lim.get("max_per_league", 2))
+    max_script = int(div_lim.get("max_per_script_family", 2))
+    ko_window_h = float(div_lim.get("ko_window_hours", 3))
+    max_ko_window = int(div_lim.get("max_per_ko_window", 2))
+
+    from nt.portfolio_correlation import (
+        count_ko_window,
+        league_key as corr_league_key,
+        parse_kickoff_hour,
+        script_family as corr_script_family,
+    )
+
+    league_counts: dict[str, int] = {}
+    script_counts: dict[str, int] = {}
+    open_ko_hours: list[float | None] = []
 
     def _pending_sport(r: dict[str, str]) -> str:
         """Canonical sport key for open-risk diversify seed."""
@@ -582,6 +691,24 @@ def build_portfolio(
         m = (r.get("match") or "").strip()
         if m:
             match_counts[m] = match_counts.get(m, 0) + 1
+        # P1 soft correlation seeds from open book
+        notes = r.get("notes") or ""
+        lg = corr_league_key(match=m, sport=sp, notes=notes)
+        if lg != "unknown":
+            league_counts[lg] = league_counts.get(lg, 0) + 1
+        sf = corr_script_family(
+            selection=r.get("selection") or "",
+            market_type=r.get("market_type") or "",
+        )
+        script_counts[sf] = script_counts.get(sf, 0) + 1
+        # kickoff from notes if present
+        ko = ""
+        if "kickoff=" in notes:
+            try:
+                ko = notes.split("kickoff=", 1)[1].split(";")[0].strip()
+            except Exception:
+                ko = ""
+        open_ko_hours.append(parse_kickoff_hour(ko))
 
     def _is_football(sp: str) -> bool:
         return normalize_sport(sp, default="unknown") == "football"
@@ -673,6 +800,58 @@ def build_portfolio(
             )
             return "reject"
 
+        # P1 soft correlation: league / script / KO window
+        lg = (rec.league_key or "unknown").strip() or "unknown"
+        if lg != "unknown" and league_counts.get(lg, 0) >= max_league:
+            rejects.append(
+                {
+                    "match": rec.match,
+                    "selection": rec.selection,
+                    "reason": (
+                        f"soft correlation: max {max_league} open for league '{lg}' "
+                        f"(already {league_counts.get(lg, 0)})"
+                    ),
+                }
+            )
+            return "reject"
+        sf = (rec.script_family or "other").strip() or "other"
+        # Soft script caps only for high-correlation families (not bare ML fill)
+        _SCRIPT_SOFT = {
+            "totals_under",
+            "totals_over",
+            "btts_no",
+            "btts_yes",
+            "clean_sheet",
+            "handicap",
+        }
+        if sf in _SCRIPT_SOFT and script_counts.get(sf, 0) >= max_script:
+            rejects.append(
+                {
+                    "match": rec.match,
+                    "selection": rec.selection,
+                    "reason": (
+                        f"soft correlation: max {max_script} open for script '{sf}' "
+                        f"(already {script_counts.get(sf, 0)})"
+                    ),
+                }
+            )
+            return "reject"
+        cand_h = parse_kickoff_hour(rec.kickoff or "")
+        if cand_h is not None:
+            n_ko = count_ko_window(cand_h, open_ko_hours, window_hours=ko_window_h)
+            if n_ko >= max_ko_window:
+                rejects.append(
+                    {
+                        "match": rec.match,
+                        "selection": rec.selection,
+                        "reason": (
+                            f"soft correlation: max {max_ko_window} open in "
+                            f"±{ko_window_h:.0f}h kickoff window (already {n_ko})"
+                        ),
+                    }
+                )
+                return "reject"
+
         stake = min(rec.stake_nok, remaining)
         stake = float(int(stake))
         if stake < min_stake:
@@ -687,6 +866,10 @@ def build_portfolio(
         market_counts[mk_key] = market_counts.get(mk_key, 0) + 1
         if bd_key:
             band_counts[bd_key] = band_counts.get(bd_key, 0) + 1
+        if lg != "unknown":
+            league_counts[lg] = league_counts.get(lg, 0) + 1
+        script_counts[sf] = script_counts.get(sf, 0) + 1
+        open_ko_hours.append(cand_h)
         return "ok"
 
     picked_keys: set[tuple[str, str]] = set()
@@ -944,6 +1127,17 @@ def build_portfolio(
         if len(picked) == n_before:
             rebalance_stakes(picked, budget, min_stake, max_stake, reserve_extra_seats=0)
             break
+
+    # P0: never leave a fundable min-seat idle when diversify still allows it
+    rebalance_stakes(picked, budget, min_stake, max_stake, reserve_extra_seats=0)
+    used = sum(float(p.stake_nok) for p in picked)
+    leftover_final = round(budget - used, 2)
+    if leftover_final + 1e-9 >= min_stake and len(picked) < max_bets:
+        remaining = leftover_final
+        n_before = len(picked)
+        _fill_passes()
+        if len(picked) > n_before:
+            rebalance_stakes(picked, budget, min_stake, max_stake, reserve_extra_seats=0)
 
     # After final rebalance: fail-closed floor + refresh stake_decision finals (v2)
     if _capital_v2_enabled(cfg):

@@ -122,6 +122,8 @@ selection:
   # Model probability is haircut before EV (NT margin + optimism).
   probability_haircut: 0.05
   standard_min_ev: 0.03
+  # P1: Grade A needs p_model_sd, edge CI, or multi-model — not bare point p
+  grade_a_require_uncertainty: true
   # Odds > threshold are ALLOWED when evidence supports them — not banned.
   high_odds_threshold: 2.5
   high_odds_min_grade: A
@@ -178,6 +180,11 @@ learning:
     max_per_band: 3
     # Phase 2: one open market per match (pending + slip) — blocks correlated stacks
     max_per_match: 1
+    # P1 soft correlation (known leagues/scripts/KO windows only)
+    max_per_league: 2
+    max_per_script_family: 2
+    ko_window_hours: 3
+    max_per_ko_window: 2
     # Soft football preference only:
     #   1) non-football first
     #   2) up to max_football_per_round football while diversifying
@@ -194,6 +201,13 @@ learning:
     explore_stake_floor: 0.92
     explore_min_roi: -0.15    # don't explore groups that are already deep red
     explore_min_ev: 0.012     # lower EV bar for explore-flagged lines
+  # P1: process_error settle tags → temporary min_ev raise
+  process_gate:
+    enabled: true
+    min_ev_raise: 0.02
+    max_raise: 0.05
+    ttl_hours: 48
+    clear_after_clean_settles: 3
 
 paths:
   bets: data/bets.csv
@@ -308,7 +322,7 @@ research:
     require_availability_research_if_predicted: true
     high_context_stricter_notes: true        # WC/intl/B2B/bronze
     high_context_min_notes_chars: 40
-    high_context_require_confirmed: false    # opt-in T4 for high risk
+    high_context_require_confirmed: true     # P0: high-context requires confirmed availability
     strict_confirmed_only: false             # global confirmed-only
     high_odds_prefer_confirmed: true         # soft note
     sports:

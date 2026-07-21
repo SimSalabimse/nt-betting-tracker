@@ -47,4 +47,4 @@
 
 Optional: `project` (bankroll sim) · `agent ask` (assist only)
 
-Updated: 2026-07-21T17:06:00Z
+Updated: 2026-07-21T21:23:33Z

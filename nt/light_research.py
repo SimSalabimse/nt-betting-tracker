@@ -37,6 +37,7 @@ def tiers_cfg(cfg: dict[str, Any]) -> dict[str, Any]:
         "deep_target_n": 8,  # promote ~this many to deep when auto
         "deep_max_n": 12,  # cap auto deep promotions
         "auto_light_on_board": True,
+        "auto_promote_to_deep": False,  # P1: never auto-promote; agent/manual only
         "fail_odds_below": 1.35,  # light-fail ultra-short unless exceptional
         "fail_odds_above": 4.0,  # light-fail longshots without deep plan
         "pass_odds_lo": 1.45,
@@ -159,8 +160,9 @@ def auto_light_assess(
         rec.reason = "light-fail: EV bar too high vs price"
     else:
         rec.verdict = "pass"
-        rec.promote_to_deep = True  # candidate pool; capped later
-        rec.reason = "light-pass: mid-band / tradeable — eligible for deep"
+        # P1: auto light never auto-promotes to deep (agent/manual only)
+        rec.promote_to_deep = False
+        rec.reason = "light-pass: mid-band / tradeable — deep only via agent promote"
         if odds > thr_high:
             weaknesses.append("high odds — deep needs grade A + elevated EV")
         if family in ("totals_under", "btts_no"):
@@ -344,10 +346,22 @@ def run_light_research(
         )
         records.append(rec)
 
-    # Cap promote_to_deep
+    # Cap promote_to_deep — only explicit agent/merge promotes (P1: no auto-promote)
     deep_max = int(tcfg["deep_max_n"])
     deep_target = int(tcfg["deep_target_n"])
-    promotable = [r for r in records if r.verdict == "pass" and r.promote_to_deep and not r.has_p_model]
+    auto_promote = bool(tcfg.get("auto_promote_to_deep", False))
+    promotable = [
+        r
+        for r in records
+        if r.verdict == "pass"
+        and r.promote_to_deep
+        and not r.has_p_model
+        and (auto_promote or r.source in ("agent", "merge"))
+    ]
+    # Fail/conflict demotion: never keep promote on fail
+    for r in records:
+        if r.verdict == "fail":
+            r.promote_to_deep = False
     promotable.sort(key=lambda r: (-(1 if r.odds_band in ("1.5-1.8", "1.8-2.2") else 0), r.decimal_odds))
     # diversify sports in deep queue
     deep_queue: list[LightRecord] = []

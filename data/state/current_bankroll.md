@@ -14,4 +14,4 @@
 
 **Formula**: `equity = baseline + sum(terminal P/L in data/bets.csv); open_risk = Pending+ConfirmedPlaced; Abandoned excluded from risk`
 
-**Updated**: 2026-07-21T17:06:00Z
+**Updated**: 2026-07-21T21:23:33Z

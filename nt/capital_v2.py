@@ -69,8 +69,13 @@ def capital_v2_cfg(cfg: dict[str, Any] | None) -> dict[str, Any]:
             "min_working_units": 8.0,
         },
         "kelly": {
+            "enabled": True,
             "enabled_above_liquid": 1500.0,
             "fraction_cap": 0.30,
+            "max_units": 1.5,
+            "max_brier": 0.28,
+            "min_calibration_n": 30,
+            "brier_soft_scale": True,
         },
         "audit": {
             "stake_decisions_jsonl": "data/state/stake_decisions.jsonl",

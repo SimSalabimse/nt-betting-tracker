@@ -127,6 +127,41 @@ def test_rebalance_reserves_extra_seats():
     assert all(p.stake_nok >= 10 for p in picks)
 
 
+def test_rebalance_leftover_below_min_is_ok_under_unit_cap():
+    """When max_stake = min_stake (unit floor), leftover < min cannot fund another seat."""
+    picks = [
+        Recommendation(
+            match="A vs B",
+            selection="A",
+            decimal_odds=1.8,
+            stake_nok=10,
+            ev=0.20,
+            grade="B",
+            odds_band="1.8-2.2",
+            sport="tennis",
+            market_type="HC",
+            p_model=0.7,
+            notes="",
+        ),
+        Recommendation(
+            match="C vs D",
+            selection="C",
+            decimal_odds=1.7,
+            stake_nok=10,
+            ev=0.05,
+            grade="B",
+            odds_band="1.5-1.8",
+            sport="darts",
+            market_type="tot",
+            p_model=0.65,
+            notes="",
+        ),
+    ]
+    leftover = rebalance_stakes(picks, 28.0, 10.0, 10.0, reserve_extra_seats=0)
+    assert sum(p.stake_nok for p in picks) == 20.0
+    assert leftover == 8.0  # unavoidable under NT floor + unit cap
+
+
 def test_rebalance_no_reserve_uses_budget():
     picks = [
         Recommendation(

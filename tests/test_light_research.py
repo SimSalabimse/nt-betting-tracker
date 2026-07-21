@@ -23,7 +23,8 @@ def test_auto_light_mid_band_pass():
         score=95,
     )
     assert rec.verdict == "pass"
-    assert rec.promote_to_deep is True
+    # P1: light pass never auto-promotes — agent/manual only
+    assert rec.promote_to_deep is False
     assert rec.rough_p_needed is not None
 
 

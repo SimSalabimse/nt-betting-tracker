@@ -138,7 +138,7 @@ def research_cfg(cfg: dict[str, Any]) -> dict[str, Any]:
             "require_availability_research_if_predicted": True,
             "high_context_stricter_notes": True,
             "high_context_min_notes_chars": 40,
-            "high_context_require_confirmed": False,
+            "high_context_require_confirmed": True,
             "strict_confirmed_only": False,
             "high_odds_prefer_confirmed": True,
             "sports": {

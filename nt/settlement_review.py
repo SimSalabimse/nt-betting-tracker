@@ -233,12 +233,36 @@ def analyze_settled_batch(
 
     proposals = build_learning_proposals(cfg, reviews, learning)
 
+    # P1: process_error → temporary min_ev gates (closed loop)
+    process_gate_events: list[dict[str, Any]] = []
+    try:
+        from nt.process_gates import note_clean_settlement, upsert_process_error_gates
+
+        for r in reviews:
+            f = r.get("factors") or {}
+            sp = str(f.get("sport") or "")
+            mk = str(f.get("market") or "")
+            if r.get("variance_class") == "process_error":
+                process_gate_events.append(
+                    upsert_process_error_gates(
+                        cfg,
+                        sport=sp,
+                        market=mk,
+                        bet_id=str(r.get("bet_id") or ""),
+                    )
+                )
+            else:
+                note_clean_settlement(cfg, sport=sp, market=mk)
+    except Exception as ex:  # noqa: BLE001
+        process_gate_events.append({"ok": False, "error": str(ex)})
+
     report = {
         "ts": utc_now(),
         "summary": summary,
         "reviews": reviews,
         "proposals": proposals,
         "narrative": _narrative(summary, reviews, proposals),
+        "process_gates": process_gate_events,
     }
 
     # Persist reviews
@@ -468,17 +492,20 @@ def auto_resolve_learning_proposals(cfg: dict[str, Any]) -> dict[str, Any]:
     """
     Agent-owned learning decisions — no human approve step.
 
-    Policy (conservative on thin samples):
-    - Always resolve every *pending* proposal (accept or reject) so nothing sits idle.
-    - Accept when |delta stake| or |delta EV| is non-trivial and confidence ≥ 0.15.
-    - Soften large haircuts when hist n < 3: clamp stake delta to ±0.04, EV to ±0.01.
-    - Reject noise when both deltas are essentially zero (should not appear).
+    Policy (fail-closed on full mult jumps):
+    - Always resolve every *pending* proposal (accept / soft-modify / reject).
+    - **Full-delta accept** only when hist n ≥ 5 **and** confidence ≥ 0.35.
+    - Otherwise soft-modify: clamp stake delta to ±0.04, EV to ±0.01.
+    - Reject noise when both deltas are essentially zero.
     """
     payload = load_learning_proposals(cfg)
     pending = [p for p in (payload.get("proposals") or []) if p.get("status") == "pending"]
     accepted: list[str] = []
     rejected: list[str] = []
     modified: list[str] = []
+
+    FULL_DELTA_MIN_N = 5
+    FULL_DELTA_MIN_CONF = 0.35
 
     for p in pending:
         pid = str(p.get("id") or "")
@@ -496,38 +523,33 @@ def auto_resolve_learning_proposals(cfg: dict[str, Any]) -> dict[str, Any]:
                 rejected.append(pid)
             continue
 
-        # Thin sample: shrink overreaction
-        soft = conf < 0.25 or n_hist < 3
-        if soft:
-            cur_s = float(cur.get("stake_mult") or 1.0)
-            cur_e = float(cur.get("ev_boost") or 0.0)
-            d_stake = max(-0.04, min(0.04, d_stake))
-            d_ev = max(-0.01, min(0.01, d_ev))
-            mod = {
-                "stake_mult": round(max(0.72, min(1.18, cur_s + d_stake)), 3),
-                "ev_boost": round(max(-0.045, min(0.035, cur_e + d_ev)), 4),
-            }
-            res = apply_learning_proposal(cfg, pid, action="modify", modified=mod)
+        # Full proposed delta only with adequate sample + confidence
+        full_ok = n_hist >= FULL_DELTA_MIN_N and conf >= FULL_DELTA_MIN_CONF
+        if full_ok:
+            res = apply_learning_proposal(cfg, pid, action="accept")
             if res.get("ok"):
-                modified.append(pid)
+                accepted.append(pid)
             continue
 
-        if conf < 0.15:
-            res = apply_learning_proposal(cfg, pid, action="reject")
-            if res.get("ok"):
-                rejected.append(pid)
-            continue
-
-        res = apply_learning_proposal(cfg, pid, action="accept")
+        # Thin / low-conf: shrink overreaction (never full jump)
+        cur_s = float(cur.get("stake_mult") or 1.0)
+        cur_e = float(cur.get("ev_boost") or 0.0)
+        d_stake = max(-0.04, min(0.04, d_stake))
+        d_ev = max(-0.01, min(0.01, d_ev))
+        mod = {
+            "stake_mult": round(max(0.72, min(1.18, cur_s + d_stake)), 3),
+            "ev_boost": round(max(-0.045, min(0.035, cur_e + d_ev)), 4),
+        }
+        res = apply_learning_proposal(cfg, pid, action="modify", modified=mod)
         if res.get("ok"):
-            accepted.append(pid)
+            modified.append(pid)
 
     return {
         "accepted": accepted,
         "modified": modified,
         "rejected": rejected,
         "n_resolved": len(accepted) + len(modified) + len(rejected),
-        "policy": "auto_agent_no_human_approve",
+        "policy": "full_delta_requires_n>=5_and_conf>=0.35",
     }
 
 

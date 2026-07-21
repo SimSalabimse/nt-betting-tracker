@@ -134,9 +134,67 @@ def grade_evidence(
             return "C", issues + soft
         return "F", issues + soft
 
-    if n_sources >= int(sel["min_research_sources"]["grade_A"]) or odds >= thr:
+    want_a = n_sources >= int(sel["min_research_sources"]["grade_A"]) or odds >= thr
+    if want_a:
+        # P1: Grade A requires uncertainty (SD / CI) or multi-model signal
+        require_unc = bool(sel.get("grade_a_require_uncertainty", True))
+        if require_unc and not _has_grade_a_uncertainty(ev, sources):
+            soft = list(soft) + [
+                "grade_A requires p_model_sd, edge CI, or multi-model — demoted to B"
+            ]
+            return "B", soft
         return "A", soft
     return "B", soft
+
+
+def _has_grade_a_uncertainty(
+    ev: dict[str, Any],
+    sources: list[dict[str, Any]],
+) -> bool:
+    """True if pack has p_model_sd, edge CI, or multi-model probabilities."""
+    # 1) Explicit SD
+    sd = ev.get("p_model_sd")
+    if sd is None and isinstance(ev.get("uncertainty"), dict):
+        sd = (ev.get("uncertainty") or {}).get("p_model_sd")
+    try:
+        if sd is not None:
+            sdv = float(sd)
+            if 0.005 <= sdv <= 0.25:
+                return True
+    except (TypeError, ValueError):
+        pass
+
+    # 2) Edge / p CI
+    lo = ev.get("p_model_ci_low")
+    hi = ev.get("p_model_ci_high")
+    if lo is None and isinstance(ev.get("uncertainty"), dict):
+        u = ev["uncertainty"]
+        lo = u.get("ci_low") or u.get("p_model_ci_low")
+        hi = u.get("ci_high") or u.get("p_model_ci_high")
+    try:
+        if lo is not None and hi is not None:
+            lo_f, hi_f = float(lo), float(hi)
+            p = float(ev.get("p_model"))
+            if lo_f < p < hi_f and (hi_f - lo_f) >= 0.02:
+                return True
+    except (TypeError, ValueError):
+        pass
+
+    # 3) Multi-model: list of p_models or ≥2 sources with p/prob
+    pms = ev.get("p_models")
+    if isinstance(pms, list) and len(pms) >= 2:
+        return True
+    n_src_p = 0
+    for s in sources:
+        for k in ("p_model", "prob", "probability", "p"):
+            if s.get(k) is not None:
+                try:
+                    float(s[k])
+                    n_src_p += 1
+                    break
+                except (TypeError, ValueError):
+                    pass
+    return n_src_p >= 2
 
 
 def validate_evidence_schema(ev: dict[str, Any]) -> list[str]:

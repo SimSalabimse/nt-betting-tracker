@@ -45,6 +45,39 @@ def append_calibration(cfg: dict[str, Any], record: dict[str, Any]) -> Path:
     return path
 
 
+def load_calibration_quality(cfg: dict[str, Any]) -> dict[str, Any]:
+    """
+    Lightweight Brier + n for Kelly gating.
+    Prefers data/state/calibration_summary.json if present; else analyzes calibration.jsonl.
+    """
+    paths = cfg.get("paths") or {}
+    if paths.get("calibration_summary_json"):
+        sp = path_from_config(cfg, "calibration_summary_json")
+    else:
+        sp = path_from_config(cfg, "state_dir") / "calibration_summary.json"
+    if sp.is_file():
+        try:
+            data = json.loads(sp.read_text(encoding="utf-8"))
+            if isinstance(data, dict) and data.get("n") is not None:
+                return {
+                    "n": int(data.get("n") or 0),
+                    "brier": float(data["brier"]) if data.get("brier") is not None else None,
+                    "source": "summary",
+                }
+        except Exception:
+            pass
+    try:
+        rows = load_calibration(cfg)
+        rep = analyze_calibration(rows, cfg)
+        return {
+            "n": int(rep.get("n") or 0),
+            "brier": float(rep["brier"]) if rep.get("brier") is not None else None,
+            "source": "jsonl",
+        }
+    except Exception:
+        return {"n": 0, "brier": None, "source": "none"}
+
+
 def load_calibration(cfg: dict[str, Any]) -> list[dict[str, Any]]:
     path = calibration_path(cfg)
     if not path.is_file():

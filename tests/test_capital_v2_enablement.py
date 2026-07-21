@@ -75,10 +75,11 @@ def _cfg(tmp_path: Path, *, enabled: bool) -> dict:
     }
 
 
-def test_default_live_config_disabled():
+def test_default_live_config_capital_v2_policy():
+    """Production policy (P0+): capital_v2 enabled in live config.yaml."""
     cfg = load_config()
-    assert capital_v2_cfg(cfg).get("enabled") is False
-    assert capital_v2_enabled(cfg) is False
+    assert capital_v2_cfg(cfg).get("enabled") is True
+    assert capital_v2_enabled(cfg) is True
 
 
 def test_env_override_enables(monkeypatch, tmp_path):

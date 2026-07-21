@@ -229,8 +229,60 @@ def _match_bet(rows: list[dict[str, str]], item: dict[str, Any]) -> dict[str, st
         exact = [r for r in pending if (r.get("selection") or "").lower() == selection]
         if len(exact) == 1:
             return exact[0]
-        return pending[0]
+        # Fail-closed: never silently pick pending[0] on ambiguity
+        return None
     return None
+
+
+def _match_fail_reason(rows: list[dict[str, str]], item: dict[str, Any]) -> str:
+    """Operator-facing reason when _match_bet returns None."""
+    if item.get("bet_id"):
+        return f"no open bet with bet_id={item.get('bet_id')!r}"
+    # Re-run match filter to detect ambiguity vs no-hit
+    match = (item.get("match") or "").strip().lower()
+    selection = (item.get("selection") or "").strip().lower()
+    moneyline_hint = selection in ("winner", "vinner", "to win", "hub", "win") or (
+        selection.startswith("vinner") and len(selection) < 12
+    )
+
+    def _blob(r: dict[str, str]) -> str:
+        return f"{r.get('match') or ''} {r.get('selection') or ''}".lower()
+
+    def _match_hit(r: dict[str, str]) -> bool:
+        if not match:
+            return False
+        m = (r.get("match") or "").lower()
+        sel = (r.get("selection") or "").lower()
+        if match in m or match in sel:
+            return True
+        tokens = [t for t in match.replace(",", " ").split() if len(t) > 2]
+        if len(tokens) >= 2 and all(t in _blob(r) for t in tokens):
+            return True
+        return False
+
+    from nt.bets_io import is_open_risk
+
+    pending = [r for r in rows if is_open_risk(r.get("result")) and _match_hit(r)]
+    if selection and not moneyline_hint:
+        narrowed = [r for r in pending if selection in (r.get("selection") or "").lower()]
+        if narrowed:
+            pending = narrowed
+    elif moneyline_hint and pending:
+        money = [
+            r
+            for r in pending
+            if "to win" in (r.get("selection") or "").lower()
+            or "vinner" in (r.get("selection") or "").lower()
+        ]
+        if money:
+            pending = money
+    if len(pending) > 1:
+        ids = [str(r.get("bet_id") or "") for r in pending[:6]]
+        return (
+            "ambiguous pending match — require bet_id "
+            f"(candidates: {', '.join(ids)})"
+        )
+    return "no matching pending bet"
 
 
 def run_settle(cfg: dict[str, Any], results_path: Path) -> dict[str, Any]:
@@ -244,7 +296,7 @@ def run_settle(cfg: dict[str, Any], results_path: Path) -> dict[str, Any]:
     for item in items:
         bet = _match_bet(rows, item)
         if not bet:
-            errors.append({"item": item, "error": "no matching pending bet"})
+            errors.append({"item": item, "error": _match_fail_reason(rows, item)})
             continue
         from nt.bets_io import is_open_risk
 

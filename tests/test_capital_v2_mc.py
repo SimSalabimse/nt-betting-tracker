@@ -13,8 +13,9 @@ from nt.capital_v2 import capital_v2_cfg
 from nt.config import load_config
 
 
-def test_live_config_still_disabled():
-    assert capital_v2_cfg(load_config()).get("enabled") is False
+def test_live_config_capital_v2_enabled():
+    """Production policy: capital_v2 is on; MC still must not violate floor."""
+    assert capital_v2_cfg(load_config()).get("enabled") is True
 
 
 def test_determinism():
