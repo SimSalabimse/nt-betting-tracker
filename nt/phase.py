@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from nt.bets_io import fnum, is_performance_settled, load_bets
@@ -126,6 +127,69 @@ def evaluate_phase(
             reasons.append(f"one-step advance cap from {current_phase} → {chosen}")
 
     p = phases[chosen]
+
+    # ── v5 multi-factor PhaseState (alongside ladder) ─────────────────────
+    from nt.phase_factors import compute_phase_factors, phase_health_cfg
+
+    hcfg = phase_health_cfg(cfg)
+    baseline = float(cfg.get("bankroll", {}).get("baseline_nok", 500.0))
+    factors = compute_phase_factors(
+        cfg, equity=equity, peak=peak, rows=rows, baseline=baseline
+    )
+
+    size_mode_floor: str | None = None
+    research_only = False
+    process_health_until: str | None = None
+    process_health_action: str | None = None
+    process_health_reason: str | None = None
+
+    prev = load_phase_state(cfg)
+
+    now = datetime.now(timezone.utc)
+    if prev:
+        sticky_until = _parse_phase_ts(str(prev.get("process_health_until") or ""))
+        if sticky_until and sticky_until > now:
+            process_health_until = sticky_until.strftime("%Y-%m-%dT%H:%M:%SZ")
+            process_health_action = str(
+                prev.get("process_health_action") or hcfg["process_error_action"]
+            ).upper()
+            process_health_reason = str(
+                prev.get("process_health_reason") or "sticky process health hold"
+            )
+            if process_health_action == "RESEARCH_ONLY":
+                research_only = True
+                size_mode_floor = "REDUCED"
+            else:
+                size_mode_floor = "REDUCED"
+
+    # Fresh breach → (re)start 7d hold
+    if hcfg["enabled"] and factors.get("force_process_health"):
+        hold_days = int(hcfg["process_error_hold_days"])
+        until = now + timedelta(days=hold_days)
+        process_health_until = until.strftime("%Y-%m-%dT%H:%M:%SZ")
+        process_health_action = str(hcfg["process_error_action"]).upper()
+        process_health_reason = (
+            f"process_error_rate_14d={factors.get('process_error_rate_14d')} "
+            f"n={factors.get('raw', {}).get('n_reviews_14d')}"
+        )
+        if process_health_action == "RESEARCH_ONLY":
+            research_only = True
+            size_mode_floor = "REDUCED"
+        else:
+            size_mode_floor = "REDUCED"
+        reasons.append(
+            f"phase_health: process_error_rate force {process_health_action} "
+            f"until {process_health_until}"
+        )
+    elif process_health_until:
+        reasons.append(
+            f"phase_health: sticky {process_health_action} until {process_health_until}"
+        )
+
+    high_odds_stress = bool(factors.get("high_odds_stress_block"))
+    if high_odds_stress:
+        reasons.append("phase_health: high_odds_stress_block (concentration/calibration)")
+
     return {
         "phase_id": chosen,
         "label": p.get("label", chosen),
@@ -145,7 +209,29 @@ def evaluate_phase(
         "reasons": reasons,
         "equity_nok": equity,
         "settled_count": settled_count,
+        # v5 multi-factor
+        "phase_model": "v5_multifactor",
+        "phase_state": factors,
+        "size_mode_floor": size_mode_floor,
+        "research_only": research_only,
+        "high_odds_stress_block": high_odds_stress,
+        "process_health_until": process_health_until,
+        "process_health_action": process_health_action,
+        "process_health_reason": process_health_reason,
     }
+
+
+def _parse_phase_ts(s: str) -> datetime | None:
+    if not s:
+        return None
+    try:
+        raw = s.replace("Z", "+00:00") if s.endswith("Z") else s
+        dt = datetime.fromisoformat(raw)
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt
+    except ValueError:
+        return None
 
 
 def write_phase_state(cfg: dict[str, Any], phase: dict[str, Any]) -> None:

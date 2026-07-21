@@ -2,7 +2,8 @@
 
 Real-money capital desk. Engines in `nt/` are law. UI (LuminaNT, Flet desktop) presents and invokes — never invents bankroll math.
 
-**Post-audit status (P0–P2 shipped):** see `docs/POST_AUDIT_IMPLEMENTATION_SUMMARY.md` and the honest residual list in `docs/RESIDUAL_RISKS.md`.
+**Status:** capital_v2 live · closed-loop ControlSignals · multi-factor PhaseState (v5).  
+Docs: `docs/CLOSED_LOOP_PHASE_REDESIGN_SUMMARY.md` · `docs/RESIDUAL_RISKS.md` · `docs/POST_AUDIT_IMPLEMENTATION_SUMMARY.md` · `docs/CLOSED_LOOP_VALIDATION.md`.
 
 ---
 
@@ -88,7 +89,7 @@ Full design: **`docs/RESEARCH_GATES.md`**. Empty slip beats betting against your
    - **Dry-run only when the user asks** (`--dry-run` / “dry-run” / “preview only”).  
    - **Do not include already-open bets** (Pending or ConfirmedPlaced) in the “new place” advice.  
    - Only recommend lines with **strong research backing**. Empty slip after honest research is success.  
-   - **Process gates (P1):** weak process can **raise** `min_ev`, not invent edge. Soft correlation (league/script/KO) can demote packing of same-family stacks.
+   - **ControlSignals / process gates:** active `temp_gate_raise` can **raise** `min_ev` and **force confirmed lineup** on avail-sensitive markets — does not invent edge. Soft correlation (league/script/KO) can demote packing of same-family stacks.
 
 7. **Place confirmation / abandon (real-money control)**  
    ```bash
@@ -115,7 +116,7 @@ Ledger equity formula is **unchanged**: `baseline + Σ performance P/L`. Engines
 | Layer | Behaviour |
 |-------|-----------|
 | Peak / DD | **Settlement calendar day** peak (Oslo via `updated_at`) — not match-date-only |
-| size_mode | NORMAL → REDUCED (≥15% DD) → FROZEN (≥25% DD or manual freeze) |
+| size_mode (**capital hard floor**) | NORMAL → REDUCED (≥15% DD) → FROZEN (≥25% DD or manual freeze). Phase health may **only tighten** (e.g. force REDUCED), never loosen FROZEN. |
 | Unit ladder | 10 / 15 / 20 NOK from riskable liquid; whole kroner; **never stake in (0, min_stake)** |
 | Open room | Phase open budget ∩ portfolio open-risk cap (~18% riskable liquid) |
 | Daily / weekly | Hard loss stops on liquid SoD / SoW |
@@ -130,21 +131,60 @@ Ledger equity formula is **unchanged**: `baseline + Σ performance P/L`. Engines
 
 ---
 
-## Settlement + learning (agent-owned)
+## Phase system (v5 multi-factor)
+
+**Labels stay 1A–5** (`config.yaml` ladder). `phase_id` is still equity/count hybrid (seats, daily open budget, soft stake band).
+
+**Additionally** `evaluate_phase` attaches multi-factor `phase_state` and health overlays:
+
+| Factor | Use |
+|--------|-----|
+| `equity_score`, `dd_score` | Progress / drawdown health |
+| `process_error_rate_14d` | From `settlement_reviews.jsonl` (window 14d) |
+| `calibration_score` | Brier-based (neutral if cal n thin) |
+| `open_risk_concentration` | Max single-sport open stake share |
+| `learning_health` | Blocked sports share |
+
+**Hard overlays (fail-closed):**
+
+- `process_error_rate_14d > 0.25` with n_reviews ≥ 4 → `size_mode_floor=REDUCED` (or `RESEARCH_ONLY` if cfg), **sticky 7 days**
+- High open concentration (≥55% one sport) **or** poor Brier → **block high-odds** entirely
+- `RESEARCH_ONLY` → `can_bet=False` (no new risk)
+
+**Law:** `risk.size_mode` severity ≥ capital DD mode. Phase never upgrades FROZEN/REDUCED from DD.
+
+State: `data/state/phase.json`, reasons also on `risk.json` (`size_mode_capital`, `size_mode_floor`, `phase_health`).
+
+---
+
+## Settlement + learning + ControlSignals (agent-owned)
 
 After every settle:
 
-1. Write rich settlement tags (score, variance_tag, research_quality_retro). Soft-match is dual-path; **fail-closed** when match is ambiguous — do not force wrong ticket.
-2. Run learning recompute.
-3. **Resolve all pending learning proposals yourself** — accept / soft-modify (thin sample) / reject noise.  
-   Config: `learning.auto_apply_proposals: true` (default). Do not leave proposals for the user.  
-   Full-delta learning requires adequate n and confidence (fail-closed on thin samples).
-
-Optional process-error index (P2):
+1. **Match fail-closed** — dual soft-match; never force wrong ticket.  
+2. **PostSettlementPacket** — if `variance_tag=process_error` (or research_miss/miss) **or** `research_quality_retro=poor|wrong|miss`, **required fields** before ledger write:  
+   `actual_score`, `actual_lineup_status`, `predicted_vs_actual_xi_delta`, `script_realized`, `process_root_cause`.  
+   Lumina SettleDesk blocks incomplete strict rows; engine rejects incomplete items.  
+3. Learning recompute (`run_learning`) + settlement analysis.  
+4. **ControlSignals (primary closed loop)** — on process_error class or poor retro: emit `temp_gate_raise` into `data/state/control_signals.jsonl` even at **n=1**.  
+   Effects: raise min_ev for sport/market · force confirmed availability on sensitive markets · TTL **7–14 days** (default 10).  
+5. **Learning proposals** auto-resolve (`auto_apply_proposals: true`):  
+   - Full permanent mult delta only if **n_hist ≥ 8** and **conf ≥ 0.40**  
+   - Else soft-modify or reject noise  
+   - Mult patches can be overwritten by next full recompute — **do not treat mults as durable process control**; ControlSignals are.
 
 ```bash
+# ControlSignals ops
+python run_nt.py control-signals list --json
+python run_nt.py control-signals emit --sport football --source force_review --reason "…"
+python run_nt.py control-signals revoke --sport football --actor agent
+
+# Failures index (offline)
 python run_nt.py failures rebuild
 python run_nt.py failures query --q "rotation under"
+
+# Closed-loop validation (read-only)
+python scripts/validate_closed_loop.py -n 60
 ```
 
 ---
@@ -179,6 +219,9 @@ python run_nt.py simulate --sport basketball --home H --away A ...
 | Grade A with uncertainty | Grade A on bare point p alone |
 | Kelly only when liquid+Brier gates pass | Kelly at small bankroll / thin calibration |
 | Trust unit ladder + room packing | EV-band stake above unit without Kelly lift |
+| Fill PostSettlementPacket on process_error / poor retro | Settle without root cause / score / XI delta |
+| Trust ControlSignals as process loop | Expect permanent mults alone to stick after recompute |
+| Respect RESEARCH_ONLY / size_mode floor | Force recommend when phase health blocks |
 
 ---
 
@@ -187,11 +230,10 @@ python run_nt.py simulate --sport basketball --home H --away A ...
 ```bash
 python -m pytest tests/ -q
 python scripts/run_historical_replay.py -n 40
-# → artifacts/HISTORICAL_REPLAY_VALIDATION.md
-# → docs/POST_AUDIT_IMPLEMENTATION_SUMMARY.md · docs/RESIDUAL_RISKS.md
+python scripts/validate_closed_loop.py -n 60
+# → docs/CLOSED_LOOP_VALIDATION.md · docs/RESIDUAL_RISKS.md
+# → docs/CLOSED_LOOP_PHASE_REDESIGN_SUMMARY.md
 ```
-
-Last full regression (post-audit): **266 passed**, 2 skipped; historical replay **0 stake-integrity violations** on all available settled tickets.
 
 ---
 
@@ -199,8 +241,11 @@ Last full regression (post-audit): **266 passed**, 2 skipped; historical replay 
 
 | Doc | Role |
 |-----|------|
-| `docs/POST_AUDIT_IMPLEMENTATION_SUMMARY.md` | What P0–P2 shipped |
-| `docs/RESIDUAL_RISKS.md` | Honest remaining risks |
+| `docs/CLOSED_LOOP_PHASE_REDESIGN_SUMMARY.md` | ControlSignals + Phase v5 file map |
+| `docs/CLOSED_LOOP_VALIDATION.md` | Replay metrics + size_mode floor check |
+| `docs/POST_AUDIT_IMPLEMENTATION_SUMMARY.md` | Earlier P0–P2 capital/Kelly/sims batch |
+| `docs/RESIDUAL_RISKS.md` | Honest remaining risks (final) |
+| `docs/PHASE_PLAN.md` | Phase ladder + v5 multi-factor note |
 | `docs/CAPITAL_V2_GO_LIVE.md` | Enable / rollback / monitoring |
 | `docs/PHASE2_ENGINE_BANKROLL_DESIGN.md` | Capital design |
 | `docs/RESEARCH_WORKFLOW.md` | Full stage map |
@@ -216,4 +261,4 @@ See `desktop/AGENTS.md` for UI layout rules. Engines remain law; UI only present
 
 ### LuminaNT
 
-Separate repo. Forensic desk over the same tracker root: open-risk heatmap, edge decay, Case File re-trigger, multi-token full-text ledger search. **Never rewrite historical `bets.csv` from the GUI** except via settle/engine APIs.
+Separate repo. Forensic desk over the same tracker root: ControlSignals table, Phase health radar, PostSettlementPacket Case File, SettleDesk packet fields, Calibration force-review emit, shortlist temp_gate chips. **Never rewrite historical `bets.csv` from the GUI** except via settle/engine APIs.

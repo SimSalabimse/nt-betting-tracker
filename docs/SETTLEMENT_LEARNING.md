@@ -6,6 +6,25 @@
 2. Auto-fetch results (multi-sport — see `docs/RESULT_FETCHERS.md`)
 3. Automatic post-settlement analysis
 4. Layered learning (short / medium / long) + **proposals** (accept/reject)
+5. **ControlSignals closed loop** (primary process control — see below)
+
+### ControlSignals (primary closed loop)
+
+On `process_error` / poor research retro, the engine emits `temp_gate_raise` to
+`data/state/control_signals.jsonl` (even n=1). Effects: raised `min_ev` for sport/market,
+force confirmed lineup on avail-sensitive markets, TTL 7–14 days.
+
+PostSettlementPacket is **mandatory** for process_error / poor retro (score, XI status,
+xi_delta, script_realized, process_root_cause). Incomplete strict settles are rejected.
+
+```bash
+python run_nt.py control-signals list --json
+python run_nt.py control-signals emit --sport football --source force_review --reason "…"
+python run_nt.py control-signals revoke --sport football
+```
+
+Learning mult full-delta only when n≥8 and conf≥0.40. Mults can be recomputed away;
+**ControlSignals are the durable process actuator.** Full map: `docs/CLOSED_LOOP_PHASE_REDESIGN_SUMMARY.md`.
 
 ## Ledger result states
 

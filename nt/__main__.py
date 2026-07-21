@@ -679,6 +679,56 @@ def cmd_simulate_basketball(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_control_signals(args: argparse.Namespace) -> int:
+    """List / emit / revoke ControlSignals (temp_gate_raise)."""
+    from nt.control_signals import (
+        emit_temp_gate_raise,
+        load_active_signals,
+        revoke_signals,
+    )
+
+    cfg = load_config()
+    sub = getattr(args, "cs_cmd", None) or ""
+    if sub == "list":
+        active = load_active_signals(cfg)
+        payload = {"n": len(active), "signals": active}
+        if getattr(args, "json", False):
+            print(json.dumps(payload, indent=2, ensure_ascii=False))
+        else:
+            print(f"# ControlSignals · {len(active)} active\n")
+            for s in active:
+                print(
+                    f"- {s.get('sport')}/{s.get('market') or '—'} "
+                    f"min_ev+{s.get('min_ev_raise')} force_confirmed={s.get('force_confirmed_lineup')} "
+                    f"src={s.get('source')} exp={s.get('expires_at')} bet={s.get('bet_id') or '—'}"
+                )
+        return 0
+    if sub == "emit":
+        out = emit_temp_gate_raise(
+            cfg,
+            sport=str(getattr(args, "sport", "") or ""),
+            market=str(getattr(args, "market", "") or ""),
+            bet_id=str(getattr(args, "bet_id", "") or ""),
+            source=str(getattr(args, "source", "manual") or "manual"),
+            process_root_cause=str(getattr(args, "reason", "") or ""),
+        )
+        print(json.dumps(out, indent=2, default=str))
+        return 0 if out.get("ok") else 1
+    if sub == "revoke":
+        out = revoke_signals(
+            cfg,
+            sport=str(getattr(args, "sport", "") or ""),
+            market=str(getattr(args, "market", "") or ""),
+            revoke_all=bool(getattr(args, "all", False)),
+            actor=str(getattr(args, "actor", "cli") or "cli"),
+            reason=str(getattr(args, "reason", "manual_expire") or "manual_expire"),
+        )
+        print(json.dumps(out, indent=2, default=str))
+        return 0 if out.get("ok") else 1
+    print(f"Unknown control-signals subcommand: {sub}", file=sys.stderr)
+    return 2
+
+
 def cmd_failures(args: argparse.Namespace) -> int:
     """Indexed past-failure rebuild / query."""
     from nt.failure_index import query_failures, rebuild_failure_index
@@ -1111,6 +1161,33 @@ def main(argv: list[str] | None = None) -> int:
     p_fail_q.add_argument("--limit", type=int, default=20)
     p_fail_q.add_argument("--json", action="store_true")
     p_fail_q.set_defaults(func=cmd_failures, failures_cmd="query")
+
+    p_cs = sub.add_parser(
+        "control-signals",
+        help="ControlSignals: list / emit / revoke temp_gate_raise",
+    )
+    cs = p_cs.add_subparsers(dest="cs_cmd", required=True)
+    cs_list = cs.add_parser("list", help="List active temp_gate_raise signals")
+    cs_list.add_argument("--json", action="store_true")
+    cs_list.set_defaults(func=cmd_control_signals, cs_cmd="list")
+    cs_em = cs.add_parser("emit", help="Emit temp_gate_raise (manual / force_review)")
+    cs_em.add_argument("--sport", required=True)
+    cs_em.add_argument("--market", default="")
+    cs_em.add_argument("--bet-id", default="", dest="bet_id")
+    cs_em.add_argument(
+        "--source",
+        default="manual",
+        help="manual | force_review | process_error",
+    )
+    cs_em.add_argument("--reason", default="")
+    cs_em.set_defaults(func=cmd_control_signals, cs_cmd="emit")
+    cs_rv = cs.add_parser("revoke", help="Expire/revoke matching active signals")
+    cs_rv.add_argument("--sport", default="")
+    cs_rv.add_argument("--market", default="")
+    cs_rv.add_argument("--all", action="store_true", help="Revoke all active")
+    cs_rv.add_argument("--actor", default="cli")
+    cs_rv.add_argument("--reason", default="manual_expire")
+    cs_rv.set_defaults(func=cmd_control_signals, cs_cmd="revoke")
 
     p_cal = sub.add_parser("calibrate", help="p_model vs outcome calibration")
     cal = p_cal.add_subparsers(dest="calibrate_cmd", required=True)

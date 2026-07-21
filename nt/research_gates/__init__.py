@@ -146,6 +146,23 @@ def evaluate_research_gates(
     sources = normalize_sources(ev.get("sources"))
     sensitive = _is_sensitive(sport_n, family, gcfg)
 
+    # P0: ControlSignals runtime overlay (temp_gate_raise → force confirmed + notes)
+    overlay_force = False
+    overlay_raise = 0.0
+    try:
+        from nt.control_signals import active_temp_gate_overlay
+
+        ov = active_temp_gate_overlay(cfg, sport=sport_n, market=family)
+        overlay_force = bool(ov.get("force_confirmed_lineup"))
+        overlay_raise = float(ov.get("min_ev_raise") or 0)
+        if overlay_force:
+            gcfg = dict(gcfg)
+            gcfg["high_context_require_confirmed"] = True
+            gcfg["strict_confirmed_only"] = True
+            gcfg["predicted_availability_ok"] = False
+    except Exception:
+        pass
+
     ctx = GateContext(
         sport=sport_n,
         selection=sel_text,
@@ -172,6 +189,23 @@ def evaluate_research_gates(
     )
     profile = get_profile(sport_n)
     profile(ctx, result)
+
+    if overlay_force or overlay_raise > 0:
+        result.soft.append(
+            f"control_signal:temp_gate_raise "
+            f"min_ev+{overlay_raise:.3f} force_confirmed={overlay_force}"
+        )
+        # Fail-closed: avail-sensitive + force confirmed + predicted/missing
+        if overlay_force and sensitive:
+            from nt.research_gates.universal import CONFIRMED
+
+            st = (ctx.availability_status or "").strip().lower()
+            if st not in CONFIRMED:
+                result.hard.append(
+                    "control_signal temp_gate_raise: confirmed availability required "
+                    f"(got {st or 'missing'}) after process_error / poor retro"
+                )
+
     return result.as_tuple()
 
 

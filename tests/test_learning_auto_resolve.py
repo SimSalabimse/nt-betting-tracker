@@ -1,4 +1,4 @@
-"""P0: full-delta learning accept requires n≥5 and conf≥0.35."""
+"""P0: full-delta learning accept requires n≥8 and conf≥0.40."""
 from __future__ import annotations
 
 import json
@@ -70,23 +70,23 @@ def _write_pending(cfg: dict, *, n: int, conf: float, d_stake: float = 0.05) -> 
 
 def test_full_delta_accept_when_n_and_conf_ok(tmp_path: Path):
     cfg = _cfg(tmp_path)
-    pid = _write_pending(cfg, n=5, conf=0.40, d_stake=0.05)
+    pid = _write_pending(cfg, n=8, conf=0.45, d_stake=0.05)
     out = auto_resolve_learning_proposals(cfg)
     assert pid in out["accepted"]
     assert pid not in out["modified"]
 
 
-def test_soft_modify_when_n_below_5(tmp_path: Path):
+def test_soft_modify_when_n_below_8(tmp_path: Path):
     cfg = _cfg(tmp_path)
-    pid = _write_pending(cfg, n=2, conf=0.50, d_stake=0.05)
+    pid = _write_pending(cfg, n=5, conf=0.50, d_stake=0.05)
     out = auto_resolve_learning_proposals(cfg)
     assert pid in out["modified"]
     assert pid not in out["accepted"]
 
 
-def test_soft_modify_when_conf_below_035(tmp_path: Path):
+def test_soft_modify_when_conf_below_040(tmp_path: Path):
     cfg = _cfg(tmp_path)
-    pid = _write_pending(cfg, n=10, conf=0.20, d_stake=0.05)
+    pid = _write_pending(cfg, n=12, conf=0.30, d_stake=0.05)
     out = auto_resolve_learning_proposals(cfg)
     assert pid in out["modified"]
     assert pid not in out["accepted"]

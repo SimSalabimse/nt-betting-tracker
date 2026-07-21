@@ -79,6 +79,22 @@ Peak equity is max end-of-day equity on the era curve (baseline + cumulative set
 - Portfolio / recommend still enforce EV, grades, high-odds policy, empty-slip-OK
 - Multi-year narrative + Monte Carlo: `docs/BANKROLL_PLAN.md` + `nt project`
 
+## Phase v5 multi-factor (2026-07) — additive
+
+Labels **1A–5** unchanged. Alongside the ladder, `evaluate_phase` attaches:
+
+| Field | Role |
+|-------|------|
+| `phase_state` | equity_score, dd_score, process_error_rate_14d, calibration_score, open_risk_concentration, learning_health |
+| `size_mode_floor` | May force **REDUCED** when process_error_rate_14d > 0.25 (n≥4), sticky 7d |
+| `research_only` | Optional (cfg `process_error_action`) — blocks new risk |
+| `high_odds_stress_block` | High open-sport concentration or poor Brier → block high-odds |
+
+**Hard rule:** capital_v2 `size_mode` from DD/freezes is the **sizing floor**. Phase health may only **tighten** (NORMAL→REDUCED / RESEARCH_ONLY), never loosen FROZEN.
+
+**Code:** `nt/phase.py`, `nt/phase_factors.py`, `nt/risk.py` merge.  
+**Agent rules:** `AGENTS.md` · full map `docs/CLOSED_LOOP_PHASE_REDESIGN_SUMMARY.md` · residuals `docs/RESIDUAL_RISKS.md`.
+
 ## Related docs (v5)
 
 | Doc | Role |

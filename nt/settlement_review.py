@@ -233,28 +233,51 @@ def analyze_settled_batch(
 
     proposals = build_learning_proposals(cfg, reviews, learning)
 
-    # P1: process_error → temporary min_ev gates (closed loop)
+    # P0: ControlSignals primary closed loop (process_error / poor retro → temp_gate_raise)
     process_gate_events: list[dict[str, Any]] = []
+    control_signal_events: list[dict[str, Any]] = []
     try:
-        from nt.process_gates import note_clean_settlement, upsert_process_error_gates
+        from nt.process_gates import upsert_process_error_gates
+
+        # Match reviews back to settle items for packet / retro
+        items_by_id = {
+            str(i.get("bet_id") or ""): i for i in settled_items if isinstance(i, dict)
+        }
 
         for r in reviews:
             f = r.get("factors") or {}
             sp = str(f.get("sport") or "")
             mk = str(f.get("market") or "")
-            if r.get("variance_class") == "process_error":
-                process_gate_events.append(
-                    upsert_process_error_gates(
-                        cfg,
-                        sport=sp,
-                        market=mk,
-                        bet_id=str(r.get("bet_id") or ""),
-                    )
+            bid = str(r.get("bet_id") or "")
+            item = items_by_id.get(bid) or {}
+            packet = item.get("post_settlement_packet") or {}
+            retro = str(
+                r.get("research_quality_retro")
+                or item.get("research_quality_retro")
+                or ""
+            ).strip().lower()
+            is_process = r.get("variance_class") == "process_error"
+            is_poor = retro in ("poor", "wrong", "miss")
+            if is_process or is_poor:
+                src = "process_error" if is_process else "research_retro_poor"
+                ev = upsert_process_error_gates(
+                    cfg,
+                    sport=sp,
+                    market=mk,
+                    bet_id=bid,
+                    source=src,
+                    process_root_cause=str(
+                        packet.get("process_root_cause")
+                        or item.get("process_root_cause")
+                        or ""
+                    ),
+                    packet=packet if isinstance(packet, dict) else None,
                 )
-            else:
-                note_clean_settlement(cfg, sport=sp, market=mk)
+                process_gate_events.append(ev)
+                control_signal_events.append(ev)
     except Exception as ex:  # noqa: BLE001
         process_gate_events.append({"ok": False, "error": str(ex)})
+        control_signal_events.append({"ok": False, "error": str(ex)})
 
     report = {
         "ts": utc_now(),
@@ -263,6 +286,7 @@ def analyze_settled_batch(
         "proposals": proposals,
         "narrative": _narrative(summary, reviews, proposals),
         "process_gates": process_gate_events,
+        "control_signals": control_signal_events,
     }
 
     # Persist reviews
@@ -504,8 +528,9 @@ def auto_resolve_learning_proposals(cfg: dict[str, Any]) -> dict[str, Any]:
     rejected: list[str] = []
     modified: list[str] = []
 
-    FULL_DELTA_MIN_N = 5
-    FULL_DELTA_MIN_CONF = 0.35
+    # P0: stricter thin-sample protection for permanent mults
+    FULL_DELTA_MIN_N = 8
+    FULL_DELTA_MIN_CONF = 0.40
 
     for p in pending:
         pid = str(p.get("id") or "")
@@ -549,7 +574,7 @@ def auto_resolve_learning_proposals(cfg: dict[str, Any]) -> dict[str, Any]:
         "modified": modified,
         "rejected": rejected,
         "n_resolved": len(accepted) + len(modified) + len(rejected),
-        "policy": "full_delta_requires_n>=5_and_conf>=0.35",
+        "policy": "full_delta_requires_n>=8_and_conf>=0.40",
     }
 
 

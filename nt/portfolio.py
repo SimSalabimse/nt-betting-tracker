@@ -318,11 +318,23 @@ def build_portfolio(
 
     if not risk.get("can_bet"):
         return [], [{"reason": "risk block", "detail": risk.get("reasons")}]
+    if risk.get("research_only") or phase.get("research_only"):
+        return [], [
+            {
+                "reason": "phase RESEARCH_ONLY",
+                "detail": phase.get("process_health_reason")
+                or risk.get("phase_health")
+                or "process health blocks new risk",
+            }
+        ]
 
     remaining = float(risk["remaining_risk_nok"])
     max_bets = int(phase["max_bets_per_round"])
     high_odds_count = 0
     max_high = int(sel.get("high_odds_max_per_round", 2))
+    high_odds_stress = bool(
+        risk.get("high_odds_stress_block") or phase.get("high_odds_stress_block")
+    )
 
     # Loss-streak discipline: after N consecutive losses, only grade A may be placed
     grade_a_only = False
@@ -392,6 +404,22 @@ def build_portfolio(
         if adj.get("explored"):
             min_ev = min(min_ev, float(div_lim.get("explore_min_ev", 0.012)))
         if high:
+            # Phase v5: concentration / poor calibration blocks high-odds entirely
+            if high_odds_stress:
+                rejects.append(
+                    {
+                        "match": c.match,
+                        "selection": c.selection,
+                        "odds": odds,
+                        "reason": (
+                            "phase_health: high_odds blocked "
+                            "(concentration/calibration stress)"
+                        ),
+                        "grade": grade,
+                        "ev": round(ev, 4),
+                    }
+                )
+                continue
             min_ev = float(sel["high_odds_min_ev"])
             need_grade = str(sel["high_odds_min_grade"]).upper()
             if grade > need_grade or grade == "F" or (need_grade == "A" and grade != "A"):

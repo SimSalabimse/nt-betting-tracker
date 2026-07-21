@@ -309,6 +309,34 @@ def run_settle(cfg: dict[str, Any], results_path: Path) -> dict[str, Any]:
             )
             continue
 
+        # P0: PostSettlementPacket fail-closed when process_error / poor retro
+        packet: dict | None = None
+        try:
+            from nt.post_settlement_packet import (
+                packet_to_notes_blob,
+                validate_settle_item,
+            )
+
+            ok_pkt, pkt_errs, packet = validate_settle_item(item)
+            if not ok_pkt:
+                errors.append(
+                    {
+                        "bet_id": bet.get("bet_id") or item.get("bet_id"),
+                        "error": "PostSettlementPacket incomplete: "
+                        + "; ".join(pkt_errs),
+                        "packet_errors": pkt_errs,
+                    }
+                )
+                continue
+        except Exception as ex:  # noqa: BLE001
+            errors.append(
+                {
+                    "bet_id": bet.get("bet_id") or item.get("bet_id"),
+                    "error": f"PostSettlementPacket validation error: {ex}",
+                }
+            )
+            continue
+
         stake = fnum(bet.get("stake_nok")) or 0.0
         odds = fnum(bet.get("decimal_odds")) or 0.0
         payout = item.get("payout_nok")
@@ -343,7 +371,11 @@ def run_settle(cfg: dict[str, Any], results_path: Path) -> dict[str, Any]:
 
         # Rich settlement metadata (encoded into notes for ledger portability)
         rich_bits: list[str] = []
-        score = item.get("score") or item.get("actual_score")
+        score = (
+            (packet or {}).get("actual_score")
+            or item.get("score")
+            or item.get("actual_score")
+        )
         if score:
             rich_bits.append(f"score:{score}")
         variance_tag = item.get("variance_tag") or item.get("feel")
@@ -360,6 +392,11 @@ def run_settle(cfg: dict[str, Any], results_path: Path) -> dict[str, Any]:
             rich_bits.append(f"events:{str(key_events)[:120]}")
         if item.get("auto_fetched"):
             rich_bits.append("auto_fetch:1")
+        if packet:
+            try:
+                rich_bits.append(packet_to_notes_blob(packet))
+            except Exception:
+                pass
 
         note = (item.get("notes") or item.get("settlement_notes") or "").strip()
         if rich_bits:
@@ -367,7 +404,7 @@ def run_settle(cfg: dict[str, Any], results_path: Path) -> dict[str, Any]:
             note = f"{note} | {rich_note}".strip(" |") if note else rich_note
         if note:
             prev = bet.get("notes") or ""
-            bet["notes"] = (prev + " | " + note).strip(" |")[:500]
+            bet["notes"] = (prev + " | " + note).strip(" |")[:800]
 
         settled.append(
             {
@@ -385,6 +422,13 @@ def run_settle(cfg: dict[str, Any], results_path: Path) -> dict[str, Any]:
                 "match": bet.get("match"),
                 "selection": bet.get("selection"),
                 "sport": bet.get("sport"),
+                "post_settlement_packet": packet,
+                "actual_lineup_status": (packet or {}).get("actual_lineup_status"),
+                "predicted_vs_actual_xi_delta": (packet or {}).get(
+                    "predicted_vs_actual_xi_delta"
+                ),
+                "script_realized": (packet or {}).get("script_realized"),
+                "process_root_cause": (packet or {}).get("process_root_cause"),
             }
         )
 

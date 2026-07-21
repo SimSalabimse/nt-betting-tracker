@@ -141,6 +141,14 @@ def _evaluate_risk_legacy(
     if remaining <= 0:
         reasons.append(f"daily risk exhausted: pending {open_pending:.2f} / cap {cap:.2f}")
 
+    research_only = bool(phase.get("research_only"))
+    high_odds_stress = bool(phase.get("high_odds_stress_block"))
+    if research_only and not stopped:
+        remaining = 0.0
+        reasons.append("PHASE HEALTH: RESEARCH_ONLY — no new risk")
+    min_stake = float(cfg["norsk_tipping"]["min_stake_nok"])
+    can_bet = (not stopped) and remaining >= min_stake and not research_only
+
     return {
         "date": today,
         "equity_nok": equity,
@@ -152,7 +160,10 @@ def _evaluate_risk_legacy(
         "today_realized_pl_nok": realized,
         "stop_day_loss_limit_nok": stop_lim,
         "stopped": stopped,
-        "can_bet": (not stopped) and remaining >= float(cfg["norsk_tipping"]["min_stake_nok"]),
+        "can_bet": can_bet,
+        "research_only": research_only,
+        "high_odds_stress_block": high_odds_stress,
+        "size_mode_floor": phase.get("size_mode_floor"),
         "reasons": reasons,
         "formula": (
             "daily_cap = clamp(equity * phase.daily_risk_pct, floor, ceil); "
@@ -345,7 +356,28 @@ def _evaluate_risk_capital_v2(
     else:
         remaining = max(0.0, round(remaining, 2))
 
-    can_bet = (not stopped) and remaining >= min_stake
+    # ── Phase v5 health: can only tighten size_mode / block new risk ───────
+    size_mode_capital = size_mode
+    size_mode_floor = str(phase.get("size_mode_floor") or "").upper() or None
+    research_only = bool(phase.get("research_only"))
+    high_odds_stress = bool(phase.get("high_odds_stress_block"))
+
+    if size_mode_floor == "REDUCED" and size_mode == "NORMAL" and not stopped:
+        size_mode = "REDUCED"
+        reasons.append(
+            "PHASE HEALTH: size_mode_floor=REDUCED "
+            f"({phase.get('process_health_reason') or 'process_error_rate'})"
+        )
+    # Never loosen: FROZEN / hard stops stay
+
+    if research_only and not stopped:
+        remaining = 0.0
+        reasons.append(
+            "PHASE HEALTH: RESEARCH_ONLY — no new risk "
+            f"({phase.get('process_health_reason') or 'process health'})"
+        )
+
+    can_bet = (not stopped) and remaining >= min_stake and not research_only
 
     # Legacy-compatible kill-switch fields: stopped if hard stop OR cannot bet
     # Preserve keys used by status/recommend; extend with v2 diagnostics.
@@ -368,7 +400,8 @@ def _evaluate_risk_capital_v2(
             "capital_v2 fail-closed: L0 freeze → L1 DD(15% REDUCED/25% FROZEN) → "
             "L2 weekly(8%|6u) → L3 daily(4%|3u) → "
             "remaining=min(phase_cap−open[−day_loss], portfolio_open_room 18% liquid); "
-            "settlement-day P/L Europe/Oslo; working=equity−secure"
+            "settlement-day P/L Europe/Oslo; working=equity−secure; "
+            "phase_health may tighten size_mode/research_only only"
         ),
         # capital_v2 diagnostics (downstream 2.3 sizing / App)
         "capital_v2_enabled": True,
@@ -383,6 +416,16 @@ def _evaluate_risk_capital_v2(
         "peak_equity_nok": peak,
         "drawdown_from_peak": round(dd, 6),
         "size_mode": size_mode,
+        "size_mode_capital": size_mode_capital,
+        "size_mode_floor": size_mode_floor,
+        "research_only": research_only,
+        "high_odds_stress_block": high_odds_stress,
+        "phase_health": {
+            "process_health_until": phase.get("process_health_until"),
+            "process_health_action": phase.get("process_health_action"),
+            "process_health_reason": phase.get("process_health_reason"),
+            "phase_state": phase.get("phase_state"),
+        },
         "freeze_manual": freeze_manual,
         "dd_frozen": dd_frozen and not freeze_manual,
         "week_id": week_id,
