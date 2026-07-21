@@ -1,0 +1,912 @@
+{
+  "enabled": true,
+  "updated_at": "2026-07-21T17:06:00Z",
+  "previous_updated_at": "2026-07-21T17:06:00Z",
+  "config_snapshot": {
+    "min_sample": 12,
+    "recent_window": 30,
+    "recent_weight": 0.4,
+    "weight_mode": "weighted",
+    "half_life_days": 60.0,
+    "archive_process_weight": 0.35,
+    "full_process_weight": 1.0,
+    "stake_mult_min": 0.72,
+    "stake_mult_max": 1.18,
+    "block_min_sample": 20,
+    "block_roi_below": -0.18
+  },
+  "sports": {
+    "football": {
+      "stake_mult": 1.0,
+      "ev_boost": 0.0,
+      "blocked": false,
+      "status": "thin",
+      "confidence": 0.58,
+      "n": 7,
+      "roi": 0.5609,
+      "roi_blended": 0.5609,
+      "roi_recent": 0.5609,
+      "n_recent": 7,
+      "roi_short": 0.5609,
+      "n_short": 7,
+      "roi_long": 0.5609,
+      "roi_layered": 0.5609,
+      "pl": 42.75,
+      "winrate": 0.8571,
+      "stake": 76.0,
+      "layers": {
+        "short": {
+          "n": 7,
+          "roi": 0.5609
+        },
+        "medium": {
+          "n": 7,
+          "roi": 0.5609
+        },
+        "long": {
+          "n": 7,
+          "roi": 0.5609
+        },
+        "recommend_blend": 0.5609,
+        "triple_blend": 0.5609
+      }
+    },
+    "baseball": {
+      "stake_mult": 1.0,
+      "ev_boost": 0.0,
+      "blocked": false,
+      "status": "thin",
+      "confidence": 0.42,
+      "n": 5,
+      "roi": -0.2707,
+      "roi_blended": -0.2707,
+      "roi_recent": -0.2707,
+      "n_recent": 5,
+      "roi_short": -0.2707,
+      "n_short": 5,
+      "roi_long": -0.2707,
+      "roi_layered": -0.2707,
+      "pl": -14.06,
+      "winrate": 0.4,
+      "stake": 53.0,
+      "layers": {
+        "short": {
+          "n": 5,
+          "roi": -0.2707
+        },
+        "medium": {
+          "n": 5,
+          "roi": -0.2707
+        },
+        "long": {
+          "n": 5,
+          "roi": -0.2707
+        },
+        "recommend_blend": -0.2707,
+        "triple_blend": -0.2707
+      }
+    },
+    "tennis": {
+      "stake_mult": 1.0,
+      "ev_boost": 0.0,
+      "blocked": false,
+      "status": "thin",
+      "confidence": 0.42,
+      "n": 5,
+      "roi": 0.6182,
+      "roi_blended": 0.6182,
+      "roi_recent": 0.6182,
+      "n_recent": 5,
+      "roi_short": 0.6182,
+      "n_short": 5,
+      "roi_long": 0.6182,
+      "roi_layered": 0.6182,
+      "pl": 35.21,
+      "winrate": 1.0,
+      "stake": 57.0,
+      "layers": {
+        "short": {
+          "n": 5,
+          "roi": 0.6182
+        },
+        "medium": {
+          "n": 5,
+          "roi": 0.6182
+        },
+        "long": {
+          "n": 5,
+          "roi": 0.6182
+        },
+        "recommend_blend": 0.6182,
+        "triple_blend": 0.6182
+      }
+    },
+    "darts": {
+      "stake_mult": 1.0,
+      "ev_boost": 0.0,
+      "blocked": false,
+      "status": "thin",
+      "confidence": 0.42,
+      "n": 5,
+      "roi": -0.4225,
+      "roi_blended": -0.4225,
+      "roi_recent": -0.4225,
+      "n_recent": 5,
+      "roi_short": -0.4225,
+      "n_short": 5,
+      "roi_long": -0.4225,
+      "roi_layered": -0.4225,
+      "pl": -23.65,
+      "winrate": 0.25,
+      "stake": 56.0,
+      "layers": {
+        "short": {
+          "n": 5,
+          "roi": -0.4225
+        },
+        "medium": {
+          "n": 5,
+          "roi": -0.4225
+        },
+        "long": {
+          "n": 5,
+          "roi": -0.4225
+        },
+        "recommend_blend": -0.4225,
+        "triple_blend": -0.4225
+      }
+    },
+    "snooker": {
+      "stake_mult": 1.0,
+      "ev_boost": 0.0,
+      "blocked": false,
+      "status": "thin",
+      "confidence": 0.25,
+      "n": 3,
+      "roi": -0.4473,
+      "roi_blended": -0.4473,
+      "roi_recent": -0.4473,
+      "n_recent": 3,
+      "roi_short": -0.4473,
+      "n_short": 3,
+      "roi_long": -0.4473,
+      "roi_layered": -0.4473,
+      "pl": -14.0,
+      "winrate": 0.3333,
+      "stake": 31.0,
+      "layers": {
+        "short": {
+          "n": 3,
+          "roi": -0.4473
+        },
+        "medium": {
+          "n": 3,
+          "roi": -0.4473
+        },
+        "long": {
+          "n": 3,
+          "roi": -0.4473
+        },
+        "recommend_blend": -0.4473,
+        "triple_blend": -0.4473
+      }
+    },
+    "basketball": {
+      "stake_mult": 1.0,
+      "ev_boost": 0.0,
+      "blocked": false,
+      "status": "thin",
+      "confidence": 0.17,
+      "n": 2,
+      "roi": 0.8141,
+      "roi_blended": 0.8141,
+      "roi_recent": 0.8141,
+      "n_recent": 2,
+      "roi_short": 0.8141,
+      "n_short": 2,
+      "roi_long": 0.8141,
+      "roi_layered": 0.8141,
+      "pl": 17.9,
+      "winrate": 1.0,
+      "stake": 22.0,
+      "layers": {
+        "short": {
+          "n": 2,
+          "roi": 0.8141
+        },
+        "medium": {
+          "n": 2,
+          "roi": 0.8141
+        },
+        "long": {
+          "n": 2,
+          "roi": 0.8141
+        },
+        "recommend_blend": 0.8141,
+        "triple_blend": 0.8141
+      }
+    },
+    "esports": {
+      "stake_mult": 1.0,
+      "ev_boost": 0.0,
+      "blocked": false,
+      "status": "thin",
+      "confidence": 0.08,
+      "n": 1,
+      "roi": 0.57,
+      "roi_blended": 0.57,
+      "roi_recent": 0.57,
+      "n_recent": 1,
+      "roi_short": 0.57,
+      "n_short": 1,
+      "roi_long": 0.57,
+      "roi_layered": 0.57,
+      "pl": 6.84,
+      "winrate": 1.0,
+      "stake": 12.0,
+      "layers": {
+        "short": {
+          "n": 1,
+          "roi": 0.57
+        },
+        "medium": {
+          "n": 1,
+          "roi": 0.57
+        },
+        "long": {
+          "n": 1,
+          "roi": 0.57
+        },
+        "recommend_blend": 0.57,
+        "triple_blend": 0.57
+      }
+    }
+  },
+  "markets": {
+    "Handicap": {
+      "stake_mult": 1.0,
+      "ev_boost": 0.0,
+      "blocked": false,
+      "status": "thin",
+      "confidence": 0.92,
+      "n": 11,
+      "roi": 0.2326,
+      "roi_blended": 0.2326,
+      "roi_recent": 0.2326,
+      "n_recent": 11,
+      "roi_short": 0.3525,
+      "n_short": 10,
+      "roi_long": 0.2326,
+      "roi_layered": 0.2326,
+      "pl": 28.09,
+      "winrate": 0.7,
+      "stake": 123.0,
+      "layers": {
+        "short": {
+          "n": 10,
+          "roi": 0.3525
+        },
+        "medium": {
+          "n": 11,
+          "roi": 0.2326
+        },
+        "long": {
+          "n": 11,
+          "roi": 0.2326
+        },
+        "recommend_blend": 0.2326,
+        "triple_blend": 0.2326
+      }
+    },
+    "Match result": {
+      "stake_mult": 1.0,
+      "ev_boost": 0.0,
+      "blocked": false,
+      "status": "thin",
+      "confidence": 0.67,
+      "n": 8,
+      "roi": 0.0493,
+      "roi_blended": 0.0493,
+      "roi_recent": 0.0493,
+      "n_recent": 8,
+      "roi_short": 0.0493,
+      "n_short": 8,
+      "roi_long": 0.0493,
+      "roi_layered": 0.0493,
+      "pl": 4.22,
+      "winrate": 0.625,
+      "stake": 87.0,
+      "layers": {
+        "short": {
+          "n": 8,
+          "roi": 0.0493
+        },
+        "medium": {
+          "n": 8,
+          "roi": 0.0493
+        },
+        "long": {
+          "n": 8,
+          "roi": 0.0493
+        },
+        "recommend_blend": 0.0493,
+        "triple_blend": 0.0493
+      }
+    },
+    "Totals Over": {
+      "stake_mult": 1.0,
+      "ev_boost": 0.0,
+      "blocked": false,
+      "status": "thin",
+      "confidence": 0.25,
+      "n": 3,
+      "roi": -0.6264,
+      "roi_blended": -0.6264,
+      "roi_recent": -0.6264,
+      "n_recent": 3,
+      "roi_short": -0.6264,
+      "n_short": 3,
+      "roi_long": -0.6264,
+      "roi_layered": -0.6264,
+      "pl": -20.0,
+      "winrate": 0.0,
+      "stake": 32.0,
+      "layers": {
+        "short": {
+          "n": 3,
+          "roi": -0.6264
+        },
+        "medium": {
+          "n": 3,
+          "roi": -0.6264
+        },
+        "long": {
+          "n": 3,
+          "roi": -0.6264
+        },
+        "recommend_blend": -0.6264,
+        "triple_blend": -0.6264
+      }
+    },
+    "BTTS": {
+      "stake_mult": 1.0,
+      "ev_boost": 0.0,
+      "blocked": false,
+      "status": "thin",
+      "confidence": 0.17,
+      "n": 2,
+      "roi": 0.8426,
+      "roi_blended": 0.8426,
+      "roi_recent": 0.8426,
+      "n_recent": 2,
+      "roi_short": 0.8426,
+      "n_short": 2,
+      "roi_long": 0.8426,
+      "roi_layered": 0.8426,
+      "pl": 18.54,
+      "winrate": 1.0,
+      "stake": 22.0,
+      "layers": {
+        "short": {
+          "n": 2,
+          "roi": 0.8426
+        },
+        "medium": {
+          "n": 2,
+          "roi": 0.8426
+        },
+        "long": {
+          "n": 2,
+          "roi": 0.8426
+        },
+        "recommend_blend": 0.8426,
+        "triple_blend": 0.8426
+      }
+    },
+    "Totals Under": {
+      "stake_mult": 1.0,
+      "ev_boost": 0.0,
+      "blocked": false,
+      "status": "thin",
+      "confidence": 0.17,
+      "n": 2,
+      "roi": -0.0977,
+      "roi_blended": -0.0977,
+      "roi_recent": -0.0977,
+      "n_recent": 2,
+      "roi_short": -0.0977,
+      "n_short": 2,
+      "roi_long": -0.0977,
+      "roi_layered": -0.0977,
+      "pl": -2.36,
+      "winrate": 0.5,
+      "stake": 23.0,
+      "layers": {
+        "short": {
+          "n": 2,
+          "roi": -0.0977
+        },
+        "medium": {
+          "n": 2,
+          "roi": -0.0977
+        },
+        "long": {
+          "n": 2,
+          "roi": -0.0977
+        },
+        "recommend_blend": -0.0977,
+        "triple_blend": -0.0977
+      }
+    },
+    "Period totals": {
+      "stake_mult": 1.0,
+      "ev_boost": 0.0,
+      "blocked": false,
+      "status": "thin",
+      "confidence": 0.08,
+      "n": 1,
+      "roi": 1.4,
+      "roi_blended": 1.4,
+      "roi_recent": 1.4,
+      "n_recent": 1,
+      "roi_short": 1.4,
+      "n_short": 1,
+      "roi_long": 1.4,
+      "roi_layered": 1.4,
+      "pl": 14.0,
+      "winrate": 1.0,
+      "stake": 10.0,
+      "layers": {
+        "short": {
+          "n": 1,
+          "roi": 1.4
+        },
+        "medium": {
+          "n": 1,
+          "roi": 1.4
+        },
+        "long": {
+          "n": 1,
+          "roi": 1.4
+        },
+        "recommend_blend": 1.4,
+        "triple_blend": 1.4
+      }
+    },
+    "Other": {
+      "stake_mult": 1.0,
+      "ev_boost": 0.0,
+      "blocked": false,
+      "status": "thin",
+      "confidence": 0.08,
+      "n": 1,
+      "roi": 0.85,
+      "roi_blended": 0.85,
+      "roi_recent": 0.85,
+      "n_recent": 1,
+      "roi_short": 0.85,
+      "n_short": 1,
+      "roi_long": 0.85,
+      "roi_layered": 0.85,
+      "pl": 8.5,
+      "winrate": 1.0,
+      "stake": 10.0,
+      "layers": {
+        "short": {
+          "n": 1,
+          "roi": 0.85
+        },
+        "medium": {
+          "n": 1,
+          "roi": 0.85
+        },
+        "long": {
+          "n": 1,
+          "roi": 0.85
+        },
+        "recommend_blend": 0.85,
+        "triple_blend": 0.85
+      }
+    }
+  },
+  "bands": {
+    "1.5-1.8": {
+      "stake_mult": 0.972,
+      "ev_boost": -0.0038,
+      "blocked": false,
+      "status": "weak",
+      "confidence": 0.43,
+      "n": 13,
+      "roi": -0.0723,
+      "roi_blended": -0.0723,
+      "roi_recent": -0.0723,
+      "n_recent": 13,
+      "roi_short": -0.1348,
+      "n_short": 10,
+      "roi_long": -0.0723,
+      "roi_layered": -0.0942,
+      "pl": -10.33,
+      "winrate": 0.5385,
+      "stake": 139.0,
+      "layers": {
+        "short": {
+          "n": 10,
+          "roi": -0.1348
+        },
+        "medium": {
+          "n": 13,
+          "roi": -0.0723
+        },
+        "long": {
+          "n": 13,
+          "roi": -0.0723
+        },
+        "recommend_blend": -0.0723,
+        "triple_blend": -0.0942
+      }
+    },
+    "1.8-2.2": {
+      "stake_mult": 1.115,
+      "ev_boost": 0.0153,
+      "blocked": false,
+      "status": "strong",
+      "confidence": 0.43,
+      "n": 13,
+      "roi": 0.2947,
+      "roi_blended": 0.2947,
+      "roi_recent": 0.2947,
+      "n_recent": 13,
+      "roi_short": 0.3266,
+      "n_short": 10,
+      "roi_long": 0.2947,
+      "roi_layered": 0.3058,
+      "pl": 43.25,
+      "winrate": 0.7273,
+      "stake": 147.0,
+      "layers": {
+        "short": {
+          "n": 10,
+          "roi": 0.3266
+        },
+        "medium": {
+          "n": 13,
+          "roi": 0.2947
+        },
+        "long": {
+          "n": 13,
+          "roi": 0.2947
+        },
+        "recommend_blend": 0.2947,
+        "triple_blend": 0.3058
+      }
+    },
+    "2.2-2.5": {
+      "stake_mult": 1.0,
+      "ev_boost": 0.0,
+      "blocked": false,
+      "status": "thin",
+      "confidence": 0.08,
+      "n": 1,
+      "roi": 1.4,
+      "roi_blended": 1.4,
+      "roi_recent": 1.4,
+      "n_recent": 1,
+      "roi_short": 1.4,
+      "n_short": 1,
+      "roi_long": 1.4,
+      "roi_layered": 1.4,
+      "pl": 14.0,
+      "winrate": 1.0,
+      "stake": 10.0,
+      "layers": {
+        "short": {
+          "n": 1,
+          "roi": 1.4
+        },
+        "medium": {
+          "n": 1,
+          "roi": 1.4
+        },
+        "long": {
+          "n": 1,
+          "roi": 1.4
+        },
+        "recommend_blend": 1.4,
+        "triple_blend": 1.4
+      }
+    },
+    "<1.5": {
+      "stake_mult": 1.0,
+      "ev_boost": 0.0,
+      "blocked": false,
+      "status": "thin",
+      "confidence": 0.08,
+      "n": 1,
+      "roi": 0.37,
+      "roi_blended": 0.37,
+      "roi_recent": 0.37,
+      "n_recent": 1,
+      "roi_short": 0.37,
+      "n_short": 1,
+      "roi_long": 0.37,
+      "roi_layered": 0.37,
+      "pl": 4.07,
+      "winrate": 1.0,
+      "stake": 11.0,
+      "layers": {
+        "short": {
+          "n": 1,
+          "roi": 0.37
+        },
+        "medium": {
+          "n": 1,
+          "roi": 0.37
+        },
+        "long": {
+          "n": 1,
+          "roi": 0.37
+        },
+        "recommend_blend": 0.37,
+        "triple_blend": 0.37
+      }
+    }
+  },
+  "lessons": [
+    {
+      "level": "warn",
+      "scope": "recent",
+      "title": "Loss: Colorado Rockies vs Washington Nationals",
+      "detail": "Totalt 11.5 (inkludert ekstra innings): Over 11.5 @ 1.74 · P/L -10.00 · baseball · band 1.5-1.8"
+    },
+    {
+      "level": "info",
+      "scope": "recent",
+      "title": "Win: Dallas Wings vs New York Liberty",
+      "detail": "Handikap 4.5 (inkludert overtid): Dallas Wings +4.5 @ 1.85 · P/L +10.20 · basketball · band 1.8-2.2"
+    },
+    {
+      "level": "info",
+      "scope": "recent",
+      "title": "Win: 3Dmax vs Gentle Mates",
+      "detail": "Vinner: 3Dmax @ 1.57 · P/L +6.84 · esports · band 1.5-1.8"
+    },
+    {
+      "level": "info",
+      "scope": "recent",
+      "title": "Win: Jeonbuk FC vs Daejeon Citizen FC",
+      "detail": "Totalt antall mål - over/under 2.5: Under 2.5 @ 1.72 · P/L +8.64 · football · band 1.5-1.8"
+    },
+    {
+      "level": "info",
+      "scope": "recent",
+      "title": "Win: Baez, Sebastian vs Kecmanovic, Miomir",
+      "detail": "Game handikap 1.5: Baez, Sebastian +1.5 @ 1.85 · P/L +10.20 · tennis · band 1.8-2.2"
+    }
+  ],
+  "recent_settlements": [
+    {
+      "date": "2026-07-21",
+      "match": "Baez, Sebastian vs Kecmanovic, Miomir",
+      "selection": "Game handikap 1.5: Baez, Sebastian +1.5",
+      "result": "Win",
+      "pl": 10.2,
+      "odds": "1.85",
+      "stake_nok": "12",
+      "sport": "tennis",
+      "market": "Handicap",
+      "sport_stake_now": 1.0,
+      "sport_status": "thin",
+      "market_stake_now": 1.0,
+      "market_status": "thin",
+      "impact_hint": "tennis ×1.0 · Handicap ×1.0"
+    },
+    {
+      "date": "2026-07-21",
+      "match": "Jeonbuk FC vs Daejeon Citizen FC",
+      "selection": "Totalt antall mål - over/under 2.5: Under 2.5",
+      "result": "Win",
+      "pl": 8.64,
+      "odds": "1.72",
+      "stake_nok": "12",
+      "sport": "football",
+      "market": "Totals Under",
+      "sport_stake_now": 1.0,
+      "sport_status": "thin",
+      "market_stake_now": 1.0,
+      "market_status": "thin",
+      "impact_hint": "football ×1.0 · Totals Under ×1.0"
+    },
+    {
+      "date": "2026-07-21",
+      "match": "3Dmax vs Gentle Mates",
+      "selection": "Vinner: 3Dmax",
+      "result": "Win",
+      "pl": 6.84,
+      "odds": "1.57",
+      "stake_nok": "12",
+      "sport": "esports",
+      "market": "Match result",
+      "sport_stake_now": 1.0,
+      "sport_status": "thin",
+      "market_stake_now": 1.0,
+      "market_status": "thin",
+      "impact_hint": "esports ×1.0 · Match result ×1.0"
+    },
+    {
+      "date": "2026-07-21",
+      "match": "Colorado Rockies vs Washington Nationals",
+      "selection": "Totalt 11.5 (inkludert ekstra innings): Over 11.5",
+      "result": "Loss",
+      "pl": -10.0,
+      "odds": "1.74",
+      "stake_nok": "10",
+      "sport": "baseball",
+      "market": "Totals Over",
+      "sport_stake_now": 1.0,
+      "sport_status": "thin",
+      "market_stake_now": 1.0,
+      "market_status": "thin",
+      "impact_hint": "baseball ×1.0 · Totals Over ×1.0"
+    },
+    {
+      "date": "2026-07-21",
+      "match": "Dallas Wings vs New York Liberty",
+      "selection": "Handikap 4.5 (inkludert overtid): Dallas Wings +4.5",
+      "result": "Win",
+      "pl": 10.2,
+      "odds": "1.85",
+      "stake_nok": "12",
+      "sport": "basketball",
+      "market": "Handicap",
+      "sport_stake_now": 1.0,
+      "sport_status": "thin",
+      "market_stake_now": 1.0,
+      "market_status": "thin",
+      "impact_hint": "basketball ×1.0 · Handicap ×1.0"
+    },
+    {
+      "date": "2026-07-20",
+      "match": "Noppert, Danny vs Cross, Rob",
+      "selection": "Totalt antall runder 16.5: Over 16.5",
+      "result": "Loss",
+      "pl": -10.0,
+      "odds": "1.8",
+      "stake_nok": "10",
+      "sport": "darts",
+      "market": "Totals Over",
+      "sport_stake_now": 1.0,
+      "sport_status": "thin",
+      "market_stake_now": 1.0,
+      "market_status": "thin",
+      "impact_hint": "darts ×1.0 · Totals Over ×1.0"
+    },
+    {
+      "date": "2026-07-20",
+      "match": "Donaldson, Scott vs Xinbo, Wang",
+      "selection": "Parti handikap 1.5: Donaldson, Scott +1.5",
+      "result": "Win",
+      "pl": 7.0,
+      "odds": "1.7",
+      "stake_nok": "10",
+      "sport": "snooker",
+      "market": "Handicap",
+      "sport_stake_now": 1.0,
+      "sport_status": "thin",
+      "market_stake_now": 1.0,
+      "market_status": "thin",
+      "impact_hint": "snooker ×1.0 · Handicap ×1.0"
+    },
+    {
+      "date": "2026-07-20",
+      "match": "Humphries, Luke vs Menzies, Cameron",
+      "selection": "Totalt antall runder 15.5: Over 15.5",
+      "result": "Refunded",
+      "pl": 0.0,
+      "odds": "2.1",
+      "stake_nok": "12",
+      "sport": "darts",
+      "market": "Totals Over",
+      "sport_stake_now": 1.0,
+      "sport_status": "thin",
+      "market_stake_now": 1.0,
+      "market_status": "thin",
+      "impact_hint": "darts ×1.0 · Totals Over ×1.0"
+    },
+    {
+      "date": "2026-07-20",
+      "match": "Mushuc Runa SC vs Orense SC",
+      "selection": "BTTS Ja",
+      "result": "Win",
+      "pl": 9.84,
+      "odds": "1.82",
+      "stake_nok": "12",
+      "sport": "football",
+      "market": "BTTS",
+      "sport_stake_now": 1.0,
+      "sport_status": "thin",
+      "market_stake_now": 1.0,
+      "market_status": "thin",
+      "impact_hint": "football ×1.0 · BTTS ×1.0"
+    },
+    {
+      "date": "2026-07-20",
+      "match": "Bondar, Anna vs Uchijima, Moyuka",
+      "selection": "Game handikap -4.5: Uchijima, Moyuka +4.5",
+      "result": "Win",
+      "pl": 10.44,
+      "odds": "1.87",
+      "stake_nok": "12",
+      "sport": "tennis",
+      "market": "Handicap",
+      "sport_stake_now": 1.0,
+      "sport_status": "thin",
+      "market_stake_now": 1.0,
+      "market_status": "thin",
+      "impact_hint": "tennis ×1.0 · Handicap ×1.0"
+    },
+    {
+      "date": "2026-07-20",
+      "match": "Kalmar vs Malmö FF",
+      "selection": "Totalt antall mål - over/under 2.5: Under 2.5",
+      "result": "Loss",
+      "pl": -11.0,
+      "odds": "2.1",
+      "stake_nok": "11",
+      "sport": "football",
+      "market": "Totals Under",
+      "sport_stake_now": 1.0,
+      "sport_status": "thin",
+      "market_stake_now": 1.0,
+      "market_status": "thin",
+      "impact_hint": "football ×1.0 · Totals Under ×1.0"
+    },
+    {
+      "date": "2026-07-20",
+      "match": "Sherif Ahmed Abdelaziz, Maiar vs Badosa, Paula",
+      "selection": "Game handikap 3.5: Sherif Ahmed Abdelaziz, Maiar +3.5",
+      "result": "Refunded",
+      "pl": 0.0,
+      "odds": "1.85",
+      "stake_nok": "12",
+      "sport": "tennis",
+      "market": "Handicap",
+      "sport_stake_now": 1.0,
+      "sport_status": "thin",
+      "market_stake_now": 1.0,
+      "market_status": "thin",
+      "impact_hint": "tennis ×1.0 · Handicap ×1.0"
+    }
+  ],
+  "multiplier_moves": [],
+  "summary": {
+    "n_settled": 28,
+    "era_roi": 0.1661,
+    "era_pl": 50.99,
+    "n_sports_active": 4,
+    "n_blocked_sports": 0,
+    "n_moves": 0,
+    "best_sports": [
+      {
+        "name": "football",
+        "n": 7,
+        "roi_blended": 0.5609,
+        "stake_mult": 1.0,
+        "ev_boost": 0.0,
+        "status": "thin"
+      }
+    ],
+    "worst_sports": [],
+    "layers": {
+      "short_window": 10,
+      "medium_window": 30,
+      "long": "all_settled",
+      "weights": {
+        "short": 0.35,
+        "medium": 0.4,
+        "long": 0.25
+      },
+      "note": "Recommend still uses recent_weight blend; roi_layered / layers.* are for UI + settlement proposals"
+    }
+  },
+  "version": 3
+}

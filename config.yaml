@@ -7,75 +7,88 @@ project:
   operator: Norsk Tipping Oddsen
 
 bankroll:
-  # Clean-restart era (2026-06-28). Full history kept under history/.
+  # Clean-restart era (LuminaNT autonomous research, 2026-07-18). Prior ledger archived under history/archives/.
   baseline_nok: 500.0
-  era_start: "2026-06-28"
-  # Equity = baseline + sum(settled P/L) over data/bets.csv
-  # data/bets.csv includes bankroll_archive_up_to_2026_07_01 + subsequent bets.
-  include_era_archive: true
+  era_start: "2026-07-19"
+  # Equity = baseline + sum(settled P/L) over data/bets.csv only (no pre-restart archive in equity).
+  include_era_archive: false
 
 norsk_tipping:
   min_stake_nok: 10.0
   # Decimal odds only in this system
   max_legs_in_combo: 3
 
-# Hybrid phase triggers: equity OR settled-count (with stability gate).
+# Phase ladder v4 (2026-07-13) — see docs/PHASE_PLAN.md
+# Hybrid: equity ladder is primary; settled-count may unlock at most +1 phase if stable.
 # daily_risk = clamp(equity * daily_risk_pct, floor, ceil)  — recomputed every run.
 phases:
   "1A":
-    label: Protect & Validate
+    label: Protect
     enter_equity: 0
     enter_settled: 0
     stake_min: 10
-    stake_max: 15
+    stake_max: 12
+    # 4 seats so daily cap (~40) can pack 4×10 without stranding < min_stake remainder
     max_bets_per_round: 4
     max_doubles_per_round: 0
-    daily_risk_pct: 0.10
-    daily_risk_floor: 40
-    daily_risk_ceil: 55
+    daily_risk_pct: 0.08
+    daily_risk_floor: 30
+    daily_risk_ceil: 42
     next: "1B"
   "1B":
-    label: Controlled volume + selective doubles
-    enter_equity: 700
-    enter_settled: 40
-    stake_min: 12
-    stake_max: 20
-    max_bets_per_round: 5
-    max_doubles_per_round: 1
-    daily_risk_pct: 0.12
-    daily_risk_floor: 55
-    daily_risk_ceil: 80
+    label: Stabilize
+    enter_equity: 580
+    enter_settled: 60
+    stake_min: 10
+    stake_max: 15
+    max_bets_per_round: 4
+    max_doubles_per_round: 0   # no doubles until Phase 2
+    daily_risk_pct: 0.09
+    daily_risk_floor: 38
+    daily_risk_ceil: 52
     next: "2"
   "2":
-    label: Normal doubles
-    enter_equity: 1200
-    enter_settled: 60
-    stake_min: 15
-    stake_max: 30
-    max_bets_per_round: 6
-    max_doubles_per_round: 2
+    label: Build
+    enter_equity: 750
+    enter_settled: 90
+    stake_min: 12
+    stake_max: 18
+    max_bets_per_round: 5
+    max_doubles_per_round: 1
     daily_risk_pct: 0.10
-    daily_risk_floor: 70
-    daily_risk_ceil: 150
+    daily_risk_floor: 50
+    daily_risk_ceil: 75
     next: "3"
   "3":
-    label: Systems allowed
-    enter_equity: 2500
-    enter_settled: 100
-    stake_min: 20
-    stake_max: 45
-    max_bets_per_round: 7
+    label: Expand
+    enter_equity: 1200
+    enter_settled: 130
+    stake_min: 15
+    stake_max: 28
+    max_bets_per_round: 6
     max_doubles_per_round: 2
-    daily_risk_pct: 0.08
-    daily_risk_floor: 100
-    daily_risk_ceil: 250
+    daily_risk_pct: 0.09
+    daily_risk_floor: 70
+    daily_risk_ceil: 140
     next: "4"
   "4":
     label: Mature
+    enter_equity: 2500
+    enter_settled: 180
+    stake_min: 18
+    stake_max: 45
+    max_bets_per_round: 7
+    max_doubles_per_round: 2
+    daily_risk_pct: 0.07
+    daily_risk_floor: 100
+    daily_risk_ceil: 250
+    next: "5"
+  "5":
+    label: Scale
     enter_equity: 5000
-    enter_settled: 150
+    enter_settled: 250
     stake_min: 20
-    stake_max: 80
+    stake_max: 70
     max_bets_per_round: 8
     max_doubles_per_round: 3
     daily_risk_pct: 0.06
@@ -83,12 +96,14 @@ phases:
     daily_risk_ceil: 400
     next: null
 
-# Stability gate for count-based phase advance
+# Stability gates for count-unlock and demotion (see docs/PHASE_PLAN.md)
 phase_stability:
-  min_rolling_settled: 20
-  min_rolling_roi: -0.05   # allow advance if not deep red
-  demote_if_rolling_roi_below: -0.12
-  demote_min_settled: 30
+  min_rolling_settled: 25
+  min_rolling_roi: 0.0          # count unlock only if rolling window not red
+  demote_if_rolling_roi_below: -0.10
+  demote_min_settled: 25
+  # Drop one phase if equity falls this far below peak end-of-day equity
+  demote_drawdown_pct_of_peak: 0.12
 
 risk:
   # Kill-switch: no new bets if today's realized P/L <= -stop_day_loss_nok
@@ -97,6 +112,11 @@ risk:
   stop_day_loss_floor_nok: 40
   # After this many consecutive settled losses, require grade A only
   loss_streak_grade_a_only: 3
+
+# Phase 2 capital_v2 — DEFAULT OFF. Enable only after docs/CAPITAL_V2_GO_LIVE.md.
+# Env override: CAPITAL_V2_ENABLED=true or NT_CAPITAL_V2_ENABLED=1
+capital_v2:
+  enabled: true
 
 selection:
   # Model probability is haircut before EV (NT margin + optimism).
@@ -127,6 +147,54 @@ selection:
     high_odds: 12
   empty_slip_ok: true
 
+# Ledger-driven learning loop (recomputed on settle / `nt learn` / refresh)
+# Does NOT rewrite this file — live mults live in data/state/learning.json
+learning:
+  enabled: true
+  # Agent applies settlement proposals automatically (no human accept/reject click)
+  auto_apply_proposals: true
+  min_sample: 12              # below this → stake×1.0, EV boost 0
+  recent_window: 30           # last N settled per group for form blend
+  recent_weight: 0.40         # blend weight on recent ROI (rest = all-time)
+  # How much to trust older / thinner-process history for mults
+  weight_mode: weighted       # weighted | equal | process_only
+  half_life_days: 60          # recency decay for learning weights
+  archive_process_weight: 0.35
+  live_no_model_weight: 0.60
+  full_process_weight: 1.0
+  stake_mult_min: 0.72
+  stake_mult_max: 1.18
+  stake_roi_scale: 0.90       # stake_mult ≈ 1 + roi * scale * confidence
+  ev_boost_min: -0.045
+  ev_boost_max: 0.035
+  ev_roi_scale: 0.12          # EV += roi * scale * confidence
+  block_min_sample: 20        # soft-block only with real sample
+  block_roi_below: -0.18      # blended ROI ≤ this → reject sport/market
+  max_lessons: 14
+  # Avoid getting stuck in one sport / market type (counts OPEN PENDING + new slip)
+  diversification:
+    max_per_sport: 2          # max open bets of same sport (pending + this recommend)
+    max_per_market: 2         # max open of same market family
+    max_per_band: 3
+    # Phase 2: one open market per match (pending + slip) — blocks correlated stacks
+    max_per_match: 1
+    # Soft football preference only:
+    #   1) non-football first
+    #   2) up to max_football_per_round football while diversifying
+    #   3) fill remaining seats with more good football (e.g. BTTS Nei) up to max_per_sport
+    # Never leave empty slip seats just because "1 football max" was preferred earlier.
+    max_football_per_round: 1   # soft preference only — fill-up pass may take more
+    min_non_football_per_round: 1
+    prefer_explore_first: true
+    # Exploration: under-sampled groups get a small EV nudge (not free money)
+    explore_min_n: 0          # 0 = allow virgin sports/markets (n=0)
+    explore_max_n: 14         # below min_sample → still "thin"
+    explore_ev_boost: 0.018
+    explore_virgin_ev_boost: 0.022
+    explore_stake_floor: 0.92
+    explore_min_roi: -0.15    # don't explore groups that are already deep red
+    explore_min_ev: 0.012     # lower EV bar for explore-flagged lines
+
 paths:
   bets: data/bets.csv
   state_dir: data/state
@@ -138,6 +206,131 @@ paths:
   bankroll_md: data/state/current_bankroll.md
   edges_jsonl: data/edges.jsonl
   edges_summary: data/state/edges_summary.md
+  # Rich settlement / learning (optional; defaults under state_dir)
+  # learning_proposals_json: data/state/learning_proposals.json
+  # settlement_reviews_jsonl: data/state/settlement_reviews.jsonl
+  learning_json: data/state/learning.json
+  learning_history_jsonl: data/state/learning_history.jsonl
+  decisions_jsonl: data/state/bet_decisions.jsonl
+  # Forensic process densify: bet_id → evidence pack hard/soft links
+  evidence_links_jsonl: data/state/evidence_links.jsonl
+  # v5 optional (agent creates on first use)
+  agent_audit_jsonl: data/state/agent_audit.jsonl
+  # v6: calibration log (p_model vs outcome)
+  calibration_jsonl: data/state/calibration.jsonl
+
+# --- v5 additive policy (all optional; missing keys use safe defaults in nt/defaults.py) ---
+
+# Multi-leg / combos — Phase 2+ may take doubles when max_doubles_per_round > 0.
+# Singles remain primary; recommend builds up to phase max doubles from clear EV legs.
+combos:
+  enabled: true
+  aggressiveness: standard   # off | conservative | standard | aggressive
+  stake_multiplier: 0.55
+  min_correlation_score: 0.50
+  allow_high_odds_legs: false
+  min_leg_grade: B
+  min_leg_ev: 0.025
+  require_per_leg_evidence: true
+  trebles_min_phase: "4"
+  # max_legs inherited from norsk_tipping.max_legs_in_combo when unset
+
+# Optional AI agent — assist only; never places bets or writes bets.csv
+agent:
+  enabled: false
+  provider: auto          # auto | xai | openai | none
+  model: ""               # empty → provider default (grok-3 / gpt-4o-mini)
+  max_tool_rounds: 6
+  audit_log: data/state/agent_audit.jsonl
+  allow_cli_dry_run: true
+  allow_write_evidence_scaffold: true
+  temperature: 0.2
+
+# Monte Carlo projection defaults for `nt project`
+projection:
+  default_years: 2
+  default_sims: 1000
+  default_roi: 0.02
+  default_bets_per_week: 10
+  default_avg_odds: 1.85
+  seed: 42
+
+# Research helpers for `nt research` — board-first workflow
+research:
+  templates_dir: evidence/templates
+  default_sport: football
+  min_summary_chars: 20
+  min_failure_modes_chars: 10
+  # Refuse recommend when odds file has zero p_model/evidence (wrong path)
+  require_research_for_recommend: true
+  board_max_per_match: 6
+  board_max_total: 24
+  # Multi-sport shortlist (code-is-law): football cannot take entire board
+  board_max_football_share: 0.45
+  board_min_non_football: 4
+  board_max_props: 5
+  # Market coverage agent
+  high_volume_market_threshold: 40
+  market_scan_top_n: 5
+  # Tiered research: Light (broad) → Deep (evidence + p_model only recommendable)
+  # See docs/RESEARCH_WORKFLOW.md and AGENTS.md
+  tiers:
+    light_coverage_target: 0.85      # ≥85% of shortlist gets Light Research
+    light_coverage_min_n: 8
+    min_light_per_sport_when_n: 5    # if sport has ≥5 shortlist lines…
+    min_light_per_sport: 3           # …light at least 3
+    deep_target_n: 8                 # promote ~8 to Deep queue
+    deep_max_n: 12
+    auto_light_on_board: true        # board runs light pass automatically
+    fail_odds_below: 1.35
+    fail_odds_above: 4.0
+    pass_odds_lo: 1.45
+    pass_odds_hi: 2.50
+
+  # Multi-sport research gates — see docs/RESEARCH_GATES.md
+  # Legacy flat keys still work (aliased). Prefer nested gates: below.
+  require_lineup_status_football: true
+  predicted_lineup_ok_for_totals_btts: true
+  require_injury_research_if_predicted: true
+  require_confirmed_lineup_for_totals_btts: false
+  high_rotation_stricter_lineup: true
+  high_rotation_require_confirmed: false
+  high_odds_prefer_confirmed_lineup: true
+  lineup_gate_all_football: false
+  reject_script_conflict: true
+  reject_base_rate_conflict: true
+  gates:
+    enabled: true
+    reject_script_conflict: true
+    reject_base_rate_conflict: true
+    require_availability_status: true
+    predicted_availability_ok: true          # 12h boards / late XIs
+    require_availability_research_if_predicted: true
+    high_context_stricter_notes: true        # WC/intl/B2B/bronze
+    high_context_min_notes_chars: 40
+    high_context_require_confirmed: false    # opt-in T4 for high risk
+    strict_confirmed_only: false             # global confirmed-only
+    high_odds_prefer_confirmed: true         # soft note
+    sports:
+      football: { enabled: true }
+      tennis: { enabled: true }
+      basketball: { enabled: true }
+      default: { enabled: true }
+
+# Football simulation + calibration (optional; never places bets)
+# See docs/SIMULATION.md — sim suggests p_model; engine + human still rule.
+simulation:
+  enabled: true
+  calibration_enabled: true
+  audit_sims: true
+  football:
+    default_league_avg_xg: 1.35
+    default_home_advantage: 1.08
+    default_rho: -0.05   # Dixon–Coles low-score correction
+    max_goals: 10
+  # Do NOT expand sport_scope until football calibration is proven
+  sport_scope:
+    - football
 
 git:
   auto_commit: false   # set true only if you want CLI to commit

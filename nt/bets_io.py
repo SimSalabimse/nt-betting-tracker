@@ -29,7 +29,70 @@ BET_HEADER = [
     "updated_at",
 ]
 
-VALID_RESULTS = {"Pending", "Win", "Loss", "Refunded"}
+# Ledger result states (real-money control plane)
+# - Pending: recommend intent — NOT confirmed on NT (counts as open risk)
+# - ConfirmedPlaced: user/agent confirmed ticket is live on NT (open risk)
+# - Win / Loss / Refunded: terminal settled outcomes
+# - Abandoned: never placed / abandoned intent — P/L 0, NOT open risk, NOT phase sample
+VALID_RESULTS = {
+    "Pending",
+    "ConfirmedPlaced",
+    "Win",
+    "Loss",
+    "Refunded",
+    "Abandoned",
+}
+OPEN_RISK_RESULTS = frozenset({"Pending", "ConfirmedPlaced"})
+PERFORMANCE_SETTLED_RESULTS = frozenset({"Win", "Loss", "Refunded"})
+TERMINAL_RESULTS = frozenset({"Win", "Loss", "Refunded", "Abandoned"})
+
+
+def is_open_risk(result: str | None) -> bool:
+    """True if stake still counts against daily risk / pending exposure."""
+    return (result or "") in OPEN_RISK_RESULTS
+
+
+def is_performance_settled(result: str | None) -> bool:
+    """True for outcomes that count as settled sample (phase unlock / ROI)."""
+    return (result or "") in PERFORMANCE_SETTLED_RESULTS
+
+
+def is_terminal(result: str | None) -> bool:
+    return (result or "") in TERMINAL_RESULTS
+
+
+def settlement_calendar_day(
+    row: dict[str, str],
+    *,
+    tz_name: str = "Europe/Oslo",
+) -> str:
+    """
+    Calendar day when the bet was settled/abandoned (Europe/Oslo).
+
+    Prefer ``updated_at`` (UTC ISO) converted to local calendar day — NOT match
+    kickoff ``date``. Fallback to match ``date`` only if updated_at missing.
+    """
+    ua = (row.get("updated_at") or "").strip()
+    if ua:
+        try:
+            raw = ua.replace("Z", "+00:00") if ua.endswith("Z") else ua
+            dt = datetime.fromisoformat(raw)
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            try:
+                from zoneinfo import ZoneInfo
+
+                local = dt.astimezone(ZoneInfo(tz_name))
+            except Exception:
+                # Windows without tzdata: approximate CEST as UTC+2 for July audit era
+                from datetime import timedelta
+
+                local = dt.astimezone(timezone(timedelta(hours=2)))
+            return local.date().isoformat()
+        except ValueError:
+            if len(ua) >= 10 and ua[4] == "-" and ua[7] == "-":
+                return ua[:10]
+    return (row.get("date") or "")[:10]
 
 
 def utc_now() -> str:
@@ -131,32 +194,40 @@ def validate_bets(rows: list[dict[str, str]]) -> list[str]:
             errors.append(f"Row {i}: bad odds")
         if stake is None or stake < 0:
             errors.append(f"Row {i}: bad stake")
-        if res == "Pending":
+        if is_open_risk(res):
             if r.get("p_l_nok") not in ("", None):
-                errors.append(f"Row {i}: Pending must have empty p_l_nok")
+                errors.append(f"Row {i}: {res} must have empty p_l_nok")
+        elif res == "Abandoned":
+            pl = fnum(r.get("p_l_nok"))
+            if pl is None:
+                errors.append(f"Row {i}: Abandoned missing p_l_nok (expect 0)")
+            elif abs(pl) > 1e-9:
+                errors.append(f"Row {i}: Abandoned must have p_l_nok 0 (got {pl})")
         else:
             pl = fnum(r.get("p_l_nok"))
             if pl is None:
                 errors.append(f"Row {i}: settled bet missing p_l_nok")
-        if stake is not None and stake < 10 and res != "Pending":
+        if stake is not None and stake < 10 and not is_open_risk(res):
             # historical may have been ok; only warn via soft — min stake for NEW is enforced elsewhere
             pass
     return errors
 
 
 def pending_stake_total(rows: list[dict[str, str]]) -> float:
+    """Open risk: Pending + ConfirmedPlaced stakes only (Abandoned excluded)."""
     total = 0.0
     for r in rows:
-        if r.get("result") == "Pending":
+        if is_open_risk(r.get("result")):
             s = fnum(r.get("stake_nok")) or 0.0
             total += s
     return round(total, 2)
 
 
 def settled_pl_sum(rows: list[dict[str, str]]) -> float:
+    """Equity P/L: all terminal rows with p_l (Abandoned contributes 0)."""
     total = 0.0
     for r in rows:
-        if r.get("result") == "Pending":
+        if is_open_risk(r.get("result")):
             continue
         pl = fnum(r.get("p_l_nok"))
         if pl is not None:
@@ -165,14 +236,15 @@ def settled_pl_sum(rows: list[dict[str, str]]) -> float:
 
 
 def settled_count(rows: list[dict[str, str]]) -> int:
-    return sum(1 for r in rows if r.get("result") != "Pending")
+    """Phase unlock sample: Win/Loss/Refunded only (not Abandoned / open)."""
+    return sum(1 for r in rows if is_performance_settled(r.get("result")))
 
 
 def band_roi_stats(rows: list[dict[str, str]]) -> dict[str, dict[str, float]]:
     """Return per odds_band: n, stake, pl, roi."""
     buckets: dict[str, list[tuple[float, float]]] = {}
     for r in rows:
-        if r.get("result") == "Pending":
+        if not is_performance_settled(r.get("result")):
             continue
         band = r.get("odds_band") or odds_band(fnum(r.get("decimal_odds")))
         stake = fnum(r.get("stake_nok")) or 0.0

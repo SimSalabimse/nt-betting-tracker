@@ -1,0 +1,83 @@
+# Settlement & layered learning
+
+## Goals
+
+1. Richer settle input (score, variance vs skill, research retro)
+2. Auto-fetch results (multi-sport — see `docs/RESULT_FETCHERS.md`)
+3. Automatic post-settlement analysis
+4. Layered learning (short / medium / long) + **proposals** (accept/reject)
+
+## Ledger result states
+
+| Result | Meaning | Open risk? | Equity P/L | Phase sample? |
+|--------|---------|:----------:|:----------:|:-------------:|
+| **Pending** | Recommend *intent* — not confirmed on NT | Yes | — | No |
+| **ConfirmedPlaced** | User confirmed ticket live on NT | Yes | — | No |
+| **Win** / **Loss** / **Refunded** | Terminal settled outcomes | No | Yes | Yes |
+| **Abandoned** | Never placed / voided intent | **No** | 0 | **No** |
+
+```bash
+# Confirm open tickets are live on Norsk Tipping
+python run_nt.py place-ack --ids <bet_id>[,...]
+# Never placed / missed prematch — frees risk, keeps audit row
+python run_nt.py abandon --ids <bet_id> --reason missed_prematch
+```
+
+## CLI
+
+```bash
+# Draft open bets + optional auto-fetch (no write)
+python run_nt.py settle --draft
+python run_nt.py settle --draft --no-fetch
+
+# Classic file settle (still supported; now runs analysis + proposals)
+python run_nt.py settle --results inbox/results.yaml
+
+# Rich JSON from LuminaNT Settle desk
+python run_nt.py settle --items-json inbox/_settle_items.json
+
+# Learning proposals (auto-applied when learning.auto_apply_proposals: true)
+python run_nt.py learn --proposals
+python run_nt.py learn --accept "sport:football:2026-07-18T18"
+python run_nt.py learn --reject "market:Totals Over:..."
+```
+
+## Rich result fields
+
+| Field | Meaning |
+|-------|---------|
+| `outcome` / `payout_nok` | Win / loss / refund (required path) |
+| `score` | e.g. `2-1` |
+| `variance_tag` | `expected` · `variance` · `process_error` |
+| `research_quality_retro` | `good` · `ok` · `poor` |
+| `confidence_retro` | 0–1 |
+| `key_events` | Free text |
+| `auto_fetched` | Suggestion came from auto-fetch |
+
+**Risk day P/L / kill-switch** use **settlement calendar day** from `updated_at` (Europe/Oslo), not match kickoff `date`.
+
+## Artifacts
+
+| Path | Role |
+|------|------|
+| `outbox/SETTLEMENT_RECEIPT.md` | What settled |
+| `outbox/SETTLEMENT_ANALYSIS.md` | Post-settlement narrative |
+| `data/state/settlement_reviews.jsonl` | Per-bet reviews |
+| `data/state/learning_proposals.json` | Pending mult proposals |
+| `data/state/learning.json` | Live multipliers (layers + blend) |
+
+## LuminaNT
+
+- **Ops → Smart settle**: load pending, auto-fetch, batch outcomes, rich tags, submit
+- **Research → Learnings**: review proposals after settle (when not auto-applied)
+
+## Auto-apply (engine truth)
+
+Config key: `learning.auto_apply_proposals` (default **true** in `config.yaml`).
+
+| Mode | Behavior |
+|------|----------|
+| `true` (current default) | After settle / `nt learn`, proposals are **applied automatically** into `learning.json` sport/market/band mults. Still logged for audit. |
+| `false` | Proposals land in `data/state/learning_proposals.json` only; operator must `nt learn --accept` / `--reject`. |
+
+`AGENTS.md` and the engine follow config — not a hard “never auto-apply” rule. Set `auto_apply_proposals: false` if you want a human gate.

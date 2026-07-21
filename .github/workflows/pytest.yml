@@ -1,0 +1,34 @@
+name: pytest
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest
+
+      - name: Run unit tests
+        # Skip ledger-size / live-data smoke that need a full production ledger
+        run: >
+          python -m pytest -q --tb=line
+          -k "not test_compute_learning_has_sports
+          and not test_overall_stats_settled_count
+          and not test_deep_dive_payload
+          and not test_equity_includes_archive_and_live
+          and not test_state_matches_cli_equity"

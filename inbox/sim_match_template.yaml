@@ -1,0 +1,38 @@
+# Football simulation input template
+# Usage:
+#   python run_nt.py simulate --input inbox/sim_match_template.yaml
+#   python run_nt.py simulate --input … --selection "BTTS Ja" --write-evidence
+#
+# Prefer honest xG from FBref (sample ≥6–8 matches). Do not invent λ to force EV.
+
+match: "Home FC vs Away United"
+home: "Home FC"
+away: "Away United"
+league: "Eliteserien"
+
+# Option A — direct expected goals (if you already estimated λ)
+# lambda_home: 1.65
+# lambda_away: 1.10
+
+# Option B — build λ from xG for/against (recommended)
+home_xg_for: 1.70
+home_xg_against: 1.05
+away_xg_for: 1.25
+away_xg_against: 1.40
+league_avg_xg: 1.35
+home_advantage: 1.08
+
+# Soft multipliers (1.0 = neutral). Document large deviations in evidence.
+form_home: 1.0
+form_away: 1.0
+motivation_home: 1.0
+motivation_away: 1.0
+rest_home: 1.0
+rest_away: 1.0
+injury_home: 1.0
+injury_away: 1.0
+
+rho: -0.05
+max_goals: 10
+source_quality: medium   # low | medium | high
+notes: "Fill xG from FBref; confirm lineups before placing."

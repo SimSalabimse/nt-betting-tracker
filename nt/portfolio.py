@@ -5,11 +5,12 @@ from typing import Any
 
 from nt.bets_io import band_roi_stats, odds_band
 from nt.evidence import ev_after_haircut, grade_evidence
+from nt.sport_taxonomy import normalize_sport
 
 
 @dataclass
 class Candidate:
-    date: str
+    date: str  # match calendar date (YYYY-MM-DD) from kickoff when known — not place date
     match: str
     selection: str
     decimal_odds: float
@@ -18,7 +19,9 @@ class Candidate:
     p_model: float | None = None
     evidence: dict[str, Any] | None = None
     evidence_key: str = ""
+    evidence_path: str = ""  # relative/absolute path of attached pack (forensic hard-link)
     notes: str = ""
+    kickoff: str = ""  # "YYYY-MM-DD HH:MM" CEST when parsed from odds dump
 
 
 @dataclass
@@ -36,6 +39,16 @@ class Recommendation:
     notes: str
     high_odds: bool = False
     reject_reason: str = ""
+    explore: bool = False
+    learning_stake_mult: float = 1.0
+    learning_ev_boost: float = 0.0
+    market_key: str = ""
+    reasons: list = field(default_factory=list)
+    evidence_path: str = ""
+    match_date: str = ""  # kickoff calendar date YYYY-MM-DD (CEST); empty → place-day fallback
+    kickoff: str = ""
+    # Phase 2.3: structured capital_v2 stake decision (in-memory; not JSONL yet)
+    stake_decision: dict[str, Any] | None = None
 
 
 def _stake_for(
@@ -43,16 +56,20 @@ def _stake_for(
     remaining_risk: float,
     min_stake: float,
     high_odds: bool,
-    stake_mult: float,
+    high_odds_mult: float,
+    learning_stake_mult: float,
     ev: float,
 ) -> float:
+    """Legacy phase band EV-scale sizing (capital_v2.enabled=false only)."""
     lo = float(phase["stake_min"])
     hi = float(phase["stake_max"])
     # Scale within band by EV strength (simple, not full Kelly)
     frac = min(1.0, max(0.0, (ev - 0.03) / 0.12))
     stake = lo + frac * (hi - lo)
     if high_odds:
-        stake *= stake_mult
+        stake *= high_odds_mult
+    # Ledger learning: sport/market form scales stake (clamped upstream)
+    stake *= max(0.5, float(learning_stake_mult or 1.0))
     stake = max(min_stake, min(hi, stake))
     stake = min(stake, remaining_risk)
     # NT: whole kroner preferred
@@ -64,12 +81,153 @@ def _stake_for(
     return stake
 
 
+def _capital_v2_enabled(cfg: dict[str, Any]) -> bool:
+    from nt.capital_v2 import capital_v2_cfg
+
+    return bool(capital_v2_cfg(cfg).get("enabled"))
+
+
+def _stake_for_capital_v2(
+    cfg: dict[str, Any],
+    risk: dict[str, Any],
+    *,
+    remaining_risk: float,
+    min_stake: float,
+    high_odds: bool,
+    high_odds_mult: float,
+    learning_stake_mult: float,
+    ev: float,
+    p_model: float,
+    odds: float,
+    match: str,
+    selection: str,
+) -> tuple[float, dict[str, Any]]:
+    """
+    Unit-ladder sizing when capital_v2.enabled.
+    Returns (final_stake, stake_decision_dict).
+    """
+    from nt.capital_v2 import (
+        RULE_BUNDLE_VERSION,
+        active_unit_for_mode,
+        capital_v2_cfg,
+        compute_unit_stake,
+        unit_size,
+    )
+
+    v2 = capital_v2_cfg(cfg)
+    floor = float(v2.get("min_stake_nok") or min_stake)
+    size_mode = str(risk.get("size_mode") or "NORMAL")
+    if risk.get("stopped") or not risk.get("can_bet", True):
+        size_mode = "FROZEN"
+
+    unit = risk.get("unit_size_nok")
+    if unit is None:
+        liq = risk.get("riskable_liquid_nok")
+        if liq is None:
+            liq = risk.get("working_equity_nok") or remaining_risk
+        unit = unit_size(float(liq), v2)
+    unit = float(unit)
+
+    decision = compute_unit_stake(
+        size_mode=size_mode,
+        unit_size_nok=unit,
+        remaining_room_nok=float(remaining_risk),
+        min_stake=floor,
+        stopped=bool(risk.get("stopped")),
+        can_bet=bool(risk.get("can_bet", True)),
+        high_odds=high_odds,
+        high_odds_mult=float(high_odds_mult),
+        learning_stake_mult=float(learning_stake_mult or 1.0),
+        match=match,
+        selection=selection,
+        rule_bundle_version=str(v2.get("rule_bundle_version") or RULE_BUNDLE_VERSION),
+        inputs={
+            "equity": risk.get("equity_nok"),
+            "secure": risk.get("secure_nok"),
+            "working_liquid": risk.get("riskable_liquid_nok"),
+            "open_risk": risk.get("open_pending_risk_nok"),
+            "dd_from_peak": risk.get("drawdown_from_peak"),
+            "unit_size": unit,
+            "size_mode": size_mode,
+            "phase_id": risk.get("phase_id"),
+            "p_model": p_model,
+            "odds": odds,
+            "ev": ev,
+            "learning_stake_mult": learning_stake_mult,
+            "active_unit": active_unit_for_mode(unit, size_mode, floor),
+            "remaining_room": remaining_risk,
+        },
+    )
+    return decision.final_stake_nok, decision.to_audit_dict()
+
+
+def rebalance_stakes(
+    picked: list[Recommendation],
+    budget: float,
+    min_stake: float,
+    max_stake: float,
+    *,
+    reserve_extra_seats: int = 0,
+) -> float:
+    """
+    Pack daily risk across the slip so we don't strand leftover under min_stake
+    when more seats could still be filled.
+
+    1) Seat every pick at min_stake (NT floor)
+    2) Reserve ``reserve_extra_seats * min_stake`` for unfilled seats still possible
+    3) Top up whole kroner to highest-EV picks (capped at max_stake) from *usable* only
+    4) Return leftover kroner after packing (for multi-pass fill)
+
+    Returns leftover budget not assigned to stakes (may fund another min seat).
+    """
+    if not picked:
+        return float(budget)
+    n = len(picked)
+    budget = float(budget)
+    min_stake = float(min_stake)
+    max_stake = float(max_stake)
+    if budget < min_stake:
+        return budget
+    # How many seats can this budget actually fund?
+    max_seats = int(budget // min_stake)
+    if max_seats < n:
+        order = sorted(range(n), key=lambda i: picked[i].ev, reverse=True)
+        keep = set(order[:max_seats])
+        kept = [picked[i] for i in range(n) if i in keep]
+        picked.clear()
+        picked.extend(kept)
+        n = len(picked)
+    if n == 0:
+        return budget
+
+    reserve = max(0, int(reserve_extra_seats)) * min_stake
+    # Never reserve so much that current picks cannot sit at min_stake
+    need = n * min_stake
+    if budget - reserve < need:
+        reserve = max(0.0, budget - need)
+    usable = budget - reserve
+
+    stakes = [min_stake] * n
+    used = min_stake * n
+    leftover_usable = usable - used
+    order = sorted(range(n), key=lambda i: picked[i].ev, reverse=True)
+    for i in order:
+        while leftover_usable >= 1.0 - 1e-9 and stakes[i] < max_stake:
+            stakes[i] += 1.0
+            leftover_usable -= 1.0
+    for i, s in enumerate(stakes):
+        picked[i].stake_nok = float(int(s))
+    # Total leftover = unused usable + reserved
+    return round(leftover_usable + reserve, 2)
+
+
 def build_portfolio(
     cfg: dict[str, Any],
     candidates: list[Candidate],
     phase: dict[str, Any],
     risk: dict[str, Any],
     historical_rows: list[dict[str, str]],
+    learning: dict[str, Any] | None = None,
 ) -> tuple[list[Recommendation], list[dict[str, Any]]]:
     """
     Score candidates, enforce risk/phase, ALLOW high odds when evidence supports.
@@ -79,7 +237,12 @@ def build_portfolio(
     - higher min EV
     - reduced stake multiplier
     - optional extra EV if historical band ROI is bad
+
+    Learning (optional): sport/market/band EV boosts + stake mults from ledger.
     """
+    from nt.analytics import infer_market
+    from nt.learning import diversification_limits, learning_adjustments, load_learning
+
     sel = cfg["selection"]
     min_stake = float(cfg["norsk_tipping"]["min_stake_nok"])
     thr = float(sel["high_odds_threshold"])
@@ -87,6 +250,10 @@ def build_portfolio(
     band_stats = band_roi_stats(historical_rows)
     band_cfg = sel.get("band_penalty", {})
     priors = sel.get("band_prior_boost", {})
+    learn_cfg = cfg.get("learning") or {}
+    learn_on = bool(learn_cfg.get("enabled", True))
+    learn = learning if learning is not None else (load_learning(cfg) if learn_on else {})
+    div_lim = diversification_limits(cfg)
 
     rejects: list[dict[str, Any]] = []
     scored: list[Recommendation] = []
@@ -99,11 +266,27 @@ def build_portfolio(
     high_odds_count = 0
     max_high = int(sel.get("high_odds_max_per_round", 2))
 
+    # Loss-streak discipline: after N consecutive losses, only grade A may be placed
+    grade_a_only = False
+    streak_lim = int((cfg.get("risk") or {}).get("loss_streak_grade_a_only", 3))
+    if streak_lim > 0 and historical_rows:
+        from nt.analytics import current_streak
+
+        cur = current_streak(historical_rows)
+        if cur.get("type") == "Loss" and int(cur.get("length") or 0) >= streak_lim:
+            grade_a_only = True
+
     for c in candidates:
         odds = float(c.decimal_odds)
         band = odds_band(odds)
         high = odds >= thr
-        grade, issues = grade_evidence(c.evidence, cfg, odds)
+        grade, issues = grade_evidence(
+            c.evidence,
+            cfg,
+            odds,
+            selection=c.selection or "",
+            sport=c.sport or "",
+        )
 
         p_model = c.p_model
         if p_model is None and c.evidence and c.evidence.get("p_model") is not None:
@@ -120,11 +303,36 @@ def build_portfolio(
             )
             continue
 
+        adj = learning_adjustments(
+            learn,
+            sport=c.sport or "",
+            market=c.market_type or "",
+            selection=c.selection or "",
+            band=band,
+            enabled=learn_on,
+            learn_cfg=learn_cfg,
+        )
+        if adj.get("blocked"):
+            rejects.append(
+                {
+                    "match": c.match,
+                    "selection": c.selection,
+                    "sport": c.sport,
+                    "reason": adj.get("block_reason") or "learning soft-block",
+                    "ev_boost": adj.get("ev_boost"),
+                }
+            )
+            continue
+
         ev = ev_after_haircut(p_model, odds, haircut)
-        # soft prior from this book's band ROI history
+        # soft prior from config band table + live learning
         ev += float(priors.get(band, 0.0))
+        ev += float(adj.get("ev_boost") or 0.0)
 
         min_ev = float(sel["standard_min_ev"])
+        # Thin sport/market explore path: lower EV bar so non-football can build sample
+        if adj.get("explored"):
+            min_ev = min(min_ev, float(div_lim.get("explore_min_ev", 0.012)))
         if high:
             min_ev = float(sel["high_odds_min_ev"])
             need_grade = str(sel["high_odds_min_grade"]).upper()
@@ -167,6 +375,7 @@ def build_portfolio(
                     "reason": f"EV {ev:.3f} < min {min_ev:.3f}",
                     "grade": grade,
                     "high_odds": high,
+                    "learning_ev_boost": adj.get("ev_boost"),
                 }
             )
             continue
@@ -192,21 +401,52 @@ def build_portfolio(
                 }
             )
             continue
+        if grade_a_only and grade != "A":
+            rejects.append(
+                {
+                    "match": c.match,
+                    "selection": c.selection,
+                    "reason": f"loss streak ≥{streak_lim}: grade A only (got {grade})",
+                    "issues": issues,
+                }
+            )
+            continue
 
-        stake = _stake_for(
-            phase,
-            remaining,
-            min_stake,
-            high,
-            float(sel["high_odds_stake_multiplier"]),
-            ev,
-        )
+        learn_mult = float(adj.get("stake_mult") or 1.0)
+        high_mult = float(sel["high_odds_stake_multiplier"])
+        stake_decision: dict[str, Any] | None = None
+        if _capital_v2_enabled(cfg):
+            stake, stake_decision = _stake_for_capital_v2(
+                cfg,
+                risk,
+                remaining_risk=remaining,
+                min_stake=min_stake,
+                high_odds=high,
+                high_odds_mult=high_mult,
+                learning_stake_mult=learn_mult,
+                ev=ev,
+                p_model=float(p_model),
+                odds=odds,
+                match=c.match,
+                selection=c.selection,
+            )
+        else:
+            stake = _stake_for(
+                phase,
+                remaining,
+                min_stake,
+                high,
+                high_mult,
+                learn_mult,
+                ev,
+            )
         if stake < min_stake:
             rejects.append(
                 {
                     "match": c.match,
                     "selection": c.selection,
                     "reason": "insufficient remaining risk for min stake",
+                    "stake_decision": stake_decision,
                 }
             )
             continue
@@ -214,57 +454,512 @@ def build_portfolio(
         note_bits = []
         if high:
             note_bits.append(f"HIGH_ODDS grade={grade}")
+        if grade_a_only:
+            note_bits.append("LOSS_STREAK_A_ONLY")
+        # Dual-write p_model into notes for forensic recovery if side-car is missing
+        note_bits.append(f"p_model={float(p_model):.4f}")
         note_bits.append(f"EV={ev:.3f}")
+        if adj.get("explored"):
+            note_bits.append("EXPLORE")
+        if adj.get("stake_mult") and abs(float(adj["stake_mult"]) - 1.0) > 0.01:
+            note_bits.append(f"learn_stake×{adj['stake_mult']}")
+        if adj.get("ev_boost"):
+            note_bits.append(f"learn_EV{float(adj['ev_boost']):+.3f}")
+        if stake_decision:
+            note_bits.append(
+                f"stake_rec={stake_decision.get('final_stake_nok')};"
+                f"rules={stake_decision.get('rule_bundle_version')};"
+                f"size_mode={stake_decision.get('size_mode')};"
+                f"unit={stake_decision.get('active_unit_nok')}"
+            )
+        for n in (adj.get("notes") or [])[:2]:
+            note_bits.append(n)
         if c.notes:
             note_bits.append(c.notes[:120])
 
-        scored.append(
-            Recommendation(
-                match=c.match,
-                selection=c.selection,
-                decimal_odds=odds,
-                stake_nok=stake,
-                ev=round(ev, 4),
-                grade=grade,
-                odds_band=band,
-                sport=c.sport or "",
-                market_type=c.market_type or "",
-                p_model=p_model,
-                notes="; ".join(note_bits)[:400],
-                high_odds=high,
+        mk = adj.get("market_key") or infer_market(c.selection or "", c.market_type or "")
+        rec = Recommendation(
+            match=c.match,
+            selection=c.selection,
+            decimal_odds=odds,
+            stake_nok=stake,
+            ev=round(ev, 4),
+            grade=grade,
+            odds_band=band,
+            sport=normalize_sport(c.sport or "", default="unknown")
+            if (c.sport or "").strip()
+            else "",
+            market_type=c.market_type or "",
+            p_model=p_model,
+            notes="; ".join(note_bits)[:400],
+            high_odds=high,
+            explore=bool(adj.get("explored")),
+            learning_stake_mult=learn_mult,
+            learning_ev_boost=float(adj.get("ev_boost") or 0.0),
+            market_key=mk,
+            reasons=list(adj.get("notes") or [])[:6],
+            evidence_path=(c.evidence_path or "").strip(),
+            match_date=(c.date or "").strip()[:10],
+            kickoff=(c.kickoff or "").strip(),
+            stake_decision=stake_decision,
+        )
+        scored.append(rec)
+
+    # Sort by EV desc; optional explore-first reorder so thin sports get airtime
+    scored.sort(key=lambda r: (r.ev, 1 if r.explore else 0), reverse=True)
+    if div_lim.get("prefer_explore_first"):
+        # Stable: explored non-football first among positive-EV, then pure EV
+        scored.sort(
+            key=lambda r: (
+                0 if (r.explore and normalize_sport(r.sport) != "football") else 1,
+                0 if r.explore else 1,
+                -r.ev,
             )
         )
 
-    # Sort by EV desc and fill portfolio
-    scored.sort(key=lambda r: r.ev, reverse=True)
     picked: list[Recommendation] = []
     remaining = float(risk["remaining_risk_nok"])
     high_odds_count = 0
-    used_matches: set[str] = set()
+    match_counts: dict[str, int] = {}
+    sport_counts: dict[str, int] = {}
+    market_counts: dict[str, int] = {}
+    band_counts: dict[str, int] = {}
+    max_sport = int(div_lim["max_per_sport"])
+    max_market = int(div_lim["max_per_market"])
+    max_band = int(div_lim["max_per_band"])
+    max_match = int(div_lim.get("max_per_match", 1))
+    max_football = int(div_lim.get("max_football_per_round", 1))
+    min_non_football = int(div_lim.get("min_non_football_per_round", 1))
 
-    for rec in scored:
-        if len(picked) >= max_bets:
-            break
-        if remaining < min_stake:
-            break
-        # soft diversification: max 2 per match
-        mcount = sum(1 for p in picked if p.match == rec.match)
-        if mcount >= 2:
-            rejects.append(
-                {"match": rec.match, "selection": rec.selection, "reason": "max 2 per match"}
+    def _pending_sport(r: dict[str, str]) -> str:
+        """Canonical sport key for open-risk diversify seed."""
+        sp = (r.get("sport") or "").strip()
+        if sp:
+            return normalize_sport(sp, default="unknown")
+        blob = f"{r.get('selection') or ''} {r.get('market_type') or ''} {r.get('match') or ''}".lower()
+        if any(x in blob for x in ("kart", "maps", "cs2", "gaming", "esports")):
+            return "esports"
+        if any(x in blob for x in ("set handikap", "vinner:", "wimbledon", "atp", "wta")):
+            return "tennis"
+        if any(x in blob for x in ("inkludert overtid", "nba", "wnba", "lakers", "nets")):
+            return "basketball"
+        if any(
+            x in blob
+            for x in (
+                "btts",
+                "to win",
+                "over ",
+                "under ",
+                "hub",
+                "uavgjort",
+                "tilbakebetales",
+                "handikap",
+                "mål",
             )
+        ):
+            return "football"
+        return "unknown"
+
+    # Seed caps from OPEN RISK (Pending + ConfirmedPlaced) — book-wide
+    from nt.bets_io import is_open_risk
+
+    for r in historical_rows or []:
+        if not is_open_risk(r.get("result")):
             continue
+        sp = _pending_sport(r)
+        mk = infer_market(r.get("selection") or "", r.get("market_type") or "")
+        bd = (r.get("odds_band") or "").strip()
+        if not bd and r.get("decimal_odds") not in (None, ""):
+            try:
+                bd = odds_band(float(str(r.get("decimal_odds")).replace(",", ".")))
+            except (TypeError, ValueError):
+                bd = ""
+        sport_counts[sp] = sport_counts.get(sp, 0) + 1
+        if mk:
+            market_counts[mk] = market_counts.get(mk, 0) + 1
+        if bd:
+            band_counts[bd] = band_counts.get(bd, 0) + 1
+        m = (r.get("match") or "").strip()
+        if m:
+            match_counts[m] = match_counts.get(m, 0) + 1
+
+    def _is_football(sp: str) -> bool:
+        return normalize_sport(sp, default="unknown") == "football"
+
+    def _try_accept(rec: Recommendation, *, soft_football_cap: bool = False) -> str:
+        """
+        Try to add rec. Returns 'ok' | 'skip' | 'reject'.
+
+        soft_football_cap:
+            Prefer at most max_football while diversifying. Returns 'skip'
+            (not reject) so the fill-up pass can still take good football
+            (e.g. Racing BTTS Nei) when non-football cannot fill remaining seats.
+            Hard ceiling remains max_per_sport (pending + this slip).
+        """
+        nonlocal remaining, high_odds_count
+        if len(picked) >= max_bets or remaining < min_stake:
+            return "skip"
+        m = (rec.match or "").strip()
+        if match_counts.get(m, 0) >= max_match:
+            rejects.append(
+                {
+                    "match": rec.match,
+                    "selection": rec.selection,
+                    "reason": f"max {max_match} per match (including open pending)",
+                }
+            )
+            return "reject"
+        if any(
+            is_open_risk(r.get("result"))
+            and (r.get("match") or "").strip() == rec.match
+            and (r.get("selection") or "").strip() == rec.selection
+            for r in (historical_rows or [])
+        ):
+            rejects.append(
+                {
+                    "match": rec.match,
+                    "selection": rec.selection,
+                    "reason": "already open pending/confirmed on same selection",
+                }
+            )
+            return "reject"
         if rec.high_odds and high_odds_count >= max_high:
-            continue
+            return "skip"
+
+        sp_key = normalize_sport(rec.sport, default="unknown")
+        mk_key = rec.market_key or infer_market(rec.selection, rec.market_type)
+        bd_key = rec.odds_band or ""
+
+        # Soft football preference only — never hard-kill remaining EV football
+        if soft_football_cap and _is_football(sp_key):
+            fb_open = sport_counts.get("football", 0)
+            if fb_open >= max_football:
+                return "skip"  # defer; pass 3 fill-up may still take it
+
+        if sport_counts.get(sp_key, 0) >= max_sport:
+            rejects.append(
+                {
+                    "match": rec.match,
+                    "selection": rec.selection,
+                    "reason": (
+                        f"diversify: max {max_sport} open for sport '{sp_key}' "
+                        f"(already {sport_counts.get(sp_key, 0)} pending/picked)"
+                    ),
+                }
+            )
+            return "reject"
+        if market_counts.get(mk_key, 0) >= max_market:
+            rejects.append(
+                {
+                    "match": rec.match,
+                    "selection": rec.selection,
+                    "reason": (
+                        f"diversify: max {max_market} open for market '{mk_key}' "
+                        f"(already {market_counts.get(mk_key, 0)} pending/picked)"
+                    ),
+                }
+            )
+            return "reject"
+        if bd_key and band_counts.get(bd_key, 0) >= max_band:
+            rejects.append(
+                {
+                    "match": rec.match,
+                    "selection": rec.selection,
+                    "reason": (
+                        f"diversify: max {max_band} open for band '{bd_key}' "
+                        f"(already {band_counts.get(bd_key, 0)} pending/picked)"
+                    ),
+                }
+            )
+            return "reject"
+
         stake = min(rec.stake_nok, remaining)
         stake = float(int(stake))
         if stake < min_stake:
-            continue
+            return "skip"
         rec.stake_nok = stake
         picked.append(rec)
         remaining = round(remaining - stake, 2)
         if rec.high_odds:
             high_odds_count += 1
-        used_matches.add(rec.match)
+        match_counts[m] = match_counts.get(m, 0) + 1
+        sport_counts[sp_key] = sport_counts.get(sp_key, 0) + 1
+        market_counts[mk_key] = market_counts.get(mk_key, 0) + 1
+        if bd_key:
+            band_counts[bd_key] = band_counts.get(bd_key, 0) + 1
+        return "ok"
+
+    picked_keys: set[tuple[str, str]] = set()
+    combo_leg_keys: set[tuple[str, str]] = set()
+
+    def _take(rec: Recommendation, *, soft_football_cap: bool = False) -> bool:
+        if (rec.match, rec.selection) in picked_keys:
+            return False
+        # Don't re-place legs already used in a combo this round
+        if (rec.match, rec.selection) in combo_leg_keys:
+            return False
+        # Combo tickets skip diversify sport counts as multi
+        status = _try_accept(rec, soft_football_cap=soft_football_cap)
+        if status == "ok":
+            picked_keys.add((rec.match, rec.selection))
+            return True
+        return False
+
+    # Pass 0: doubles FIRST (while remaining risk is still large)
+    try:
+        from nt.combos import (
+            ComboLeg,
+            assess_combo,
+            format_combo_match,
+            format_combo_selection,
+        )
+        from nt.defaults import combos_cfg
+
+        cc = combos_cfg(cfg)
+        max_doubles = int(phase.get("max_doubles_per_round") or 0)
+        open_doubles = sum(
+            1
+            for r in (historical_rows or [])
+            if is_open_risk(r.get("result"))
+            and " + " in (r.get("selection") or "")
+        )
+        doubles_room = max(0, max_doubles - open_doubles)
+
+        if cc.get("enabled") and doubles_room > 0 and len(scored) >= 2:
+            legs_pool = [r for r in scored if r.ev >= float(cc.get("min_leg_ev") or 0.025)]
+            legs_pool = legs_pool[:14]
+            best_combo: Recommendation | None = None
+            best_pair: tuple[Recommendation, Recommendation] | None = None
+            best_ev = -1.0
+            for i in range(len(legs_pool)):
+                for j in range(i + 1, len(legs_pool)):
+                    a, b = legs_pool[i], legs_pool[j]
+                    if (a.match or "").strip().lower() == (b.match or "").strip().lower():
+                        continue
+                    combo_legs = [
+                        ComboLeg(
+                            match=a.match,
+                            selection=a.selection,
+                            decimal_odds=a.decimal_odds,
+                            p_model=a.p_model,
+                            grade=a.grade,
+                            sport=a.sport,
+                            market_type=a.market_type or a.market_key,
+                            league="",
+                            high_odds=a.high_odds,
+                            ev=a.ev,
+                        ),
+                        ComboLeg(
+                            match=b.match,
+                            selection=b.selection,
+                            decimal_odds=b.decimal_odds,
+                            p_model=b.p_model,
+                            grade=b.grade,
+                            sport=b.sport,
+                            market_type=b.market_type or b.market_key,
+                            league="",
+                            high_odds=b.high_odds,
+                            ev=b.ev,
+                        ),
+                    ]
+                    base = min(a.stake_nok, b.stake_nok, float(phase.get("stake_max") or 18))
+                    assess = assess_combo(
+                        cfg,
+                        combo_legs,
+                        phase,
+                        haircut=haircut,
+                        remaining_risk=remaining,
+                        base_stake=base,
+                    )
+                    if not assess.ok:
+                        continue
+                    if assess.ev > best_ev and assess.stake_nok >= min_stake:
+                        best_ev = assess.ev
+                        stake = min(float(assess.stake_nok), remaining)
+                        stake = float(int(stake))
+                        if stake < min_stake:
+                            continue
+                        gr = (
+                            a.grade
+                            if {"A": 0, "B": 1, "C": 2, "F": 3}.get(a.grade, 9)
+                            >= {"A": 0, "B": 1, "C": 2, "F": 3}.get(b.grade, 9)
+                            else b.grade
+                        )
+                        best_pair = (a, b)
+                        best_combo = Recommendation(
+                            match=format_combo_match(combo_legs),
+                            selection=format_combo_selection(combo_legs),
+                            decimal_odds=float(assess.combined_odds),
+                            stake_nok=stake,
+                            ev=float(assess.ev),
+                            grade=gr,
+                            odds_band=odds_band(float(assess.combined_odds)),
+                            sport=(
+                                f"{a.sport}+{b.sport}"
+                                if (a.sport or "") != (b.sport or "")
+                                else (a.sport or "multi")
+                            ),
+                            market_type="combo_double",
+                            p_model=float(assess.p_joint),
+                            notes=(
+                                f"COMBO_DOUBLE; p_joint={assess.p_joint:.4f}; EV={assess.ev:.3f}; "
+                                f"corr={assess.correlation_score:.2f}; "
+                                f"legs: {a.match} / {a.selection} @ {a.decimal_odds} + "
+                                f"{b.match} / {b.selection} @ {b.decimal_odds}"
+                            )[:400],
+                            high_odds=float(assess.combined_odds) >= thr,
+                            explore=False,
+                            learning_stake_mult=1.0,
+                            learning_ev_boost=0.0,
+                            market_key="combo_double",
+                            reasons=list(assess.reasons)[:6],
+                            evidence_path="",
+                        )
+            if best_combo is not None and best_pair is not None:
+                stake = min(best_combo.stake_nok, remaining)
+                stake = float(int(stake))
+                if stake >= min_stake and len(picked) < max_bets:
+                    best_combo.stake_nok = stake
+                    picked.append(best_combo)
+                    remaining = round(remaining - stake, 2)
+                    for leg in best_pair:
+                        combo_leg_keys.add((leg.match, leg.selection))
+                        picked_keys.add((leg.match, leg.selection))
+    except Exception as exc:
+        rejects.append({"reason": f"combo pass skipped: {exc}"})
+
+    # Pack at min_stake first so sequential EV-sized stakes don't burn seats
+    # (e.g. 12+10+11=33 leave 8.51 stranded under NT min 10).
+    for rec in scored:
+        rec.stake_nok = float(min_stake)
+
+    def _fill_passes() -> None:
+        # Pass 1: non-football first (build sample for thin sports)
+        for rec in scored:
+            if len(picked) >= max_bets or remaining < min_stake:
+                break
+            if _is_football(rec.sport or ""):
+                continue
+            _take(rec, soft_football_cap=False)
+
+        # Pass 2: limited football first (max_football is a soft preference only)
+        for rec in scored:
+            if len(picked) >= max_bets or remaining < min_stake:
+                break
+            if not _is_football(rec.sport or ""):
+                continue
+            _take(rec, soft_football_cap=True)
+
+        # Pass 3: fill remaining seats
+        for rec in scored:
+            if len(picked) >= max_bets or remaining < min_stake:
+                break
+            _take(rec, soft_football_cap=False)
+
+    def _count_extra_eligible() -> int:
+        """How many more scored candidates could still clear diversify at min_stake."""
+        if len(picked) >= max_bets or remaining < min_stake:
+            return 0
+        n_extra = 0
+        # Snapshot counts — trial without mutating
+        for rec in scored:
+            if (rec.match, rec.selection) in picked_keys:
+                continue
+            if (rec.match, rec.selection) in combo_leg_keys:
+                continue
+            m = (rec.match or "").strip()
+            if match_counts.get(m, 0) >= max_match:
+                continue
+            sp_key = normalize_sport(rec.sport, default="unknown")
+            mk_key = rec.market_key or infer_market(rec.selection, rec.market_type)
+            bd_key = rec.odds_band or ""
+            if sport_counts.get(sp_key, 0) >= max_sport:
+                continue
+            if market_counts.get(mk_key, 0) >= max_market:
+                continue
+            if bd_key and band_counts.get(bd_key, 0) >= max_band:
+                continue
+            if rec.high_odds and high_odds_count >= max_high:
+                continue
+            n_extra += 1
+            if n_extra + len(picked) >= max_bets:
+                break
+        return n_extra
+
+    _fill_passes()
+
+    # Multi-pass pack: reserve min seats for still-eligible candidates, then refill
+    budget = float(risk["remaining_risk_nok"])
+    max_stake = float(phase.get("stake_max") or min_stake)
+    if _capital_v2_enabled(cfg):
+        # Unit ladder is the hard per-bet ceiling (active unit after size_mode).
+        from nt.capital_v2 import active_unit_for_mode, capital_v2_cfg, unit_size
+
+        v2 = capital_v2_cfg(cfg)
+        floor = float(v2.get("min_stake_nok") or min_stake)
+        mode = str(risk.get("size_mode") or "NORMAL")
+        if risk.get("stopped") or not risk.get("can_bet", True):
+            mode = "FROZEN"
+        u = risk.get("unit_size_nok")
+        if u is None:
+            liq = risk.get("riskable_liquid_nok")
+            if liq is None:
+                liq = risk.get("working_equity_nok") or budget
+            u = unit_size(float(liq), v2)
+        active_u = active_unit_for_mode(float(u), mode, floor)
+        # Cap rebalance top-up at active unit (not phase stake_max)
+        max_stake = max(floor, active_u) if active_u > 0 else floor
+        for rec in picked:
+            if rec.stake_decision is not None:
+                rec.stake_decision = dict(rec.stake_decision)
+                rec.stake_decision["active_unit_nok"] = active_u
+                caps = list(rec.stake_decision.get("constraints_applied") or [])
+                tag = f"rebalance_cap_unit:{max_stake}"
+                if tag not in caps:
+                    caps.append(tag)
+                rec.stake_decision["constraints_applied"] = caps
+
+    for _ in range(3):  # bounded retries
+        extra = _count_extra_eligible()
+        # How many extra seats can budget still fund after current picks at min?
+        fundable_extra = max(
+            0,
+            int(budget // min_stake) - len(picked),
+        )
+        reserve = min(extra, fundable_extra, max_bets - len(picked))
+        leftover = rebalance_stakes(
+            picked,
+            budget,
+            min_stake,
+            max_stake,
+            reserve_extra_seats=reserve,
+        )
+        remaining = leftover
+        if remaining < min_stake or len(picked) >= max_bets or reserve <= 0:
+            # Final pack with no reserve (use every whole krone on accepted seats)
+            rebalance_stakes(picked, budget, min_stake, max_stake, reserve_extra_seats=0)
+            break
+        n_before = len(picked)
+        _fill_passes()
+        if len(picked) == n_before:
+            rebalance_stakes(picked, budget, min_stake, max_stake, reserve_extra_seats=0)
+            break
+
+    # After final rebalance: fail-closed floor + refresh stake_decision finals (v2)
+    if _capital_v2_enabled(cfg):
+        for rec in picked:
+            if rec.stake_nok + 1e-9 < min_stake:
+                rec.stake_nok = 0.0
+            else:
+                rec.stake_nok = float(int(rec.stake_nok))
+            if rec.stake_decision is not None:
+                sd = dict(rec.stake_decision)
+                sd["final_stake_nok"] = rec.stake_nok
+                sd["recommended_stake_nok"] = max(
+                    float(sd.get("recommended_stake_nok") or 0.0), rec.stake_nok
+                )
+                rec.stake_decision = sd
+        # Drop any zeroed seats (should be rare; rebalance already drops by budget)
+        picked[:] = [r for r in picked if r.stake_nok >= min_stake]
 
     return picked, rejects

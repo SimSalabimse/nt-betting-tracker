@@ -1,17 +1,17 @@
 # Current Bankroll (generated — do not hand-edit)
 
-**Baseline**: 500.00 NOK (era start 2026-06-28)
+**Baseline**: 500.00 NOK (era start 2026-07-19)
 
-**Equity**: **547.57 NOK**
+**Equity**: **550.99 NOK**
 
-**Realized P/L**: +47.57 NOK
+**Realized P/L**: +50.99 NOK
 
-**Pending at Risk**: 0.00 NOK (0 bets)
+**Pending at Risk**: 34.00 NOK (3 bets)
 
-**Liquid**: 547.57 NOK
+**Liquid**: 516.99 NOK
 
-**Ledger**: 193 bets total (47 from era archive + 146 later)
+**Ledger**: 31 bets total (0 from era archive + 31 later)
 
-**Formula**: `equity = baseline + sum(settled P/L in data/bets.csv); archive+live included`
+**Formula**: `equity = baseline + sum(terminal P/L in data/bets.csv); open_risk = Pending+ConfirmedPlaced; Abandoned excluded from risk`
 
-**Updated**: 2026-07-12T18:06:58Z
+**Updated**: 2026-07-21T17:06:00Z

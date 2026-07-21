@@ -4,7 +4,14 @@ import json
 from pathlib import Path
 from typing import Any
 
-from nt.bets_io import fnum, load_bets, pending_stake_total, settled_count, settled_pl_sum, utc_now
+from nt.bets_io import (
+    is_open_risk,
+    load_bets,
+    pending_stake_total,
+    settled_count,
+    settled_pl_sum,
+    utc_now,
+)
 from nt.config import path_from_config
 
 
@@ -15,6 +22,9 @@ def compute_bankroll(cfg: dict[str, Any], bets_path: Path | None = None) -> dict
     The era ledger intentionally includes bankroll_archive_up_to_2026_07_01 rows
     (source=era_archive) plus all later bets. Pre-restart history lives under history/
     and does NOT affect equity unless migrated into data/bets.csv.
+
+    Open risk (pending_at_risk) = Pending + ConfirmedPlaced stakes only.
+    Abandoned never counts as open risk (P/L 0).
     """
     path = bets_path or path_from_config(cfg, "bets")
     rows = load_bets(path)
@@ -24,7 +34,7 @@ def compute_bankroll(cfg: dict[str, Any], bets_path: Path | None = None) -> dict
     pending = pending_stake_total(rows)
     liquid = round(equity - pending, 2)
     n_settled = settled_count(rows)
-    n_pending = sum(1 for r in rows if r.get("result") == "Pending")
+    n_pending = sum(1 for r in rows if is_open_risk(r.get("result")))
     n_archive = sum(1 for r in rows if r.get("source") == "era_archive")
     n_live = sum(1 for r in rows if r.get("source") != "era_archive")
 
@@ -41,7 +51,10 @@ def compute_bankroll(cfg: dict[str, Any], bets_path: Path | None = None) -> dict
         "total_bets": len(rows),
         "era_start": cfg["bankroll"].get("era_start"),
         "updated_at": utc_now(),
-        "formula": "equity = baseline + sum(settled P/L in data/bets.csv); archive+live included",
+        "formula": (
+            "equity = baseline + sum(terminal P/L in data/bets.csv); "
+            "open_risk = Pending+ConfirmedPlaced; Abandoned excluded from risk"
+        ),
     }
 
 

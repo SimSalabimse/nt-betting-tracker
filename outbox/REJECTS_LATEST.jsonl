@@ -1,0 +1,659 @@
+{"match": "Brockmann, Tessa Johanna vs Jacquemot, Elsa", "selection": "Vinner: Brockmann, Tessa Johanna", "reason": "no p_model", "grade": "C", "issues": ["sources 4 < required 6", "missing p_model", "missing summary", "missing failure_modes", "4/4 sources missing takeaway text", "no source tagged kind=injury or lineup (optional v5 field)"]}
+{"match": "Brockmann, Tessa Johanna vs Jacquemot, Elsa", "selection": "Vinner: Jacquemot, Elsa", "reason": "no p_model", "grade": "C", "issues": ["sources 4 < required 6", "missing p_model", "missing summary", "missing failure_modes", "4/4 sources missing takeaway text", "no source tagged kind=injury or lineup (optional v5 field)"]}
+{"match": "Brockmann, Tessa Johanna vs Jacquemot, Elsa", "selection": "Brockmann, Tessa Johanna vinner minimum et sett: Ja", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Brockmann, Tessa Johanna vs Jacquemot, Elsa", "selection": "Brockmann, Tessa Johanna vinner minimum et sett: Nei", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Brockmann, Tessa Johanna vs Jacquemot, Elsa", "selection": "Ja", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Brockmann, Tessa Johanna vs Jacquemot, Elsa", "selection": "Jacquemot, Elsa vinner minimum et sett: Nei", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Brockmann, Tessa Johanna vs Jacquemot, Elsa", "selection": "1. Sett - vinner — Brockmann, Tessa Johanna", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Brockmann, Tessa Johanna vs Jacquemot, Elsa", "selection": "1. Sett - vinner — Jacquemot, Elsa", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Brockmann, Tessa Johanna vs Jacquemot, Elsa", "selection": "2. Sett - vinner — Brockmann, Tessa Johanna", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Brockmann, Tessa Johanna vs Jacquemot, Elsa", "selection": "2. Sett - vinner — Jacquemot, Elsa", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Brockmann, Tessa Johanna vs Jacquemot, Elsa", "selection": "1. Sett - korrekt resultat — 6-0", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Brockmann, Tessa Johanna vs Jacquemot, Elsa", "selection": "1. Sett - korrekt resultat — 2-6", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Brockmann, Tessa Johanna vs Jacquemot, Elsa", "selection": "1. Sett - korrekt resultat — 3-6", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Brockmann, Tessa Johanna vs Jacquemot, Elsa", "selection": "1. Sett - korrekt resultat — 4-6", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Brockmann, Tessa Johanna vs Jacquemot, Elsa", "selection": "1. Sett - korrekt resultat — 5-7", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Brockmann, Tessa Johanna vs Jacquemot, Elsa", "selection": "1. Sett - korrekt resultat — 6-7", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Brockmann, Tessa Johanna vs Jacquemot, Elsa", "selection": "1. Sett - korrekt resultat — 6-1", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Brockmann, Tessa Johanna vs Jacquemot, Elsa", "selection": "1. Sett - korrekt resultat — 6-2", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Brockmann, Tessa Johanna vs Jacquemot, Elsa", "selection": "1. Sett - korrekt resultat — 6-3", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Brockmann, Tessa Johanna vs Jacquemot, Elsa", "selection": "1. Sett - korrekt resultat — 6-4", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Brockmann, Tessa Johanna vs Jacquemot, Elsa", "selection": "1. Sett - korrekt resultat — 7-5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Brockmann, Tessa Johanna vs Jacquemot, Elsa", "selection": "1. Sett - korrekt resultat — 7-6", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Brockmann, Tessa Johanna vs Jacquemot, Elsa", "selection": "1. Sett - korrekt resultat — 0-6", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Brockmann, Tessa Johanna vs Jacquemot, Elsa", "selection": "1. Sett - korrekt resultat — 1-6", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Brockmann, Tessa Johanna vs Jacquemot, Elsa", "selection": "Korrekt resultat (best av 3): 2-0", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Brockmann, Tessa Johanna vs Jacquemot, Elsa", "selection": "Korrekt resultat (best av 3): 2-1", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Brockmann, Tessa Johanna vs Jacquemot, Elsa", "selection": "Korrekt resultat (best av 3): 1-2", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Brockmann, Tessa Johanna vs Jacquemot, Elsa", "selection": "Korrekt resultat (best av 3): 0-2", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Brockmann, Tessa Johanna vs Jacquemot, Elsa", "selection": "Korrekt resultat (best av 3): Eksakt antall sett (best av 3)", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Brockmann, Tessa Johanna vs Jacquemot, Elsa", "selection": "Set handikap 2-veis -1.5: Brockmann, Tessa Johanna -1.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Brockmann, Tessa Johanna vs Jacquemot, Elsa", "selection": "Set handikap 2-veis -1.5: Jacquemot, Elsa +1.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Brockmann, Tessa Johanna vs Jacquemot, Elsa", "selection": "Set handikap 2-veis 1.5: Brockmann, Tessa Johanna +1.5", "reason": "no p_model", "grade": "F", "issues": ["availability_status missing and no availability research — for sensitive markets set availability_status/lineup_status=predicted|confirmed and document injuries/load/fitness", "sources 4 < required 6", "missing p_model", "missing summary", "missing failure_modes", "4/4 sources missing takeaway text", "no source tagged kind=injury or lineup (optional v5 field)"]}
+{"match": "Brockmann, Tessa Johanna vs Jacquemot, Elsa", "selection": "Set handikap 2-veis 1.5: Jacquemot, Elsa -1.5", "reason": "no p_model", "grade": "F", "issues": ["availability_status missing and no availability research — for sensitive markets set availability_status/lineup_status=predicted|confirmed and document injuries/load/fitness", "sources 4 < required 6", "missing p_model", "missing summary", "missing failure_modes", "4/4 sources missing takeaway text", "no source tagged kind=injury or lineup (optional v5 field)"]}
+{"match": "Brockmann, Tessa Johanna vs Jacquemot, Elsa", "selection": "Totalt antall games 20.5: Over 20.5", "reason": "no p_model", "grade": "F", "issues": ["availability_status missing and no availability research — for sensitive markets set availability_status/lineup_status=predicted|confirmed and document injuries/load/fitness", "sources 4 < required 6", "missing p_model", "missing summary", "missing failure_modes", "4/4 sources missing takeaway text", "no source tagged kind=injury or lineup (optional v5 field)"]}
+{"match": "Brockmann, Tessa Johanna vs Jacquemot, Elsa", "selection": "Totalt antall games 20.5: Under 20.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Brockmann, Tessa Johanna vs Jacquemot, Elsa", "selection": "Brockmann, Tessa Johanna totalt antall games 11.5: Over 11.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Brockmann, Tessa Johanna vs Jacquemot, Elsa", "selection": "Brockmann, Tessa Johanna totalt antall games 11.5: Under 11.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Brockmann, Tessa Johanna vs Jacquemot, Elsa", "selection": "Jacquemot, Elsa totalt antall games 12.5: Over 12.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Brockmann, Tessa Johanna vs Jacquemot, Elsa", "selection": "Jacquemot, Elsa totalt antall games 12.5: Under 12.5", "reason": "no p_model", "grade": "F", "issues": ["availability_status missing and no availability research — for sensitive markets set availability_status/lineup_status=predicted|confirmed and document injuries/load/fitness", "sources 4 < required 6", "missing p_model", "missing summary", "missing failure_modes", "4/4 sources missing takeaway text", "no source tagged kind=injury or lineup (optional v5 field)"]}
+{"match": "Brockmann, Tessa Johanna vs Jacquemot, Elsa", "selection": "Game handikap 3.5: Jacquemot, Elsa -3.5", "reason": "no p_model", "grade": "F", "issues": ["availability_status missing and no availability research — for sensitive markets set availability_status/lineup_status=predicted|confirmed and document injuries/load/fitness", "sources 4 < required 6", "missing p_model", "missing summary", "missing failure_modes", "4/4 sources missing takeaway text", "no source tagged kind=injury or lineup (optional v5 field)"]}
+{"match": "Brockmann, Tessa Johanna vs Jacquemot, Elsa", "selection": "1. Sett - totalt antall Games 9.5 — Over 9.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Brockmann, Tessa Johanna vs Jacquemot, Elsa", "selection": "1. Sett - totalt antall Games 9.5 — Under 9.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Brockmann, Tessa Johanna vs Jacquemot, Elsa", "selection": "1. Sett - Game handikap 1.5: Brockmann, Tessa Johanna +1.5", "reason": "no p_model", "grade": "F", "issues": ["availability_status missing and no availability research — for sensitive markets set availability_status/lineup_status=predicted|confirmed and document injuries/load/fitness", "sources 4 < required 6", "missing p_model", "missing summary", "missing failure_modes", "4/4 sources missing takeaway text", "no source tagged kind=injury or lineup (optional v5 field)"]}
+{"match": "Brockmann, Tessa Johanna vs Jacquemot, Elsa", "selection": "1. Sett - Game handikap 1.5: Jacquemot, Elsa -1.5", "odds": 1.52, "reason": "EV -0.243 < min 0.012", "grade": "F", "high_odds": false, "learning_ev_boost": 0.0421}
+{"match": "Brockmann, Tessa Johanna vs Jacquemot, Elsa", "selection": "Dobbelresultat (Vinner 1. sett/kampvinner): Brockmann, Tessa Johanna/Brockmann, Tessa Johanna", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Brockmann, Tessa Johanna vs Jacquemot, Elsa", "selection": "Dobbelresultat (Vinner 1. sett/kampvinner): Jacquemot, Elsa/Brockmann, Tessa Johanna", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Brockmann, Tessa Johanna vs Jacquemot, Elsa", "selection": "Dobbelresultat (Vinner 1. sett/kampvinner): Brockmann, Tessa Johanna/Jacquemot, Elsa", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Brockmann, Tessa Johanna vs Jacquemot, Elsa", "selection": "Dobbelresultat (Vinner 1. sett/kampvinner): Jacquemot, Elsa/Jacquemot, Elsa", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Brockmann, Tessa Johanna vs Jacquemot, Elsa", "selection": "Ender minimum ett sett 6-0 eller 0-6?: Ja", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Brockmann, Tessa Johanna vs Jacquemot, Elsa", "selection": "Ender minimum ett sett 6-0 eller 0-6?: Nei", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Brockmann, Tessa Johanna vs Jacquemot, Elsa", "selection": "Vinner: Brockmann, Tessa Johanna & Under 20.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Brockmann, Tessa Johanna vs Jacquemot, Elsa", "selection": "Vinner: Jacquemot, Elsa & Under 20.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Brockmann, Tessa Johanna vs Jacquemot, Elsa", "selection": "Vinner: Brockmann, Tessa Johanna & Over 20.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Brockmann, Tessa Johanna vs Jacquemot, Elsa", "selection": "Vinner: Jacquemot, Elsa & Over 20.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Wildcard Gaming vs Alliance", "selection": "Vinner: Wildcard Gaming", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Wildcard Gaming vs Alliance", "selection": "Vinner: Alliance", "reason": "no p_model", "grade": "C", "issues": ["missing p_model", "missing summary", "missing failure_modes", "8/8 sources missing takeaway text", "no source tagged kind=injury or lineup (optional v5 field)"]}
+{"match": "Floriana vs KF Drita", "selection": "Floriana to Win", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Floriana vs KF Drita", "selection": "Uavgjort", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Floriana vs KF Drita", "selection": "KF Drita to Win", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Floriana vs KF Drita", "selection": "Handikap 3-veis 1:0: Floriana +1", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Floriana vs KF Drita", "selection": "Handikap 3-veis 1:0: Uavgjort +1", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Floriana vs KF Drita", "selection": "Handikap 3-veis 1:0: KF Drita -1", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Floriana vs KF Drita", "selection": "Totalt antall mål - Over/Under 1.5: Over 1.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Floriana vs KF Drita", "selection": "Totalt antall mål - Over/Under 1.5: Under 1.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Floriana vs KF Drita", "selection": "Totalt antall mål - Over/Under 2.5: Over 2.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Floriana vs KF Drita", "selection": "Totalt antall mål - Over/Under 2.5: Under 2.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Floriana vs KF Drita", "selection": "Totalt antall mål - Over/Under 3.5: Over 3.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Floriana vs KF Drita", "selection": "Totalt antall mål - Over/Under 3.5: Under 3.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Floriana vs KF Drita", "selection": "BTTS Ja", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Floriana vs KF Drita", "selection": "BTTS Nei", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Floriana vs KF Drita", "selection": "1. omgang - HUB — Floriana", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Floriana vs KF Drita", "selection": "1. omgang - HUB — Uavgjort", "reason": "no p_model", "grade": "C", "issues": ["missing p_model", "missing summary", "missing failure_modes", "8/8 sources missing takeaway text", "no source tagged kind=injury or lineup (optional v5 field)"]}
+{"match": "Floriana vs KF Drita", "selection": "1. omgang - HUB — KF Drita", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Floriana vs KF Drita", "selection": "1. omgang - totalt antall mål - over/under 1.5 — Over 1.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Floriana vs KF Drita", "selection": "1. omgang - totalt antall mål - over/under 1.5 — Under 1.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Fenerbahce vs Gornik Zabrze", "selection": "Fenerbahce to Win", "odds": 1.12, "reason": "EV -0.194 < min 0.012", "grade": "C", "high_odds": false, "learning_ev_boost": 0.036}
+{"match": "Fenerbahce vs Gornik Zabrze", "selection": "Uavgjort", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Fenerbahce vs Gornik Zabrze", "selection": "Gornik Zabrze to Win", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Fenerbahce vs Gornik Zabrze", "selection": "Handikap 3-veis 0:2: Fenerbahce -2", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Fenerbahce vs Gornik Zabrze", "selection": "Handikap 3-veis 0:2: Uavgjort -2", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Fenerbahce vs Gornik Zabrze", "selection": "Handikap 3-veis 0:2: Gornik Zabrze +2", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Fenerbahce vs Gornik Zabrze", "selection": "Totalt antall mål - Over/Under 2.5: Over 2.5", "odds": 1.35, "reason": "EV -0.247 < min 0.012", "grade": "F", "high_odds": false, "learning_ev_boost": 0.018}
+{"match": "Fenerbahce vs Gornik Zabrze", "selection": "Totalt antall mål - Over/Under 2.5: Under 2.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Fenerbahce vs Gornik Zabrze", "selection": "Totalt antall mål - Over/Under 3.5: Over 3.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Fenerbahce vs Gornik Zabrze", "selection": "Totalt antall mål - Over/Under 3.5: Under 3.5", "odds": 1.67, "reason": "EV -0.014 < min 0.012", "grade": "B", "high_odds": false, "learning_ev_boost": 0.0341}
+{"match": "Fenerbahce vs Gornik Zabrze", "selection": "Totalt antall mål - Over/Under 4.5: Over 4.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Fenerbahce vs Gornik Zabrze", "selection": "Totalt antall mål - Over/Under 4.5: Under 4.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Fenerbahce vs Gornik Zabrze", "selection": "BTTS Ja", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Fenerbahce vs Gornik Zabrze", "selection": "BTTS Nei", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Fenerbahce vs Gornik Zabrze", "selection": "1. omgang - HUB — Fenerbahce", "reason": "no p_model", "grade": "C", "issues": ["missing p_model", "missing summary", "missing failure_modes", "8/8 sources missing takeaway text", "no source tagged kind=injury or lineup (optional v5 field)"]}
+{"match": "Fenerbahce vs Gornik Zabrze", "selection": "1. omgang - HUB — Uavgjort", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Fenerbahce vs Gornik Zabrze", "selection": "1. omgang - HUB — Gornik Zabrze", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Fenerbahce vs Gornik Zabrze", "selection": "1. omgang - totalt antall mål - over/under 1.5 — Over 1.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Fenerbahce vs Gornik Zabrze", "selection": "1. omgang - totalt antall mål - over/under 1.5 — Under 1.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Thun vs Dinamo Zagreb", "selection": "Thun to Win", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Thun vs Dinamo Zagreb", "selection": "Uavgjort", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Thun vs Dinamo Zagreb", "selection": "Dinamo Zagreb to Win", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Thun vs Dinamo Zagreb", "selection": "Handikap 3-veis 1:0: Thun +1", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Thun vs Dinamo Zagreb", "selection": "Handikap 3-veis 1:0: Uavgjort +1", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Thun vs Dinamo Zagreb", "selection": "Handikap 3-veis 1:0: Dinamo Zagreb -1", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Thun vs Dinamo Zagreb", "selection": "Totalt antall mål - Over/Under 1.5: Over 1.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Thun vs Dinamo Zagreb", "selection": "Totalt antall mål - Over/Under 1.5: Under 1.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Thun vs Dinamo Zagreb", "selection": "Totalt antall mål - Over/Under 2.5: Over 2.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Thun vs Dinamo Zagreb", "selection": "Totalt antall mål - Over/Under 2.5: Under 2.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Thun vs Dinamo Zagreb", "selection": "Totalt antall mål - Over/Under 3.5: Over 3.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Thun vs Dinamo Zagreb", "selection": "Totalt antall mål - Over/Under 3.5: Under 3.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Thun vs Dinamo Zagreb", "selection": "BTTS Ja", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Thun vs Dinamo Zagreb", "selection": "BTTS Nei", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Thun vs Dinamo Zagreb", "selection": "1. omgang - HUB — Thun", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Thun vs Dinamo Zagreb", "selection": "1. omgang - HUB — Uavgjort", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Thun vs Dinamo Zagreb", "selection": "1. omgang - HUB — Dinamo Zagreb", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Thun vs Dinamo Zagreb", "selection": "1. omgang - totalt antall mål - over/under 1.5 — Over 1.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Thun vs Dinamo Zagreb", "selection": "1. omgang - totalt antall mål - over/under 1.5 — Under 1.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Clayton, Jonny vs Anderson, Gary", "selection": "Vinner: Clayton, Jonny", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Clayton, Jonny vs Anderson, Gary", "selection": "Vinner: Anderson, Gary", "odds": 1.65, "reason": "EV -0.109 < min 0.012", "grade": "B", "high_odds": false, "learning_ev_boost": 0.0161}
+{"match": "Clayton, Jonny vs Anderson, Gary", "selection": "Runde handikap 2.5: Clayton, Jonny +2.5", "reason": "no p_model", "grade": "C", "issues": ["missing p_model", "missing summary", "missing failure_modes", "8/8 sources missing takeaway text", "no source tagged kind=injury or lineup (optional v5 field)"]}
+{"match": "Clayton, Jonny vs Anderson, Gary", "selection": "Runde handikap 2.5: Anderson, Gary -2.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Clayton, Jonny vs Anderson, Gary", "selection": "Totalt antall runder 18.5: Under 18.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Clayton, Jonny vs Anderson, Gary", "selection": "Totalt antall 180s 11.5: Over 11.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Clayton, Jonny vs Anderson, Gary", "selection": "Totalt antall 180s 11.5: Under 11.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Clayton, Jonny vs Anderson, Gary", "selection": "Clayton, Jonny totalt antall 180s: Over 5.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Clayton, Jonny vs Anderson, Gary", "selection": "Clayton, Jonny totalt antall 180s: Under 5.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Clayton, Jonny vs Anderson, Gary", "selection": "Anderson, Gary totalt antall 180s: Over 6.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Clayton, Jonny vs Anderson, Gary", "selection": "Anderson, Gary totalt antall 180s: Under 6.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Clayton, Jonny vs Anderson, Gary", "selection": "Kampvinner & flest 180ere: Clayton, Jonny", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Clayton, Jonny vs Anderson, Gary", "selection": "Kampvinner & flest 180ere: Ingen", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Clayton, Jonny vs Anderson, Gary", "selection": "Kampvinner & flest 180ere: Anderson, Gary", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Clayton, Jonny vs Anderson, Gary", "selection": "Total 100 + checkouts: Over 2.5", "reason": "no p_model", "grade": "F", "issues": ["availability_status missing and no availability research — for sensitive markets set availability_status/lineup_status=predicted|confirmed and document injuries/load/fitness", "sources 8 < required 12", "missing p_model", "missing summary", "missing failure_modes", "8/8 sources missing takeaway text", "no source tagged kind=injury or lineup (optional v5 field)"]}
+{"match": "Clayton, Jonny vs Anderson, Gary", "selection": "Total 100 + checkouts: Under 2.5", "reason": "no p_model", "grade": "F", "issues": ["availability_status missing and no availability research — for sensitive markets set availability_status/lineup_status=predicted|confirmed and document injuries/load/fitness", "missing p_model", "missing summary", "missing failure_modes", "8/8 sources missing takeaway text", "no source tagged kind=injury or lineup (optional v5 field)"]}
+{"match": "Clayton, Jonny vs Anderson, Gary", "selection": "Kampvinner & høyest checkout: Clayton, Jonny", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Clayton, Jonny vs Anderson, Gary", "selection": "Kampvinner & høyest checkout: Ingen", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Clayton, Jonny vs Anderson, Gary", "selection": "Kampvinner & høyest checkout: Anderson, Gary", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Bissen vs Gyori", "selection": "Bissen to Win", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Bissen vs Gyori", "selection": "Uavgjort", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Bissen vs Gyori", "selection": "Gyori to Win", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Bissen vs Gyori", "selection": "Handikap 3-veis 1:0: Bissen +1", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Bissen vs Gyori", "selection": "Handikap 3-veis 1:0: Uavgjort +1", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Bissen vs Gyori", "selection": "Handikap 3-veis 1:0: Gyori -1", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Bissen vs Gyori", "selection": "Totalt antall mål - Over/Under 1.5: Over 1.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Bissen vs Gyori", "selection": "Totalt antall mål - Over/Under 1.5: Under 1.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Bissen vs Gyori", "selection": "Totalt antall mål - Over/Under 2.5: Over 2.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Bissen vs Gyori", "selection": "Totalt antall mål - Over/Under 2.5: Under 2.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Bissen vs Gyori", "selection": "Totalt antall mål - Over/Under 3.5: Over 3.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Bissen vs Gyori", "selection": "Totalt antall mål - Over/Under 3.5: Under 3.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Bissen vs Gyori", "selection": "BTTS Ja", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Bissen vs Gyori", "selection": "BTTS Nei", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Bissen vs Gyori", "selection": "1. omgang - HUB — Bissen", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Bissen vs Gyori", "selection": "1. omgang - HUB — Uavgjort", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Bissen vs Gyori", "selection": "1. omgang - HUB — Gyori", "reason": "no p_model", "grade": "C", "issues": ["missing p_model", "missing summary", "missing failure_modes", "8/8 sources missing takeaway text", "no source tagged kind=injury or lineup (optional v5 field)"]}
+{"match": "Bissen vs Gyori", "selection": "1. omgang - totalt antall mål - over/under 1.5 — Over 1.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Bissen vs Gyori", "selection": "1. omgang - totalt antall mål - over/under 1.5 — Under 1.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Sturm Graz vs Hearts", "selection": "Sturm Graz to Win", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Sturm Graz vs Hearts", "selection": "Uavgjort", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Sturm Graz vs Hearts", "selection": "Hearts to Win", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Sturm Graz vs Hearts", "selection": "Handikap 3-veis 0:1: Sturm Graz -1", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Sturm Graz vs Hearts", "selection": "Handikap 3-veis 0:1: Uavgjort -1", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Sturm Graz vs Hearts", "selection": "Handikap 3-veis 0:1: Hearts +1", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Sturm Graz vs Hearts", "selection": "Totalt antall mål - Over/Under 1.5: Over 1.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Sturm Graz vs Hearts", "selection": "Totalt antall mål - Over/Under 1.5: Under 1.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Sturm Graz vs Hearts", "selection": "Totalt antall mål - Over/Under 2.5: Over 2.5", "odds": 1.62, "reason": "EV -0.093 < min 0.012", "grade": "B", "high_odds": false, "learning_ev_boost": 0.0161}
+{"match": "Sturm Graz vs Hearts", "selection": "Totalt antall mål - Over/Under 2.5: Under 2.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Sturm Graz vs Hearts", "selection": "Totalt antall mål - Over/Under 3.5: Over 3.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Sturm Graz vs Hearts", "selection": "Totalt antall mål - Over/Under 3.5: Under 3.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Sturm Graz vs Hearts", "selection": "BTTS Ja", "odds": 1.65, "reason": "EV -0.091 < min 0.012", "grade": "F", "high_odds": false, "learning_ev_boost": 0.0341}
+{"match": "Sturm Graz vs Hearts", "selection": "BTTS Nei", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Sturm Graz vs Hearts", "selection": "1. omgang - HUB — Sturm Graz", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Sturm Graz vs Hearts", "selection": "1. omgang - HUB — Uavgjort", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Sturm Graz vs Hearts", "selection": "1. omgang - HUB — Hearts", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Sturm Graz vs Hearts", "selection": "1. omgang - totalt antall mål - over/under 1.5 — Over 1.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Sturm Graz vs Hearts", "selection": "1. omgang - totalt antall mål - over/under 1.5 — Under 1.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Alloa Athletic FC vs Falkirk FC", "selection": "Alloa Athletic FC to Win", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Alloa Athletic FC vs Falkirk FC", "selection": "Uavgjort", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Alloa Athletic FC vs Falkirk FC", "selection": "Falkirk FC to Win", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Alloa Athletic FC vs Falkirk FC", "selection": "Handikap 3-veis 2:0: Alloa Athletic FC 2:0", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Alloa Athletic FC vs Falkirk FC", "selection": "Handikap 3-veis 2:0: Uavgjort 2:0", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Alloa Athletic FC vs Falkirk FC", "selection": "Handikap 3-veis 2:0: Falkirk FC 2:0", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Alloa Athletic FC vs Falkirk FC", "selection": "Totalt antall mål - over/under 2.5: Over 2.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Alloa Athletic FC vs Falkirk FC", "selection": "Totalt antall mål - over/under 2.5: Under 2.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Alloa Athletic FC vs Falkirk FC", "selection": "Totalt antall mål - over/under 3.5: Over 3.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Alloa Athletic FC vs Falkirk FC", "selection": "Totalt antall mål - over/under 3.5: Under 3.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Alloa Athletic FC vs Falkirk FC", "selection": "Totalt antall mål - over/under 4.5: Over 4.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Alloa Athletic FC vs Falkirk FC", "selection": "Totalt antall mål - over/under 4.5: Under 4.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Alloa Athletic FC vs Falkirk FC", "selection": "BTTS Ja", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Alloa Athletic FC vs Falkirk FC", "selection": "BTTS Nei", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Alloa Athletic FC vs Falkirk FC", "selection": "1. omgang - HUB — Alloa Athletic FC", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Alloa Athletic FC vs Falkirk FC", "selection": "1. omgang - HUB — Uavgjort", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Alloa Athletic FC vs Falkirk FC", "selection": "1. omgang - HUB — Falkirk FC", "reason": "no p_model", "grade": "C", "issues": ["missing p_model", "missing summary", "missing failure_modes", "8/8 sources missing takeaway text", "no source tagged kind=injury or lineup (optional v5 field)"]}
+{"match": "Alloa Athletic FC vs Falkirk FC", "selection": "1. Mål: Alloa Athletic FC", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Alloa Athletic FC vs Falkirk FC", "selection": "1. Mål: Ingen", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Alloa Athletic FC vs Falkirk FC", "selection": "1. Mål: Falkirk FC", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Alloa Athletic FC vs Falkirk FC", "selection": "1. omgang - totalt antall mål - over/under 0.5 — Over 0.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Alloa Athletic FC vs Falkirk FC", "selection": "1. omgang - totalt antall mål - over/under 0.5 — Under 0.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Alloa Athletic FC vs Falkirk FC", "selection": "1. omgang - totalt antall mål - over/under 1.5 — Over 1.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Alloa Athletic FC vs Falkirk FC", "selection": "1. omgang - totalt antall mål - over/under 1.5 — Under 1.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Alloa Athletic FC vs Falkirk FC", "selection": "1. omgang - totalt antall mål - over/under 2.5 — Over 2.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Alloa Athletic FC vs Falkirk FC", "selection": "1. omgang - totalt antall mål - over/under 2.5 — Under 2.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Arbroath FC vs Montrose FC", "selection": "Arbroath FC to Win", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Arbroath FC vs Montrose FC", "selection": "Uavgjort", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Arbroath FC vs Montrose FC", "selection": "Montrose FC to Win", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Arbroath FC vs Montrose FC", "selection": "Handikap 3-veis 0:1: Arbroath FC 0:1", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Arbroath FC vs Montrose FC", "selection": "Handikap 3-veis 0:1: Uavgjort 0:1", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Arbroath FC vs Montrose FC", "selection": "Handikap 3-veis 0:1: Montrose FC 0:1", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Arbroath FC vs Montrose FC", "selection": "Totalt antall mål - over/under 1.5: Over 1.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Arbroath FC vs Montrose FC", "selection": "Totalt antall mål - over/under 1.5: Under 1.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Arbroath FC vs Montrose FC", "selection": "Totalt antall mål - over/under 2.5: Over 2.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Arbroath FC vs Montrose FC", "selection": "Totalt antall mål - over/under 2.5: Under 2.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Arbroath FC vs Montrose FC", "selection": "Totalt antall mål - over/under 3.5: Over 3.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Arbroath FC vs Montrose FC", "selection": "Totalt antall mål - over/under 3.5: Under 3.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Arbroath FC vs Montrose FC", "selection": "BTTS Ja", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Arbroath FC vs Montrose FC", "selection": "BTTS Nei", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Arbroath FC vs Montrose FC", "selection": "1. omgang - HUB — Arbroath FC", "reason": "no p_model", "grade": "C", "issues": ["missing p_model", "missing summary", "missing failure_modes", "8/8 sources missing takeaway text", "no source tagged kind=injury or lineup (optional v5 field)"]}
+{"match": "Arbroath FC vs Montrose FC", "selection": "1. omgang - HUB — Uavgjort", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Arbroath FC vs Montrose FC", "selection": "1. omgang - HUB — Montrose FC", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Arbroath FC vs Montrose FC", "selection": "1. Mål: Arbroath FC", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Arbroath FC vs Montrose FC", "selection": "1. Mål: Ingen", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Arbroath FC vs Montrose FC", "selection": "1. Mål: Montrose FC", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Arbroath FC vs Montrose FC", "selection": "1. omgang - totalt antall mål - over/under 0.5 — Over 0.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Arbroath FC vs Montrose FC", "selection": "1. omgang - totalt antall mål - over/under 0.5 — Under 0.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Arbroath FC vs Montrose FC", "selection": "1. omgang - totalt antall mål - over/under 1.5 — Over 1.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Arbroath FC vs Montrose FC", "selection": "1. omgang - totalt antall mål - over/under 1.5 — Under 1.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Arbroath FC vs Montrose FC", "selection": "1. omgang - totalt antall mål - over/under 2.5 — Over 2.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Arbroath FC vs Montrose FC", "selection": "1. omgang - totalt antall mål - over/under 2.5 — Under 2.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Clyde FC vs Annan Athletic FC", "selection": "Clyde FC to Win", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Clyde FC vs Annan Athletic FC", "selection": "Uavgjort", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Clyde FC vs Annan Athletic FC", "selection": "Annan Athletic FC to Win", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Clyde FC vs Annan Athletic FC", "selection": "Handikap 3-veis 0:1: Clyde FC 0:1", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Clyde FC vs Annan Athletic FC", "selection": "Handikap 3-veis 0:1: Uavgjort 0:1", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Clyde FC vs Annan Athletic FC", "selection": "Handikap 3-veis 0:1: Annan Athletic FC 0:1", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Clyde FC vs Annan Athletic FC", "selection": "Totalt antall mål - over/under 2.5: Over 2.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Clyde FC vs Annan Athletic FC", "selection": "Totalt antall mål - over/under 2.5: Under 2.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Clyde FC vs Annan Athletic FC", "selection": "Totalt antall mål - over/under 3.5: Over 3.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Clyde FC vs Annan Athletic FC", "selection": "Totalt antall mål - over/under 3.5: Under 3.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Clyde FC vs Annan Athletic FC", "selection": "Totalt antall mål - over/under 4.5: Over 4.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Clyde FC vs Annan Athletic FC", "selection": "Totalt antall mål - over/under 4.5: Under 4.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Clyde FC vs Annan Athletic FC", "selection": "BTTS Ja", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Clyde FC vs Annan Athletic FC", "selection": "BTTS Nei", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Clyde FC vs Annan Athletic FC", "selection": "1. omgang - HUB — Clyde FC", "reason": "no p_model", "grade": "C", "issues": ["missing p_model", "missing summary", "missing failure_modes", "8/8 sources missing takeaway text", "no source tagged kind=injury or lineup (optional v5 field)"]}
+{"match": "Clyde FC vs Annan Athletic FC", "selection": "1. omgang - HUB — Uavgjort", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Clyde FC vs Annan Athletic FC", "selection": "1. omgang - HUB — Annan Athletic FC", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Clyde FC vs Annan Athletic FC", "selection": "1. Mål: Clyde FC", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Clyde FC vs Annan Athletic FC", "selection": "1. Mål: Ingen", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Clyde FC vs Annan Athletic FC", "selection": "1. Mål: Annan Athletic FC", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Clyde FC vs Annan Athletic FC", "selection": "1. omgang - totalt antall mål - over/under 0.5 — Over 0.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Clyde FC vs Annan Athletic FC", "selection": "1. omgang - totalt antall mål - over/under 0.5 — Under 0.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Clyde FC vs Annan Athletic FC", "selection": "1. omgang - totalt antall mål - over/under 1.5 — Over 1.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Clyde FC vs Annan Athletic FC", "selection": "1. omgang - totalt antall mål - over/under 1.5 — Under 1.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Clyde FC vs Annan Athletic FC", "selection": "1. omgang - totalt antall mål - over/under 2.5 — Over 2.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Clyde FC vs Annan Athletic FC", "selection": "1. omgang - totalt antall mål - over/under 2.5 — Under 2.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Dundee United vs Spartans FC", "selection": "Dundee United to Win", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Dundee United vs Spartans FC", "selection": "Uavgjort", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Dundee United vs Spartans FC", "selection": "Spartans FC to Win", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Dundee United vs Spartans FC", "selection": "Handikap 3-veis 0:3: Dundee United 0:3", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Dundee United vs Spartans FC", "selection": "Handikap 3-veis 0:3: Uavgjort 0:3", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Dundee United vs Spartans FC", "selection": "Handikap 3-veis 0:3: Spartans FC 0:3", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Dundee United vs Spartans FC", "selection": "Totalt antall mål - over/under 2.5: Over 2.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Dundee United vs Spartans FC", "selection": "Totalt antall mål - over/under 2.5: Under 2.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Dundee United vs Spartans FC", "selection": "Totalt antall mål - over/under 3.5: Over 3.5", "odds": 1.72, "reason": "EV -0.072 < min 0.012", "grade": "B", "high_odds": false, "learning_ev_boost": 0.0161}
+{"match": "Dundee United vs Spartans FC", "selection": "Totalt antall mål - over/under 3.5: Under 3.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Dundee United vs Spartans FC", "selection": "Totalt antall mål - over/under 4.5: Over 4.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Dundee United vs Spartans FC", "selection": "Totalt antall mål - over/under 4.5: Under 4.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Dundee United vs Spartans FC", "selection": "BTTS Ja", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Dundee United vs Spartans FC", "selection": "BTTS Nei", "odds": 1.47, "reason": "EV -0.106 < min 0.012", "grade": "B", "high_odds": false, "learning_ev_boost": 0.036}
+{"match": "Dundee United vs Spartans FC", "selection": "1. omgang - HUB — Dundee United", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Dundee United vs Spartans FC", "selection": "1. omgang - HUB — Uavgjort", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Dundee United vs Spartans FC", "selection": "1. omgang - HUB — Spartans FC", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Dundee United vs Spartans FC", "selection": "1. Mål: Dundee United", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Dundee United vs Spartans FC", "selection": "1. Mål: Ingen", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Dundee United vs Spartans FC", "selection": "1. Mål: Spartans FC", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Dundee United vs Spartans FC", "selection": "1. omgang - totalt antall mål - over/under 0.5 — Over 0.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Dundee United vs Spartans FC", "selection": "1. omgang - totalt antall mål - over/under 0.5 — Under 0.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Dundee United vs Spartans FC", "selection": "1. omgang - totalt antall mål - over/under 1.5 — Over 1.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Dundee United vs Spartans FC", "selection": "1. omgang - totalt antall mål - over/under 1.5 — Under 1.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Dundee United vs Spartans FC", "selection": "1. omgang - totalt antall mål - over/under 2.5 — Over 2.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Dundee United vs Spartans FC", "selection": "1. omgang - totalt antall mål - over/under 2.5 — Under 2.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Dunfermline Athletic FC vs Cove Rangers FC", "selection": "Dunfermline Athletic FC to Win", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Dunfermline Athletic FC vs Cove Rangers FC", "selection": "Uavgjort", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Dunfermline Athletic FC vs Cove Rangers FC", "selection": "Cove Rangers FC to Win", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Dunfermline Athletic FC vs Cove Rangers FC", "selection": "Handikap 3-veis 0:2: Dunfermline Athletic FC 0:2", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Dunfermline Athletic FC vs Cove Rangers FC", "selection": "Handikap 3-veis 0:2: Uavgjort 0:2", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Dunfermline Athletic FC vs Cove Rangers FC", "selection": "Handikap 3-veis 0:2: Cove Rangers FC 0:2", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Dunfermline Athletic FC vs Cove Rangers FC", "selection": "Totalt antall mål - over/under 1.5: Over 1.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Dunfermline Athletic FC vs Cove Rangers FC", "selection": "Totalt antall mål - over/under 1.5: Under 1.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Dunfermline Athletic FC vs Cove Rangers FC", "selection": "Totalt antall mål - over/under 2.5: Over 2.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Dunfermline Athletic FC vs Cove Rangers FC", "selection": "Totalt antall mål - over/under 2.5: Under 2.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Dunfermline Athletic FC vs Cove Rangers FC", "selection": "Totalt antall mål - over/under 3.5: Over 3.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Dunfermline Athletic FC vs Cove Rangers FC", "selection": "Totalt antall mål - over/under 3.5: Under 3.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Dunfermline Athletic FC vs Cove Rangers FC", "selection": "BTTS Ja", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Dunfermline Athletic FC vs Cove Rangers FC", "selection": "BTTS Nei", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Dunfermline Athletic FC vs Cove Rangers FC", "selection": "1. omgang - HUB — Dunfermline Athletic FC", "reason": "no p_model", "grade": "C", "issues": ["missing p_model", "missing summary", "missing failure_modes", "8/8 sources missing takeaway text", "no source tagged kind=injury or lineup (optional v5 field)"]}
+{"match": "Dunfermline Athletic FC vs Cove Rangers FC", "selection": "1. omgang - HUB — Uavgjort", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Dunfermline Athletic FC vs Cove Rangers FC", "selection": "1. omgang - HUB — Cove Rangers FC", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Dunfermline Athletic FC vs Cove Rangers FC", "selection": "1. Mål: Dunfermline Athletic FC", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Dunfermline Athletic FC vs Cove Rangers FC", "selection": "1. Mål: Ingen", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Dunfermline Athletic FC vs Cove Rangers FC", "selection": "1. Mål: Cove Rangers FC", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Dunfermline Athletic FC vs Cove Rangers FC", "selection": "1. omgang - totalt antall mål - over/under 0.5 — Over 0.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Dunfermline Athletic FC vs Cove Rangers FC", "selection": "1. omgang - totalt antall mål - over/under 0.5 — Under 0.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Dunfermline Athletic FC vs Cove Rangers FC", "selection": "1. omgang - totalt antall mål - over/under 1.5 — Over 1.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Dunfermline Athletic FC vs Cove Rangers FC", "selection": "1. omgang - totalt antall mål - over/under 1.5 — Under 1.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Dunfermline Athletic FC vs Cove Rangers FC", "selection": "1. omgang - totalt antall mål - over/under 2.5 — Over 2.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Dunfermline Athletic FC vs Cove Rangers FC", "selection": "1. omgang - totalt antall mål - over/under 2.5 — Under 2.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "East Fife FC vs Linlithgow Rose FC", "selection": "East Fife FC to Win", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "East Fife FC vs Linlithgow Rose FC", "selection": "Uavgjort", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "East Fife FC vs Linlithgow Rose FC", "selection": "Linlithgow Rose FC to Win", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "East Fife FC vs Linlithgow Rose FC", "selection": "Handikap 3-veis 0:1: East Fife FC 0:1", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "East Fife FC vs Linlithgow Rose FC", "selection": "Handikap 3-veis 0:1: Uavgjort 0:1", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "East Fife FC vs Linlithgow Rose FC", "selection": "Handikap 3-veis 0:1: Linlithgow Rose FC 0:1", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "East Fife FC vs Linlithgow Rose FC", "selection": "Totalt antall mål - over/under 1.5: Over 1.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "East Fife FC vs Linlithgow Rose FC", "selection": "Totalt antall mål - over/under 1.5: Under 1.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "East Fife FC vs Linlithgow Rose FC", "selection": "Totalt antall mål - over/under 2.5: Over 2.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "East Fife FC vs Linlithgow Rose FC", "selection": "Totalt antall mål - over/under 2.5: Under 2.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "East Fife FC vs Linlithgow Rose FC", "selection": "Totalt antall mål - over/under 3.5: Over 3.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "East Fife FC vs Linlithgow Rose FC", "selection": "Totalt antall mål - over/under 3.5: Under 3.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "East Fife FC vs Linlithgow Rose FC", "selection": "BTTS Ja", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "East Fife FC vs Linlithgow Rose FC", "selection": "BTTS Nei", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "East Fife FC vs Linlithgow Rose FC", "selection": "1. omgang - HUB — East Fife FC", "reason": "no p_model", "grade": "C", "issues": ["missing p_model", "missing summary", "missing failure_modes", "8/8 sources missing takeaway text", "no source tagged kind=injury or lineup (optional v5 field)"]}
+{"match": "East Fife FC vs Linlithgow Rose FC", "selection": "1. omgang - HUB — Uavgjort", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "East Fife FC vs Linlithgow Rose FC", "selection": "1. omgang - HUB — Linlithgow Rose FC", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "East Fife FC vs Linlithgow Rose FC", "selection": "1. Mål: East Fife FC", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "East Fife FC vs Linlithgow Rose FC", "selection": "1. Mål: Ingen", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "East Fife FC vs Linlithgow Rose FC", "selection": "1. Mål: Linlithgow Rose FC", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "East Fife FC vs Linlithgow Rose FC", "selection": "1. omgang - totalt antall mål - over/under 0.5 — Over 0.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "East Fife FC vs Linlithgow Rose FC", "selection": "1. omgang - totalt antall mål - over/under 0.5 — Under 0.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "East Fife FC vs Linlithgow Rose FC", "selection": "1. omgang - totalt antall mål - over/under 1.5 — Over 1.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "East Fife FC vs Linlithgow Rose FC", "selection": "1. omgang - totalt antall mål - over/under 1.5 — Under 1.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "East Fife FC vs Linlithgow Rose FC", "selection": "1. omgang - totalt antall mål - over/under 2.5 — Over 2.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "East Fife FC vs Linlithgow Rose FC", "selection": "1. omgang - totalt antall mål - over/under 2.5 — Under 2.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Inverness Caledonian Thistle FC vs St. Johnstone FC", "selection": "Inverness Caledonian Thistle FC to Win", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Inverness Caledonian Thistle FC vs St. Johnstone FC", "selection": "Uavgjort", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Inverness Caledonian Thistle FC vs St. Johnstone FC", "selection": "St. Johnstone FC to Win", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Inverness Caledonian Thistle FC vs St. Johnstone FC", "selection": "Handikap 3-veis 1:0: Inverness Caledonian Thistle FC 1:0", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Inverness Caledonian Thistle FC vs St. Johnstone FC", "selection": "Handikap 3-veis 1:0: Uavgjort 1:0", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Inverness Caledonian Thistle FC vs St. Johnstone FC", "selection": "Handikap 3-veis 1:0: St. Johnstone FC 1:0", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Inverness Caledonian Thistle FC vs St. Johnstone FC", "selection": "Totalt antall mål - over/under 1.5: Over 1.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Inverness Caledonian Thistle FC vs St. Johnstone FC", "selection": "Totalt antall mål - over/under 1.5: Under 1.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Inverness Caledonian Thistle FC vs St. Johnstone FC", "selection": "Totalt antall mål - over/under 2.5: Over 2.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Inverness Caledonian Thistle FC vs St. Johnstone FC", "selection": "Totalt antall mål - over/under 2.5: Under 2.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Inverness Caledonian Thistle FC vs St. Johnstone FC", "selection": "Totalt antall mål - over/under 3.5: Over 3.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Inverness Caledonian Thistle FC vs St. Johnstone FC", "selection": "Totalt antall mål - over/under 3.5: Under 3.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Inverness Caledonian Thistle FC vs St. Johnstone FC", "selection": "BTTS Ja", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Inverness Caledonian Thistle FC vs St. Johnstone FC", "selection": "BTTS Nei", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Inverness Caledonian Thistle FC vs St. Johnstone FC", "selection": "1. omgang - HUB — Inverness Caledonian Thistle FC", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Inverness Caledonian Thistle FC vs St. Johnstone FC", "selection": "1. omgang - HUB — Uavgjort", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Inverness Caledonian Thistle FC vs St. Johnstone FC", "selection": "1. omgang - HUB — St. Johnstone FC", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Inverness Caledonian Thistle FC vs St. Johnstone FC", "selection": "1. Mål: Inverness Caledonian Thistle FC", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Inverness Caledonian Thistle FC vs St. Johnstone FC", "selection": "1. Mål: Ingen", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Inverness Caledonian Thistle FC vs St. Johnstone FC", "selection": "1. Mål: St. Johnstone FC", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Inverness Caledonian Thistle FC vs St. Johnstone FC", "selection": "1. omgang - totalt antall mål - over/under 0.5 — Over 0.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Inverness Caledonian Thistle FC vs St. Johnstone FC", "selection": "1. omgang - totalt antall mål - over/under 0.5 — Under 0.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Inverness Caledonian Thistle FC vs St. Johnstone FC", "selection": "1. omgang - totalt antall mål - over/under 1.5 — Over 1.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Inverness Caledonian Thistle FC vs St. Johnstone FC", "selection": "1. omgang - totalt antall mål - over/under 1.5 — Under 1.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Inverness Caledonian Thistle FC vs St. Johnstone FC", "selection": "1. omgang - totalt antall mål - over/under 2.5 — Over 2.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Inverness Caledonian Thistle FC vs St. Johnstone FC", "selection": "1. omgang - totalt antall mål - over/under 2.5 — Under 2.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "KI Klaksvik vs FK Kauno Zalgiris", "selection": "KI Klaksvik to Win", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "KI Klaksvik vs FK Kauno Zalgiris", "selection": "Uavgjort", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "KI Klaksvik vs FK Kauno Zalgiris", "selection": "FK Kauno Zalgiris to Win", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "KI Klaksvik vs FK Kauno Zalgiris", "selection": "Handikap 3-veis 0:1: KI Klaksvik -1", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "KI Klaksvik vs FK Kauno Zalgiris", "selection": "Handikap 3-veis 0:1: Uavgjort -1", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "KI Klaksvik vs FK Kauno Zalgiris", "selection": "Handikap 3-veis 0:1: FK Kauno Zalgiris +1", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "KI Klaksvik vs FK Kauno Zalgiris", "selection": "Totalt antall mål - Over/Under 1.5: Over 1.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "KI Klaksvik vs FK Kauno Zalgiris", "selection": "Totalt antall mål - Over/Under 1.5: Under 1.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "KI Klaksvik vs FK Kauno Zalgiris", "selection": "Totalt antall mål - Over/Under 2.5: Over 2.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "KI Klaksvik vs FK Kauno Zalgiris", "selection": "Totalt antall mål - Over/Under 2.5: Under 2.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "KI Klaksvik vs FK Kauno Zalgiris", "selection": "Totalt antall mål - Over/Under 3.5: Over 3.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "KI Klaksvik vs FK Kauno Zalgiris", "selection": "Totalt antall mål - Over/Under 3.5: Under 3.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "KI Klaksvik vs FK Kauno Zalgiris", "selection": "BTTS Ja", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "KI Klaksvik vs FK Kauno Zalgiris", "selection": "BTTS Nei", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "KI Klaksvik vs FK Kauno Zalgiris", "selection": "1. omgang - HUB — KI Klaksvik", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "KI Klaksvik vs FK Kauno Zalgiris", "selection": "1. omgang - HUB — Uavgjort", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "KI Klaksvik vs FK Kauno Zalgiris", "selection": "1. omgang - HUB — FK Kauno Zalgiris", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "KI Klaksvik vs FK Kauno Zalgiris", "selection": "1. omgang - totalt antall mål - over/under 0.5 — Over 0.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "KI Klaksvik vs FK Kauno Zalgiris", "selection": "1. omgang - totalt antall mål - over/under 0.5 — Under 0.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Kelty Hearts FC vs Brora Rangers", "selection": "Kelty Hearts FC to Win", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Kelty Hearts FC vs Brora Rangers", "selection": "Uavgjort", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Kelty Hearts FC vs Brora Rangers", "selection": "Brora Rangers to Win", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Kelty Hearts FC vs Brora Rangers", "selection": "Handikap 3-veis 0:1: Kelty Hearts FC 0:1", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Kelty Hearts FC vs Brora Rangers", "selection": "Handikap 3-veis 0:1: Uavgjort 0:1", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Kelty Hearts FC vs Brora Rangers", "selection": "Handikap 3-veis 0:1: Brora Rangers 0:1", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Kelty Hearts FC vs Brora Rangers", "selection": "Totalt antall mål - over/under 2.5: Over 2.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Kelty Hearts FC vs Brora Rangers", "selection": "Totalt antall mål - over/under 2.5: Under 2.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Kelty Hearts FC vs Brora Rangers", "selection": "Totalt antall mål - over/under 3.5: Over 3.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Kelty Hearts FC vs Brora Rangers", "selection": "Totalt antall mål - over/under 3.5: Under 3.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Kelty Hearts FC vs Brora Rangers", "selection": "Totalt antall mål - over/under 4.5: Over 4.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Kelty Hearts FC vs Brora Rangers", "selection": "Totalt antall mål - over/under 4.5: Under 4.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Kelty Hearts FC vs Brora Rangers", "selection": "BTTS Ja", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Kelty Hearts FC vs Brora Rangers", "selection": "BTTS Nei", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Kelty Hearts FC vs Brora Rangers", "selection": "1. omgang - HUB — Kelty Hearts FC", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Kelty Hearts FC vs Brora Rangers", "selection": "1. omgang - HUB — Uavgjort", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Kelty Hearts FC vs Brora Rangers", "selection": "1. omgang - HUB — Brora Rangers", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Kelty Hearts FC vs Brora Rangers", "selection": "1. Mål: Kelty Hearts FC", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Kelty Hearts FC vs Brora Rangers", "selection": "1. Mål: Ingen", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Kelty Hearts FC vs Brora Rangers", "selection": "1. Mål: Brora Rangers", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Kelty Hearts FC vs Brora Rangers", "selection": "1. omgang - totalt antall mål - over/under 0.5 — Over 0.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Kelty Hearts FC vs Brora Rangers", "selection": "1. omgang - totalt antall mål - over/under 0.5 — Under 0.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Kelty Hearts FC vs Brora Rangers", "selection": "1. omgang - totalt antall mål - over/under 1.5 — Over 1.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Kelty Hearts FC vs Brora Rangers", "selection": "1. omgang - totalt antall mål - over/under 1.5 — Under 1.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Kelty Hearts FC vs Brora Rangers", "selection": "1. omgang - totalt antall mål - over/under 2.5 — Over 2.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Kelty Hearts FC vs Brora Rangers", "selection": "1. omgang - totalt antall mål - over/under 2.5 — Under 2.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Kilmarnock FC vs Hamilton Academical FC", "selection": "Kilmarnock FC to Win", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Kilmarnock FC vs Hamilton Academical FC", "selection": "Uavgjort", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Kilmarnock FC vs Hamilton Academical FC", "selection": "Hamilton Academical FC to Win", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Kilmarnock FC vs Hamilton Academical FC", "selection": "Handikap 3-veis 0:2: Kilmarnock FC 0:2", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Kilmarnock FC vs Hamilton Academical FC", "selection": "Handikap 3-veis 0:2: Uavgjort 0:2", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Kilmarnock FC vs Hamilton Academical FC", "selection": "Handikap 3-veis 0:2: Hamilton Academical FC 0:2", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Kilmarnock FC vs Hamilton Academical FC", "selection": "Totalt antall mål - over/under 2.5: Over 2.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Kilmarnock FC vs Hamilton Academical FC", "selection": "Totalt antall mål - over/under 2.5: Under 2.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Kilmarnock FC vs Hamilton Academical FC", "selection": "Totalt antall mål - over/under 3.5: Over 3.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Kilmarnock FC vs Hamilton Academical FC", "selection": "Totalt antall mål - over/under 3.5: Under 3.5", "odds": 1.67, "reason": "EV -0.014 < min 0.012", "grade": "B", "high_odds": false, "learning_ev_boost": 0.0341}
+{"match": "Kilmarnock FC vs Hamilton Academical FC", "selection": "Totalt antall mål - over/under 4.5: Over 4.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Kilmarnock FC vs Hamilton Academical FC", "selection": "Totalt antall mål - over/under 4.5: Under 4.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Kilmarnock FC vs Hamilton Academical FC", "selection": "BTTS Ja", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Kilmarnock FC vs Hamilton Academical FC", "selection": "BTTS Nei", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Kilmarnock FC vs Hamilton Academical FC", "selection": "1. omgang - HUB — Kilmarnock FC", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Kilmarnock FC vs Hamilton Academical FC", "selection": "1. omgang - HUB — Uavgjort", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Kilmarnock FC vs Hamilton Academical FC", "selection": "1. omgang - HUB — Hamilton Academical FC", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Kilmarnock FC vs Hamilton Academical FC", "selection": "1. Mål: Kilmarnock FC", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Kilmarnock FC vs Hamilton Academical FC", "selection": "1. Mål: Ingen", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Kilmarnock FC vs Hamilton Academical FC", "selection": "1. Mål: Hamilton Academical FC", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Kilmarnock FC vs Hamilton Academical FC", "selection": "1. omgang - totalt antall mål - over/under 0.5 — Over 0.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Kilmarnock FC vs Hamilton Academical FC", "selection": "1. omgang - totalt antall mål - over/under 0.5 — Under 0.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Kilmarnock FC vs Hamilton Academical FC", "selection": "1. omgang - totalt antall mål - over/under 1.5 — Over 1.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Kilmarnock FC vs Hamilton Academical FC", "selection": "1. omgang - totalt antall mål - over/under 1.5 — Under 1.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Kilmarnock FC vs Hamilton Academical FC", "selection": "1. omgang - totalt antall mål - over/under 2.5 — Over 2.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Kilmarnock FC vs Hamilton Academical FC", "selection": "1. omgang - totalt antall mål - over/under 2.5 — Under 2.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Livingston FC vs Forfar Athletic FC", "selection": "Livingston FC to Win", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Livingston FC vs Forfar Athletic FC", "selection": "Uavgjort", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Livingston FC vs Forfar Athletic FC", "selection": "Forfar Athletic FC to Win", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Livingston FC vs Forfar Athletic FC", "selection": "Handikap 3-veis 0:3: Livingston FC 0:3", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Livingston FC vs Forfar Athletic FC", "selection": "Handikap 3-veis 0:3: Uavgjort 0:3", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Livingston FC vs Forfar Athletic FC", "selection": "Handikap 3-veis 0:3: Forfar Athletic FC 0:3", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Livingston FC vs Forfar Athletic FC", "selection": "Totalt antall mål - over/under 2.5: Over 2.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Livingston FC vs Forfar Athletic FC", "selection": "Totalt antall mål - over/under 2.5: Under 2.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Livingston FC vs Forfar Athletic FC", "selection": "Totalt antall mål - over/under 3.5: Over 3.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Livingston FC vs Forfar Athletic FC", "selection": "Totalt antall mål - over/under 3.5: Under 3.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Livingston FC vs Forfar Athletic FC", "selection": "Totalt antall mål - over/under 4.5: Over 4.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Livingston FC vs Forfar Athletic FC", "selection": "Totalt antall mål - over/under 4.5: Under 4.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Livingston FC vs Forfar Athletic FC", "selection": "BTTS Ja", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Livingston FC vs Forfar Athletic FC", "selection": "BTTS Nei", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Livingston FC vs Forfar Athletic FC", "selection": "1. omgang - HUB — Livingston FC", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Livingston FC vs Forfar Athletic FC", "selection": "1. omgang - HUB — Uavgjort", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Livingston FC vs Forfar Athletic FC", "selection": "1. omgang - HUB — Forfar Athletic FC", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Livingston FC vs Forfar Athletic FC", "selection": "1. Mål: Livingston FC", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Livingston FC vs Forfar Athletic FC", "selection": "1. Mål: Ingen", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Livingston FC vs Forfar Athletic FC", "selection": "1. Mål: Forfar Athletic FC", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Livingston FC vs Forfar Athletic FC", "selection": "1. omgang - totalt antall mål - over/under 0.5 — Over 0.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Livingston FC vs Forfar Athletic FC", "selection": "1. omgang - totalt antall mål - over/under 0.5 — Under 0.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Livingston FC vs Forfar Athletic FC", "selection": "1. omgang - totalt antall mål - over/under 1.5 — Over 1.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Livingston FC vs Forfar Athletic FC", "selection": "1. omgang - totalt antall mål - over/under 1.5 — Under 1.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Livingston FC vs Forfar Athletic FC", "selection": "1. omgang - totalt antall mål - over/under 2.5 — Over 2.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Livingston FC vs Forfar Athletic FC", "selection": "1. omgang - totalt antall mål - over/under 2.5 — Under 2.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Partick Thistle FC vs Stenhousemuir FC", "selection": "Partick Thistle FC to Win", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Partick Thistle FC vs Stenhousemuir FC", "selection": "Uavgjort", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Partick Thistle FC vs Stenhousemuir FC", "selection": "Stenhousemuir FC to Win", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Partick Thistle FC vs Stenhousemuir FC", "selection": "Handikap 3-veis 0:2: Partick Thistle FC 0:2", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Partick Thistle FC vs Stenhousemuir FC", "selection": "Handikap 3-veis 0:2: Uavgjort 0:2", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Partick Thistle FC vs Stenhousemuir FC", "selection": "Handikap 3-veis 0:2: Stenhousemuir FC 0:2", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Partick Thistle FC vs Stenhousemuir FC", "selection": "Totalt antall mål - over/under 2.5: Over 2.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Partick Thistle FC vs Stenhousemuir FC", "selection": "Totalt antall mål - over/under 2.5: Under 2.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Partick Thistle FC vs Stenhousemuir FC", "selection": "Totalt antall mål - over/under 3.5: Over 3.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Partick Thistle FC vs Stenhousemuir FC", "selection": "Totalt antall mål - over/under 3.5: Under 3.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Partick Thistle FC vs Stenhousemuir FC", "selection": "Totalt antall mål - over/under 4.5: Over 4.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Partick Thistle FC vs Stenhousemuir FC", "selection": "Totalt antall mål - over/under 4.5: Under 4.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Partick Thistle FC vs Stenhousemuir FC", "selection": "BTTS Ja", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Partick Thistle FC vs Stenhousemuir FC", "selection": "BTTS Nei", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Partick Thistle FC vs Stenhousemuir FC", "selection": "1. omgang - HUB — Partick Thistle FC", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Partick Thistle FC vs Stenhousemuir FC", "selection": "1. omgang - HUB — Uavgjort", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Partick Thistle FC vs Stenhousemuir FC", "selection": "1. omgang - HUB — Stenhousemuir FC", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Partick Thistle FC vs Stenhousemuir FC", "selection": "1. Mål: Partick Thistle FC", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Partick Thistle FC vs Stenhousemuir FC", "selection": "1. Mål: Ingen", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Partick Thistle FC vs Stenhousemuir FC", "selection": "1. Mål: Stenhousemuir FC", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Partick Thistle FC vs Stenhousemuir FC", "selection": "1. omgang - totalt antall mål - over/under 0.5 — Over 0.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Partick Thistle FC vs Stenhousemuir FC", "selection": "1. omgang - totalt antall mål - over/under 0.5 — Under 0.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Partick Thistle FC vs Stenhousemuir FC", "selection": "1. omgang - totalt antall mål - over/under 1.5 — Over 1.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Partick Thistle FC vs Stenhousemuir FC", "selection": "1. omgang - totalt antall mål - over/under 1.5 — Under 1.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Partick Thistle FC vs Stenhousemuir FC", "selection": "1. omgang - totalt antall mål - over/under 2.5 — Over 2.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Partick Thistle FC vs Stenhousemuir FC", "selection": "1. omgang - totalt antall mål - over/under 2.5 — Under 2.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Raith Rovers FC vs Peterhead FC", "selection": "Raith Rovers FC", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Raith Rovers FC vs Peterhead FC", "selection": "Uavgjort", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Raith Rovers FC vs Peterhead FC", "selection": "Peterhead FC to Win", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Raith Rovers FC vs Peterhead FC", "selection": "Handikap 3-veis 0:2: Raith Rovers FC 0:2", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Raith Rovers FC vs Peterhead FC", "selection": "Handikap 3-veis 0:2: Uavgjort 0:2", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Raith Rovers FC vs Peterhead FC", "selection": "Handikap 3-veis 0:2: Peterhead FC 0:2", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Raith Rovers FC vs Peterhead FC", "selection": "Totalt antall mål - over/under 2.5: Over 2.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Raith Rovers FC vs Peterhead FC", "selection": "Totalt antall mål - over/under 2.5: Under 2.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Raith Rovers FC vs Peterhead FC", "selection": "Totalt antall mål - over/under 3.5: Over 3.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Raith Rovers FC vs Peterhead FC", "selection": "Totalt antall mål - over/under 3.5: Under 3.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Raith Rovers FC vs Peterhead FC", "selection": "Totalt antall mål - over/under 4.5: Over 4.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Raith Rovers FC vs Peterhead FC", "selection": "Totalt antall mål - over/under 4.5: Under 4.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Raith Rovers FC vs Peterhead FC", "selection": "BTTS Ja", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Raith Rovers FC vs Peterhead FC", "selection": "BTTS Nei", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Raith Rovers FC vs Peterhead FC", "selection": "1. omgang - HUB — Raith Rovers FC", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Raith Rovers FC vs Peterhead FC", "selection": "1. omgang - HUB — Uavgjort", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Raith Rovers FC vs Peterhead FC", "selection": "1. omgang - HUB — Peterhead FC", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Raith Rovers FC vs Peterhead FC", "selection": "1. Mål: Raith Rovers FC", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Raith Rovers FC vs Peterhead FC", "selection": "1. Mål: Ingen", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Raith Rovers FC vs Peterhead FC", "selection": "1. Mål: Peterhead FC", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Raith Rovers FC vs Peterhead FC", "selection": "1. omgang - totalt antall mål - over/under 0.5 — Over 0.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Raith Rovers FC vs Peterhead FC", "selection": "1. omgang - totalt antall mål - over/under 0.5 — Under 0.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Raith Rovers FC vs Peterhead FC", "selection": "1. omgang - totalt antall mål - over/under 1.5 — Over 1.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Raith Rovers FC vs Peterhead FC", "selection": "1. omgang - totalt antall mål - over/under 1.5 — Under 1.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Raith Rovers FC vs Peterhead FC", "selection": "1. omgang - totalt antall mål - over/under 2.5 — Over 2.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Raith Rovers FC vs Peterhead FC", "selection": "1. omgang - totalt antall mål - over/under 2.5 — Under 2.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Ross County FC vs Dundee FC", "selection": "Ross County FC to Win", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Ross County FC vs Dundee FC", "selection": "Uavgjort", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Ross County FC vs Dundee FC", "selection": "Dundee FC to Win", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Ross County FC vs Dundee FC", "selection": "Handikap 3-veis 1:0: Ross County FC 1:0", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Ross County FC vs Dundee FC", "selection": "Handikap 3-veis 1:0: Uavgjort 1:0", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Ross County FC vs Dundee FC", "selection": "Handikap 3-veis 1:0: Dundee FC 1:0", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Ross County FC vs Dundee FC", "selection": "Totalt antall mål - over/under 1.5: Over 1.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Ross County FC vs Dundee FC", "selection": "Totalt antall mål - over/under 1.5: Under 1.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Ross County FC vs Dundee FC", "selection": "Totalt antall mål - over/under 2.5: Over 2.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Ross County FC vs Dundee FC", "selection": "Totalt antall mål - over/under 2.5: Under 2.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Ross County FC vs Dundee FC", "selection": "Totalt antall mål - over/under 3.5: Over 3.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Ross County FC vs Dundee FC", "selection": "Totalt antall mål - over/under 3.5: Under 3.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Ross County FC vs Dundee FC", "selection": "BTTS Ja", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Ross County FC vs Dundee FC", "selection": "BTTS Nei", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Ross County FC vs Dundee FC", "selection": "1. omgang - HUB — Ross County FC", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Ross County FC vs Dundee FC", "selection": "1. omgang - HUB — Uavgjort", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Ross County FC vs Dundee FC", "selection": "1. omgang - HUB — Dundee FC", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Ross County FC vs Dundee FC", "selection": "1. Mål: Ross County FC", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Ross County FC vs Dundee FC", "selection": "1. Mål: Ingen", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Ross County FC vs Dundee FC", "selection": "1. Mål: Dundee FC", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Ross County FC vs Dundee FC", "selection": "1. omgang - totalt antall mål - over/under 0.5 — Over 0.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Ross County FC vs Dundee FC", "selection": "1. omgang - totalt antall mål - over/under 0.5 — Under 0.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Ross County FC vs Dundee FC", "selection": "1. omgang - totalt antall mål - over/under 1.5 — Over 1.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Ross County FC vs Dundee FC", "selection": "1. omgang - totalt antall mål - over/under 1.5 — Under 1.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Ross County FC vs Dundee FC", "selection": "1. omgang - totalt antall mål - over/under 2.5 — Over 2.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Ross County FC vs Dundee FC", "selection": "1. omgang - totalt antall mål - over/under 2.5 — Under 2.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "St Mirren FC vs East Kilbride FC", "selection": "St Mirren FC to Win", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "St Mirren FC vs East Kilbride FC", "selection": "Uavgjort", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "St Mirren FC vs East Kilbride FC", "selection": "East Kilbride FC to Win", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "St Mirren FC vs East Kilbride FC", "selection": "Handikap 3-veis 0:2: St Mirren FC 0:2", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "St Mirren FC vs East Kilbride FC", "selection": "Handikap 3-veis 0:2: Uavgjort 0:2", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "St Mirren FC vs East Kilbride FC", "selection": "Handikap 3-veis 0:2: East Kilbride FC 0:2", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "St Mirren FC vs East Kilbride FC", "selection": "Totalt antall mål - over/under 2.5: Over 2.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "St Mirren FC vs East Kilbride FC", "selection": "Totalt antall mål - over/under 2.5: Under 2.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "St Mirren FC vs East Kilbride FC", "selection": "Totalt antall mål - over/under 3.5: Over 3.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "St Mirren FC vs East Kilbride FC", "selection": "Totalt antall mål - over/under 3.5: Under 3.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "St Mirren FC vs East Kilbride FC", "selection": "Totalt antall mål - over/under 4.5: Over 4.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "St Mirren FC vs East Kilbride FC", "selection": "Totalt antall mål - over/under 4.5: Under 4.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "St Mirren FC vs East Kilbride FC", "selection": "BTTS Ja", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "St Mirren FC vs East Kilbride FC", "selection": "BTTS Nei", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "St Mirren FC vs East Kilbride FC", "selection": "1. omgang - HUB — St Mirren FC", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "St Mirren FC vs East Kilbride FC", "selection": "1. omgang - HUB — Uavgjort", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "St Mirren FC vs East Kilbride FC", "selection": "1. omgang - HUB — East Kilbride FC", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "St Mirren FC vs East Kilbride FC", "selection": "1. Mål: St Mirren FC", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "St Mirren FC vs East Kilbride FC", "selection": "1. Mål: Ingen", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "St Mirren FC vs East Kilbride FC", "selection": "1. Mål: East Kilbride FC", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "St Mirren FC vs East Kilbride FC", "selection": "1. omgang - totalt antall mål - over/under 0.5 — Over 0.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "St Mirren FC vs East Kilbride FC", "selection": "1. omgang - totalt antall mål - over/under 0.5 — Under 0.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "St Mirren FC vs East Kilbride FC", "selection": "1. omgang - totalt antall mål - over/under 1.5 — Over 1.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "St Mirren FC vs East Kilbride FC", "selection": "1. omgang - totalt antall mål - over/under 1.5 — Under 1.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "St Mirren FC vs East Kilbride FC", "selection": "1. omgang - totalt antall mål - over/under 2.5 — Over 2.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "St Mirren FC vs East Kilbride FC", "selection": "1. omgang - totalt antall mål - over/under 2.5 — Under 2.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Stranraer FC vs Edinburgh City FC", "selection": "Stranraer FC to Win", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Stranraer FC vs Edinburgh City FC", "selection": "Uavgjort", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Stranraer FC vs Edinburgh City FC", "selection": "Edinburgh City FC to Win", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Stranraer FC vs Edinburgh City FC", "selection": "Handikap 3-veis 0:1: Stranraer FC 0:1", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Stranraer FC vs Edinburgh City FC", "selection": "Handikap 3-veis 0:1: Uavgjort 0:1", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Stranraer FC vs Edinburgh City FC", "selection": "Handikap 3-veis 0:1: Edinburgh City FC 0:1", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Stranraer FC vs Edinburgh City FC", "selection": "Totalt antall mål - over/under 1.5: Over 1.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Stranraer FC vs Edinburgh City FC", "selection": "Totalt antall mål - over/under 1.5: Under 1.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Stranraer FC vs Edinburgh City FC", "selection": "Totalt antall mål - over/under 2.5: Over 2.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Stranraer FC vs Edinburgh City FC", "selection": "Totalt antall mål - over/under 2.5: Under 2.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Stranraer FC vs Edinburgh City FC", "selection": "Totalt antall mål - over/under 3.5: Over 3.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Stranraer FC vs Edinburgh City FC", "selection": "Totalt antall mål - over/under 3.5: Under 3.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Stranraer FC vs Edinburgh City FC", "selection": "BTTS Ja", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Stranraer FC vs Edinburgh City FC", "selection": "BTTS Nei", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Stranraer FC vs Edinburgh City FC", "selection": "1. omgang - HUB — Stranraer FC", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Stranraer FC vs Edinburgh City FC", "selection": "1. omgang - HUB — Uavgjort", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Stranraer FC vs Edinburgh City FC", "selection": "1. omgang - HUB — Edinburgh City FC", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Stranraer FC vs Edinburgh City FC", "selection": "1. Mål: Stranraer FC", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Stranraer FC vs Edinburgh City FC", "selection": "1. Mål: Ingen", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Stranraer FC vs Edinburgh City FC", "selection": "1. Mål: Edinburgh City FC", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Stranraer FC vs Edinburgh City FC", "selection": "1. omgang - totalt antall mål - over/under 0.5 — Over 0.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Stranraer FC vs Edinburgh City FC", "selection": "1. omgang - totalt antall mål - over/under 0.5 — Under 0.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Stranraer FC vs Edinburgh City FC", "selection": "1. omgang - totalt antall mål - over/under 1.5 — Over 1.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Stranraer FC vs Edinburgh City FC", "selection": "1. omgang - totalt antall mål - over/under 1.5 — Under 1.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Stranraer FC vs Edinburgh City FC", "selection": "1. omgang - totalt antall mål - over/under 2.5 — Over 2.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Stranraer FC vs Edinburgh City FC", "selection": "1. omgang - totalt antall mål - over/under 2.5 — Under 2.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Larne vs Røde Stjerne", "selection": "Larne to Win", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Larne vs Røde Stjerne", "selection": "Uavgjort", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Larne vs Røde Stjerne", "selection": "Røde Stjerne to Win", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Larne vs Røde Stjerne", "selection": "Handikap 3-veis 2:0: Larne +2", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Larne vs Røde Stjerne", "selection": "Handikap 3-veis 2:0: Uavgjort +2", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Larne vs Røde Stjerne", "selection": "Handikap 3-veis 2:0: Røde Stjerne -2", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Larne vs Røde Stjerne", "selection": "Totalt antall mål - Over/Under 2.5: Over 2.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Larne vs Røde Stjerne", "selection": "Totalt antall mål - Over/Under 2.5: Under 2.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Larne vs Røde Stjerne", "selection": "Totalt antall mål - Over/Under 3.5: Over 3.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Larne vs Røde Stjerne", "selection": "Totalt antall mål - Over/Under 3.5: Under 3.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Larne vs Røde Stjerne", "selection": "Totalt antall mål - Over/Under 4.5: Over 4.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Larne vs Røde Stjerne", "selection": "Totalt antall mål - Over/Under 4.5: Under 4.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Larne vs Røde Stjerne", "selection": "BTTS Ja", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Larne vs Røde Stjerne", "selection": "BTTS Nei", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Larne vs Røde Stjerne", "selection": "1. omgang - HUB — Larne", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Larne vs Røde Stjerne", "selection": "1. omgang - HUB — Uavgjort", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Larne vs Røde Stjerne", "selection": "1. omgang - HUB — Røde Stjerne", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Larne vs Røde Stjerne", "selection": "1. omgang - totalt antall mål - over/under 1.5 — Over 1.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Larne vs Røde Stjerne", "selection": "1. omgang - totalt antall mål - over/under 1.5 — Under 1.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Vikingur Reykjavik vs Hapoel Beer Sheva", "selection": "Vikingur Reykjavik", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Vikingur Reykjavik vs Hapoel Beer Sheva", "selection": "Uavgjort", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Vikingur Reykjavik vs Hapoel Beer Sheva", "selection": "Hapoel Beer Sheva to Win", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Vikingur Reykjavik vs Hapoel Beer Sheva", "selection": "Handikap 3-veis 0:1: Vikingur Reykjavik -1", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Vikingur Reykjavik vs Hapoel Beer Sheva", "selection": "Handikap 3-veis 0:1: Uavgjort -1", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Vikingur Reykjavik vs Hapoel Beer Sheva", "selection": "Handikap 3-veis 0:1: Hapoel Beer Sheva +1", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Vikingur Reykjavik vs Hapoel Beer Sheva", "selection": "Totalt antall mål - Over/Under 1.5: Over 1.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Vikingur Reykjavik vs Hapoel Beer Sheva", "selection": "Totalt antall mål - Over/Under 1.5: Under 1.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Vikingur Reykjavik vs Hapoel Beer Sheva", "selection": "Totalt antall mål - Over/Under 2.5: Over 2.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Vikingur Reykjavik vs Hapoel Beer Sheva", "selection": "Totalt antall mål - Over/Under 2.5: Under 2.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Vikingur Reykjavik vs Hapoel Beer Sheva", "selection": "Totalt antall mål - Over/Under 3.5: Over 3.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Vikingur Reykjavik vs Hapoel Beer Sheva", "selection": "Totalt antall mål - Over/Under 3.5: Under 3.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Vikingur Reykjavik vs Hapoel Beer Sheva", "selection": "BTTS Ja", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Vikingur Reykjavik vs Hapoel Beer Sheva", "selection": "BTTS Nei", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Vikingur Reykjavik vs Hapoel Beer Sheva", "selection": "1. omgang - HUB — Vikingur Reykjavik", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Vikingur Reykjavik vs Hapoel Beer Sheva", "selection": "1. omgang - HUB — Uavgjort", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Vikingur Reykjavik vs Hapoel Beer Sheva", "selection": "1. omgang - HUB — Hapoel Beer Sheva", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Vikingur Reykjavik vs Hapoel Beer Sheva", "selection": "1. omgang - totalt antall mål - over/under 1.5 — Over 1.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Vikingur Reykjavik vs Hapoel Beer Sheva", "selection": "1. omgang - totalt antall mål - over/under 1.5 — Under 1.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "van Gerwen, Michael vs van Duijvenbode, Dirk", "selection": "Vinner: van Duijvenbode, Dirk", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "van Gerwen, Michael vs van Duijvenbode, Dirk", "selection": "Legs handikap -2.5: van Gerwen, Michael -2.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "van Gerwen, Michael vs van Duijvenbode, Dirk", "selection": "Legs handikap -2.5: van Duijvenbode, Dirk +2.5", "odds": 1.7, "reason": "EV -0.083 < min 0.012", "grade": "F", "high_odds": false, "learning_ev_boost": 0.0161}
+{"match": "van Gerwen, Michael vs van Duijvenbode, Dirk", "selection": "Totalt antall runder 18.5: Over 18.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "van Gerwen, Michael vs van Duijvenbode, Dirk", "selection": "Totalt antall runder 18.5: Under 18.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "van Gerwen, Michael vs van Duijvenbode, Dirk", "selection": "Totalt antall 180s 11.5: Over 11.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "van Gerwen, Michael vs van Duijvenbode, Dirk", "selection": "Totalt antall 180s 11.5: Under 11.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "van Gerwen, Michael vs van Duijvenbode, Dirk", "selection": "van Gerwen, Michael totalt antall 180s: Over 5.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "van Gerwen, Michael vs van Duijvenbode, Dirk", "selection": "van Gerwen, Michael totalt antall 180s: Under 5.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "van Gerwen, Michael vs van Duijvenbode, Dirk", "selection": "van Duijvenbode, Dirk totalt antall 180s: Over 5.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "van Gerwen, Michael vs van Duijvenbode, Dirk", "selection": "van Duijvenbode, Dirk totalt antall 180s: Under 5.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "van Gerwen, Michael vs van Duijvenbode, Dirk", "selection": "Kampvinner & flest 180ere: van Gerwen, Michael", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "van Gerwen, Michael vs van Duijvenbode, Dirk", "selection": "Kampvinner & flest 180ere: Ingen", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "van Gerwen, Michael vs van Duijvenbode, Dirk", "selection": "Kampvinner & flest 180ere: van Duijvenbode, Dirk", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "van Gerwen, Michael vs van Duijvenbode, Dirk", "selection": "Total 100 + checkouts: Over 2.5", "reason": "no p_model", "grade": "F", "issues": ["availability_status missing and no availability research — for sensitive markets set availability_status/lineup_status=predicted|confirmed and document injuries/load/fitness", "missing p_model", "missing summary", "missing failure_modes", "8/8 sources missing takeaway text", "no source tagged kind=injury or lineup (optional v5 field)"]}
+{"match": "van Gerwen, Michael vs van Duijvenbode, Dirk", "selection": "Total 100 + checkouts: Under 2.5", "reason": "no p_model", "grade": "F", "issues": ["availability_status missing and no availability research — for sensitive markets set availability_status/lineup_status=predicted|confirmed and document injuries/load/fitness", "missing p_model", "missing summary", "missing failure_modes", "8/8 sources missing takeaway text", "no source tagged kind=injury or lineup (optional v5 field)"]}
+{"match": "van Gerwen, Michael vs van Duijvenbode, Dirk", "selection": "Kampvinner & høyest checkout: van Gerwen, Michael", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "van Gerwen, Michael vs van Duijvenbode, Dirk", "selection": "Kampvinner & høyest checkout: Ingen", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "van Gerwen, Michael vs van Duijvenbode, Dirk", "selection": "Kampvinner & høyest checkout: van Duijvenbode, Dirk", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Fylkir Reykjavik vs Afturelding", "selection": "Fylkir Reykjavik", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Fylkir Reykjavik vs Afturelding", "selection": "Uavgjort", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Fylkir Reykjavik vs Afturelding", "selection": "Afturelding to Win", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Fylkir Reykjavik vs Afturelding", "selection": "Handikap 3-veis 0:1: Fylkir Reykjavik 0:1", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Fylkir Reykjavik vs Afturelding", "selection": "Handikap 3-veis 0:1: Uavgjort 0:1", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Fylkir Reykjavik vs Afturelding", "selection": "Handikap 3-veis 0:1: Afturelding 0:1", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Fylkir Reykjavik vs Afturelding", "selection": "Totalt antall mål - over/under 2.5: Over 2.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Fylkir Reykjavik vs Afturelding", "selection": "Totalt antall mål - over/under 2.5: Under 2.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Fylkir Reykjavik vs Afturelding", "selection": "Totalt antall mål - over/under 3.5: Over 3.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Fylkir Reykjavik vs Afturelding", "selection": "Totalt antall mål - over/under 3.5: Under 3.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Fylkir Reykjavik vs Afturelding", "selection": "Totalt antall mål - over/under 4.5: Over 4.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Fylkir Reykjavik vs Afturelding", "selection": "Totalt antall mål - over/under 4.5: Under 4.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Fylkir Reykjavik vs Afturelding", "selection": "BTTS Ja", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Fylkir Reykjavik vs Afturelding", "selection": "BTTS Nei", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Fylkir Reykjavik vs Afturelding", "selection": "1. omgang - HUB — Fylkir Reykjavik", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Fylkir Reykjavik vs Afturelding", "selection": "1. omgang - HUB — Uavgjort", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Fylkir Reykjavik vs Afturelding", "selection": "1. omgang - HUB — Afturelding", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Fylkir Reykjavik vs Afturelding", "selection": "1. omgang - totalt antall mål - over/under 0.5 — Over 0.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Fylkir Reykjavik vs Afturelding", "selection": "1. omgang - totalt antall mål - over/under 0.5 — Under 0.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Fylkir Reykjavik vs Afturelding", "selection": "1. omgang - totalt antall mål - over/under 1.5 — Over 1.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Fylkir Reykjavik vs Afturelding", "selection": "1. omgang - totalt antall mål - over/under 1.5 — Under 1.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Fylkir Reykjavik vs Afturelding", "selection": "1. omgang - totalt antall mål - over/under 2.5 — Over 2.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}
+{"match": "Fylkir Reykjavik vs Afturelding", "selection": "1. omgang - totalt antall mål - over/under 2.5 — Under 2.5", "reason": "no p_model", "grade": "F", "issues": ["missing evidence pack"]}

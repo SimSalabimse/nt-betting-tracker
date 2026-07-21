@@ -1,0 +1,264 @@
+{
+  "updated_at": "2026-07-21T14:36:53Z",
+  "proposals": [
+    {
+      "id": "sport:tennis:2026-07-21T14",
+      "kind": "sport",
+      "name": "tennis",
+      "status": "accepted",
+      "created_at": "2026-07-21T14:36:53Z",
+      "current": {
+        "stake_mult": 1.0,
+        "ev_boost": 0.0,
+        "n": 5
+      },
+      "proposed": {
+        "stake_mult": 1.08,
+        "ev_boost": 0.02
+      },
+      "delta": {
+        "stake_mult": 0.08,
+        "ev_boost": 0.02
+      },
+      "layers": {
+        "short_roi": 0.5,
+        "medium_roi": 0.6182,
+        "long_roi": 0.6182,
+        "blended": 0.565,
+        "confidence": 0.5
+      },
+      "reason": "Batch n=1 weighted P/L +10.2 · layered ROI +56.5% · hist n=5",
+      "source": "settlement_review",
+      "resolved_at": "2026-07-21T14:36:53Z",
+      "applied": {
+        "stake_mult": 1.08,
+        "ev_boost": 0.02
+      }
+    },
+    {
+      "id": "sport:football:2026-07-21T14",
+      "kind": "sport",
+      "name": "football",
+      "status": "accepted",
+      "created_at": "2026-07-21T14:36:53Z",
+      "current": {
+        "stake_mult": 1.0,
+        "ev_boost": 0.0,
+        "n": 7
+      },
+      "proposed": {
+        "stake_mult": 1.08,
+        "ev_boost": 0.02
+      },
+      "delta": {
+        "stake_mult": 0.08,
+        "ev_boost": 0.02
+      },
+      "layers": {
+        "short_roi": 0.5,
+        "medium_roi": 0.5609,
+        "long_roi": 0.5609,
+        "blended": 0.5335,
+        "confidence": 0.67
+      },
+      "reason": "Batch n=1 weighted P/L +8.6 · layered ROI +53.3% · hist n=7",
+      "source": "settlement_review",
+      "resolved_at": "2026-07-21T14:36:53Z",
+      "applied": {
+        "stake_mult": 1.08,
+        "ev_boost": 0.02
+      }
+    },
+    {
+      "id": "sport:esports:2026-07-21T14",
+      "kind": "sport",
+      "name": "esports",
+      "status": "modified",
+      "created_at": "2026-07-21T14:36:53Z",
+      "current": {
+        "stake_mult": 1.0,
+        "ev_boost": 0.0,
+        "n": 1
+      },
+      "proposed": {
+        "stake_mult": 1.045,
+        "ev_boost": 0.0072
+      },
+      "delta": {
+        "stake_mult": 0.045,
+        "ev_boost": 0.0072
+      },
+      "layers": {
+        "short_roi": 0.5,
+        "medium_roi": 0.57,
+        "long_roi": 0.57,
+        "blended": 0.5385,
+        "confidence": 0.17
+      },
+      "reason": "Batch n=1 weighted P/L +6.8 · layered ROI +53.8% · hist n=1",
+      "source": "settlement_review",
+      "resolved_at": "2026-07-21T14:36:53Z",
+      "applied": {
+        "stake_mult": 1.04,
+        "ev_boost": 0.0072
+      }
+    },
+    {
+      "id": "market:Handicap:2026-07-21T14",
+      "kind": "market",
+      "name": "Handicap",
+      "status": "accepted",
+      "created_at": "2026-07-21T14:36:53Z",
+      "current": {
+        "stake_mult": 1.0,
+        "ev_boost": 0.0,
+        "n": 11
+      },
+      "proposed": {
+        "stake_mult": 1.06,
+        "ev_boost": 0.015
+      },
+      "delta": {
+        "stake_mult": 0.06,
+        "ev_boost": 0.015
+      },
+      "layers": {
+        "short_roi": 0.5,
+        "medium_roi": 0.2326,
+        "long_roi": 0.2326,
+        "blended": 0.3663,
+        "confidence": 1.0
+      },
+      "reason": "Market batch n=1 · layered +36.6%",
+      "source": "settlement_review",
+      "resolved_at": "2026-07-21T14:36:53Z",
+      "applied": {
+        "stake_mult": 1.06,
+        "ev_boost": 0.015
+      }
+    },
+    {
+      "id": "market:Totals Under:2026-07-21T14",
+      "kind": "market",
+      "name": "Totals Under",
+      "status": "modified",
+      "created_at": "2026-07-21T14:36:53Z",
+      "current": {
+        "stake_mult": 1.0,
+        "ev_boost": 0.0,
+        "n": 2
+      },
+      "proposed": {
+        "stake_mult": 1.023,
+        "ev_boost": 0.0035
+      },
+      "delta": {
+        "stake_mult": 0.023,
+        "ev_boost": 0.0035
+      },
+      "layers": {
+        "short_roi": 0.5,
+        "medium_roi": -0.0977,
+        "long_roi": -0.0977,
+        "blended": 0.2011,
+        "confidence": 0.25
+      },
+      "reason": "Market batch n=1 · layered +20.1%",
+      "source": "settlement_review",
+      "resolved_at": "2026-07-21T14:36:53Z",
+      "applied": {
+        "stake_mult": 1.023,
+        "ev_boost": 0.0035
+      }
+    },
+    {
+      "id": "market:Match result:2026-07-21T14",
+      "kind": "market",
+      "name": "Match result",
+      "status": "accepted",
+      "created_at": "2026-07-21T14:36:53Z",
+      "current": {
+        "stake_mult": 1.0,
+        "ev_boost": 0.0,
+        "n": 8
+      },
+      "proposed": {
+        "stake_mult": 1.06,
+        "ev_boost": 0.0144
+      },
+      "delta": {
+        "stake_mult": 0.06,
+        "ev_boost": 0.0144
+      },
+      "layers": {
+        "short_roi": 0.5,
+        "medium_roi": 0.0493,
+        "long_roi": 0.0493,
+        "blended": 0.2746,
+        "confidence": 0.75
+      },
+      "reason": "Market batch n=1 · layered +27.5%",
+      "source": "settlement_review",
+      "resolved_at": "2026-07-21T14:36:53Z",
+      "applied": {
+        "stake_mult": 1.06,
+        "ev_boost": 0.0144
+      }
+    }
+  ],
+  "last_batch_summary": {
+    "n": 3,
+    "total_pl": 25.68,
+    "skill_weighted_pl": 25.68,
+    "variance_pl": 0.0,
+    "process_hits": 3,
+    "process_misses": 0,
+    "most_predictive_sports": [
+      {
+        "name": "tennis",
+        "pl": 10.2
+      },
+      {
+        "name": "football",
+        "pl": 8.64
+      },
+      {
+        "name": "esports",
+        "pl": 6.84
+      }
+    ],
+    "least_predictive_sports": [
+      {
+        "name": "esports",
+        "pl": 6.84
+      },
+      {
+        "name": "football",
+        "pl": 8.64
+      },
+      {
+        "name": "tennis",
+        "pl": 10.2
+      }
+    ],
+    "markets": [
+      {
+        "name": "Handicap",
+        "pl": 10.2
+      },
+      {
+        "name": "Totals Under",
+        "pl": 8.64
+      },
+      {
+        "name": "Match result",
+        "pl": 6.84
+      }
+    ]
+  },
+  "last_narrative": [
+    "Settled **3** · total P/L **+25.68** · skill-weighted ≈ **+25.68** · variance bucket **+0.0**.",
+    "3 aligned with model/process expectations.",
+    "**6 learning proposal(s)** ready to accept/reject in Research → Learnings."
+  ]
+}

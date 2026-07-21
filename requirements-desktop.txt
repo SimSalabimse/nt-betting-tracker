@@ -1,0 +1,3 @@
+# Optional desktop UI (CLI still only needs requirements.txt)
+-r requirements.txt
+flet>=0.25.0,<0.30.0

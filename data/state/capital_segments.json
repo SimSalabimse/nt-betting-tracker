@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "rule_bundle_version": "br_v2.0.0",
+  "secure_nok": 0.0,
+  "secure_transfers": [],
+  "unit_hwm_reset_equity_nok": 500.0,
+  "freeze": {
+    "active": false,
+    "reason": null,
+    "activated_at": null,
+    "unfreeze_requires": "manual"
+  },
+  "day_snapshot": {
+    "oslo_date": "2026-07-21",
+    "liquid_start_nok": 526.99,
+    "unit_size_nok": 10.0,
+    "realized_pl_nok": 22.88
+  },
+  "week_snapshot": {
+    "week_id": "2026-W30",
+    "liquid_start_nok": 526.99,
+    "unit_size_nok": 10.0,
+    "realized_pl_nok": 30.93
+  },
+  "updated_at": "2026-07-21T17:06:00Z",
+  "_last_sync": {
+    "ts": "2026-07-21T17:06:00Z",
+    "ledger_equity_nok": 550.99,
+    "secure_transfer": {
+      "triggered": false,
+      "transferred": 0.0,
+      "secure_after": 0.0,
+      "ref_hwm_after": 500.0,
+      "working_equity_after": 550.99,
+      "reason": "below_trigger",
+      "min_working_required": 303.04,
+      "transfer_capped_by_buffer": false
+    },
+    "riskable_liquid_nok": 516.99,
+    "oslo_date": "2026-07-21",
+    "week_id": "2026-W30"
+  }
+}

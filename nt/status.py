@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from nt.bets_io import band_roi_stats, fnum, load_bets
+from nt.bets_io import band_roi_stats, fnum, is_open_risk, load_bets
 from nt.config import path_from_config
 
 
@@ -21,10 +21,10 @@ def generate_status(
             f"| {b} | {int(s['n'])} | {s['roi']*100:.1f}% | {s['pl']:+.1f} |"
         )
 
-    pending = [r for r in rows if r.get("result") == "Pending"]
+    pending = [r for r in rows if is_open_risk(r.get("result"))]
     pend_lines = (
         "\n".join(
-            f"- {r['date']}: {r['match']} / {r['selection']} @ {r['decimal_odds']} "
+            f"- [{r.get('result')}] {r['date']}: {r['match']} / {r['selection']} @ {r['decimal_odds']} "
             f"stake {r['stake_nok']}"
             for r in pending[:20]
         )
@@ -67,11 +67,14 @@ def generate_status(
 {pend_lines}
 
 ## Your workflow
-1. Put odds in `inbox/`
-2. `python -m nt recommend --odds inbox/YOURFILE.csv`
-3. Place bets from `outbox/PLACE_THESE.md`
-4. Put results in `inbox/`
-5. `python -m nt settle --results inbox/YOUR_RESULTS.yaml`
+1. Research → `evidence/*.json` (see `nt research scaffold`)
+2. Put odds in `inbox/`
+3. `python run_nt.py recommend --odds inbox/YOURFILE.txt`
+4. Place bets from `outbox/PLACE_THESE.md`
+5. Put results in `inbox/` → `python run_nt.py settle --results …`
+6. Review: `python run_nt.py analyze` · `learn` · `edges`
+
+Optional: `project` (bankroll sim) · `agent ask` (assist only)
 
 Updated: {bankroll.get('updated_at','')}
 """

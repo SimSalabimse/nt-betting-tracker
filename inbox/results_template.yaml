@@ -1,7 +1,19 @@
 # Prefer payout_nok (total returned including stake). Loss => 0. Refund => stake.
+# Rich fields improve learning (variance vs skill, research quality).
 results:
   - match: "Example FC vs Sample United"
     selection: "Example FC DNB"
+    # outcome: win | loss | refund | push
+    # OR payout_nok: 0
     payout_nok: 0
-    # or: outcome: loss | win | refund
+    score: "1-2"                    # actual score / final
+    variance_tag: expected          # expected | variance | process_error
+    research_quality_retro: good    # good | ok | poor
+    confidence_retro: 0.7           # 0-1 how solid original research felt
+    key_events: "Red card 70'"      # free text
     notes: "optional short note"
+    # auto_fetched: true            # set when suggestion came from auto-fetch
+
+  # Minimal form still works:
+  # - bet_id: "abc123"
+  #   outcome: win

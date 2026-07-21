@@ -4,9 +4,51 @@ __pycache__/
 .pytest_cache/
 .venv/
 venv/
+*.egg-info/
+.mypy_cache/
+.ruff_cache/
+
+# Local backups / noise
 data/bets.csv.backup_*
+data/backups/
 *.backup_*
+artifacts/
+
+# Generated odds dumps (keep templates)
+inbox/current_odds*
+inbox/live_odds*
+inbox/*_odds*.txt
+inbox/*.txt.prev
+inbox/odds_available_now.txt
+inbox/spa_arg*.txt
+inbox/results.txt
+inbox/_settle_items.json
+inbox/AGENT_PIPELINE_REPORT.md
+
+# Rotating outbox noise (keep latest pointers)
 outbox/PLACE_THESE_*.md
 outbox/REJECTS_*.md
+outbox/REJECTS_20*.jsonl
 outbox/SETTLEMENT_RECEIPT.md
-# keep templates and latest pointer if committed intentionally
+outbox/ANALYSIS_odds_*
+outbox/PARSED_odds_*
+outbox/RESEARCH_BOARD_20*.md
+outbox/SIM_*
+outbox/light_research/
+outbox/market_scans/
+outbox/CAPITAL_V2_MC_REPORT.*
+outbox/AUDIT_*
+outbox/CALIBRATION_20*.md
+outbox/ARENA_*
+outbox/FRANCE_*
+outbox/POSTMORTEM_*
+outbox/SPORT_CLASSIFICATION.md
+outbox/WINDOW_3H_LINES.json
+
+# Local large odds archive
+data/odds/
+
+# Editor
+.idea/
+.vscode/
+*.swp
