@@ -2,7 +2,8 @@
 HV Research Regime v3 PR4 — explore boost hygiene.
 
 T8: explore_virgin_stack false → at most one virgin boost (≤0.022+ε)
-T9: raw_ev −0.10 → portfolio zeros explore boost → no place
+T9: raw_ev −0.10 → portfolio zeros explore boost → no place (audit fields)
+T9b: boundary raw_ev just below −0.015 + band prior — gate is load-bearing
 """
 from __future__ import annotations
 
@@ -201,6 +202,94 @@ def test_t9_raw_ev_deep_negative_zeros_boost_no_place():
     r0 = rejects[0]
     assert float(r0.get("raw_ev")) < -0.015
     # Learning boost zeroed by portfolio gate
+    assert float(r0.get("learning_ev_boost") or 0.0) == 0.0
+    assert r0.get("boost_applied") is False
+    assert r0.get("boost_blocked_reason") == "raw_ev_below_explore_boost_min"
+    assert "EV" in str(r0.get("reason", ""))
+
+
+def test_t9b_boundary_raw_ev_gate_is_load_bearing():
+    """
+    T9b (M1): raw_ev just below explore_boost_min_raw_ev with production-like
+    band prior — without the gate, virgin boost + prior would clear explore
+    min_ev; with the gate, boost is zeroed and build_portfolio rejects.
+    """
+    odds = 2.0  # band 1.8-2.2
+    haircut = 0.03
+    floor = -0.015
+    band_prior = 0.015  # production-like selection.band_prior_boost["1.8-2.2"]
+    # raw_ev = (p - haircut)*odds - 1 ≈ -0.016 (strictly < floor)
+    p_model = 0.522
+    raw = ev_after_haircut(p_model, odds, haircut)
+    assert raw < floor
+    assert abs(raw - (-0.016)) < 1e-9
+
+    cfg = _portfolio_cfg()
+    cfg["selection"]["band_prior_boost"] = {"1.8-2.2": band_prior}
+    # Keep explore bar explicit so counterfactual is stable
+    cfg["learning"]["diversification"]["explore_min_ev"] = 0.012
+
+    sources = [
+        {"url": f"https://example.com/{i}", "takeaway": "stats ok", "kind": "stats"}
+        for i in range(8)
+    ]
+    evidence = {
+        "p_model": p_model,
+        "summary": "Boundary virgin-sport total: near-miss raw EV with honest sources.",
+        "failure_modes": "model noise; thin sample",
+        "context_risk": "low",
+        "availability_status": "predicted",
+        "availability_notes": "expected full strength for unit test",
+        "script_lean": "competitive",
+        "selection_vs_script": "agree",
+        "base_rate_conflict": False,
+        "sources": sources,
+    }
+    c = Candidate(
+        date="2026-07-22",
+        match="Boundary Darts vs Control",
+        selection="Over 5.5",
+        decimal_odds=odds,
+        sport="darts",
+        market_type="Totals",
+        p_model=p_model,
+        evidence=evidence,
+    )
+    learn = _virgin_learning()
+    adj = learning_adjustments(
+        learn,
+        sport="darts",
+        market="Totals",
+        selection="Over 5.5",
+        band="1.8-2.2",
+        enabled=True,
+        learn_cfg=cfg["learning"],
+    )
+    assert adj["explored"] is True
+    boost = float(adj["ev_boost"] or 0.0)
+    assert boost > 0.0
+    explore_min = float(cfg["learning"]["diversification"]["explore_min_ev"])
+
+    # Counterfactual: if boost were applied, EV would clear explore min_ev
+    counterfactual_ev = float(raw) + band_prior + boost
+    assert counterfactual_ev + 1e-12 >= explore_min, (
+        f"fixture not load-bearing: with boost EV={counterfactual_ev:.4f} "
+        f"< explore_min={explore_min}"
+    )
+    # Gated path: zero boost → EV fails
+    gated_ev = float(raw) + band_prior + 0.0
+    assert gated_ev + 1e-12 < explore_min
+
+    picked, rejects = build_portfolio(
+        cfg, [c], _phase(), _risk(80.0), historical_rows=[], learning=learn
+    )
+    assert picked == [], (
+        f"gate must block place when raw_ev < floor; got picks={picked} "
+        f"(counterfactual EV would have been {counterfactual_ev:.4f})"
+    )
+    assert rejects
+    r0 = rejects[0]
+    assert float(r0.get("raw_ev")) < floor
     assert float(r0.get("learning_ev_boost") or 0.0) == 0.0
     assert r0.get("boost_applied") is False
     assert r0.get("boost_blocked_reason") == "raw_ev_below_explore_boost_min"
