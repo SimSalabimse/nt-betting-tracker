@@ -209,8 +209,13 @@ selection:
 
 # Per research/recommend run: sum of stakes ≤ this fraction of equity
 # (also min'd with remaining_risk_nok — fail-closed).
+# Soft pack (HV v3): prefer ~target_bets_per_run × unit seats under 1A/exploration
+# rather than fewer fat grade-mult seats that exhaust remaining_risk.
 recommend:
   max_run_stake_pct_of_equity: 0.20
+  target_bets_per_run: 3
+  soft_pack_phases: ["1A"]              # 1B optional add — not default
+  soft_pack_on_exploration: true
 # Ledger-driven learning loop (recomputed on settle / `nt learn` / refresh)
 # Does NOT rewrite this file — live mults live in data/state/learning.json
 learning:

@@ -86,6 +86,43 @@ def capital_v2_defaults(cfg: dict[str, Any]) -> dict[str, Any]:
     return capital_v2_cfg(cfg)
 
 
+def recommend_cfg(cfg: dict[str, Any]) -> dict[str, Any]:
+    """
+    Per-run stake / soft-pack defaults (HV Research Regime v3).
+
+    SSOT for portfolio + recommend — call this instead of ad-hoc
+    ``cfg.get("recommend") or {}`` with inline defaults.
+    """
+    raw = dict(cfg.get("recommend") or {})
+    defaults: dict[str, Any] = {
+        "max_run_stake_pct_of_equity": 0.20,
+        "target_bets_per_run": 3,
+        "soft_pack_phases": ["1A"],
+        "soft_pack_on_exploration": True,
+    }
+    out = {**defaults, **raw}
+    # Normalize knobs so callers never re-duplicate defaults
+    phases = out.get("soft_pack_phases")
+    if phases is None:
+        out["soft_pack_phases"] = list(defaults["soft_pack_phases"])
+    else:
+        out["soft_pack_phases"] = [str(p) for p in list(phases)]
+    try:
+        out["target_bets_per_run"] = max(1, int(out.get("target_bets_per_run") or 3))
+    except (TypeError, ValueError):
+        out["target_bets_per_run"] = 3
+    try:
+        out["max_run_stake_pct_of_equity"] = float(
+            out.get("max_run_stake_pct_of_equity")
+            if out.get("max_run_stake_pct_of_equity") is not None
+            else 0.20
+        )
+    except (TypeError, ValueError):
+        out["max_run_stake_pct_of_equity"] = 0.20
+    out["soft_pack_on_exploration"] = bool(out.get("soft_pack_on_exploration", True))
+    return out
+
+
 def research_cfg(cfg: dict[str, Any]) -> dict[str, Any]:
     raw = dict(cfg.get("research") or {})
     defaults = {
