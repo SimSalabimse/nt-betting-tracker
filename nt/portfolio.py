@@ -251,9 +251,15 @@ def soft_pack_active(
     from nt.defaults import recommend_cfg
 
     rec = recommend_cfg(cfg)
-    phases = list(rec.get("soft_pack_phases") or ["1A"])
+    # Empty list [] means no phase match (exploration flag only if enabled).
+    # Use is not None — do not `or ["1A"]` (empty list is falsy).
+    phases_raw = rec.get("soft_pack_phases")
+    if phases_raw is None:
+        phases = ["1A"]
+    else:
+        phases = [str(p) for p in list(phases_raw)]
     on_expl = bool(rec.get("soft_pack_on_exploration", True))
-    return (str(phase_id) in {str(p) for p in phases}) or (
+    return (str(phase_id) in set(phases)) or (
         on_expl and str(bankroll_regime or "").lower() == "exploration"
     )
 

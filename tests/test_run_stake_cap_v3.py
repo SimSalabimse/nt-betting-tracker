@@ -240,6 +240,15 @@ def test_soft_pack_active_defaults():
     rc2 = recommend_cfg({"recommend": {"soft_pack_phases": []}})
     assert rc2["soft_pack_phases"] == []
 
+    # R1: [] must not re-default to ["1A"] inside soft_pack_active
+    cfg_empty = _cfg(soft_pack_phases=[], soft_pack_on_exploration=False)
+    assert soft_pack_active(cfg_empty, phase_id="1A", bankroll_regime="survival") is False
+    assert soft_pack_active(cfg_empty, phase_id="1A", bankroll_regime="exploration") is False
+    # Empty phases + exploration flag still arms soft pack via regime path
+    cfg_empty_expl = _cfg(soft_pack_phases=[], soft_pack_on_exploration=True)
+    assert soft_pack_active(cfg_empty_expl, phase_id="1A", bankroll_regime="survival") is False
+    assert soft_pack_active(cfg_empty_expl, phase_id="1A", bankroll_regime="exploration") is True
+
 
 def test_soft_pack_gate_uses_target_bets_not_hardcoded_3():
     """target_bets_per_run=4 requires ≥4 clears; 3 clears → soft_pack_applied false."""
