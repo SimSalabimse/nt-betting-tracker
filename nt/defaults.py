@@ -116,6 +116,13 @@ def research_cfg(cfg: dict[str, Any]) -> dict[str, Any]:
             "fail_odds_above": 4.0,
             "pass_odds_lo": 1.45,
             "pass_odds_hi": 2.50,
+            # HV v3 dual-track clearability promotion + EV-fail second-pass
+            "clearability_promotion": True,
+            "dual_track_deep_queue": True,
+            "second_pass_from_dump": True,
+            "second_pass_max_inject": 12,
+            "raw_ev_exhausted": -0.05,
+            "second_pass_min_deep_packs": 8,
             # HV v3 clearability ranking (frozen weights; research-rank only)
             "clearability": {
                 "w_mid": 25.0,

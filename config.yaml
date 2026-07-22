@@ -393,6 +393,13 @@ research:
     fail_odds_above: 4.0
     pass_odds_lo: 1.45
     pass_odds_hi: 2.60
+    # HV v3 dual-track clearability promotion + EV-fail refresh (research-rank only)
+    clearability_promotion: true
+    dual_track_deep_queue: true
+    second_pass_from_dump: true
+    second_pass_max_inject: 12
+    raw_ev_exhausted: -0.05
+    second_pass_min_deep_packs: 8
     # HV v3 clearability ranking (frozen weights; research-rank only — never invents p_model)
     # Soft books optional; relative prior works with all-negative Stage2 prior_ev after 3pp.
     clearability:

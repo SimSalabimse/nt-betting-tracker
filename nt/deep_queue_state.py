@@ -138,9 +138,25 @@ def normalize_queue_line(
     if sport is not None and str(sport) != "":
         out["sport"] = str(sport)
     # Optional diagnostics when present (not required by D17)
-    for key in ("reason", "prior_ev", "market_family"):
+    for key in (
+        "reason",
+        "prior_ev",
+        "market_family",
+        "clearability_score",
+        "promotion_score_v3",
+        "track",
+        "mode",
+        "deep_exhausted",
+        "raw_ev",
+        "inject",
+    ):
         if key in line and line[key] is not None:
             out[key] = line[key]
+    # Alias queue_track → track if engine used LightRecord field name
+    if "track" not in out and line.get("queue_track"):
+        out["track"] = line["queue_track"]
+    if "mode" not in out and line.get("queue_mode"):
+        out["mode"] = line["queue_mode"]
     return out
 
 
@@ -242,6 +258,15 @@ def build_deep_queue_state(
     lines = [normalize_queue_line(r, tcfg) for r in raw_queue]
     comp = _normalize_composition(composition, lines, tcfg)
 
+    # Mode from payload lines (all same) or default normal
+    modes = {str(ln.get("mode") or "") for ln in lines if ln.get("mode")}
+    queue_mode = "refresh" if "refresh" in modes else ("normal" if modes else "normal")
+    if len(modes) == 1:
+        queue_mode = next(iter(modes)) or "normal"
+
+    clearable_n = sum(1 for ln in lines if str(ln.get("track") or "") == "clearable")
+    coverage_n = sum(1 for ln in lines if str(ln.get("track") or "") == "coverage")
+
     state: dict[str, Any] = {
         "schema_version": int(schema_version),
         "updated_at": updated_at or utc_now(),
@@ -250,6 +275,11 @@ def build_deep_queue_state(
         # Convenience mirrors for bars (same numbers as composition — not invented)
         "preferred_share": float(comp.get("preferred_share") or 0.0),
         "short_main_share": float(comp.get("short_main_share") or 0.0),
+        "mode": queue_mode,
+        "track_counts": {
+            "clearable_n": clearable_n,
+            "coverage_n": coverage_n,
+        },
         "deep_queue": lines,
     }
     if odds_path is not None:
@@ -274,7 +304,7 @@ def build_deep_queue_state_from_payload(
     tcfg = payload.get("tiers_config")
     if not isinstance(tcfg, dict):
         tcfg = None
-    return build_deep_queue_state(
+    state = build_deep_queue_state(
         queue=queue,
         composition=comp,
         updated_at=str(payload.get("generated_at") or "") or None,
@@ -283,6 +313,19 @@ def build_deep_queue_state_from_payload(
         day=payload.get("day"),
         tiers_config=tcfg,
     )
+    # Prefer explicit payload mode / dual_track sizes when present
+    if payload.get("deep_queue_mode") or payload.get("mode"):
+        state["mode"] = str(payload.get("deep_queue_mode") or payload.get("mode") or state["mode"])
+    dts = payload.get("dual_track_sizes")
+    if isinstance(dts, dict):
+        state["dual_track_sizes"] = {
+            "clearable_n": int(dts.get("clearable_n") or 0),
+            "coverage_n": int(dts.get("coverage_n") or 0),
+        }
+    if payload.get("second_pass_ran"):
+        state["second_pass_ran"] = True
+        state["inject_n"] = int(payload.get("inject_n") or 0)
+    return state
 
 
 def write_deep_queue_state(cfg: dict[str, Any], state: dict[str, Any]) -> Path:

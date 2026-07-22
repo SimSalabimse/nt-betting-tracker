@@ -53,8 +53,145 @@ def tiers_cfg(cfg: dict[str, Any]) -> dict[str, Any]:
         "fail_odds_above": 4.0,  # light-fail longshots without deep plan
         "pass_odds_lo": 1.45,
         "pass_odds_hi": 2.60,
+        # HV v3 dual-track clearability promotion + EV-fail refresh
+        "clearability_promotion": True,
+        "dual_track_deep_queue": True,
+        "second_pass_from_dump": True,
+        "second_pass_max_inject": 12,
+        "raw_ev_exhausted": -0.05,
+        "second_pass_min_deep_packs": 8,
     }
     return {**defaults, **raw}
+
+
+def dual_track_sizes(
+    target: int,
+    *,
+    coverage_overlay_active: bool = False,
+    clearability_overlay_active: bool = False,
+) -> tuple[int, int]:
+    """
+    Frozen dual-track split (design §1.3).
+
+    clearable_n = min(8, max(5, round(0.70 * target))) clamped to target;
+    coverage_n = remainder. Force flags raise the corresponding floor.
+    """
+    target = max(0, int(target))
+    if target <= 0:
+        return 0, 0
+    clearable_n = min(8, max(5, int(round(0.70 * target))))
+    clearable_n = min(clearable_n, target)
+    coverage_n = target - clearable_n
+
+    if coverage_overlay_active:
+        coverage_n = max(coverage_n, min(4, target // 2))
+        clearable_n = target - coverage_n
+
+    if clearability_overlay_active:
+        clearable_n = max(clearable_n, min(8, int(round(0.80 * target))))
+        clearable_n = min(clearable_n, target)
+        coverage_n = target - clearable_n
+
+    return int(clearable_n), int(coverage_n)
+
+
+def ev_fail_refresh_triggered(
+    *,
+    n_packs_with_p: int,
+    n_raw_ev_pass: int,
+    mid_unresearched: int,
+    min_deep_packs: int = 8,
+) -> bool:
+    """
+    Auto EV-fail refresh trigger (design §1b).
+
+    n_packs_with_p >= min_deep_packs AND n_raw_ev_pass == 0 AND mid_unresearched == 0.
+    Operator second-pass bypasses this via force=True on research_second_pass.
+    """
+    return (
+        int(n_packs_with_p) >= int(min_deep_packs)
+        and int(n_raw_ev_pass) == 0
+        and int(mid_unresearched) == 0
+    )
+
+
+def _haircut_from_cfg(cfg: dict[str, Any]) -> float:
+    sel = cfg.get("selection") or {}
+    return float(sel.get("probability_haircut", 0.03))
+
+
+def _active_clearability_overlay(cfg: dict[str, Any]) -> dict[str, Any]:
+    """Best-effort force_clearability_priority active flag (PR6 owns full signal path)."""
+    try:
+        from nt.control_signals import load_all_signals
+
+        now_active = False
+        for rec in load_all_signals(cfg):
+            if str(rec.get("kind") or "") != "force_clearability_priority":
+                continue
+            if rec.get("revoked"):
+                continue
+            now_active = True
+            break
+        return {"active": now_active}
+    except Exception:
+        return {"active": False}
+
+
+def _is_structural_note(rec: "LightRecord") -> bool:
+    notes = f"{rec.strength_notes or ''} {rec.rough_ev_note or ''} {rec.reason or ''}"
+    low = notes.lower()
+    if "structural" in low or "injury" in low or "rotation" in low:
+        return True
+    need = rec.rough_p_needed
+    if need is not None and float(need) <= 0.55 and not _is_first_goal(rec.selection):
+        return True
+    return False
+
+
+def _peer_odds_map(
+    records: list["LightRecord"],
+) -> dict[tuple[str, str], list[tuple[float, "LightRecord"]]]:
+    """Group by (match, family) for coin-flip pairing."""
+    groups: dict[tuple[str, str], list[tuple[float, LightRecord]]] = defaultdict(list)
+    for r in records:
+        fam = (r.market_family or selection_family(r.selection, (r.sport or "").lower()) or "").lower()
+        groups[(r.match or "", fam)].append((float(r.decimal_odds), r))
+    return groups
+
+
+def _coin_flip_for_record(
+    rec: "LightRecord",
+    groups: dict[tuple[str, str], list[tuple[float, "LightRecord"]]],
+    cfg: dict[str, Any] | None = None,
+) -> bool:
+    from nt.clearability import clearability_cfg, is_coin_flip_line
+
+    p = clearability_cfg(cfg)
+    fam = (rec.market_family or selection_family(rec.selection, (rec.sport or "").lower()) or "").lower()
+    peers = groups.get((rec.match or "", fam)) or []
+    if len(peers) < 2:
+        return False
+    # Peer = other side with different selection token
+    peer_odds = None
+    for o, other in peers:
+        if other.key() == rec.key():
+            continue
+        # Prefer opposite OU / other ML side
+        peer_odds = o
+        break
+    if peer_odds is None:
+        return False
+    return is_coin_flip_line(
+        odds=float(rec.decimal_odds),
+        prior_p=rec.prior_p,
+        peer_odds=float(peer_odds),
+        both_sides_present=True,
+        coin_flip_eps=float(p.get("coin_flip_eps") or 0.02),
+        even_market_rel=float(p.get("even_market_rel") or 0.05),
+        market_family=fam,
+        selection=rec.selection,
+    )
 
 
 def parse_odds_band(band: str | None) -> tuple[float, float | None]:
@@ -281,9 +418,21 @@ def build_deep_queue(
     soft_by_key: dict[tuple[str, str], float | None] | None = None,
     board_score_by_key: dict[tuple[str, str], float] | None = None,
     coverage_overlay: dict[str, Any] | None = None,
+    clearability_overlay: dict[str, Any] | None = None,
+    mode: str = "normal",
+    inject_records: list["LightRecord"] | None = None,
+    pack_meta_by_key: dict[tuple[str, str], dict[str, Any]] | None = None,
+    force_requeue_exhausted: bool = False,
 ) -> list["LightRecord"]:
     """
     Engine deep worklist with hard composition quotas (fail-closed shrink).
+
+    HV v3 (clearability_promotion / dual_track_deep_queue):
+      - Rank light-pass by clearability_score (relative prior; not prior_ev > 0)
+      - Dual-track fill: clearable first, then coverage mid preferred
+      - Never pad chalk
+      - mode=refresh: demote exhausted has_p_model via w_fail; prefer injects;
+        do not re-queue exhausted without force_requeue_exhausted
     """
     tcfg = tiers_cfg(cfg)
     if not bool(tcfg.get("engine_deep_queue", True)):
@@ -299,6 +448,42 @@ def build_deep_queue(
         ]
         return promotable[: int(tcfg["deep_max_n"])]
 
+    use_v3 = bool(tcfg.get("clearability_promotion", True)) and bool(
+        tcfg.get("dual_track_deep_queue", True)
+    )
+    if use_v3:
+        return _build_deep_queue_v3(
+            records,
+            cfg,
+            soft_by_key=soft_by_key,
+            board_score_by_key=board_score_by_key,
+            coverage_overlay=coverage_overlay,
+            clearability_overlay=clearability_overlay,
+            mode=mode,
+            inject_records=inject_records,
+            pack_meta_by_key=pack_meta_by_key,
+            force_requeue_exhausted=force_requeue_exhausted,
+        )
+
+    return _build_deep_queue_legacy(
+        records,
+        cfg,
+        soft_by_key=soft_by_key,
+        board_score_by_key=board_score_by_key,
+        coverage_overlay=coverage_overlay,
+    )
+
+
+def _build_deep_queue_legacy(
+    records: list["LightRecord"],
+    cfg: dict[str, Any],
+    *,
+    soft_by_key: dict[tuple[str, str], float | None] | None = None,
+    board_score_by_key: dict[tuple[str, str], float] | None = None,
+    coverage_overlay: dict[str, Any] | None = None,
+) -> list["LightRecord"]:
+    """Pre-v3 anti-chalk scorer + preferred/short composition (unchanged behaviour)."""
+    tcfg = tiers_cfg(cfg)
     ov = coverage_overlay or {}
     pref_lo = float(tcfg["preferred_odds_lo"])
     alt_lo = float(tcfg.get("alt_preferred_odds_lo") or tcfg["short_chalk_odds"])
@@ -343,7 +528,6 @@ def build_deep_queue(
             board_score=float(board_score_by_key.get(k) or 0.0),
             coverage_overlay=ov,
         )
-        # stash for reason tags
         r.rough_ev_note = (r.rough_ev_note or "") + f" | promo_score={sc:.1f}"
         candidates.append((sc, r))
 
@@ -352,22 +536,13 @@ def build_deep_queue(
     preferred_pool = [(sc, r) for sc, r in candidates if _pref(r)]
     short_pool = [(sc, r) for sc, r in candidates if _sm(r)]
     other_pool = [
-        (sc, r)
-        for sc, r in candidates
-        if not _pref(r) and not _sm(r)
+        (sc, r) for sc, r in candidates if not _pref(r) and not _sm(r)
     ]
 
-    # Fail-closed shrink: never pad with chalk to hit target
     n_pref_avail = len(preferred_pool)
     if n_pref_avail == 0:
-        # Only non-preferred exist — allow tiny queue under short-main cap only if odds still mid
-        # Prefer empty worklist over chalk flood
-        max_n = min(deep_max, max(0, int(target * max_short)))
-        # If max_short allows some short_main only when preferred empty → still prefer empty for P0
         return []
 
-    # Max queue size such that preferred can still be ≥ min_pref of final size
-    # n_pref / n >= min_pref  =>  n <= n_pref / min_pref
     max_n_from_pref = int(n_pref_avail / min_pref) if min_pref > 0 else deep_max
     n_target = min(target, deep_max, max_n_from_pref)
     if n_target < 1:
@@ -390,11 +565,9 @@ def build_deep_queue(
         if sp_count[sp] >= 3:
             return False
         if as_short:
-            # enforce max short share on final size estimate
             trial_n = len(deep_queue) + 1
             if (short_count + 1) / max(trial_n, 1) > max_short + 1e-9:
                 return False
-            # also vs target
             if (short_count + 1) / max(n_target, 1) > max_short + 1e-9:
                 return False
         deep_queue.append(r)
@@ -406,35 +579,27 @@ def build_deep_queue(
             pref_count += 1
         return True
 
-    # Phase A: preferred first (score order)
     for _sc, r in preferred_pool:
         if len(deep_queue) >= n_target:
             break
         _try_add(r, as_short=False, as_pref=True)
 
-    # Ensure preferred share on current queue
     def _pref_share() -> float:
         if not deep_queue:
             return 0.0
         return pref_count / len(deep_queue)
 
-    # Phase B: fill remainder with other then short under cap (never pad chalk past floor)
     for _sc, r in other_pool + short_pool:
         if len(deep_queue) >= n_target:
             break
         is_p = _pref(r)
         is_s = _sm(r)
-        # Do not add non-preferred if it would break preferred floor at target size
         trial_n = len(deep_queue) + 1
         trial_pref = pref_count + (1 if is_p else 0)
         if not is_p and trial_pref / max(trial_n, 1) + 1e-9 < min_pref:
-            # only allow if we still have preferred capacity later — skip non-pref fill
-            if is_s:
-                continue
             continue
         _try_add(r, as_short=is_s, as_pref=is_p)
 
-    # If preferred share slipped below floor, drop short_main then non-preferred from tail
     while deep_queue and _pref_share() + 1e-9 < min_pref:
         removed = False
         for i in range(len(deep_queue) - 1, -1, -1):
@@ -451,6 +616,382 @@ def build_deep_queue(
                 r = deep_queue[i]
                 if not _pref(r):
                     deep_queue.pop(i)
+                    removed = True
+                    break
+        if not removed:
+            break
+
+    return deep_queue
+
+
+def _build_deep_queue_v3(
+    records: list["LightRecord"],
+    cfg: dict[str, Any],
+    *,
+    soft_by_key: dict[tuple[str, str], float | None] | None = None,
+    board_score_by_key: dict[tuple[str, str], float] | None = None,
+    coverage_overlay: dict[str, Any] | None = None,
+    clearability_overlay: dict[str, Any] | None = None,
+    mode: str = "normal",
+    inject_records: list["LightRecord"] | None = None,
+    pack_meta_by_key: dict[tuple[str, str], dict[str, Any]] | None = None,
+    force_requeue_exhausted: bool = False,
+) -> list["LightRecord"]:
+    """
+    Dual-track clearability promotion (design §1.3) + refresh mode (§1b).
+    """
+    from nt.clearability import (
+        batch_prior_percentile,
+        clearability_score,
+        is_alt_preferred_macro,
+        promotion_score_v3,
+    )
+
+    tcfg = tiers_cfg(cfg)
+    ov = coverage_overlay or {}
+    cl_ov = clearability_overlay if clearability_overlay is not None else _active_clearability_overlay(cfg)
+    pref_lo = float(tcfg["preferred_odds_lo"])
+    pref_hi = float(tcfg["preferred_odds_hi"])
+    alt_lo = float(tcfg.get("alt_preferred_odds_lo") or tcfg["short_chalk_odds"])
+    min_pref = float(tcfg["deep_min_preferred_share"])
+    max_short = float(tcfg["deep_max_short_main_share"])
+    if ov.get("active"):
+        min_pref = max(min_pref, float(ov.get("coverage_preferred_share") or 0.55))
+    target = int(tcfg["deep_target_n"])
+    if ov.get("active"):
+        target = max(target, int(ov.get("min_deep_packs") or target))
+    deep_max = int(tcfg["deep_max_n"])
+    target = min(target, deep_max)
+
+    clearable_n, coverage_n = dual_track_sizes(
+        target,
+        coverage_overlay_active=bool(ov.get("active")),
+        clearability_overlay_active=bool(cl_ov.get("active")),
+    )
+
+    soft_by_key = soft_by_key or {}
+    board_score_by_key = board_score_by_key or {}
+    pack_meta_by_key = pack_meta_by_key or {}
+    exhausted_thr = float(
+        tcfg.get("raw_ev_exhausted")
+        if tcfg.get("raw_ev_exhausted") is not None
+        else -0.05
+    )
+    haircut = _haircut_from_cfg(cfg)
+    queue_mode = "refresh" if str(mode or "normal").lower() == "refresh" else "normal"
+    force_cov = bool(ov.get("active"))
+    force_cl = bool(cl_ov.get("active"))
+
+    def _pref(r: LightRecord) -> bool:
+        return is_preferred_line(
+            r.selection,
+            r.decimal_odds,
+            r.market_family,
+            preferred_odds_lo=pref_lo,
+            alt_preferred_odds_lo=alt_lo,
+        )
+
+    def _sm(r: LightRecord) -> bool:
+        return is_short_main_line(
+            r.selection, r.decimal_odds, r.market_family, preferred_odds_lo=pref_lo
+        )
+
+    def _mid_band(r: LightRecord) -> bool:
+        o = float(r.decimal_odds)
+        return pref_lo <= o <= pref_hi
+
+    # Merge light records + injects (injects win if same key — prefer new alts)
+    by_key: dict[tuple[str, str], LightRecord] = {}
+    for r in list(records) + list(inject_records or []):
+        by_key[r.key()] = r
+    pool = list(by_key.values())
+    groups = _peer_odds_map(pool)
+
+    # Annotate pack meta / exhausted
+    for r in pool:
+        meta = pack_meta_by_key.get(r.key()) or {}
+        raw_ev = meta.get("raw_ev")
+        if raw_ev is None and getattr(r, "raw_ev", None) is not None:
+            raw_ev = r.raw_ev
+        has_pack = bool(meta.get("has_pack") or r.has_p_model or r.has_deep_pack)
+        if raw_ev is not None:
+            try:
+                r.raw_ev = float(raw_ev)
+            except (TypeError, ValueError):
+                r.raw_ev = None
+        else:
+            r.raw_ev = getattr(r, "raw_ev", None)
+        exhausted = bool(meta.get("deep_exhausted"))
+        if r.raw_ev is not None and float(r.raw_ev) < exhausted_thr:
+            exhausted = True
+        r.deep_exhausted = exhausted
+        if has_pack and not r.has_p_model:
+            r.has_p_model = True
+            r.has_deep_pack = True
+
+    # Batch priors for percentile among eligible-ish lines
+    batch_priors = [
+        float(r.prior_ev) if r.prior_ev is not None else None for r in pool
+    ]
+
+    scored: list[tuple[float, LightRecord]] = []
+    for r in pool:
+        # Conflicts always out
+        if r.script_conflict or r.base_rate_conflict:
+            continue
+        # Light-pass required unless inject from second-pass (source inject)
+        is_inject = (r.source or "") == "inject" or bool(
+            getattr(r, "is_inject", False)
+        )
+        if r.verdict not in ("pass", "") and not is_inject:
+            if r.verdict == "fail" and not is_inject:
+                continue
+        if r.verdict == "fail" and not is_inject:
+            continue
+
+        has_pack = bool(r.has_p_model or r.has_deep_pack)
+        exhausted = bool(getattr(r, "deep_exhausted", False))
+
+        # Normal mode: skip already researched
+        if queue_mode == "normal" and has_pack:
+            continue
+
+        # Refresh mode: skip non-exhausted packs (already researched OK);
+        # skip exhausted unless force and no better injects later (handled below)
+        if queue_mode == "refresh":
+            if has_pack and not exhausted:
+                continue
+            if has_pack and exhausted and not force_requeue_exhausted:
+                # Prefer injects — do not re-queue exhausted for research
+                continue
+
+        if r.verdict != "pass" and not is_inject:
+            # Require pass for non-inject
+            if r.verdict not in ("pass",):
+                continue
+
+        k = r.key()
+        soft = soft_by_key.get(k)
+        board_sc = float(board_score_by_key.get(k) or 0.0)
+        fam = r.market_family or selection_family(r.selection, (r.sport or "").lower())
+        is_alt = is_alt_preferred_macro(fam, r.selection)
+        is_coin = _coin_flip_for_record(r, groups, cfg)
+        pev = float(r.prior_ev) if r.prior_ev is not None else None
+        bp = batch_prior_percentile(pev, batch_priors)
+
+        cl = clearability_score(
+            odds=float(r.decimal_odds),
+            prior_ev=pev,
+            prior_p=float(r.prior_p) if r.prior_p is not None else None,
+            haircut=haircut,
+            batch_percentile=bp,
+            is_coin_flip=is_coin,
+            soft_decimal_odds=soft,
+            is_alt=is_alt,
+            is_short_main=_sm(r),
+            has_structural_note=_is_structural_note(r),
+            force_coverage_active=force_cov and _mid_band(r),
+            force_clearability_active=force_cl,
+            has_pack=has_pack,
+            raw_ev=r.raw_ev,
+            cfg=cfg,
+        )
+        # Refresh demotion: w_fail already applied inside clearability when raw_ev bad
+        promo = promotion_score_v3(cl, board_sc)
+        # Inject boost slightly so dump alts outrank exhausted when force requeue
+        if is_inject:
+            promo = round(promo + 5.0, 3)
+
+        r.clearability_score = cl
+        r.promotion_score_v3 = promo
+        r.queue_mode = queue_mode
+        r.rough_ev_note = (r.rough_ev_note or "") + f" | clear={cl:.1f} promo_v3={promo:.1f}"
+        if is_inject:
+            r.rough_ev_note += " | inject"
+        scored.append((promo, r))
+
+    # Prefer injects over any residual exhausted if both present
+    scored.sort(
+        key=lambda x: (
+            -1 if ((x[1].source or "") == "inject" or getattr(x[1], "is_inject", False)) else 0,
+            -x[0],
+            x[1].decimal_odds,
+        )
+    )
+
+    preferred_pool = [(sc, r) for sc, r in scored if _pref(r)]
+    n_pref_avail = len(preferred_pool)
+    if n_pref_avail == 0:
+        return []
+
+    max_n_from_pref = int(n_pref_avail / min_pref) if min_pref > 0 else deep_max
+    n_target = min(target, deep_max, max_n_from_pref)
+    if n_target < 1:
+        n_target = min(n_pref_avail, 1)
+
+    # Rescale dual-track to n_target (thin pool shrinks both)
+    if n_target < target and target > 0:
+        scale = n_target / float(target)
+        clearable_n = max(1, int(round(clearable_n * scale))) if clearable_n else 0
+        clearable_n = min(clearable_n, n_target)
+        coverage_n = n_target - clearable_n
+    else:
+        clearable_n = min(clearable_n, n_target)
+        coverage_n = n_target - clearable_n
+
+    deep_queue: list[LightRecord] = []
+    sp_count: dict[str, int] = defaultdict(int)
+    short_count = 0
+    pref_count = 0
+    selected: set[tuple[str, str]] = set()
+    clearable_count = 0
+    coverage_count = 0
+
+    def _try_add(
+        r: LightRecord,
+        *,
+        as_short: bool,
+        as_pref: bool,
+        track: str,
+        track_cap: int | None = None,
+        track_count: int = 0,
+    ) -> bool:
+        nonlocal short_count, pref_count, clearable_count, coverage_count
+        if len(deep_queue) >= n_target:
+            return False
+        if track_cap is not None and track_count >= track_cap:
+            return False
+        k = r.key()
+        if k in selected:
+            return False
+        sp = (r.sport or "").lower()
+        if sp_count[sp] >= 3:
+            return False
+        if as_short:
+            trial_n = len(deep_queue) + 1
+            if (short_count + 1) / max(trial_n, 1) > max_short + 1e-9:
+                return False
+            if (short_count + 1) / max(n_target, 1) > max_short + 1e-9:
+                return False
+        # Never pad pure chalk into clearable/coverage tracks
+        if as_short and track in ("clearable", "coverage"):
+            # short-main only allowed under global short cap, never as coverage pad
+            if track == "coverage":
+                return False
+        r.queue_track = track
+        r.queue_mode = queue_mode
+        deep_queue.append(r)
+        selected.add(k)
+        sp_count[sp] += 1
+        if as_short:
+            short_count += 1
+        if as_pref:
+            pref_count += 1
+        if track == "clearable":
+            clearable_count += 1
+        elif track == "coverage":
+            coverage_count += 1
+        return True
+
+    # Track 1: clearable — top clearability rank overall (prefer preferred)
+    for sc, r in scored:
+        if clearable_count >= clearable_n:
+            break
+        if len(deep_queue) >= n_target:
+            break
+        is_p = _pref(r)
+        is_s = _sm(r)
+        # Prefer preferred for clearable; allow non-pref only if preferred floor still ok
+        if not is_p:
+            trial_n = len(deep_queue) + 1
+            trial_pref = pref_count
+            if trial_pref / max(trial_n, 1) + 1e-9 < min_pref:
+                continue
+        _try_add(
+            r,
+            as_short=is_s,
+            as_pref=is_p,
+            track="clearable",
+            track_cap=clearable_n,
+            track_count=clearable_count,
+        )
+
+    # Track 2: coverage — remaining preferred mid-band, even mid clearability
+    coverage_pool = [
+        (sc, r)
+        for sc, r in scored
+        if r.key() not in selected and _pref(r) and (_mid_band(r) or float(r.decimal_odds) >= alt_lo)
+    ]
+    # Prefer mid-unresearched (no pack) for coverage track
+    coverage_pool.sort(
+        key=lambda x: (
+            0 if not (x[1].has_p_model or x[1].has_deep_pack) else 1,
+            -x[0],
+            x[1].decimal_odds,
+        )
+    )
+    for sc, r in coverage_pool:
+        if coverage_count >= coverage_n:
+            break
+        if len(deep_queue) >= n_target:
+            break
+        _try_add(
+            r,
+            as_short=False,
+            as_pref=True,
+            track="coverage",
+            track_cap=coverage_n,
+            track_count=coverage_count,
+        )
+
+    # If clearable slots unfilled and preferred remain, backfill clearable (still no chalk pad)
+    if clearable_count < clearable_n and len(deep_queue) < n_target:
+        for sc, r in scored:
+            if clearable_count >= clearable_n or len(deep_queue) >= n_target:
+                break
+            if r.key() in selected:
+                continue
+            if not _pref(r):
+                continue
+            _try_add(
+                r,
+                as_short=False,
+                as_pref=True,
+                track="clearable",
+                track_cap=clearable_n,
+                track_count=clearable_count,
+            )
+
+    def _pref_share() -> float:
+        if not deep_queue:
+            return 0.0
+        return pref_count / len(deep_queue)
+
+    # Fail-closed: drop short-main / non-preferred from tail if preferred floor slips
+    while deep_queue and _pref_share() + 1e-9 < min_pref:
+        removed = False
+        for i in range(len(deep_queue) - 1, -1, -1):
+            r = deep_queue[i]
+            if _sm(r):
+                deep_queue.pop(i)
+                short_count = max(0, short_count - 1)
+                if _pref(r):
+                    pref_count = max(0, pref_count - 1)
+                if getattr(r, "queue_track", "") == "clearable":
+                    clearable_count = max(0, clearable_count - 1)
+                elif getattr(r, "queue_track", "") == "coverage":
+                    coverage_count = max(0, coverage_count - 1)
+                removed = True
+                break
+        if not removed:
+            for i in range(len(deep_queue) - 1, -1, -1):
+                r = deep_queue[i]
+                if not _pref(r):
+                    deep_queue.pop(i)
+                    if getattr(r, "queue_track", "") == "clearable":
+                        clearable_count = max(0, clearable_count - 1)
+                    elif getattr(r, "queue_track", "") == "coverage":
+                        coverage_count = max(0, coverage_count - 1)
                     removed = True
                     break
         if not removed:
@@ -481,7 +1022,7 @@ class LightRecord:
     has_deep_pack: bool = False
     has_p_model: bool = False
     researched_at: str = ""
-    source: str = "auto"  # auto | agent | merge
+    source: str = "auto"  # auto | agent | merge | inject
     # Quant prefilter (research-rank only — not recommend p_model)
     prior_p: float | None = None
     prior_ev: float | None = None
@@ -489,6 +1030,14 @@ class LightRecord:
     prefilter_stage1: str = ""
     prefilter_stage2: str = ""
     prefilter_rank: float | None = None
+    # HV v3 dual-track / refresh diagnostics
+    clearability_score: float | None = None
+    promotion_score_v3: float | None = None
+    queue_track: str = ""  # clearable | coverage
+    queue_mode: str = "normal"  # normal | refresh
+    deep_exhausted: bool = False
+    raw_ev: float | None = None
+    is_inject: bool = False
 
     def key(self) -> tuple[str, str]:
         return (self.match or "", self.selection or "")
@@ -631,6 +1180,49 @@ def auto_light_assess(
     if rec.prior_ev is not None:
         rec.rough_ev_note += f"; prior_ev={rec.prior_ev:+.3f}"
     return rec
+
+
+def _queue_line_export(r: "LightRecord", tcfg: dict[str, Any]) -> dict[str, Any]:
+    """Serialize a deep-queue LightRecord for light report / deep_queue.json."""
+    pref_lo = float(tcfg.get("preferred_odds_lo") or 1.85)
+    alt_lo = float(tcfg.get("alt_preferred_odds_lo") or tcfg.get("short_chalk_odds") or 1.80)
+    out: dict[str, Any] = {
+        "match": r.match,
+        "selection": r.selection,
+        "sport": r.sport,
+        "decimal_odds": r.decimal_odds,
+        "reason": r.reason,
+        "prior_ev": r.prior_ev,
+        "preferred": is_preferred_line(
+            r.selection,
+            r.decimal_odds,
+            r.market_family,
+            preferred_odds_lo=pref_lo,
+            alt_preferred_odds_lo=alt_lo,
+        ),
+        "short_main": is_short_main_line(
+            r.selection,
+            r.decimal_odds,
+            r.market_family,
+            preferred_odds_lo=pref_lo,
+        ),
+        "market_family": r.market_family,
+        "mode": getattr(r, "queue_mode", None) or "normal",
+    }
+    if getattr(r, "clearability_score", None) is not None:
+        out["clearability_score"] = r.clearability_score
+    if getattr(r, "promotion_score_v3", None) is not None:
+        out["promotion_score_v3"] = r.promotion_score_v3
+    track = getattr(r, "queue_track", None) or ""
+    if track:
+        out["track"] = track
+    if getattr(r, "deep_exhausted", False):
+        out["deep_exhausted"] = True
+    if getattr(r, "raw_ev", None) is not None:
+        out["raw_ev"] = r.raw_ev
+    if getattr(r, "is_inject", False) or (r.source or "") == "inject":
+        out["inject"] = True
+    return out
 
 
 def _queue_composition_stats(
@@ -958,33 +1550,21 @@ def run_light_research(
         "prefilter_stats": prefilter_stats,
         "warnings": warnings,
         "coverage_ok": stats["assessed_n"] >= need and not any("sport " in w for w in warnings),
-        "deep_queue": [
-            {
-                "match": r.match,
-                "selection": r.selection,
-                "sport": r.sport,
-                "decimal_odds": r.decimal_odds,
-                "reason": r.reason,
-                "prior_ev": r.prior_ev,
-                "preferred": is_preferred_line(
-                    r.selection,
-                    r.decimal_odds,
-                    r.market_family,
-                    preferred_odds_lo=float(tcfg["preferred_odds_lo"]),
-                    alt_preferred_odds_lo=float(
-                        tcfg.get("alt_preferred_odds_lo") or tcfg["short_chalk_odds"]
+        "deep_queue": [_queue_line_export(r, tcfg) for r in deep_queue],
+        "deep_queue_composition": _queue_composition_stats(deep_queue, tcfg),
+        "deep_queue_mode": "normal",
+        "dual_track_sizes": dict(
+            zip(
+                ("clearable_n", "coverage_n"),
+                dual_track_sizes(
+                    min(int(tcfg["deep_target_n"]), int(tcfg["deep_max_n"])),
+                    coverage_overlay_active=bool(coverage_overlay.get("active")),
+                    clearability_overlay_active=bool(
+                        _active_clearability_overlay(cfg).get("active")
                     ),
                 ),
-                "short_main": is_short_main_line(
-                    r.selection,
-                    r.decimal_odds,
-                    r.market_family,
-                    preferred_odds_lo=float(tcfg["preferred_odds_lo"]),
-                ),
-            }
-            for r in deep_queue
-        ],
-        "deep_queue_composition": _queue_composition_stats(deep_queue, tcfg),
+            )
+        ),
         "coverage_overlay_active": bool(coverage_overlay.get("active")),
         "records": rec_dicts,
         "shortlist_n": shortlist_n,
@@ -1152,4 +1732,385 @@ def merge_deep_status(cfg: dict[str, Any], day: str | None = None) -> dict[str, 
     payload["stats"] = coverage_stats(records, int(payload.get("shortlist_n") or len(records)))
     payload["merged_at"] = utc_now()
     save_light_batch(cfg, payload, day=day)
+    return payload
+
+
+def _scan_pack_meta(
+    cfg: dict[str, Any],
+    *,
+    haircut: float | None = None,
+) -> dict[tuple[str, str], dict[str, Any]]:
+    """
+    Index evidence packs → raw_ev / deep_exhausted (research rank only).
+    raw_ev uses board-attached odds_at_research / decimal_odds_ref / odds if present.
+    """
+    from nt.evidence import ev_after_haircut
+
+    hc = float(haircut if haircut is not None else _haircut_from_cfg(cfg))
+    tcfg = tiers_cfg(cfg)
+    exhausted_thr = float(
+        tcfg.get("raw_ev_exhausted")
+        if tcfg.get("raw_ev_exhausted") is not None
+        else -0.05
+    )
+    out: dict[tuple[str, str], dict[str, Any]] = {}
+    ev_dir = path_from_config(cfg, "evidence")
+    if not ev_dir.exists():
+        return out
+    for p in ev_dir.glob("*.json"):
+        try:
+            data = json.loads(p.read_text(encoding="utf-8"))
+        except Exception:
+            continue
+        if not isinstance(data, dict):
+            continue
+        m = str(data.get("match") or "").strip()
+        s = str(data.get("selection") or "").strip()
+        if not m or not s:
+            continue
+        pm = data.get("p_model")
+        if pm is None:
+            continue
+        try:
+            p_model = float(pm)
+        except (TypeError, ValueError):
+            continue
+        odds = None
+        for k in ("odds_at_research", "decimal_odds_ref", "odds", "decimal_odds"):
+            if data.get(k) is not None:
+                try:
+                    odds = float(data[k])
+                    break
+                except (TypeError, ValueError):
+                    pass
+        raw_ev = None
+        if odds is not None and odds > 1.0:
+            raw_ev = float(ev_after_haircut(p_model, odds, hc))
+        meta = {
+            "has_pack": True,
+            "p_model": p_model,
+            "odds": odds,
+            "raw_ev": raw_ev,
+            "deep_exhausted": bool(
+                raw_ev is not None and float(raw_ev) < exhausted_thr
+            ),
+            "path": str(p),
+        }
+        out[(m, s)] = meta
+    return out
+
+
+def _records_from_dicts(
+    items: list[dict[str, Any]],
+    cfg: dict[str, Any],
+    *,
+    source: str = "inject",
+) -> list[LightRecord]:
+    """Build LightRecords for dump/scan injects (research-rank; may run prefilter)."""
+    out: list[LightRecord] = []
+    for it in items:
+        match = str(it.get("match") or "")
+        selection = str(it.get("selection") or "")
+        if not match or not selection:
+            continue
+        sport = str(it.get("sport") or "unknown")
+        odds = float(it.get("decimal_odds") or it.get("odds") or 1.5)
+        rec = auto_light_assess(
+            match=match,
+            selection=selection,
+            sport=sport,
+            odds=odds,
+            cfg=cfg,
+            has_deep=bool(it.get("has_evidence") or it.get("has_deep_pack")),
+            has_p=bool(it.get("has_p_model")),
+            p_model=it.get("p_model"),
+            score=float(it.get("score") or 0),
+        )
+        # Injects that pass stage screens stay eligible even if auto would fail longshot
+        if it.get("force_pass") or source == "inject":
+            # Keep prefilter discard; only override pure light-band fails when prior ok
+            if rec.verdict == "fail" and "prefilter" not in (rec.reason or "") and "stage" not in (
+                rec.reason or ""
+            ):
+                o = odds
+                if 1.70 <= o <= 3.20:
+                    rec.verdict = "pass"
+                    rec.reason = (rec.reason or "") + " | inject band override"
+            if rec.verdict == "fail" and (
+                "stage1" in (rec.reason or "") or "stage2" in (rec.reason or "")
+            ):
+                # Stage discard stands — do not inject noise
+                continue
+        rec.source = source
+        rec.is_inject = source == "inject"
+        if it.get("prior_ev") is not None:
+            try:
+                rec.prior_ev = float(it["prior_ev"])
+                rec.prior_available = True
+            except (TypeError, ValueError):
+                pass
+        if it.get("prior_p") is not None:
+            try:
+                rec.prior_p = float(it["prior_p"])
+                rec.prior_available = True
+            except (TypeError, ValueError):
+                pass
+        out.append(rec)
+    return out
+
+
+def research_second_pass(
+    cfg: dict[str, Any],
+    odds_path: Path | None = None,
+    *,
+    records: list[LightRecord] | list[dict[str, Any]] | None = None,
+    inject_candidates: list[dict[str, Any]] | None = None,
+    pack_meta_by_key: dict[tuple[str, str], dict[str, Any]] | None = None,
+    coverage_overlay: dict[str, Any] | None = None,
+    clearability_overlay: dict[str, Any] | None = None,
+    force: bool = True,
+    write: bool = True,
+    day: str | None = None,
+    n_raw_ev_pass: int | None = None,
+    mid_unresearched: int | None = None,
+    force_requeue_exhausted: bool = False,
+) -> dict[str, Any]:
+    """
+    EV-fail refresh / second-pass (design §1b).
+
+    Marks raw_ev < raw_ev_exhausted packs as deep_exhausted, injects dump/scan
+    alts (unpacked), rebuilds dual-track queue in refresh mode. Does not invent
+    p_model. Exhausted packs are not re-queued unless force_requeue_exhausted
+    and no injects remain.
+    """
+    tcfg = tiers_cfg(cfg)
+    haircut = _haircut_from_cfg(cfg)
+    exhausted_thr = float(
+        tcfg.get("raw_ev_exhausted")
+        if tcfg.get("raw_ev_exhausted") is not None
+        else -0.05
+    )
+    max_inject = int(tcfg.get("second_pass_max_inject") or 12)
+    min_deep = int(tcfg.get("second_pass_min_deep_packs") or 8)
+
+    # Normalize records
+    light_recs: list[LightRecord] = []
+    if records is None:
+        batch = load_light_batch(cfg, day)
+        raw_list = batch.get("records") or []
+        for d in raw_list:
+            if not isinstance(d, dict):
+                continue
+            light_recs.append(
+                LightRecord(
+                    match=str(d.get("match") or ""),
+                    selection=str(d.get("selection") or ""),
+                    sport=str(d.get("sport") or ""),
+                    decimal_odds=float(d.get("decimal_odds") or 1.5),
+                    odds_band=str(d.get("odds_band") or ""),
+                    market_family=str(d.get("market_family") or ""),
+                    tier=str(d.get("tier") or "light"),
+                    verdict=str(d.get("verdict") or "pass"),
+                    promote_to_deep=bool(d.get("promote_to_deep")),
+                    script_conflict=bool(d.get("script_conflict")),
+                    base_rate_conflict=bool(d.get("base_rate_conflict")),
+                    rough_p_needed=d.get("rough_p_needed"),
+                    rough_ev_note=str(d.get("rough_ev_note") or ""),
+                    strength_notes=str(d.get("strength_notes") or ""),
+                    weakness_notes=str(d.get("weakness_notes") or ""),
+                    reason=str(d.get("reason") or ""),
+                    has_deep_pack=bool(d.get("has_deep_pack")),
+                    has_p_model=bool(d.get("has_p_model")),
+                    source=str(d.get("source") or "auto"),
+                    prior_p=d.get("prior_p"),
+                    prior_ev=d.get("prior_ev"),
+                    prior_available=bool(d.get("prior_available")),
+                    prefilter_stage1=str(d.get("prefilter_stage1") or ""),
+                    prefilter_stage2=str(d.get("prefilter_stage2") or ""),
+                    prefilter_rank=d.get("prefilter_rank"),
+                    deep_exhausted=bool(d.get("deep_exhausted")),
+                    raw_ev=d.get("raw_ev"),
+                )
+            )
+    else:
+        for r in records:
+            if isinstance(r, LightRecord):
+                light_recs.append(r)
+            elif isinstance(r, dict):
+                light_recs.extend(_records_from_dicts([r], cfg, source=str(r.get("source") or "auto")))
+
+    pack_meta = pack_meta_by_key if pack_meta_by_key is not None else _scan_pack_meta(cfg, haircut=haircut)
+
+    # Mark exhausted on records
+    n_packs = 0
+    n_pass = 0
+    exhausted_keys: list[tuple[str, str]] = []
+    for r in light_recs:
+        meta = pack_meta.get(r.key())
+        if meta:
+            r.has_p_model = True
+            r.has_deep_pack = True
+            n_packs += 1
+            if meta.get("raw_ev") is not None:
+                r.raw_ev = float(meta["raw_ev"])
+                if float(meta["raw_ev"]) >= 0.0:  # raw_ev pass proxy (any non-neg after haircut)
+                    n_pass += 1
+                elif float(meta["raw_ev"]) >= exhausted_thr:
+                    # Between exhausted thr and 0 — not pass but not exhausted
+                    pass
+            if meta.get("deep_exhausted") or (
+                r.raw_ev is not None and float(r.raw_ev) < exhausted_thr
+            ):
+                r.deep_exhausted = True
+                exhausted_keys.append(r.key())
+                r.reason = (r.reason or "") + " | deep_exhausted"
+        elif r.has_p_model:
+            n_packs += 1
+            if r.raw_ev is not None and float(r.raw_ev) >= 0.0:
+                n_pass += 1
+            if r.raw_ev is not None and float(r.raw_ev) < exhausted_thr:
+                r.deep_exhausted = True
+                exhausted_keys.append(r.key())
+
+    if n_raw_ev_pass is not None:
+        n_pass = int(n_raw_ev_pass)
+    mid_u = int(mid_unresearched) if mid_unresearched is not None else 0
+
+    triggered = force or ev_fail_refresh_triggered(
+        n_packs_with_p=n_packs if n_packs else len(pack_meta),
+        n_raw_ev_pass=n_pass,
+        mid_unresearched=mid_u,
+        min_deep_packs=min_deep,
+    )
+    if not triggered:
+        return {
+            "ok": False,
+            "reason": "ev_fail_refresh_not_triggered",
+            "n_packs_with_p": n_packs or len(pack_meta),
+            "n_raw_ev_pass": n_pass,
+            "mid_unresearched": mid_u,
+            "deep_queue": [],
+            "mode": "normal",
+        }
+
+    # Inject candidates (unpacked only)
+    inject_items = list(inject_candidates or [])
+    if not inject_items and bool(tcfg.get("second_pass_from_dump", True)) and odds_path:
+        try:
+            cands = parse_odds_file(Path(odds_path), cfg)
+            packed = set(pack_meta.keys()) | {r.key() for r in light_recs if r.has_p_model}
+            for c in cands:
+                k = (str(getattr(c, "match", "") or ""), str(getattr(c, "selection", "") or ""))
+                if k in packed or not k[0] or not k[1]:
+                    continue
+                odds = float(getattr(c, "decimal_odds", 0) or 0)
+                if odds < 1.70 or odds > 3.20:
+                    continue
+                inject_items.append(
+                    {
+                        "match": k[0],
+                        "selection": k[1],
+                        "sport": str(getattr(c, "sport", "") or ""),
+                        "decimal_odds": odds,
+                        "score": float(getattr(c, "score", 0) or 0),
+                    }
+                )
+        except Exception:
+            pass
+
+    # Cap injects; prefer those with better prior/odds mid when pre-scored
+    inject_items = inject_items[: max(0, max_inject * 3)]  # soft pre-cap before assess
+    inject_recs = _records_from_dicts(inject_items, cfg, source="inject")
+    # Drop injects that already have packs
+    inject_recs = [
+        r
+        for r in inject_recs
+        if r.key() not in pack_meta and not r.has_p_model
+    ]
+    # Rank injects by clearability later inside build_deep_queue; hard cap
+    inject_recs = inject_recs[:max_inject]
+
+    # If no injects and not force_requeue, queue may be empty (correct)
+    requeue = bool(force_requeue_exhausted) and len(inject_recs) == 0
+
+    if coverage_overlay is None:
+        try:
+            from nt.control_signals import active_coverage_priority_overlay
+
+            coverage_overlay = active_coverage_priority_overlay(cfg)
+        except Exception:
+            coverage_overlay = {"active": False}
+
+    soft_by_key: dict[tuple[str, str], float | None] = {}
+    board_score_by_key: dict[tuple[str, str], float] = {}
+    deep_queue = build_deep_queue(
+        light_recs,
+        cfg,
+        soft_by_key=soft_by_key,
+        board_score_by_key=board_score_by_key,
+        coverage_overlay=coverage_overlay or {"active": False},
+        clearability_overlay=clearability_overlay,
+        mode="refresh",
+        inject_records=inject_recs,
+        pack_meta_by_key=pack_meta,
+        force_requeue_exhausted=requeue,
+    )
+
+    promote_keys = {r.key() for r in deep_queue}
+    for r in light_recs:
+        if r.key() in promote_keys:
+            r.promote_to_deep = True
+            if "second-pass" not in (r.reason or ""):
+                r.reason = (r.reason or "") + " | engine second-pass queue"
+        elif r.deep_exhausted:
+            r.promote_to_deep = False
+
+    target = min(int(tcfg["deep_target_n"]), int(tcfg["deep_max_n"]))
+    cl_n, cov_n = dual_track_sizes(
+        target,
+        coverage_overlay_active=bool((coverage_overlay or {}).get("active")),
+        clearability_overlay_active=bool(
+            (clearability_overlay or _active_clearability_overlay(cfg)).get("active")
+        ),
+    )
+
+    payload: dict[str, Any] = {
+        "ok": True,
+        "day": day or date.today().isoformat(),
+        "odds_path": str(odds_path) if odds_path else None,
+        "generated_at": utc_now(),
+        "mode": "refresh",
+        "second_pass_ran": True,
+        "inject_n": len(inject_recs),
+        "exhausted_n": len(exhausted_keys),
+        "exhausted_keys": [{"match": m, "selection": s} for m, s in exhausted_keys],
+        "n_packs_with_p": n_packs or len(pack_meta),
+        "n_raw_ev_pass": n_pass,
+        "mid_unresearched": mid_u,
+        "tiers_config": tcfg,
+        "deep_queue": [_queue_line_export(r, tcfg) for r in deep_queue],
+        "deep_queue_composition": _queue_composition_stats(deep_queue, tcfg),
+        "deep_queue_mode": "refresh",
+        "dual_track_sizes": {"clearable_n": cl_n, "coverage_n": cov_n},
+        "records": [asdict(r) for r in light_recs],
+        "force_requeue_exhausted": requeue,
+    }
+
+    if write:
+        # Merge into light batch path
+        try:
+            path = save_light_batch(cfg, {**load_light_batch(cfg, day), **payload}, day=day)
+            payload["path"] = str(path)
+        except Exception as ex:  # noqa: BLE001
+            payload["light_write_error"] = str(ex)
+        try:
+            from nt.deep_queue_state import write_deep_queue_from_light_payload
+
+            dq_path = write_deep_queue_from_light_payload(
+                cfg, payload, source="second_pass"
+            )
+            payload["deep_queue_state_path"] = str(dq_path)
+        except Exception as ex:  # noqa: BLE001
+            payload["deep_queue_state_error"] = str(ex)
+
     return payload

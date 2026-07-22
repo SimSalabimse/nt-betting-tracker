@@ -613,6 +613,23 @@ def cmd_research(args: argparse.Namespace) -> int:
                 print(f"\nWrote: {payload['md_path']}")
         return 0 if payload.get("coverage_ok", True) else 1
 
+    if sub in ("second-pass", "second_pass", "refresh-queue"):
+        from nt.light_research import research_second_pass
+
+        odds = Path(args.odds) if getattr(args, "odds", None) else None
+        if odds is not None and not odds.exists():
+            print(f"Odds file not found: {odds}", file=sys.stderr)
+            return 2
+        payload = research_second_pass(
+            cfg,
+            odds,
+            force=True,
+            write=not getattr(args, "no_write", False),
+            force_requeue_exhausted=bool(getattr(args, "force_requeue_exhausted", False)),
+        )
+        print(json.dumps(payload, indent=2, default=str))
+        return 0 if payload.get("ok") else 1
+
     print(f"Unknown research subcommand: {sub}", file=sys.stderr)
     return 2
 
@@ -1269,6 +1286,19 @@ def main(argv: list[str] | None = None) -> int:
     rs_ready = rs.add_parser("ready", help="Check if recommend is allowed for an odds file")
     rs_ready.add_argument("--odds", required=True)
     rs_ready.set_defaults(func=cmd_research)
+
+    rs_sp = rs.add_parser(
+        "second-pass",
+        help="EV-fail refresh: mark deep_exhausted, inject dump alts, rebuild dual-track queue",
+    )
+    rs_sp.add_argument("--odds", required=True, help="Odds dump path (inject source)")
+    rs_sp.add_argument("--no-write", action="store_true")
+    rs_sp.add_argument(
+        "--force-requeue-exhausted",
+        action="store_true",
+        help="Allow re-queue of exhausted packs only when no inject candidates remain",
+    )
+    rs_sp.set_defaults(func=cmd_research)
 
     rs_src = rs.add_parser("sources", help="Print recommended sources for a sport")
     rs_src.add_argument("--sport", default="football")
