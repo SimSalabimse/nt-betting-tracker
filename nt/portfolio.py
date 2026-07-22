@@ -399,6 +399,32 @@ def build_portfolio(
             )
             continue
 
+        # HV v3 pack integrity: fail-closed before EV / stake place path
+        # (grade already computed for reject diagnostics).
+        # Missing/inferred/stale/invalid board → hard reject.
+        # Never stamps board odds into odds_at_research here.
+        snap_detail: str | None = None
+        try:
+            from nt.pack_freshness import placeable_odds_snapshot
+
+            ok_snap, snap_reason = placeable_odds_snapshot(c.evidence, odds, cfg)
+        except Exception as exc:  # fail-closed; preserve type for ops metrics
+            ok_snap, snap_reason = False, "odds_integrity_error"
+            snap_detail = f"{type(exc).__name__}: {exc}"
+        if not ok_snap:
+            row: dict[str, Any] = {
+                "match": c.match,
+                "selection": c.selection,
+                "odds": odds,
+                "reason": snap_reason,
+                "grade": grade,
+                "issues": issues,
+            }
+            if snap_detail:
+                row["detail"] = snap_detail
+            rejects.append(row)
+            continue
+
         adj = learning_adjustments(
             learn,
             sport=c.sport or "",

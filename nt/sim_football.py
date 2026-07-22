@@ -613,8 +613,15 @@ def write_evidence_from_sim(
             "Do not treat sim as sole evidence."
         ),
     }
-    if decimal_odds is not None:
-        pack["decimal_odds_ref"] = decimal_odds
+    # HV v3: dual-write odds snapshot; mark inferred until human sources filled
+    from nt.pack_freshness import apply_odds_snapshot_fields
+
+    apply_odds_snapshot_fields(
+        pack,
+        float(decimal_odds) if decimal_odds is not None else None,
+        stamp_researched_at=True,
+        inferred=True if decimal_odds is not None else None,
+    )
 
     path.write_text(json.dumps(pack, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     return path

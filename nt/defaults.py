@@ -179,6 +179,11 @@ def research_cfg(cfg: dict[str, Any]) -> dict[str, Any]:
                 "default": {"enabled": True},
             },
         },
+        # HV v3 pack integrity — fail-closed place on missing/inferred/stale odds
+        "pack_integrity": {
+            "stale_odds_rel_threshold": 0.03,
+            "require_odds_at_research_for_place": True,
+        },
     }
     # Deep-merge gates / tiers if user provided partial
     out = {**defaults, **raw}
@@ -203,6 +208,11 @@ def research_cfg(cfg: dict[str, Any]) -> dict[str, Any]:
         if base_cl or user_cl:
             merged_t["clearability"] = {**base_cl, **user_cl}
         out["tiers"] = merged_t
+    if isinstance(raw.get("pack_integrity"), dict) or defaults.get("pack_integrity"):
+        out["pack_integrity"] = {
+            **(defaults.get("pack_integrity") or {}),
+            **(raw.get("pack_integrity") or {}),
+        }
     return out
 
 

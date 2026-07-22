@@ -80,6 +80,8 @@ def test_portfolio_uses_learning_without_crash():
             "summary": "unit test",
             "failure_modes": "test",
             "sources": [{"url": f"https://example.com/{i}", "takeaway": "t"} for i in range(6)],
+            "odds_at_research": 1.70,
+            "decimal_odds_ref": 1.70,
         },
     )
     picked, rejects = build_portfolio(cfg, [c], phase, risk, rows, learning=learn)
@@ -131,6 +133,8 @@ def test_diversify_counts_open_pending_sport():
             "summary": "unit test diversify",
             "failure_modes": "test",
             "sources": [{"url": f"https://example.com/{i}", "takeaway": "t"} for i in range(6)],
+            "odds_at_research": 1.75,
+            "decimal_odds_ref": 1.75,
         },
     )
     picked, rejects = build_portfolio(cfg, [cand], phase, risk, pending, learning={})
@@ -168,6 +172,8 @@ def _ev_cand(
                 {"url": f"https://example.com/{i}", "takeaway": "t", "kind": "stats"}
                 for i in range(8)
             ],
+            "odds_at_research": odds,
+            "decimal_odds_ref": odds,
         },
     )
 
