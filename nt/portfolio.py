@@ -399,6 +399,28 @@ def build_portfolio(
             )
             continue
 
+        # HV v3 pack integrity: fail-closed place before EV / grade place path.
+        # Missing snapshot, inferred flag, or ≥3% relative drift → hard reject.
+        # Never stamps board odds into odds_at_research here.
+        try:
+            from nt.pack_freshness import placeable_odds_snapshot
+
+            ok_snap, snap_reason = placeable_odds_snapshot(c.evidence, odds, cfg)
+        except Exception:
+            ok_snap, snap_reason = False, "missing_odds_snapshot"
+        if not ok_snap:
+            rejects.append(
+                {
+                    "match": c.match,
+                    "selection": c.selection,
+                    "odds": odds,
+                    "reason": snap_reason,
+                    "grade": grade,
+                    "issues": issues,
+                }
+            )
+            continue
+
         adj = learning_adjustments(
             learn,
             sport=c.sport or "",

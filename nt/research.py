@@ -208,8 +208,10 @@ def scaffold_evidence(
             "Never set selection_vs_script=conflict. See docs/RESEARCH_GATES.md."
         ),
     }
-    if odds is not None:
-        pack["decimal_odds_ref"] = odds
+    # HV v3: dual-write odds_at_research + decimal_odds_ref (+ researched_at on write)
+    from nt.pack_freshness import apply_odds_snapshot_fields
+
+    apply_odds_snapshot_fields(pack, odds, stamp_researched_at=bool(write))
 
     path = None
     if write:
@@ -311,8 +313,10 @@ def write_research_pack(
     pack["checklist"] = cl
     if notes:
         pack["notes"] = notes
-    if odds is not None:
-        pack["decimal_odds_ref"] = odds
+    # HV v3: always dual-write odds snapshot + researched_at on write path
+    from nt.pack_freshness import apply_odds_snapshot_fields
+
+    apply_odds_snapshot_fields(pack, odds, stamp_researched_at=True)
 
     evidence_dir = path_from_config(cfg, "evidence")
     evidence_dir.mkdir(parents=True, exist_ok=True)

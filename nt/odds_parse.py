@@ -474,9 +474,14 @@ def attach_evidence(candidates: list[Candidate], evidence_dir: Path) -> None:
 
     Phase 4: exact key first, then soft keys via ``normalize_*_key`` so
     ``Vinner: X`` packs still attach to ``X to Win`` candidates.
+
+    HV v3: soft-key collisions prefer newest researched_at / mtime (not first-wins).
+    Annotates board_odds_at_attach / odds_snapshot_missing for diagnostics only —
+    never stamps board odds into odds_at_research for place eligibility.
     """
     from nt.evidence import evidence_path, load_evidence
     from nt.odds_common import evidence_pair_key
+    from nt.pack_freshness import annotate_attach_diagnostics, pack_recency_ts
 
     by_key: dict[tuple[str, str], dict] = {}
     path_by_key: dict[tuple[str, str], Path] = {}
@@ -496,12 +501,20 @@ def attach_evidence(candidates: list[Candidate], evidence_dir: Path) -> None:
             m = str(data.get("match") or "").strip()
             s = str(data.get("selection") or "").strip()
             if m and s:
-                by_key[(m, s)] = data
-                path_by_key[(m, s)] = p
+                prev_exact = by_key.get((m, s))
+                prev_exact_path = path_by_key.get((m, s))
+                if prev_exact is None or pack_recency_ts(data, p) >= pack_recency_ts(
+                    prev_exact, prev_exact_path
+                ):
+                    by_key[(m, s)] = data
+                    path_by_key[(m, s)] = p
                 soft = evidence_pair_key(m, s)
-                # First pack wins on soft collision (prefer exact filename order)
-                by_soft.setdefault(soft, data)
-                path_by_soft.setdefault(soft, p)
+                # Newest pack wins on soft collision (researched_at / mtime)
+                prev = by_soft.get(soft)
+                prev_path = path_by_soft.get(soft)
+                if prev is None or pack_recency_ts(data, p) >= pack_recency_ts(prev, prev_path):
+                    by_soft[soft] = data
+                    path_by_soft[soft] = p
 
     for c in candidates:
         exact = (c.match or "", c.selection or "")
@@ -521,6 +534,13 @@ def attach_evidence(candidates: list[Candidate], evidence_dir: Path) -> None:
             ev = load_evidence(alt)
             if ev:
                 used_path = alt
+        if ev is not None:
+            # Diagnostics only — never invent odds_at_research from board
+            try:
+                board = float(c.decimal_odds)
+            except (TypeError, ValueError):
+                board = 0.0
+            ev = annotate_attach_diagnostics(ev, board)
         c.evidence = ev
         if used_path is not None and used_path.is_file():
             try:

@@ -78,7 +78,7 @@ def _cfg(*, enabled: bool = False):
     }
 
 
-def _pack(p: float = 0.75) -> dict:
+def _pack(p: float = 0.75, odds: float = 1.85) -> dict:
     sources = [
         {"url": f"https://example.com/{i}", "takeaway": "ok", "kind": "stats"}
         for i in range(8)
@@ -96,6 +96,8 @@ def _pack(p: float = 0.75) -> dict:
         "selection_vs_script": "agree",
         "base_rate_conflict": False,
         "sources": sources,
+        "odds_at_research": odds,
+        "decimal_odds_ref": odds,
     }
 
 
@@ -141,7 +143,7 @@ def _cand(
         sport=sport,
         market_type="Vinner",
         p_model=p,
-        evidence=_pack(p),
+        evidence=_pack(p, odds=odds),
         notes="test",
     )
 

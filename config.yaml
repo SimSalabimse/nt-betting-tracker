@@ -355,6 +355,11 @@ research:
   default_sport: football
   min_summary_chars: 20
   min_failure_modes_chars: 10
+  # HV v3 pack integrity: dual-write odds_at_research + decimal_odds_ref;
+  # fail-closed place when snapshot missing/inferred or relative drift ≥ threshold.
+  pack_integrity:
+    stale_odds_rel_threshold: 0.03
+    require_odds_at_research_for_place: true
   # Refuse recommend when odds file has zero p_model/evidence (wrong path)
   require_research_for_recommend: true
   board_max_per_match: 6

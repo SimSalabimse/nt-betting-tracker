@@ -68,7 +68,7 @@ def _cfg():
     }
 
 
-def _pack(p: float = 0.70) -> dict:
+def _pack(p: float = 0.70, odds: float = 1.85) -> dict:
     sources = [
         {"url": f"https://example.com/{i}", "takeaway": "ok", "kind": "stats"}
         for i in range(8)
@@ -86,6 +86,9 @@ def _pack(p: float = 0.70) -> dict:
         "selection_vs_script": "agree",
         "base_rate_conflict": False,
         "sources": sources,
+        # HV v3: place requires dual-write odds snapshot
+        "odds_at_research": odds,
+        "decimal_odds_ref": odds,
     }
 
 
@@ -209,7 +212,13 @@ def test_max_per_match_blocks_second_market_same_match():
             sport="darts",
             market_type="Totalt antall runder 15.5",
             p_model=0.72,
-            evidence=dict(pack, match="Humphries, Luke vs Menzies, Cameron", selection="Totalt antall runder 15.5: Over 15.5"),
+            evidence=dict(
+                pack,
+                match="Humphries, Luke vs Menzies, Cameron",
+                selection="Totalt antall runder 15.5: Over 15.5",
+                odds_at_research=2.10,
+                decimal_odds_ref=2.10,
+            ),
         ),
         Candidate(
             date="2026-07-20",
@@ -219,7 +228,14 @@ def test_max_per_match_blocks_second_market_same_match():
             sport="darts",
             market_type="Legs handikap -4.5",
             p_model=0.70,
-            evidence=dict(pack, match="Humphries, Luke vs Menzies, Cameron", selection="Legs handikap -4.5: Menzies, Cameron +4.5", p_model=0.70),
+            evidence=dict(
+                pack,
+                match="Humphries, Luke vs Menzies, Cameron",
+                selection="Legs handikap -4.5: Menzies, Cameron +4.5",
+                p_model=0.70,
+                odds_at_research=1.80,
+                decimal_odds_ref=1.80,
+            ),
         ),
         Candidate(
             date="2026-07-21",
@@ -229,7 +245,14 @@ def test_max_per_match_blocks_second_market_same_match():
             sport="basketball",
             market_type="Handikap 4.5",
             p_model=0.68,
-            evidence=dict(pack, match="Dallas Wings vs New York Liberty", selection="Handikap 4.5: Dallas Wings +4.5", p_model=0.68),
+            evidence=dict(
+                pack,
+                match="Dallas Wings vs New York Liberty",
+                selection="Handikap 4.5: Dallas Wings +4.5",
+                p_model=0.68,
+                odds_at_research=1.85,
+                decimal_odds_ref=1.85,
+            ),
         ),
     ]
     picked, rejects = build_portfolio(cfg, cands, _phase(), _risk(40), [], learning={})
@@ -265,7 +288,14 @@ def test_stake_packing_fills_three_min_seats_when_budget_allows():
                 sport=sport,
                 market_type="Vinner",
                 p_model=0.70,
-                evidence=dict(pack, match=match, selection=sel, p_model=0.70),
+                evidence=dict(
+                    pack,
+                    match=match,
+                    selection=sel,
+                    p_model=0.70,
+                    odds_at_research=odds,
+                    decimal_odds_ref=odds,
+                ),
             )
         )
     # 32 risk, max 4 bets, max_per_sport 2 → can take 3–4 singles
