@@ -151,7 +151,8 @@ def test_flag_on_sizing_unit_not_phase_band(tmp_path):
     ]
     picked, _ = build_portfolio(cfg, cands, PHASE, risk, historical_rows=[])
     assert len(picked) == 1
-    # High-Volume v2: unit 10 × grade B mult 1.4 = 14 (not bare phase band)
+    # HV v2 grade_stake_mult B=1.4 was already live on base 3bed713; bare unit 10
+    # only when grade mult is 1.0. Expect unit×1.4=14 (not a pack-integrity change).
     assert picked[0].stake_nok == 14.0
     assert picked[0].stake_decision is not None
     assert picked[0].stake_decision["size_mode"] == "NORMAL"

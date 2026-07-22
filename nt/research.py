@@ -208,10 +208,16 @@ def scaffold_evidence(
             "Never set selection_vs_script=conflict. See docs/RESEARCH_GATES.md."
         ),
     }
-    # HV v3: dual-write odds_at_research + decimal_odds_ref (+ researched_at on write)
+    # HV v3: scaffold dual-writes board odds as *inferred* (template only).
+    # Place stays blocked until write_research_pack / agent rewrite clears flag.
     from nt.pack_freshness import apply_odds_snapshot_fields
 
-    apply_odds_snapshot_fields(pack, odds, stamp_researched_at=bool(write))
+    apply_odds_snapshot_fields(
+        pack,
+        odds,
+        stamp_researched_at=bool(write),
+        inferred=True if odds is not None else None,
+    )
 
     path = None
     if write:
@@ -313,10 +319,12 @@ def write_research_pack(
     pack["checklist"] = cl
     if notes:
         pack["notes"] = notes
-    # HV v3: always dual-write odds snapshot + researched_at on write path
+    # HV v3: real research dual-write clears inferred; stamps researched_at
     from nt.pack_freshness import apply_odds_snapshot_fields
 
-    apply_odds_snapshot_fields(pack, odds, stamp_researched_at=True)
+    apply_odds_snapshot_fields(
+        pack, odds, stamp_researched_at=True, inferred=False if odds is not None else None
+    )
 
     evidence_dir = path_from_config(cfg, "evidence")
     evidence_dir.mkdir(parents=True, exist_ok=True)

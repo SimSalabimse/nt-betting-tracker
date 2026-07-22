@@ -22,6 +22,7 @@ import nt_bootstrap  # noqa: F401
 from nt.odds_parse import Candidate, attach_evidence
 from nt.pack_freshness import (
     apply_odds_snapshot_fields,
+    is_true_flag,
     odds_drift_rel,
     pack_odds_snapshot,
     placeable_odds_snapshot,
@@ -261,7 +262,8 @@ def test_never_stamps_board_odds_into_snapshot_for_place():
 # --- dual-write write path ---
 
 
-def test_scaffold_dual_write_odds(tmp_path: Path):
+def test_scaffold_dual_write_odds_marks_inferred(tmp_path: Path):
+    """Scaffold stamps board odds as inferred — not place-eligible SSOT."""
     cfg = {
         "paths": {"evidence": str(tmp_path / "evidence")},
     }
@@ -278,10 +280,27 @@ def test_scaffold_dual_write_odds(tmp_path: Path):
     pack = res["pack"]
     assert pack["decimal_odds_ref"] == 1.90
     assert pack["odds_at_research"] == 1.90
+    assert pack.get("odds_snapshot_inferred") is True
     assert pack.get("researched_at")
     data = json.loads(Path(res["path"]).read_text(encoding="utf-8"))
     assert data["odds_at_research"] == 1.90
     assert data["decimal_odds_ref"] == 1.90
+    assert data["odds_snapshot_inferred"] is True
+    # Place law rejects scaffold-only snapshots
+    ok, reason = placeable_odds_snapshot(data, 1.90, _cfg())
+    assert ok is False
+    assert reason == "odds_snapshot_inferred"
+
+
+def test_scaffold_inferred_build_portfolio_rejects():
+    """Scaffold board dual-write + filled p_model still rejects place (Issue 2)."""
+    pack = _strong_pack(p_model=0.75, odds_at_research=2.0, decimal_odds_ref=2.0)
+    pack["odds_snapshot_inferred"] = True
+    picked, rejects = build_portfolio(
+        _cfg(), [_cand(2.0, pack)], _phase(), _risk(), []
+    )
+    assert picked == []
+    assert any(r.get("reason") == "odds_snapshot_inferred" for r in rejects)
 
 
 def test_write_research_pack_dual_write(tmp_path: Path):
@@ -302,15 +321,21 @@ def test_write_research_pack_dual_write(tmp_path: Path):
     assert data["decimal_odds_ref"] == 1.85
     assert data["odds_at_research"] == 1.85
     assert data.get("researched_at")
+    # Real research dual-write clears inferred
+    assert data.get("odds_snapshot_inferred") is False
 
 
 def test_apply_odds_snapshot_fields_clears_inferred():
     pack: dict = {"odds_snapshot_inferred": True}
-    apply_odds_snapshot_fields(pack, 2.0, stamp_researched_at=True)
+    apply_odds_snapshot_fields(pack, 2.0, stamp_researched_at=True, inferred=False)
     assert pack["odds_at_research"] == 2.0
     assert pack["decimal_odds_ref"] == 2.0
     assert pack["odds_snapshot_inferred"] is False
     assert pack.get("researched_at")
+    # Clean pack still gets explicit False schema
+    clean: dict = {}
+    apply_odds_snapshot_fields(clean, 1.95, inferred=False)
+    assert clean["odds_snapshot_inferred"] is False
 
 
 # --- T7 newest soft-key wins ---
@@ -401,3 +426,141 @@ def test_attach_diagnostics_missing_snapshot_no_stamp(tmp_path: Path):
     ok, reason = placeable_odds_snapshot(c.evidence, 1.80, _cfg())
     assert ok is False
     assert reason == "missing_odds_snapshot"
+
+
+# --- review-fix coverage ---
+
+
+def test_nan_board_odds_fail_closed():
+    """Issue 1: board=NaN must not place (invalid_board_odds)."""
+    pack = _strong_pack(odds_at_research=2.0, decimal_odds_ref=2.0)
+    ok, reason = placeable_odds_snapshot(pack, float("nan"), _cfg())
+    assert ok is False
+    assert reason == "invalid_board_odds"
+    ok_inf, reason_inf = placeable_odds_snapshot(pack, float("inf"), _cfg())
+    assert ok_inf is False
+    assert reason_inf == "invalid_board_odds"
+    ok_neg, reason_neg = placeable_odds_snapshot(pack, -1.0, _cfg())
+    assert ok_neg is False
+    assert reason_neg == "invalid_board_odds"
+
+
+def test_require_odds_kill_switch_allows_missing_snapshot():
+    """Issue 10: require_odds_at_research_for_place false → placeable without snap."""
+    pack = _strong_pack(odds_at_research=None, decimal_odds_ref=None)
+    pack.pop("odds_at_research", None)
+    pack.pop("decimal_odds_ref", None)
+    cfg = _cfg()
+    cfg["research"]["pack_integrity"]["require_odds_at_research_for_place"] = False
+    ok, reason = placeable_odds_snapshot(pack, 2.0, cfg)
+    assert ok is True
+    assert reason == ""
+
+
+def test_mtime_only_newest_wins(tmp_path: Path):
+    """Issue 10: when both packs lack researched_at, mtime decides soft-key winner."""
+    ev_dir = tmp_path / "evidence"
+    ev_dir.mkdir()
+    match = "Player A vs Player B"
+    old = {
+        "match": match,
+        "selection": "Vinner: Player B",
+        "sport": "tennis",
+        "p_model": 0.50,
+        "summary": "old mtime pack",
+        "failure_modes": "x",
+        "sources": [{"url": "https://example.com/o", "takeaway": "o"}],
+        "odds_at_research": 1.60,
+        "decimal_odds_ref": 1.60,
+    }
+    new = {
+        "match": match,
+        "selection": "Player B to Win",
+        "sport": "tennis",
+        "p_model": 0.66,
+        "summary": "new mtime pack",
+        "failure_modes": "x",
+        "sources": [{"url": "https://example.com/n", "takeaway": "n"}],
+        "odds_at_research": 1.60,
+        "decimal_odds_ref": 1.60,
+    }
+    p_old = ev_dir / "old.json"
+    p_new = ev_dir / "new.json"
+    p_old.write_text(json.dumps(old) + "\n", encoding="utf-8")
+    p_new.write_text(json.dumps(new) + "\n", encoding="utf-8")
+    now = time.time()
+    os.utime(p_old, (now - 5000, now - 5000))
+    os.utime(p_new, (now - 5, now - 5))
+
+    c = Candidate(
+        date="2026-07-22",
+        match=match,
+        selection="Player B to Win",
+        decimal_odds=1.60,
+        sport="tennis",
+    )
+    attach_evidence([c], ev_dir)
+    assert c.evidence is not None
+    assert c.p_model == pytest.approx(0.66)
+
+
+def test_exact_stale_vs_soft_new_prefers_newer(tmp_path: Path):
+    """Issue 5: exact-match older pack loses to newer soft-equivalent pack."""
+    ev_dir = tmp_path / "evidence"
+    ev_dir.mkdir()
+    match = "Alpha vs Beta"
+    # Exact selection match for candidate — but older research
+    exact_old = {
+        "match": match,
+        "selection": "Alpha to Win",
+        "sport": "tennis",
+        "p_model": 0.51,
+        "summary": "stale exact",
+        "failure_modes": "x",
+        "sources": [{"url": "https://example.com/e", "takeaway": "e"}],
+        "odds_at_research": 1.70,
+        "decimal_odds_ref": 1.70,
+        "researched_at": "2026-07-01T08:00:00Z",
+    }
+    # Soft-equivalent newer pack (Vinner form)
+    soft_new = {
+        "match": match,
+        "selection": "Vinner: Alpha",
+        "sport": "tennis",
+        "p_model": 0.68,
+        "summary": "fresh soft",
+        "failure_modes": "x",
+        "sources": [{"url": "https://example.com/s", "takeaway": "s"}],
+        "odds_at_research": 1.70,
+        "decimal_odds_ref": 1.70,
+        "researched_at": "2026-07-21T20:00:00Z",
+    }
+    (ev_dir / "exact_old.json").write_text(json.dumps(exact_old) + "\n", encoding="utf-8")
+    (ev_dir / "soft_new.json").write_text(json.dumps(soft_new) + "\n", encoding="utf-8")
+
+    c = Candidate(
+        date="2026-07-22",
+        match=match,
+        selection="Alpha to Win",  # exact hit on old pack
+        decimal_odds=1.70,
+        sport="tennis",
+    )
+    attach_evidence([c], ev_dir)
+    assert c.evidence is not None
+    assert c.p_model == pytest.approx(0.68)
+    assert c.evidence.get("summary") == "fresh soft"
+
+
+def test_is_true_flag_normalizes_inferred_strings():
+    """Issue 8: string 'false' is not inferred; 'true' is."""
+    assert is_true_flag(True) is True
+    assert is_true_flag(False) is False
+    assert is_true_flag("false") is False
+    assert is_true_flag("true") is True
+    assert is_true_flag(0) is False
+    assert is_true_flag(1) is True
+    pack = _strong_pack(odds_at_research=2.0)
+    pack["odds_snapshot_inferred"] = "false"
+    ok, reason = placeable_odds_snapshot(pack, 2.0, _cfg())
+    assert ok is True
+    assert reason == ""

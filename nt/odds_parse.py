@@ -518,12 +518,26 @@ def attach_evidence(candidates: list[Candidate], evidence_dir: Path) -> None:
 
     for c in candidates:
         exact = (c.match or "", c.selection or "")
-        ev = by_key.get(exact)
-        used_path: Path | None = path_by_key.get(exact)
-        if not ev:
-            soft = evidence_pair_key(c.match, c.selection)
-            ev = by_soft.get(soft)
-            used_path = path_by_soft.get(soft)
+        exact_ev = by_key.get(exact)
+        exact_path: Path | None = path_by_key.get(exact)
+        soft = evidence_pair_key(c.match, c.selection)
+        soft_ev = by_soft.get(soft)
+        soft_path: Path | None = path_by_soft.get(soft)
+
+        # When both exact and soft hit: prefer higher pack_recency_ts (Issue 5).
+        # Attach law: newest research wins across selection-form variants.
+        ev: dict | None = None
+        used_path: Path | None = None
+        if exact_ev is not None and soft_ev is not None:
+            if pack_recency_ts(soft_ev, soft_path) > pack_recency_ts(exact_ev, exact_path):
+                ev, used_path = soft_ev, soft_path
+            else:
+                ev, used_path = exact_ev, exact_path
+        elif exact_ev is not None:
+            ev, used_path = exact_ev, exact_path
+        elif soft_ev is not None:
+            ev, used_path = soft_ev, soft_path
+
         if not ev:
             path = evidence_path(evidence_dir, c.evidence_key or f"{c.match}_{c.selection}")
             ev = load_evidence(path)
