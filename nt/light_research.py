@@ -427,6 +427,16 @@ def run_light_research(
         (path.parent / "LATEST.md").write_text(md_path.read_text(encoding="utf-8"), encoding="utf-8")
         payload["path"] = str(path)
         payload["md_path"] = str(md_path)
+        # D17: engine SSOT for Lumina composition bars (preferred/short-main)
+        try:
+            from nt.deep_queue_state import write_deep_queue_from_light_payload
+
+            dq_state_path = write_deep_queue_from_light_payload(
+                cfg, payload, source="light_research"
+            )
+            payload["deep_queue_state_path"] = str(dq_state_path)
+        except Exception as ex:  # noqa: BLE001
+            payload["deep_queue_state_error"] = str(ex)
 
     return payload
 

@@ -46,6 +46,9 @@ python run_nt.py recommend --odds inbox/current_odds_01.txt
 
 Config: `research.tiers` in `config.yaml` (`light_coverage_target`, `min_light_per_sport`, `deep_target_n`, …).
 
+**SSOT export:** board/light writes engine composition + queue lines to **`data/state/deep_queue.json`** (`nt/deep_queue_state.py`) for Lumina preferred/short-main bars (D17).
+
+
 ### Market Coverage Agent (high-volume matches)
 
 For matches with **many lines** (default ≥40; internationals often 100+):
