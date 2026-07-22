@@ -151,11 +151,36 @@ def run_recommend(
     learning = load_learning(cfg)
     picked, rejects = build_portfolio(cfg, candidates, phase, risk, rows, learning=learning)
 
+    # Full run-stake audit (HV v3) — from build_portfolio side channel
+    from nt.portfolio import compute_run_stake_audit
+
+    used_nok = sum(float(r.stake_nok) for r in picked)
+    run_audit = getattr(build_portfolio, "_run_stake_audit", None)
+    if not isinstance(run_audit, dict):
+        rec_cfg = cfg.get("recommend") or {}
+        run_audit = compute_run_stake_audit(
+            remaining_risk_nok=float(risk.get("remaining_risk_nok") or 0.0),
+            equity_nok=float(bankroll.get("equity_nok") or risk.get("equity_nok") or 0.0),
+            run_pct=float(rec_cfg.get("max_run_stake_pct_of_equity") or 0.20),
+            used_nok=used_nok,
+        )
+    else:
+        run_audit = dict(run_audit)
+        run_audit["run_stake_used_nok"] = used_nok
+
     lines = [
         f"# Bets to place — {ts}",
         "",
         f"Phase **{phase['phase_id']}** | Equity **{bankroll['equity_nok']:.2f}** | "
         f"Remaining risk **{risk['remaining_risk_nok']:.2f}** / cap **{risk['daily_risk_cap_nok']:.2f}**",
+        "",
+        (
+            f"Run stake: used **{float(run_audit.get('run_stake_used_nok') or 0):.0f}** / "
+            f"cap **{float(run_audit.get('run_stake_cap_nok') or 0):.0f}** "
+            f"(equity cap **{float(run_audit.get('run_stake_equity_cap_nok') or 0):.0f}**, "
+            f"remaining risk **{float(run_audit.get('run_stake_remaining_risk_nok') or 0):.0f}**) · "
+            f"binding: **{run_audit.get('run_stake_binding') or 'n/a'}**"
+        ),
         "",
         f"Research coverage: {coverage.get('n_with_p_model')}/{coverage.get('n_candidates')} "
         f"candidates have p_model.",
@@ -181,6 +206,11 @@ def run_recommend(
     for r in picked:
         flag = " **HIGH ODDS**" if r.high_odds else ""
         lines.append(f"- {r.match} / {r.selection}:{flag} {r.notes}")
+    if run_audit.get("soft_pack_applied"):
+        lines.append(
+            f"- soft_pack_applied: target_bets_per_run="
+            f"{run_audit.get('target_bets_per_run', 3)}"
+        )
 
     place_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
     # stable latest pointer
@@ -341,4 +371,12 @@ def run_recommend(
         "daily_cap": risk["daily_risk_cap_nok"],
         "equity": bankroll["equity_nok"],
         "force_mechanical": force_mechanical,
+        # HV v3 run-stake audit (flat + nested for PLACE/JSON consumers)
+        "run_stake_cap_nok": run_audit.get("run_stake_cap_nok"),
+        "run_stake_equity_cap_nok": run_audit.get("run_stake_equity_cap_nok"),
+        "run_stake_remaining_risk_nok": run_audit.get("run_stake_remaining_risk_nok"),
+        "run_stake_used_nok": run_audit.get("run_stake_used_nok"),
+        "run_stake_binding": run_audit.get("run_stake_binding"),
+        "soft_pack_applied": bool(run_audit.get("soft_pack_applied")),
+        "run_stake": dict(run_audit),
     }

@@ -235,6 +235,59 @@ def _stake_for_capital_v2(
     return final, audit
 
 
+def soft_pack_active(
+    cfg: dict[str, Any],
+    *,
+    phase_id: str,
+    bankroll_regime: str,
+) -> bool:
+    """
+    High-Volume v3 soft packing eligibility (PR5).
+
+    Default: phase 1A OR (soft_pack_on_exploration and regime == exploration).
+    Survival / other phases stay off unless listed in soft_pack_phases.
+    """
+    rec = cfg.get("recommend") or {}
+    phases = list(rec.get("soft_pack_phases") if rec.get("soft_pack_phases") is not None else ["1A"])
+    on_expl = bool(rec.get("soft_pack_on_exploration", True))
+    return (str(phase_id) in {str(p) for p in phases}) or (
+        on_expl and str(bankroll_regime or "").lower() == "exploration"
+    )
+
+
+def compute_run_stake_audit(
+    *,
+    remaining_risk_nok: float,
+    equity_nok: float,
+    run_pct: float,
+    used_nok: float = 0.0,
+) -> dict[str, Any]:
+    """
+    Per-run stake budget audit (20% equity ∩ remaining_risk).
+
+    binding: which input set the effective cap.
+    """
+    remaining = float(remaining_risk_nok)
+    equity = float(equity_nok or 0.0)
+    pct = float(run_pct or 0.0)
+    if equity > 0 and pct > 0:
+        equity_cap = equity * pct
+    else:
+        equity_cap = remaining
+    cap = min(remaining, equity_cap)
+    if remaining <= equity_cap + 1e-9:
+        binding = "phase_remaining"
+    else:
+        binding = "equity_pct"
+    return {
+        "run_stake_cap_nok": float(cap),
+        "run_stake_equity_cap_nok": float(equity_cap),
+        "run_stake_remaining_risk_nok": float(remaining),
+        "run_stake_used_nok": float(used_nok),
+        "run_stake_binding": binding,
+    }
+
+
 def rebalance_stakes(
     picked: list[Recommendation],
     budget: float,
@@ -1263,23 +1316,47 @@ def build_portfolio(
     _fill_passes()
 
     # Multi-pass pack: reserve min seats for still-eligible candidates, then refill
-    # High-Volume v2: per-run stake sum ≤ max_run_stake_pct_of_equity × equity
+    # High-Volume v2/v3: per-run stake sum ≤ max_run_stake_pct_of_equity × equity
     # (also min'd with remaining_risk — fail-closed).
+    rec_cfg = cfg.get("recommend") or {}
     remaining_risk_budget = float(risk["remaining_risk_nok"])
     equity_now = float(risk.get("equity_nok") or 0.0)
-    run_pct = float((cfg.get("recommend") or {}).get("max_run_stake_pct_of_equity") or 0.20)
-    if equity_now > 0 and run_pct > 0:
-        run_equity_cap = equity_now * run_pct
-    else:
-        run_equity_cap = remaining_risk_budget
-    budget = min(remaining_risk_budget, run_equity_cap)
+    run_pct = float(rec_cfg.get("max_run_stake_pct_of_equity") or 0.20)
+    run_audit = compute_run_stake_audit(
+        remaining_risk_nok=remaining_risk_budget,
+        equity_nok=equity_now,
+        run_pct=run_pct,
+        used_nok=0.0,
+    )
+    budget = float(run_audit["run_stake_cap_nok"])
+    run_equity_cap = float(run_audit["run_stake_equity_cap_nok"])
     build_portfolio._run_stake_cap_nok = budget  # type: ignore[attr-defined]
     build_portfolio._run_stake_equity_cap_nok = run_equity_cap  # type: ignore[attr-defined]
+    build_portfolio._run_stake_audit = dict(run_audit)  # type: ignore[attr-defined]
+
+    # Soft pack (HV v3): prefer target_bets_per_run × ~unit seats over fewer fat grade-mult seats
+    phase_id = str(phase.get("phase_id") or risk.get("phase_id") or "")
+    bankroll_regime = str(risk.get("bankroll_regime") or "")
+    target_bets = int(rec_cfg.get("target_bets_per_run") or 3)
+    n_ev_clear = len(scored)
+    soft_eligible = soft_pack_active(
+        cfg, phase_id=phase_id, bankroll_regime=bankroll_regime
+    )
+    use_soft_pack = (
+        soft_eligible
+        and target_bets >= 3
+        and n_ev_clear >= 3
+        and budget + 1e-9 >= 3.0 * float(min_stake)
+    )
+    soft_pack_applied = False
+    active_u = 0.0
+
     max_stake = float(phase.get("stake_max") or min_stake)
     if _capital_v2_enabled(cfg):
         # Unit ladder is the hard per-bet ceiling (active unit after size_mode).
         # Grade mult can lift recommended above unit — rebalance may top toward
         # max of unit and each seat's recommended final from scoring.
+        # Soft pack: first pass caps at unit; grade mult only after seats filled.
         from nt.capital_v2 import active_unit_for_mode, capital_v2_cfg, unit_size
 
         v2 = capital_v2_cfg(cfg)
@@ -1293,7 +1370,7 @@ def build_portfolio(
             if liq is None:
                 liq = risk.get("working_equity_nok") or budget
             u = unit_size(float(liq), v2)
-        active_u = active_unit_for_mode(float(u), mode, floor)
+        active_u = float(active_unit_for_mode(float(u), mode, floor))
         # Cap rebalance top-up at active unit × max grade mult (High-Volume v2)
         max_stake = max(floor, active_u * 2.2) if active_u > 0 else floor
         for rec in picked:
@@ -1307,7 +1384,7 @@ def build_portfolio(
                 rec.stake_decision["constraints_applied"] = caps
                 rec.stake_decision["run_stake_cap_nok"] = budget
 
-    def _seat_maxes() -> list[float]:
+    def _seat_maxes(*, soft_unit_cap: bool = False) -> list[float]:
         caps: list[float] = []
         for rec in picked:
             rec_cap = float(
@@ -1315,8 +1392,17 @@ def build_portfolio(
                 or (rec.stake_decision or {}).get("final_stake_nok")
                 or max_stake
             )
-            caps.append(max(min_stake, min(max_stake, rec_cap)))
+            seat = max(min_stake, min(max_stake, rec_cap))
+            if soft_unit_cap and active_u > 0:
+                # Explicit: min(recommended, unit) while packing for target seats
+                seat = min(seat, float(active_u))
+                seat = max(min_stake, seat)
+            caps.append(seat)
         return caps
+
+    soft_unit_pass = bool(use_soft_pack and active_u > 0)
+    if soft_unit_pass:
+        soft_pack_applied = True
 
     for _ in range(3):  # bounded retries
         extra = _count_extra_eligible()
@@ -1324,6 +1410,16 @@ def build_portfolio(
             0,
             int(budget // min_stake) - len(picked),
         )
+        # Soft pack: prefer reserving room for target seats at unit size
+        if soft_unit_pass and target_bets > len(picked):
+            fundable_extra = max(
+                fundable_extra,
+                min(
+                    target_bets - len(picked),
+                    max(0, int(budget // min_stake) - len(picked)),
+                    max(0, n_ev_clear - len(picked)),
+                ),
+            )
         reserve = min(extra, fundable_extra, max_bets - len(picked))
         leftover = rebalance_stakes(
             picked,
@@ -1331,7 +1427,7 @@ def build_portfolio(
             min_stake,
             max_stake,
             reserve_extra_seats=reserve,
-            max_stakes=_seat_maxes(),
+            max_stakes=_seat_maxes(soft_unit_cap=soft_unit_pass),
         )
         remaining = leftover
         if remaining < min_stake or len(picked) >= max_bets or reserve <= 0:
@@ -1341,7 +1437,7 @@ def build_portfolio(
                 min_stake,
                 max_stake,
                 reserve_extra_seats=0,
-                max_stakes=_seat_maxes(),
+                max_stakes=_seat_maxes(soft_unit_cap=soft_unit_pass),
             )
             break
         n_before = len(picked)
@@ -1353,7 +1449,7 @@ def build_portfolio(
                 min_stake,
                 max_stake,
                 reserve_extra_seats=0,
-                max_stakes=_seat_maxes(),
+                max_stakes=_seat_maxes(soft_unit_cap=soft_unit_pass),
             )
             break
 
@@ -1364,7 +1460,7 @@ def build_portfolio(
         min_stake,
         max_stake,
         reserve_extra_seats=0,
-        max_stakes=_seat_maxes(),
+        max_stakes=_seat_maxes(soft_unit_cap=soft_unit_pass),
     )
     used = sum(float(p.stake_nok) for p in picked)
     leftover_final = round(budget - used, 2)
@@ -1379,8 +1475,34 @@ def build_portfolio(
                 min_stake,
                 max_stake,
                 reserve_extra_seats=0,
-                max_stakes=_seat_maxes(),
+                max_stakes=_seat_maxes(soft_unit_cap=soft_unit_pass),
             )
+
+    # Soft pack grade-mult top-up: only when leftover cannot fund another seat.
+    # Spend leftover only — do not re-floor from min_stake (would recreate fat 16+14+10).
+    if soft_unit_pass and picked:
+        used_soft = sum(float(p.stake_nok) for p in picked)
+        leftover_soft = round(budget - used_soft, 2)
+        extra_after = _count_extra_eligible()
+        can_fund_another = (
+            leftover_soft + 1e-9 >= min_stake
+            and extra_after > 0
+            and len(picked) < max_bets
+        )
+        if not can_fund_another and leftover_soft >= 1.0 - 1e-9:
+            grade_caps = _seat_maxes(soft_unit_cap=False)
+            order = sorted(range(len(picked)), key=lambda i: picked[i].ev, reverse=True)
+            for i in order:
+                if leftover_soft < 1.0 - 1e-9:
+                    break
+                seat_cap = float(grade_caps[i]) if i < len(grade_caps) else max_stake
+                seat_cap = max(min_stake, min(max_stake, seat_cap))
+                while (
+                    leftover_soft >= 1.0 - 1e-9
+                    and picked[i].stake_nok + 1e-9 < seat_cap
+                ):
+                    picked[i].stake_nok = float(int(picked[i].stake_nok + 1.0))
+                    leftover_soft = round(leftover_soft - 1.0, 2)
 
     # EXPLORE_REGIME unit bets must stay at 1 unit (rebalance must not top them up)
     try:
@@ -1407,6 +1529,11 @@ def build_portfolio(
                     float(sd.get("recommended_stake_nok") or 0.0), rec.stake_nok
                 )
                 sd["run_stake_cap_nok"] = budget
+                sd["run_stake_equity_cap_nok"] = run_equity_cap
+                sd["run_stake_remaining_risk_nok"] = remaining_risk_budget
+                sd["run_stake_binding"] = run_audit.get("run_stake_binding")
+                if soft_pack_applied:
+                    sd["soft_pack_applied"] = True
                 rec.stake_decision = sd
         # Drop any zeroed seats (should be rare; rebalance already drops by budget)
         picked[:] = [r for r in picked if r.stake_nok >= min_stake]
@@ -1436,5 +1563,29 @@ def build_portfolio(
                     "reason": f"run stake budget {budget:.0f} NOK (20% equity / remaining)",
                 }
             )
+
+    used_sum = sum(float(p.stake_nok) for p in picked)
+    run_audit = compute_run_stake_audit(
+        remaining_risk_nok=remaining_risk_budget,
+        equity_nok=equity_now,
+        run_pct=run_pct,
+        used_nok=used_sum,
+    )
+    run_audit["soft_pack_applied"] = bool(soft_pack_applied)
+    run_audit["soft_pack_eligible"] = bool(soft_eligible)
+    run_audit["target_bets_per_run"] = target_bets
+    build_portfolio._run_stake_audit = dict(run_audit)  # type: ignore[attr-defined]
+    build_portfolio._run_stake_cap_nok = float(run_audit["run_stake_cap_nok"])  # type: ignore[attr-defined]
+    build_portfolio._run_stake_equity_cap_nok = float(  # type: ignore[attr-defined]
+        run_audit["run_stake_equity_cap_nok"]
+    )
+    # Refresh used on per-seat audits
+    if _capital_v2_enabled(cfg):
+        for rec in picked:
+            if rec.stake_decision is not None:
+                sd = dict(rec.stake_decision)
+                sd["run_stake_used_nok"] = used_sum
+                sd["final_stake_nok"] = rec.stake_nok
+                rec.stake_decision = sd
 
     return picked, rejects

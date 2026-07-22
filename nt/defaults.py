@@ -86,6 +86,21 @@ def capital_v2_defaults(cfg: dict[str, Any]) -> dict[str, Any]:
     return capital_v2_cfg(cfg)
 
 
+def recommend_cfg(cfg: dict[str, Any]) -> dict[str, Any]:
+    """Per-run stake / soft-pack defaults (HV Research Regime v3)."""
+    raw = dict(cfg.get("recommend") or {})
+    defaults = {
+        "max_run_stake_pct_of_equity": 0.20,
+        "target_bets_per_run": 3,
+        "soft_pack_phases": ["1A"],
+        "soft_pack_on_exploration": True,
+    }
+    out = {**defaults, **raw}
+    if raw.get("soft_pack_phases") is None and "soft_pack_phases" not in raw:
+        out["soft_pack_phases"] = list(defaults["soft_pack_phases"])
+    return out
+
+
 def research_cfg(cfg: dict[str, Any]) -> dict[str, Any]:
     raw = dict(cfg.get("research") or {})
     defaults = {
