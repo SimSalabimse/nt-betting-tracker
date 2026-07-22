@@ -164,12 +164,20 @@ Fu, Marco -2.5
 
 
 def test_collector_resolve_sport_darts_keywords():
-    # Import collector module without running main
+    # Import collector module without running main.
+    # artifacts/ is gitignored — collector may be absent on CI clones.
     import importlib.util
+
+    collector_path = ROOT / "artifacts" / "multi_sport_collector.py"
+    if not collector_path.is_file():
+        pytest.skip(
+            "artifacts/multi_sport_collector.py not present "
+            "(gitignored operational tool; local/desk copies only)"
+        )
 
     spec = importlib.util.spec_from_file_location(
         "multi_sport_collector",
-        ROOT / "artifacts" / "multi_sport_collector.py",
+        collector_path,
     )
     mod = importlib.util.module_from_spec(spec)
     assert spec.loader is not None
