@@ -260,6 +260,10 @@ learning:
     explore_max_n: 14         # below min_sample → still "thin"
     explore_ev_boost: 0.018
     explore_virgin_ev_boost: 0.022
+    # HV v3: only one virgin boost (sport OR market max — never stack both)
+    explore_virgin_stack: false
+    # SSOT absolute raw EV floor before any explore/learning EV boost may apply
+    explore_boost_min_raw_ev: -0.015
     explore_stake_floor: 0.92
     explore_min_roi: -0.15    # don't explore groups that are already deep red
     explore_min_ev: 0.012     # lower EV bar for explore-flagged lines

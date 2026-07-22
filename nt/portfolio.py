@@ -420,10 +420,24 @@ def build_portfolio(
             )
             continue
 
-        ev = ev_after_haircut(p_model, odds, haircut)
-        # soft prior from config band table + live learning
-        ev += float(priors.get(band, 0.0))
-        ev += float(adj.get("ev_boost") or 0.0)
+        # HV v3: raw_ev is haircut-only (no learning/explore boosts). When the
+        # explored path is active and raw_ev is deeply negative, zero the boost
+        # so stacked virgin nudges cannot float hopeless lines into place.
+        raw_ev = ev_after_haircut(p_model, odds, haircut)
+        boost = float(adj.get("ev_boost") or 0.0)
+        boost_min_raw = float(div_lim.get("explore_boost_min_raw_ev", -0.015))
+        if adj.get("explored") and float(raw_ev) < boost_min_raw:
+            boost = 0.0
+            adj = dict(adj)
+            adj["ev_boost"] = 0.0
+            adj["boost_applied"] = False
+            adj["boost_blocked_reason"] = "raw_ev_below_explore_boost_min"
+        else:
+            adj = dict(adj)
+            adj["boost_applied"] = bool(boost)
+            adj.pop("boost_blocked_reason", None)
+        # soft prior from config band table + gated learning boost
+        ev = float(raw_ev) + float(priors.get(band, 0.0)) + boost
 
         # High-Volume v2 EV floors after haircut (+ soft boosts already applied)
         standard_floor = float(sel.get("standard_min_ev", 0.02))
@@ -571,7 +585,10 @@ def build_portfolio(
                     "reason": reason,
                     "grade": grade,
                     "high_odds": high,
+                    "raw_ev": round(float(raw_ev), 4),
                     "learning_ev_boost": adj.get("ev_boost"),
+                    "boost_applied": adj.get("boost_applied"),
+                    "boost_blocked_reason": adj.get("boost_blocked_reason"),
                     "process_gate_raise": pg_raise or None,
                 }
             )
@@ -714,6 +731,9 @@ def build_portfolio(
             note_bits.append(f"learn_stake×{adj['stake_mult']}")
         if adj.get("ev_boost"):
             note_bits.append(f"learn_EV{float(adj['ev_boost']):+.3f}")
+        if adj.get("boost_blocked_reason"):
+            note_bits.append(f"boost_blocked={adj['boost_blocked_reason']}")
+        note_bits.append(f"raw_ev={float(raw_ev):+.3f}")
         if stake_decision:
             note_bits.append(
                 f"stake_rec={stake_decision.get('final_stake_nok')};"
