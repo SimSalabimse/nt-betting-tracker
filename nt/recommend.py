@@ -67,22 +67,31 @@ def run_recommend(
     log_pending: bool = True,
     *,
     force_mechanical: bool = False,
+    allow_low_coverage: bool = False,
 ) -> dict[str, Any]:
     """
     Build place slip from odds + evidence.
 
     By default refuses boards with zero p_model/evidence (wrong path).
     Use force_mechanical=True only for tests or explicit override.
+
+    Coverage Health soft-gate: when level=critical, block unless
+    allow_low_coverage=True (or soft_gate disabled in config).
     """
     bankroll, phase, risk = refresh_state(cfg)
     candidates = parse_odds_file(odds_path)
     attach_evidence(candidates, path_from_config(cfg, "evidence"))
 
-    from nt.board import board_coverage
+    from nt.board import board_coverage, shortlist_board
+    from nt.coverage_health import (
+        soft_gate_blocks_recommend,
+        update_coverage_health_on_recommend,
+    )
     from nt.defaults import research_cfg
 
     rcfg = research_cfg(cfg)
     coverage = board_coverage(candidates)
+    shortlist = shortlist_board(candidates, cfg)
     require = bool(rcfg.get("require_research_for_recommend", True)) and not force_mechanical
 
     outbox = path_from_config(cfg, "outbox")
@@ -125,6 +134,18 @@ def run_recommend(
             f"# Rejects — {ts}\n\n- workflow block: no research packs on board\n",
             encoding="utf-8",
         )
+        # Still write coverage health for DeskStrip (starvation taxonomy)
+        try:
+            cov_health = update_coverage_health_on_recommend(
+                cfg,
+                candidates,
+                shortlist=shortlist,
+                n_picked=0,
+                can_bet=bool(risk.get("can_bet")),
+                emit_coverage_signal=True,
+            )
+        except Exception:
+            cov_health = None
         return {
             "blocked": True,
             "block_reason": "no_research",
@@ -133,6 +154,9 @@ def run_recommend(
                 f"Run: python run_nt.py research board --odds {odds_path} --write-scaffolds"
             ),
             "coverage": coverage,
+            "coverage_health": cov_health,
+            "starvation_kind": (cov_health or {}).get("starvation_kind"),
+            "funnel": (cov_health or {}).get("funnel"),
             "n_candidates": len(candidates),
             "n_picked": 0,
             "n_rejects": len(candidates),
@@ -143,6 +167,89 @@ def run_recommend(
             "daily_cap": risk["daily_risk_cap_nok"],
             "equity": bankroll["equity_nok"],
             "workflow": "research_board → fill_evidence → recommend",
+        }
+
+    # Pre-pass Coverage Health for soft-gate (before portfolio spend)
+    try:
+        pre_health = update_coverage_health_on_recommend(
+            cfg,
+            candidates,
+            shortlist=shortlist,
+            n_picked=0,
+            can_bet=bool(risk.get("can_bet")),
+            emit_coverage_signal=False,
+            auto_revoke=True,
+        )
+    except Exception:
+        pre_health = None
+
+    if (
+        pre_health
+        and soft_gate_blocks_recommend(pre_health, cfg)
+        and not allow_low_coverage
+        and not force_mechanical
+    ):
+        block_md = [
+            f"# Bets to place — {ts}",
+            "",
+            "## BLOCKED — Coverage Health critical",
+            "",
+            "Research coverage is **critical** (mid-price lines unresearched / thin deep packs).",
+            "Soft-gate refuses recommend so empty slip is not mistaken for honest no-edge.",
+            "",
+            f"- level: **{pre_health.get('level')}**",
+            f"- shortlist_deep_pct: {pre_health.get('shortlist_deep_pct')}",
+            f"- mid_unresearched_n: {pre_health.get('mid_unresearched_n')}",
+            f"- starvation_kind: {pre_health.get('starvation_kind')}",
+            "",
+            "Deep-research the engine deep queue (preferred mid-band), then re-run recommend.",
+            "Ops override: `recommend --allow-low-coverage`",
+            "",
+        ]
+        place_path.write_text("\n".join(block_md) + "\n", encoding="utf-8")
+        (outbox / "PLACE_THESE.md").write_text(place_path.read_text(encoding="utf-8"), encoding="utf-8")
+        reject_path.write_text(
+            f"# Rejects — {ts}\n\n- coverage soft-gate: critical\n",
+            encoding="utf-8",
+        )
+        # Emit force_coverage after soft-gate block
+        try:
+            cov_health = update_coverage_health_on_recommend(
+                cfg,
+                candidates,
+                shortlist=shortlist,
+                n_picked=0,
+                can_bet=bool(risk.get("can_bet")),
+                emit_coverage_signal=True,
+                auto_revoke=False,
+            )
+        except Exception:
+            cov_health = pre_health
+        return {
+            "blocked": True,
+            "block_reason": "coverage_critical",
+            "message": (
+                "Recommend refused: Coverage Health critical. "
+                "Deep-research mid-price queue or pass --allow-low-coverage."
+            ),
+            "coverage": coverage,
+            "coverage_health": cov_health,
+            "starvation_kind": (cov_health or {}).get("starvation_kind") or "coverage_critical",
+            "funnel": (cov_health or {}).get("funnel"),
+            "n_raw_ev_pass": (cov_health or {}).get("n_raw_ev_pass"),
+            "median_raw_ev": (cov_health or {}).get("median_raw_ev"),
+            "clearable_track_share": (cov_health or {}).get("clearable_track_share"),
+            "second_pass_ran": (cov_health or {}).get("second_pass_ran"),
+            "n_candidates": len(candidates),
+            "n_picked": 0,
+            "n_rejects": len(candidates),
+            "place_path": str(place_path),
+            "logged_bet_ids": [],
+            "phase": phase["phase_id"],
+            "remaining_risk": risk["remaining_risk_nok"],
+            "daily_cap": risk["daily_risk_cap_nok"],
+            "equity": bankroll["equity_nok"],
+            "allow_low_coverage": False,
         }
 
     rows = load_bets(path_from_config(cfg, "bets"))
@@ -328,9 +435,50 @@ def run_recommend(
     except Exception:
         pass
 
+    # Coverage Health + clearability funnel (post-portfolio n_picked)
+    no_p_share = None
+    if rejects:
+        def _is_no_pmodel_reject(r: Any) -> bool:
+            if not isinstance(r, dict):
+                return False
+            reason = str(r.get("reason") or "").lower()
+            return (
+                "no p_model" in reason
+                or "missing p_model" in reason
+                or "without p_model" in reason
+                or reason.strip() in ("no research", "no evidence")
+            )
+
+        no_p = sum(1 for r in rejects if _is_no_pmodel_reject(r))
+        no_p_share = no_p / max(1, len(rejects))
+
+    try:
+        cov_health = update_coverage_health_on_recommend(
+            cfg,
+            candidates,
+            shortlist=shortlist,
+            n_picked=len(picked),
+            can_bet=bool(risk.get("can_bet")),
+            no_pmodel_reject_share=no_p_share,
+            emit_coverage_signal=True,
+            auto_revoke=True,
+        )
+    except Exception:
+        cov_health = pre_health
+
+    funnel = (cov_health or {}).get("funnel") or {}
     return {
         "blocked": False,
         "coverage": coverage,
+        "coverage_health": cov_health,
+        "starvation_kind": (cov_health or {}).get("starvation_kind"),
+        "funnel": funnel,
+        "n_raw_ev_pass": (cov_health or {}).get("n_raw_ev_pass", funnel.get("n_raw_ev_pass")),
+        "median_raw_ev": (cov_health or {}).get("median_raw_ev", funnel.get("median_raw_ev")),
+        "clearable_track_share": (cov_health or {}).get(
+            "clearable_track_share", funnel.get("clearable_track_share")
+        ),
+        "second_pass_ran": (cov_health or {}).get("second_pass_ran", funnel.get("second_pass_ran")),
         "n_candidates": len(candidates),
         "n_picked": len(picked),
         "n_rejects": len(rejects),
@@ -341,4 +489,5 @@ def run_recommend(
         "daily_cap": risk["daily_risk_cap_nok"],
         "equity": bankroll["equity_nok"],
         "force_mechanical": force_mechanical,
+        "allow_low_coverage": bool(allow_low_coverage),
     }

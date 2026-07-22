@@ -39,9 +39,9 @@ def process_gates_path(cfg: dict[str, Any]):
 
 
 def load_process_gates(cfg: dict[str, Any]) -> dict[str, Any]:
-    """Compatibility shape: gates list derived from active control signals."""
+    """Compatibility shape: gates list derived from active temp_gate signals."""
     gates = []
-    for a in load_active_signals(cfg):
+    for a in load_active_signals(cfg, kinds=("temp_gate_raise",)):
         sp = str(a.get("sport") or "")
         mk = str(a.get("market") or "") or None
         if sp:
