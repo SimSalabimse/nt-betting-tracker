@@ -181,9 +181,14 @@ def test_secure_skipped_when_frozen():
 
 
 def test_sync_persists_secure_and_snapshots(tmp_path: Path, monkeypatch):
+    import nt.capital_runtime as cr
     import nt.capital_v2 as cv
 
-    monkeypatch.setattr(cv, "oslo_today", lambda: "2026-07-21")
+    # sync_capital_v2_state binds oslo_today from capital_runtime's import site
+    # (from nt.capital_v2 import oslo_today) — patch both modules.
+    fixed_day = "2026-07-21"
+    monkeypatch.setattr(cv, "oslo_today", lambda: fixed_day)
+    monkeypatch.setattr(cr, "oslo_today", lambda: fixed_day)
     cfg = _cfg(tmp_path, enabled=True)
     segs = sync_capital_v2_state(cfg, 700.0, [], persist=True)
     path = segments_path(cfg)
@@ -191,7 +196,7 @@ def test_sync_persists_secure_and_snapshots(tmp_path: Path, monkeypatch):
     disk = json.loads(path.read_text(encoding="utf-8"))
     assert disk["secure_nok"] == 80.0
     assert disk["unit_hwm_reset_equity_nok"] == 620.0
-    assert disk["day_snapshot"]["oslo_date"] == "2026-07-21"
+    assert disk["day_snapshot"]["oslo_date"] == fixed_day
     assert disk["day_snapshot"]["liquid_start_nok"] == riskable_liquid(700.0, 80.0, 0.0)
     assert disk["week_snapshot"]["week_id"] == "2026-W30"
     # second sync same equity: no double transfer
