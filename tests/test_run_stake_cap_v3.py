@@ -186,7 +186,7 @@ def test_t2_run_stake_budget_math_20pct_of_500():
     assert b["run_stake_cap_nok"] == pytest.approx(100.0)
     assert b["run_stake_binding"] == "equity_pct"
 
-    # Via build_portfolio side channel
+    # Via build_portfolio side channel (phase binds)
     cfg = _cfg()
     cands = [
         _cand("A vs B", "Vinner: A", 1.90, 0.72, "tennis"),
@@ -203,11 +203,22 @@ def test_t2_run_stake_budget_math_20pct_of_500():
     assert used <= 40.0 + 1e-6
     assert float(audit["run_stake_used_nok"]) == pytest.approx(used)
 
+    # End-to-end equity_pct binding via portfolio (remaining 200 > equity cap 100)
+    risk_eq = _risk(remaining=200.0, equity=500.0, unit=12.0)
+    picked2, _ = build_portfolio(cfg, cands, _phase(), risk_eq, historical_rows=[], learning={})
+    audit2 = getattr(build_portfolio, "_run_stake_audit", {})
+    assert float(audit2["run_stake_equity_cap_nok"]) == pytest.approx(100.0)
+    assert float(audit2["run_stake_cap_nok"]) == pytest.approx(100.0)
+    assert audit2["run_stake_binding"] == "equity_pct"
+    assert sum(p.stake_nok for p in picked2) <= 100.0 + 1e-6
 
-# ── soft_pack_active predicate ───────────────────────────────────────────
+
+# ── soft_pack_active + recommend_cfg SSOT ────────────────────────────────
 
 
 def test_soft_pack_active_defaults():
+    from nt.defaults import recommend_cfg
+
     cfg = _cfg()
     assert soft_pack_active(cfg, phase_id="1A", bankroll_regime="exploration") is True
     assert soft_pack_active(cfg, phase_id="1A", bankroll_regime="survival") is True  # phase list
@@ -218,6 +229,33 @@ def test_soft_pack_active_defaults():
     cfg2 = _cfg(soft_pack_phases=["1A", "1B"], soft_pack_on_exploration=False)
     assert soft_pack_active(cfg2, phase_id="1B", bankroll_regime="exploration") is True
     assert soft_pack_active(cfg2, phase_id="2", bankroll_regime="exploration") is False
+
+    # recommend_cfg is the shared defaults SSOT
+    rc = recommend_cfg({})
+    assert rc["target_bets_per_run"] == 3
+    assert rc["soft_pack_phases"] == ["1A"]
+    assert rc["soft_pack_on_exploration"] is True
+    assert rc["max_run_stake_pct_of_equity"] == pytest.approx(0.20)
+    # Empty phases list is preserved (disables phase match)
+    rc2 = recommend_cfg({"recommend": {"soft_pack_phases": []}})
+    assert rc2["soft_pack_phases"] == []
+
+
+def test_soft_pack_gate_uses_target_bets_not_hardcoded_3():
+    """target_bets_per_run=4 requires ≥4 clears; 3 clears → soft_pack_applied false."""
+    cfg = _cfg(target_bets_per_run=4)
+    cands = [
+        _cand("A1 vs B1", "Vinner: A1", 1.90, 0.72, "tennis"),
+        _cand("A2 vs B2", "Vinner: A2", 1.95, 0.71, "darts"),
+        _cand("A3 vs B3", "Vinner: A3", 2.00, 0.70, "basketball"),
+    ]
+    risk = _risk(remaining=50.0, equity=500.0, unit=12.0)
+    picked, _ = build_portfolio(cfg, cands, _phase(), risk, historical_rows=[], learning={})
+    audit = getattr(build_portfolio, "_run_stake_audit", {})
+    assert audit.get("target_bets_per_run") == 4
+    assert audit.get("soft_pack_applied") is False  # n_ev_clear 3 < target 4
+    assert audit.get("soft_pack_eligible") is True
+    assert "soft_pack_applied" in (picked[0].stake_decision or {}) if picked else True
 
 
 # ── T14: PLACE markdown + JSON audit fields ──────────────────────────────
@@ -352,7 +390,8 @@ def test_t14_place_and_json_run_stake_audit_fields(tmp_path, monkeypatch):
 def test_t16_soft_pack_three_grade_b_not_two_fat():
     """
     3 grade-B EV-clears, equity 500, remaining 40, unit 12:
-    → 3 places, stakes sum ≤40, preferably three ~12s (not two 16s + drop).
+    → 3 places, stakes sum ≤40, unit-first then leftover-only top-up
+    (e.g. 16+12+12), not two fat grade-mult + thin/dropped third.
     """
     cfg = _cfg()
     # p high enough for grade B + EV after 3pp haircut at ~1.9
@@ -373,27 +412,29 @@ def test_t16_soft_pack_three_grade_b_not_two_fat():
         f"soft pack should place 3 seats, got {len(picked)}; "
         f"rejects={rejects[:5]!r}"
     )
-    stakes = [float(p.stake_nok) for p in picked]
+    stakes = sorted(float(p.stake_nok) for p in picked)
     total = sum(stakes)
     assert total <= 40.0 + 1e-6
-    assert total >= 30.0  # at least 3 × min_stake
-    # Prefer ~unit (12), not two fat grade-mult (16+16) with third dropped
+    assert total >= 36.0 - 1e-9  # unit-first 12×3, leftover ≤4 spent on top-up
     assert all(s >= 10.0 for s in stakes)
-    # No seat should be a fat grade-mult hog that blocks the third
-    # (grade B rec = 12*1.4 → 16; soft pack caps packing at unit first)
-    assert max(stakes) <= 16.0 + 1e-9
-    # At least two seats at-or-near unit (≤13) OR average near 12–13.5
-    avg = total / 3.0
-    assert avg <= 14.0 + 1e-9, f"avg stake {avg} too fat — soft pack failed"
-    near_unit = sum(1 for s in stakes if s <= 13.0 + 1e-9)
-    assert near_unit >= 2 or all(s <= 14.0 for s in stakes)
+    # Leftover-only top-up pattern: two seats at unit, one may take residual ≤ grade-B 16
+    assert stakes[0] == pytest.approx(12.0)  # lowest stays at unit
+    assert stakes[1] == pytest.approx(12.0)
+    assert stakes[2] <= 16.0 + 1e-9
+    assert stakes[2] >= 12.0 - 1e-9
 
     audit = getattr(build_portfolio, "_run_stake_audit", {})
-    assert audit.get("soft_pack_applied") is True
+    assert audit.get("soft_pack_applied") is True  # mode engaged
+    assert audit.get("soft_pack_seats_hit") is True  # n_picked >= target
+    assert audit.get("n_picked") == 3
+    assert audit.get("target_bets_per_run") == 3
     assert audit.get("run_stake_binding") == "phase_remaining"
     for p in picked:
         assert p.stake_decision is not None
         assert p.stake_decision.get("soft_pack_applied") is True
+        assert p.stake_decision.get("soft_pack_seats_hit") is True
+        cons = " ".join(p.stake_decision.get("constraints_applied") or [])
+        assert "soft_pack_unit_cap:" in cons
         assert p.grade in ("A", "B", "C")
 
 
@@ -413,3 +454,8 @@ def test_t16_without_soft_pack_still_budget_safe():
     assert total <= 40.0 + 1e-6
     audit = getattr(build_portfolio, "_run_stake_audit", {})
     assert audit.get("soft_pack_applied") is False
+    assert audit.get("soft_pack_seats_hit") is False
+    # soft_pack_applied always present on stake_decision (false when off)
+    for p in picked:
+        if p.stake_decision is not None:
+            assert p.stake_decision.get("soft_pack_applied") is False

@@ -152,21 +152,27 @@ def run_recommend(
     picked, rejects = build_portfolio(cfg, candidates, phase, risk, rows, learning=learning)
 
     # Full run-stake audit (HV v3) — from build_portfolio side channel
+    from nt.defaults import recommend_cfg
     from nt.portfolio import compute_run_stake_audit
 
     used_nok = sum(float(r.stake_nok) for r in picked)
     run_audit = getattr(build_portfolio, "_run_stake_audit", None)
     if not isinstance(run_audit, dict):
-        rec_cfg = cfg.get("recommend") or {}
+        rec_cfg = recommend_cfg(cfg)
         run_audit = compute_run_stake_audit(
             remaining_risk_nok=float(risk.get("remaining_risk_nok") or 0.0),
             equity_nok=float(bankroll.get("equity_nok") or risk.get("equity_nok") or 0.0),
-            run_pct=float(rec_cfg.get("max_run_stake_pct_of_equity") or 0.20),
+            run_pct=float(rec_cfg["max_run_stake_pct_of_equity"]),
             used_nok=used_nok,
         )
+        run_audit["soft_pack_applied"] = False
+        run_audit["target_bets_per_run"] = int(rec_cfg["target_bets_per_run"])
+        run_audit["n_picked"] = len(picked)
+        run_audit["soft_pack_seats_hit"] = False
     else:
         run_audit = dict(run_audit)
         run_audit["run_stake_used_nok"] = used_nok
+        run_audit.setdefault("n_picked", len(picked))
 
     lines = [
         f"# Bets to place — {ts}",
@@ -208,8 +214,9 @@ def run_recommend(
         lines.append(f"- {r.match} / {r.selection}:{flag} {r.notes}")
     if run_audit.get("soft_pack_applied"):
         lines.append(
-            f"- soft_pack_applied: target_bets_per_run="
-            f"{run_audit.get('target_bets_per_run', 3)}"
+            f"- soft_pack_applied (mode): target={run_audit.get('target_bets_per_run')} "
+            f"picked={run_audit.get('n_picked')} "
+            f"seats_hit={run_audit.get('soft_pack_seats_hit')}"
         )
 
     place_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
@@ -378,5 +385,7 @@ def run_recommend(
         "run_stake_used_nok": run_audit.get("run_stake_used_nok"),
         "run_stake_binding": run_audit.get("run_stake_binding"),
         "soft_pack_applied": bool(run_audit.get("soft_pack_applied")),
+        "soft_pack_seats_hit": bool(run_audit.get("soft_pack_seats_hit")),
+        "target_bets_per_run": run_audit.get("target_bets_per_run"),
         "run_stake": dict(run_audit),
     }
