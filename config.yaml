@@ -209,8 +209,13 @@ selection:
 
 # Per research/recommend run: sum of stakes ≤ this fraction of equity
 # (also min'd with remaining_risk_nok — fail-closed).
+# Soft pack (HV v3): prefer ~target_bets_per_run × unit seats under 1A/exploration
+# rather than fewer fat grade-mult seats that exhaust remaining_risk.
 recommend:
   max_run_stake_pct_of_equity: 0.20
+  target_bets_per_run: 3
+  soft_pack_phases: ["1A"]              # 1B optional add — not default
+  soft_pack_on_exploration: true
 # Ledger-driven learning loop (recomputed on settle / `nt learn` / refresh)
 # Does NOT rewrite this file — live mults live in data/state/learning.json
 learning:
@@ -260,6 +265,11 @@ learning:
     explore_max_n: 14         # below min_sample → still "thin"
     explore_ev_boost: 0.018
     explore_virgin_ev_boost: 0.022
+    # HV v3: only one virgin boost (sport OR market max — never stack both)
+    explore_virgin_stack: false
+    # When explore path is active, zero the *combined* learning EV boost if
+    # haircut-only raw_ev < this floor (does not strip ROI boosts on non-explore lines)
+    explore_boost_min_raw_ev: -0.015
     explore_stake_floor: 0.92
     explore_min_roi: -0.15    # don't explore groups that are already deep red
     explore_min_ev: 0.012     # lower EV bar for explore-flagged lines
@@ -288,6 +298,14 @@ learning:
       min_mid_unresearched: 3
       coverage_preferred_share: 0.55
       weight_boost: 30.0            # deep-queue score boost under active signal
+      auto_revoke_when_ok: true     # revoke when level=ok and mid_unresearched_n==0
+    clearability_priority:
+      enabled: true
+      auto_emit: false              # ops-only week 1; later auto if clearability_miss ×2
+      auto_emit_min_consecutive: 2
+      ttl_days: 5
+      weight_boost: 35.0
+      clearable_floor_boost: 0.15
 
 paths:
   bets: data/bets.csv
@@ -355,6 +373,11 @@ research:
   default_sport: football
   min_summary_chars: 20
   min_failure_modes_chars: 10
+  # HV v3 pack integrity: dual-write odds_at_research + decimal_odds_ref;
+  # fail-closed place when snapshot missing/inferred or relative drift ≥ threshold.
+  pack_integrity:
+    stale_odds_rel_threshold: 0.03
+    require_odds_at_research_for_place: true
   # Refuse recommend when odds file has zero p_model/evidence (wrong path)
   require_research_for_recommend: true
   board_max_per_match: 6
@@ -393,6 +416,37 @@ research:
     fail_odds_above: 4.0
     pass_odds_lo: 1.45
     pass_odds_hi: 2.60
+    # HV v3 dual-track clearability promotion + EV-fail refresh (research-rank only)
+    clearability_promotion: true
+    dual_track_deep_queue: true
+    second_pass_from_dump: true
+    second_pass_max_inject: 12
+    raw_ev_exhausted: -0.05
+    second_pass_min_deep_packs: 8
+    # HV v3 clearability ranking (frozen weights; research-rank only — never invents p_model)
+    # Soft books optional; relative prior works with all-negative Stage2 prior_ev after 3pp.
+    clearability:
+      w_mid: 25
+      w_rel_prior: 80
+      w_batch: 20
+      w_coin: -35
+      w_soft: 40
+      w_alt: 14
+      w_short: -55
+      w_struct: 15
+      w_disp: 25
+      w_hist: 15
+      w_cov: 30
+      w_cl_force: 35
+      w_fail: -40
+      rel_prior_clip_lo: -0.12
+      rel_prior_clip_hi: 0.08
+      rel_prior_scale: 0.08
+      disp_scale: 0.06
+      hist_min_sample: 12
+      fail_raw_ev: -0.05
+      coin_flip_eps: 0.02
+      even_market_rel: 0.05
 
   # Coverage Health (board/recommend + Lumina DeskStrip)
   coverage_health:

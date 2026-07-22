@@ -207,6 +207,8 @@ def test_portfolio_notes_include_p_model():
                 {"url": f"https://e.com/{i}", "takeaway": "t", "kind": "stats"}
                 for i in range(8)
             ],
+            "odds_at_research": 1.90,
+            "decimal_odds_ref": 1.90,
         },
         evidence_path="evidence/test_btts.json",
     )

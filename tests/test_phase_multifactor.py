@@ -228,6 +228,8 @@ def test_high_odds_stress_from_concentration(tmp_path: Path):
             {"url": f"https://ex.com/{i}", "takeaway": "ok", "kind": "stats"}
             for i in range(12)
         ],
+        "odds_at_research": 2.80,
+        "decimal_odds_ref": 2.80,
     }
     cands = [
         Candidate(

@@ -2,7 +2,7 @@
 
 ## Agent trigger (every odds dump)
 
-When the user provides a **new or updated odds file** in `inbox/`, the agent **must** run the full research → recommend path (see root `AGENTS.md`). Defaults: **live recommend** (logs Pending when picks exist); **dry-run only if the user asks**; **do not re-advise already Pending tickets**; honest evidence only (no mechanical p_model unless explicitly ordered).
+When the user provides a **new or updated odds file** in `inbox/`, the agent **must** run the full research → recommend path (see root `AGENTS.md`). Defaults: **live recommend** (logs Pending when picks exist); **dry-run only if the user asks**; **do not re-advise already Pending tickets**; honest evidence only (**never invent `p_model`** unless explicitly ordered).
 
 ## End-to-end stages (mandatory order)
 
@@ -15,25 +15,27 @@ When the user provides a **new or updated odds file** in `inbox/`, the agent **m
         ↓              (auto Stage-1 Light Research)
 3. LIGHT RESEARCH      ≥70–85% shortlist · sport minimums
         ↓              outbox/light_research/*.md
-4. DEEP RESEARCH       only light-pass deep queue
-        ↓              evidence/*.json + honest p_model
-5. READY CHECK         nt research ready --odds …
+4. DEEP RESEARCH       clearability deep queue (~8 target)
+        ↓              evidence/*.json + honest p_model + odds snapshot
+5. SECOND-PASS         if packs present, mid covered, zero EV clears
+        ↓              research second-pass → re-deep new queue lines
+6. READY CHECK         nt research ready --odds …
         ↓
-6. VALIDATION          grade_evidence + portfolio + risk/phase
+7. VALIDATION          grade_evidence + portfolio + risk/phase + soft pack
         ↓
-7. DECISION            recommend → PLACE_THESE.md  (Deep only)
+8. DECISION            recommend → PLACE_THESE.md  (Deep only; place-capable)
         ↓
-8. SETTLEMENT          results → settle → learning
+9. SETTLEMENT          results → settle → learning
         ↓
-9. REVIEW              nt analyze / nt learn
+10. REVIEW             nt analyze / nt learn
 ```
 
 ### Tiered research (Light vs Deep)
 
 | | **Light (Stage 1)** | **Deep (Stage 2)** |
 |--|---------------------|--------------------|
-| Scope | Most of shortlist (target 85%) | Promote queue (~8–12 lines) |
-| Content | script lean, base-rate flag, odds/EV bar, strength/weakness notes | Full evidence pack + p_model + gates |
+| Scope | Most of shortlist (target 85%) | Clearability promote queue (**~8** target / max 12) |
+| Content | script lean, base-rate flag, odds/EV bar, strength/weakness notes | Full evidence pack + honest p_model + dual-write odds snapshot + gates |
 | Time | Fast / structured | Web research, quality bar |
 | Recommend? | **No** | **Yes** (only these) |
 
@@ -41,12 +43,29 @@ When the user provides a **new or updated odds file** in `inbox/`, the agent **m
 python run_nt.py research board --odds inbox/current_odds_01.txt
 python run_nt.py research light --odds inbox/current_odds_01.txt
 # … deep packs for deep_queue …
+# if Coverage ok / mid covered but recommend empty (all EV fail):
+python run_nt.py research second-pass --odds inbox/current_odds_01.txt
+# … re-deep new queue lines with honest packs …
 python run_nt.py recommend --odds inbox/current_odds_01.txt
 ```
 
-Config: `research.tiers` in `config.yaml` (`light_coverage_target`, `min_light_per_sport`, `deep_target_n`, …).
+Config: `research.tiers` in `config.yaml` (`light_coverage_target`, `min_light_per_sport`, `deep_target_n: 8`, `short_chalk_odds: 1.70`, clearability + second-pass knobs, …).
 
-**SSOT export:** board/light writes engine composition + queue lines to **`data/state/deep_queue.json`** (`nt/deep_queue_state.py`) for Lumina preferred/short-main bars (D17).
+**SSOT export:** board/light writes engine composition + queue lines to **`data/state/deep_queue.json`** (`nt/deep_queue_state.py`) for Lumina preferred/short-main bars (D17). Refresh mode after second-pass sets `mode=refresh` / `second_pass_*` flags used by `starvation_kind`.
+
+### HV v3 — clearability, second-pass, place-capable runs
+
+| Concept | Law |
+|---------|-----|
+| **Clearability ranking** | Relative prior + batch rank + demote coin-flip; **research-rank only** — never auto-fills `p_model` or softens haircut/min-EV |
+| **Short chalk** | Odds &lt; **1.70** heavily demoted / Stage1 drop (config `short_chalk_odds`) |
+| **Deep target** | **`deep_target_n: 8`** (max 12); preferred ≥55% / short-main ≤25% |
+| **Second-pass** | `python run_nt.py research second-pass --odds <file>` — EV-fail refresh + dump alt inject (cap 12). Then agent re-deeps; engine does not invent edge |
+| **`starvation_kind`** | `clearability_miss` = deep present, mid covered, zero raw EV clears, second-pass not done → incomplete. `honest_no_edge` = second-pass done, still zero → empty slip OK |
+| **Odds snapshot** | Packs dual-write `odds_at_research` + `decimal_odds_ref` + `researched_at`; place **fail-closed** if missing/inferred |
+| **Soft pack** | Under phase **1A** (and exploration flag): prefer ~**3 × unit** seats when ≥3 clear under remaining risk (e.g. remaining **40** → 12+12+12), not two fat seats |
+| **Place-capable vs research-only** | **Research runs** (board/light/second-pass/packs) may run **3–4×/day**. Under Phase **1A** with remaining ~**40**, after one successful ~3×unit slip, room is spent → further same-day recommends are **research-only / empty** until settle or abandon. Ops expectation: **≈1 place-capable recommend/day** under 1A remaining 40 |
+| **Ship KPI** | Funnel (clearable share, n_raw_ev_pass, second-pass ran) + honest empty when no edge — **not** “must place 3 every run” |
 
 
 ### Market Coverage Agent (high-volume matches)
@@ -94,8 +113,10 @@ python run_nt.py recommend --odds inbox/odds_….txt
 python run_nt.py calibrate report
 ```
 
-**Code is law at stages 6–7.** Research quality at 1–4 determines whether anything clears the bar.  
-**Empty slip after research = success.** Empty slip *instead of* research = process failure (now refused).
+**Code is law at stages 7–8.** Research quality at 1–5 determines whether anything clears the bar.  
+**Empty slip after honest deep research + second-pass** (`honest_no_edge`) **= success.**  
+**Empty with `clearability_miss`** (no second-pass yet) = process incomplete — run second-pass.  
+**Empty slip *instead of* research** = process failure (now refused).
 
 ---
 
@@ -187,9 +208,10 @@ Your subjective (or model) probability that the selection wins, **before** hairc
 implied = 1 / decimal_odds
 p_adj   = clamp(p_model - probability_haircut, 0.01, 0.99)
 EV      = p_adj * odds - 1
+p_needed(min_ev) = (1 + min_ev) / odds + haircut
 ```
 
-Haircut (default 5%) absorbs NT margin + optimism bias.
+Haircut (live **3pp** / `probability_haircut: 0.03`) absorbs NT margin + optimism bias. Stage2 classical / **relative prior is rank-only** for deep-queue ordering — **never** paste prior as place `p_model`.
 
 ### Guidelines
 
@@ -199,7 +221,7 @@ Haircut (default 5%) absorbs NT margin + optimism bias.
 | 1.50–2.20 | Sweet spot for most singles if research is real |
 | 2.50+ | Grade **A**, higher min EV, reduced stake mult |
 
-**Do not** invent p_model = 1/odds + 0.05 to force EV. The learning loop and your P/L will punish you.
+**Do not** invent p_model = 1/odds + 0.05 (or any mechanical lift) to force EV. Claim edge only with named quantitative factors. If you cannot justify p ≥ p_needed, write honest p (optional `expected_reject: true`). The learning loop and your P/L will punish overclaim.
 
 Optional: import model probs via odds CSV column `p_model` or evidence JSON.
 
@@ -219,6 +241,9 @@ Minimum viable pack (`evidence/example.json`):
   "match": "Team A vs Team B",
   "selection": "Team A DNB",
   "p_model": 0.62,
+  "odds_at_research": 1.95,
+  "decimal_odds_ref": 1.95,
+  "researched_at": "2026-07-22T12:00:00+00:00",
   "summary": "…",
   "failure_modes": "…",
   "sources": [
@@ -226,6 +251,8 @@ Minimum viable pack (`evidence/example.json`):
   ]
 }
 ```
+
+**Fail-closed place:** missing or inferred odds snapshot rejects place (`missing_odds_snapshot` / `odds_snapshot_inferred`). Rewrite the pack with real dual-write — do not stamp board odds as research baseline.
 
 ### Optional v5 fields (additive; grader ignores unknowns safely)
 
@@ -257,18 +284,20 @@ python run_nt.py research scaffold \
 
 `nt recommend` → `attach_evidence` → `grade_evidence` → `build_portfolio`:
 
-- Risk can_bet / remaining cap
-- Min EV (standard vs high-odds)
-- Grade floors (B+ standard; A high-odds)
+- Risk can_bet / remaining cap (min'd with 20% equity run stake)
+- Min EV (standard vs high-odds; regime floor under Exploration/Survival)
+- Grade floors (B+ standard; A high-odds; Grade C placeable with core reason)
+- Fail-closed odds snapshot integrity
+- Soft pack under 1A / exploration when ≥3 clear (target_bets_per_run ≈ 3 × unit)
 - Learning soft-blocks and diversification
 - Phase max bets / doubles policy
-- Empty slip OK
+- Empty slip OK (`honest_no_edge` after second-pass; not before)
 
 ---
 
 ## Stage 6–8 — Decision, settle, review
 
-1. Place only what is on `outbox/PLACE_THESE.md`.
+1. Place only what is on `outbox/PLACE_THESE.md` from a **place-capable** run (room remaining).
 2. Settle via `inbox/results_*.yaml` + `nt settle`.
 3. Review with:
 
@@ -290,10 +319,10 @@ python run_nt.py agent ask "What patterns hurt ROI in the last 40 settled bets?"
 
 | Grade | Meaning | Placeable? |
 |-------|---------|------------|
-| **A** | Full sources (grade_A or high-odds threshold), p_model, summary, failure_modes | Yes; required for odds ≥ high_odds_threshold |
+| **A** | Full sources (grade_A or high-odds threshold), p_model, summary, failure_modes, uncertainty for Grade A policy | Yes; required for odds ≥ high_odds_threshold |
 | **B** | Default source count met + core fields | Yes for standard odds |
-| **C** | Partial credit | **No** (portfolio rejects) |
-| **F** | Missing pack / critical fields | **No** |
+| **C** | Partial credit + core reason + source floor (HV) | **Yes** when policy allows (not free EV) |
+| **F** | Missing pack / critical fields / snapshot fail | **No** |
 
 Raise quality, don’t lower the bar in config for temporary volume.
 
@@ -303,10 +332,13 @@ Raise quality, don’t lower the bar in config for temporary volume.
 
 | Slot | Activity |
 |------|----------|
-| 10–15 min | Parse board, shortlist 3–8 candidates |
-| 15–40 min | Deep research on shortlist only |
-| 5 min | Evidence JSON + recommend dry-run |
-| 5 min | Place / archive slip |
+| 10–15 min | Parse board, shortlist / clearability queue (~8) |
+| 15–40 min | Deep research on deep_queue only |
+| 10–20 min | Second-pass + re-deep if first recommend empty / clearability_miss |
+| 5 min | Evidence JSON dual-write + ready + recommend |
+| 5 min | Place / place-ack / archive slip (if place-capable room) |
 | After events | Settle + one-line edge note if process lesson |
 
-If you cannot afford Stage 2 for a selection → **skip it**.
+Same-day **research-only** passes after a full place-capable slip: delta odds, second-pass, pack refresh — not a second 3-bet book under 1A remaining 40.
+
+If you cannot afford deep research for a selection → **skip it**.

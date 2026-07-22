@@ -41,3 +41,7 @@ def test_write_research_pack(tmp_path: Path, monkeypatch):
     assert data["p_model"] == 0.58
     assert data["availability_status"] == "predicted"
     assert data["research_gates"]["selection_vs_script"] == "agree"
+    # HV v3 dual-write odds snapshot
+    assert data["decimal_odds_ref"] == 1.85
+    assert data["odds_at_research"] == 1.85
+    assert data.get("researched_at")

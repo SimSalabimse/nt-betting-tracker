@@ -86,6 +86,43 @@ def capital_v2_defaults(cfg: dict[str, Any]) -> dict[str, Any]:
     return capital_v2_cfg(cfg)
 
 
+def recommend_cfg(cfg: dict[str, Any]) -> dict[str, Any]:
+    """
+    Per-run stake / soft-pack defaults (HV Research Regime v3).
+
+    SSOT for portfolio + recommend — call this instead of ad-hoc
+    ``cfg.get("recommend") or {}`` with inline defaults.
+    """
+    raw = dict(cfg.get("recommend") or {})
+    defaults: dict[str, Any] = {
+        "max_run_stake_pct_of_equity": 0.20,
+        "target_bets_per_run": 3,
+        "soft_pack_phases": ["1A"],
+        "soft_pack_on_exploration": True,
+    }
+    out = {**defaults, **raw}
+    # Normalize knobs so callers never re-duplicate defaults
+    phases = out.get("soft_pack_phases")
+    if phases is None:
+        out["soft_pack_phases"] = list(defaults["soft_pack_phases"])
+    else:
+        out["soft_pack_phases"] = [str(p) for p in list(phases)]
+    try:
+        out["target_bets_per_run"] = max(1, int(out.get("target_bets_per_run") or 3))
+    except (TypeError, ValueError):
+        out["target_bets_per_run"] = 3
+    try:
+        out["max_run_stake_pct_of_equity"] = float(
+            out.get("max_run_stake_pct_of_equity")
+            if out.get("max_run_stake_pct_of_equity") is not None
+            else 0.20
+        )
+    except (TypeError, ValueError):
+        out["max_run_stake_pct_of_equity"] = 0.20
+    out["soft_pack_on_exploration"] = bool(out.get("soft_pack_on_exploration", True))
+    return out
+
+
 def research_cfg(cfg: dict[str, Any]) -> dict[str, Any]:
     raw = dict(cfg.get("research") or {})
     defaults = {
@@ -116,6 +153,37 @@ def research_cfg(cfg: dict[str, Any]) -> dict[str, Any]:
             "fail_odds_above": 4.0,
             "pass_odds_lo": 1.45,
             "pass_odds_hi": 2.50,
+            # HV v3 dual-track clearability promotion + EV-fail second-pass
+            "clearability_promotion": True,
+            "dual_track_deep_queue": True,
+            "second_pass_from_dump": True,
+            "second_pass_max_inject": 12,
+            "raw_ev_exhausted": -0.05,
+            "second_pass_min_deep_packs": 8,
+            # HV v3 clearability ranking (frozen weights; research-rank only)
+            "clearability": {
+                "w_mid": 25.0,
+                "w_rel_prior": 80.0,
+                "w_batch": 20.0,
+                "w_coin": -35.0,
+                "w_soft": 40.0,
+                "w_alt": 14.0,
+                "w_short": -55.0,
+                "w_struct": 15.0,
+                "w_disp": 25.0,
+                "w_hist": 15.0,
+                "w_cov": 30.0,
+                "w_cl_force": 35.0,
+                "w_fail": -40.0,
+                "rel_prior_clip_lo": -0.12,
+                "rel_prior_clip_hi": 0.08,
+                "rel_prior_scale": 0.08,
+                "disp_scale": 0.06,
+                "hist_min_sample": 12,
+                "fail_raw_ev": -0.05,
+                "coin_flip_eps": 0.02,
+                "even_market_rel": 0.05,
+            },
         },
         # Legacy flat gate keys (aliased into research.gates by research_gates package)
         "require_lineup_status_football": True,
@@ -148,6 +216,11 @@ def research_cfg(cfg: dict[str, Any]) -> dict[str, Any]:
                 "default": {"enabled": True},
             },
         },
+        # HV v3 pack integrity — fail-closed place on missing/inferred/stale odds
+        "pack_integrity": {
+            "stale_odds_rel_threshold": 0.03,
+            "require_odds_at_research_for_place": True,
+        },
     }
     # Deep-merge gates / tiers if user provided partial
     out = {**defaults, **raw}
@@ -163,7 +236,20 @@ def research_cfg(cfg: dict[str, Any]) -> dict[str, Any]:
         merged_g = {**base_g, **user_g, "sports": sports}
         out["gates"] = merged_g
     if isinstance(raw.get("tiers"), dict) or defaults.get("tiers"):
-        out["tiers"] = {**(defaults.get("tiers") or {}), **(raw.get("tiers") or {})}
+        base_t = dict(defaults.get("tiers") or {})
+        user_t = dict(raw.get("tiers") or {})
+        merged_t = {**base_t, **user_t}
+        # Deep-merge clearability weights so partial overrides keep frozen defaults
+        base_cl = dict(base_t.get("clearability") or {})
+        user_cl = dict(user_t.get("clearability") or {})
+        if base_cl or user_cl:
+            merged_t["clearability"] = {**base_cl, **user_cl}
+        out["tiers"] = merged_t
+    if isinstance(raw.get("pack_integrity"), dict) or defaults.get("pack_integrity"):
+        out["pack_integrity"] = {
+            **(defaults.get("pack_integrity") or {}),
+            **(raw.get("pack_integrity") or {}),
+        }
     return out
 
 
