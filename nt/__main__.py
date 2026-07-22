@@ -50,6 +50,7 @@ def cmd_recommend(args: argparse.Namespace) -> int:
         odds,
         log_pending=not args.dry_run,
         force_mechanical=bool(getattr(args, "force_mechanical", False)),
+        allow_low_coverage=bool(getattr(args, "allow_low_coverage", False)),
     )
     print(json.dumps(result, indent=2, default=str))
     print(f"\nPlace slip: {result['place_path']}")
@@ -697,8 +698,10 @@ def cmd_simulate_basketball(args: argparse.Namespace) -> int:
 
 
 def cmd_control_signals(args: argparse.Namespace) -> int:
-    """List / emit / revoke ControlSignals (temp_gate_raise)."""
+    """List / emit / revoke ControlSignals (temp_gate, coverage, clearability)."""
     from nt.control_signals import (
+        emit_force_clearability_priority,
+        emit_force_coverage_priority,
         emit_temp_gate_raise,
         load_active_signals,
         revoke_signals,
@@ -714,21 +717,48 @@ def cmd_control_signals(args: argparse.Namespace) -> int:
         else:
             print(f"# ControlSignals · {len(active)} active\n")
             for s in active:
-                print(
-                    f"- {s.get('sport')}/{s.get('market') or '—'} "
-                    f"min_ev+{s.get('min_ev_raise')} force_confirmed={s.get('force_confirmed_lineup')} "
-                    f"src={s.get('source')} exp={s.get('expires_at')} bet={s.get('bet_id') or '—'}"
-                )
+                kind = s.get("kind") or "temp_gate_raise"
+                if kind == "temp_gate_raise":
+                    print(
+                        f"- [{kind}] {s.get('sport')}/{s.get('market') or '—'} "
+                        f"min_ev+{s.get('min_ev_raise')} force_confirmed={s.get('force_confirmed_lineup')} "
+                        f"src={s.get('source')} exp={s.get('expires_at')} bet={s.get('bet_id') or '—'}"
+                    )
+                else:
+                    print(
+                        f"- [{kind}] {s.get('sport')}/{s.get('market') or '—'} "
+                        f"src={s.get('source')} exp={s.get('expires_at')} "
+                        f"band={s.get('target_odds_band') or '—'}"
+                    )
         return 0
     if sub == "emit":
-        out = emit_temp_gate_raise(
-            cfg,
-            sport=str(getattr(args, "sport", "") or ""),
-            market=str(getattr(args, "market", "") or ""),
-            bet_id=str(getattr(args, "bet_id", "") or ""),
-            source=str(getattr(args, "source", "manual") or "manual"),
-            process_root_cause=str(getattr(args, "reason", "") or ""),
-        )
+        kind = str(getattr(args, "kind", "") or "temp_gate_raise").strip().lower()
+        if kind in ("force_clearability_priority", "clearability", "force_clearability"):
+            out = emit_force_clearability_priority(
+                cfg,
+                source=str(getattr(args, "source", "manual") or "manual"),
+                reason=str(getattr(args, "reason", "") or ""),
+                actor=str(getattr(args, "actor", "cli") or "cli"),
+            )
+        elif kind in ("force_coverage_priority", "coverage", "force_coverage"):
+            out = emit_force_coverage_priority(
+                cfg,
+                source=str(getattr(args, "source", "manual") or "manual"),
+                reason=str(getattr(args, "reason", "") or ""),
+            )
+        else:
+            sport = str(getattr(args, "sport", "") or "")
+            if not sport:
+                print("emit temp_gate_raise requires --sport (or pass --kind force_clearability_priority)", file=sys.stderr)
+                return 2
+            out = emit_temp_gate_raise(
+                cfg,
+                sport=sport,
+                market=str(getattr(args, "market", "") or ""),
+                bet_id=str(getattr(args, "bet_id", "") or ""),
+                source=str(getattr(args, "source", "manual") or "manual"),
+                process_root_cause=str(getattr(args, "reason", "") or ""),
+            )
         print(json.dumps(out, indent=2, default=str))
         return 0 if out.get("ok") else 1
     if sub == "revoke":
@@ -739,6 +769,7 @@ def cmd_control_signals(args: argparse.Namespace) -> int:
             revoke_all=bool(getattr(args, "all", False)),
             actor=str(getattr(args, "actor", "cli") or "cli"),
             reason=str(getattr(args, "reason", "manual_expire") or "manual_expire"),
+            revoke_kind=str(getattr(args, "kind", "") or ""),
         )
         print(json.dumps(out, indent=2, default=str))
         return 0 if out.get("ok") else 1
@@ -1032,6 +1063,11 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Allow recommend with zero evidence (wrong path; tests/emergency only)",
     )
+    p_rec.add_argument(
+        "--allow-low-coverage",
+        action="store_true",
+        help="Bypass Coverage Health critical soft-gate (explicit ops override)",
+    )
     p_rec.set_defaults(func=cmd_recommend)
 
     p_ack = sub.add_parser(
@@ -1181,26 +1217,40 @@ def main(argv: list[str] | None = None) -> int:
 
     p_cs = sub.add_parser(
         "control-signals",
-        help="ControlSignals: list / emit / revoke temp_gate_raise",
+        help="ControlSignals: list / emit / revoke (temp_gate, coverage, clearability)",
     )
     cs = p_cs.add_subparsers(dest="cs_cmd", required=True)
-    cs_list = cs.add_parser("list", help="List active temp_gate_raise signals")
+    cs_list = cs.add_parser("list", help="List active ControlSignals")
     cs_list.add_argument("--json", action="store_true")
     cs_list.set_defaults(func=cmd_control_signals, cs_cmd="list")
-    cs_em = cs.add_parser("emit", help="Emit temp_gate_raise (manual / force_review)")
-    cs_em.add_argument("--sport", required=True)
+    cs_em = cs.add_parser(
+        "emit",
+        help="Emit signal (default temp_gate_raise; use --kind force_clearability_priority)",
+    )
+    cs_em.add_argument(
+        "--kind",
+        default="temp_gate_raise",
+        help="temp_gate_raise | force_coverage_priority | force_clearability_priority",
+    )
+    cs_em.add_argument("--sport", default="", help="Required for temp_gate_raise")
     cs_em.add_argument("--market", default="")
     cs_em.add_argument("--bet-id", default="", dest="bet_id")
     cs_em.add_argument(
         "--source",
         default="manual",
-        help="manual | force_review | process_error",
+        help="manual | force_review | process_error | research_starvation",
     )
     cs_em.add_argument("--reason", default="")
+    cs_em.add_argument("--actor", default="cli")
     cs_em.set_defaults(func=cmd_control_signals, cs_cmd="emit")
     cs_rv = cs.add_parser("revoke", help="Expire/revoke matching active signals")
     cs_rv.add_argument("--sport", default="")
     cs_rv.add_argument("--market", default="")
+    cs_rv.add_argument(
+        "--kind",
+        default="",
+        help="Optional kind filter (force_coverage_priority / force_clearability_priority / temp_gate_raise)",
+    )
     cs_rv.add_argument("--all", action="store_true", help="Revoke all active")
     cs_rv.add_argument("--actor", default="cli")
     cs_rv.add_argument("--reason", default="manual_expire")

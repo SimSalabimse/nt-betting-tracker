@@ -298,6 +298,14 @@ learning:
       min_mid_unresearched: 3
       coverage_preferred_share: 0.55
       weight_boost: 30.0            # deep-queue score boost under active signal
+      auto_revoke_when_ok: true     # revoke when level=ok and mid_unresearched_n==0
+    clearability_priority:
+      enabled: true
+      auto_emit: false              # ops-only week 1; later auto if clearability_miss ×2
+      auto_emit_min_consecutive: 2
+      ttl_days: 5
+      weight_boost: 35.0
+      clearable_floor_boost: 0.15
 
 paths:
   bets: data/bets.csv
