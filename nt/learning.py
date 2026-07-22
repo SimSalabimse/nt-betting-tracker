@@ -965,9 +965,12 @@ def learning_adjustments(
     exp_floor = float(div.get("explore_stake_floor", 0.92))
     exp_min_roi = float(div.get("explore_min_roi", -0.15))
     virgin_boost = float(div.get("explore_virgin_ev_boost", 0.022))
+    # HV v3: false → at most one virgin boost (prefer market, else sport)
+    virgin_stack = bool(div.get("explore_virgin_stack", False))
+    virgin_applied = False
 
     def _try_explore(group: dict[str, Any] | None, label: str, *, n_hint: int | None = None) -> None:
-        nonlocal ev, stake, explored
+        nonlocal ev, stake, explored, virgin_applied
         n = int((group or {}).get("n") or 0) if group else int(n_hint or 0)
         roi = 0.0
         blocked_g = False
@@ -982,9 +985,13 @@ def learning_adjustments(
         if blocked_g:
             return
         if n == 0 and exp_lo <= 0:
+            if not virgin_stack and virgin_applied:
+                # Already took market or sport virgin — do not stack a second.
+                return
             ev += virgin_boost
             stake = max(stake, exp_floor)
             explored = True
+            virgin_applied = True
             notes.append(f"explore virgin {label}")
             return
         if exp_lo <= n <= exp_hi and roi >= exp_min_roi:
@@ -1001,6 +1008,7 @@ def learning_adjustments(
             notes.append(f"explore {label} n={n}")
 
     if not blocked:
+        # Market first so virgin preference is market > sport when stack is off.
         if not mk or int(mk.get("n") or 0) <= exp_hi:
             _try_explore(mk if mk else None, f"market:{market_key or market or 'new'}", n_hint=0 if not mk else None)
         if not sp or int(sp.get("n") or 0) <= exp_hi:
@@ -1037,6 +1045,9 @@ def diversification_limits(cfg: dict[str, Any]) -> dict[str, Any]:
         "min_non_football_per_round": int(div.get("min_non_football_per_round", 1)),
         "explore_min_ev": float(div.get("explore_min_ev", 0.012)),
         "prefer_explore_first": bool(div.get("prefer_explore_first", True)),
+        # HV v3 explore-boost hygiene
+        "explore_virgin_stack": bool(div.get("explore_virgin_stack", False)),
+        "explore_boost_min_raw_ev": float(div.get("explore_boost_min_raw_ev", -0.015)),
         # P1 soft correlation
         "max_per_league": int(div.get("max_per_league", 2)),
         "max_per_script_family": int(div.get("max_per_script_family", 2)),
