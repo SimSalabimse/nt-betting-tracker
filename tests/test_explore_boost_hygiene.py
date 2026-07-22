@@ -169,6 +169,10 @@ def test_t9_raw_ev_deep_negative_zeros_boost_no_place():
         "selection_vs_script": "agree",
         "base_rate_conflict": False,
         "sources": sources,
+        "odds_at_research": float(odds),
+        "decimal_odds_ref": float(odds),
+        "researched_at": "2026-07-20T12:00:00Z",
+        "odds_snapshot_inferred": False,
     }
     c = Candidate(
         date="2026-07-22",
@@ -244,6 +248,10 @@ def test_t9b_boundary_raw_ev_gate_is_load_bearing():
         "selection_vs_script": "agree",
         "base_rate_conflict": False,
         "sources": sources,
+        "odds_at_research": float(odds),
+        "decimal_odds_ref": float(odds),
+        "researched_at": "2026-07-20T12:00:00Z",
+        "odds_snapshot_inferred": False,
     }
     c = Candidate(
         date="2026-07-22",

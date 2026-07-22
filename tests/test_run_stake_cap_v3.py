@@ -20,9 +20,18 @@ from nt.portfolio import (
 )
 
 
-def _pack(p: float = 0.72, match: str = "X", selection: str = "Y") -> dict:
+def _pack(
+    p: float = 0.72,
+    match: str = "X",
+    selection: str = "Y",
+    odds: float = 2.0,
+) -> dict:
     sources = [
-        {"url": f"https://example.com/{i}", "takeaway": "ok stats line for grade B", "kind": "stats"}
+        {
+            "url": f"https://example.com/{i}",
+            "takeaway": "ok stats line for grade B",
+            "kind": "injury" if i == 0 else "stats",
+        }
         for i in range(8)
     ]
     return {
@@ -38,6 +47,11 @@ def _pack(p: float = 0.72, match: str = "X", selection: str = "Y") -> dict:
         "selection_vs_script": "agree",
         "base_rate_conflict": False,
         "sources": sources,
+        # PR3 fail-closed place: dual-write real research odds (not inferred)
+        "odds_at_research": float(odds),
+        "decimal_odds_ref": float(odds),
+        "researched_at": "2026-07-20T12:00:00Z",
+        "odds_snapshot_inferred": False,
     }
 
 
@@ -146,7 +160,7 @@ def _cand(
     p: float,
     sport: str,
 ) -> Candidate:
-    pack = _pack(p, match=match, selection=selection)
+    pack = _pack(p, match=match, selection=selection, odds=odds)
     return Candidate(
         date="2026-07-22",
         match=match,
@@ -335,7 +349,7 @@ def test_t14_place_and_json_run_stake_audit_fields(tmp_path, monkeypatch):
     odds_lines = ["date,match,selection,decimal_odds,sport,market_type,p_model,notes"]
     for match, sel, odds, p, sport in rows_meta:
         odds_lines.append(f"2026-07-22,{match},{sel},{odds},{sport},Vinner,{p},")
-        pack = _pack(p, match=match, selection=sel)
+        pack = _pack(p, match=match, selection=sel, odds=odds)
         # attach_evidence looks up by match/selection keys — write simple filename packs
         key = f"{match.replace(' ', '_').replace(':', '')}__{sel.replace(' ', '_').replace(':', '')}"
         (evidence / f"{key}.json").write_text(

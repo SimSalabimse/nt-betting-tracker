@@ -74,10 +74,17 @@ def _risk(remaining: float = 80.0):
     }
 
 
-def _grade_c_pack(*, summary: str, p_model: float = 0.60, n_sources: int = 6) -> dict:
+def _grade_c_pack(
+    *,
+    summary: str,
+    p_model: float = 0.60,
+    n_sources: int = 6,
+    odds: float = 2.0,
+) -> dict:
     """
     Pack that grades C: enough sources + p_model, but missing failure_modes.
     Core reason controlled via summary length.
+    Dual-writes odds snapshot for PR3 fail-closed place path.
     """
     return {
         "p_model": p_model,
@@ -90,9 +97,17 @@ def _grade_c_pack(*, summary: str, p_model: float = 0.60, n_sources: int = 6) ->
         "selection_vs_script": "agree",
         "base_rate_conflict": False,
         "sources": [
-            {"url": f"https://example.com/{i}", "takeaway": "t", "kind": "stats"}
+            {
+                "url": f"https://example.com/{i}",
+                "takeaway": "t",
+                "kind": "injury" if i == 0 else "stats",
+            }
             for i in range(n_sources)
         ],
+        "odds_at_research": float(odds),
+        "decimal_odds_ref": float(odds),
+        "researched_at": "2026-07-20T12:00:00Z",
+        "odds_snapshot_inferred": False,
     }
 
 
@@ -102,7 +117,7 @@ def test_t10_grade_c_with_core_reason_places_via_build_portfolio():
     odds = 2.0
     p_model = 0.60  # raw_ev = (0.57)*2 - 1 = 0.14 >> 2% floor
     summary = "Clear mid-band under with injury-driven script lean and multi-source support."
-    pack = _grade_c_pack(summary=summary, p_model=p_model)
+    pack = _grade_c_pack(summary=summary, p_model=p_model, odds=odds)
     grade, issues = grade_evidence(
         pack, cfg, odds, selection="Under 2.5", sport="football"
     )
@@ -133,7 +148,7 @@ def test_t11_grade_c_missing_core_reason_rejects():
     cfg = _cfg()
     odds = 2.0
     p_model = 0.60
-    pack = _grade_c_pack(summary="too short", p_model=p_model)
+    pack = _grade_c_pack(summary="too short", p_model=p_model, odds=odds)
     grade, issues = grade_evidence(
         pack, cfg, odds, selection="Under 2.5", sport="football"
     )
