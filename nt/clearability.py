@@ -117,21 +117,49 @@ def batch_prior_percentile(
     return (below + 0.5 * ties) / float(len(vals))
 
 
+def _is_totals_ou_family(family: str | None, selection: str | None = None) -> bool:
+    """Two-way totals / over-under families (design §1.2 no-prior even-market path)."""
+    fam = (family or "").lower()
+    sel = (selection or "").lower()
+    if fam in ("totals_over", "totals_under", "ou_25", "ou_other") or fam.startswith("ou"):
+        return True
+    if "totalt" in sel or "over/under" in sel:
+        return True
+    if ("over" in sel or "under" in sel) and any(
+        x in sel for x in ("2.5", "3.5", "4.5", "1.5", "0.5")
+    ):
+        return True
+    return False
+
+
 def is_coin_flip_line(
     *,
     odds: float,
     prior_p: float | None = None,
     peer_odds: float | None = None,
-    peer_prior_p: float | None = None,
     both_sides_present: bool = False,
     coin_flip_eps: float = 0.02,
     even_market_rel: float = 0.05,
+    market_family: str | None = None,
+    selection: str | None = None,
 ) -> bool:
     """
-    Coin-flip demotion only when both sides of the market are on the board.
+    Coin-flip demotion only when both sides of the *same* market family appear
+    on the same match (design §1.2).
 
-    With prior: |implied − prior_p| < coin_flip_eps (market-mimic).
-    Without prior: even two-way market |odds_a − odds_b| / mid < even_market_rel.
+    Caller contract (PR2 wiring must honor this):
+      - Set both_sides_present=True only after matching match_id + market family
+        (e.g. home/away ML pair, over/under total, HC ±line). Not “any two prices”.
+      - peer_odds is the opposing side’s decimal odds on that paired market.
+      - Two-way ML/totals: pair the two outcomes. Three-way HUB: do **not** use the
+        no-prior even-odds path; either supply prior_p (market-mimic check) or leave
+        is_coin_flip False until overround-normalized HUB pairing is implemented.
+      - Prefer setting clearability_score(is_coin_flip=...) from this helper rather
+        than inventing a parallel rule.
+
+    With prior on this line: |implied − prior_p| < coin_flip_eps (market-mimic).
+    Without prior: even two-way **totals/OU** only — |odds_a − odds_b| / mid < even_market_rel.
+      (ML/HUB/HC without prior are not auto-demoted here; caller must not blanket-flag.)
     """
     if not both_sides_present or peer_odds is None:
         return False
@@ -139,16 +167,11 @@ def is_coin_flip_line(
     o_b = float(peer_odds)
     if o_a <= 1.0 or o_b <= 1.0:
         return False
-    implied_a = implied_prob(o_a)
     if prior_p is not None:
-        if abs(implied_a - float(prior_p)) < float(coin_flip_eps):
-            return True
-        if peer_prior_p is not None and abs(implied_prob(o_b) - float(peer_prior_p)) < float(
-            coin_flip_eps
-        ):
-            # Peer is market-mimic; still demote this side only if we also mimic
-            # (caller applies per-line; require this line's prior near implied)
-            return abs(implied_a - float(prior_p)) < float(coin_flip_eps)
+        # Single check on this line’s prior vs its implied (peer prior not used).
+        return abs(implied_prob(o_a) - float(prior_p)) < float(coin_flip_eps)
+    # No prior: design §1.2 even-market path is for two-way totals, not every even pair.
+    if not _is_totals_ou_family(market_family, selection):
         return False
     mid = 0.5 * (o_a + o_b)
     if mid <= 0:
@@ -190,6 +213,7 @@ def clearability_score(
     is_short_main: bool = False,
     has_structural_note: bool = False,
     family_hist_n: int = 0,
+    family_clear_rate: float | None = None,
     force_coverage_active: bool = False,
     force_clearability_active: bool = False,
     has_pack: bool = False,
@@ -201,7 +225,14 @@ def clearability_score(
     Non-vacuous clearability rank score (research only).
 
     Missing prior → w_rel_prior and w_disp contribute 0.
-    Soft refs optional; coin-flip only when caller sets is_coin_flip True.
+    Soft refs optional; coin-flip only when caller sets is_coin_flip True
+    (see is_coin_flip_line caller contract).
+
+    w_hist (family historical clear rate):
+      - n < hist_min_sample (12) → 0 (clean-restart safe)
+      - n ≥ 12 and family_clear_rate is not None → w_hist * clip(rate, 0, 1)
+      - n ≥ 12 and family_clear_rate is None → full w_hist (binary availability gate
+        when rate not yet wired; PR2 should pass clear rate for rank differentiation)
     """
     p = clearability_cfg(cfg)
     if weights:
@@ -255,7 +286,11 @@ def clearability_score(
 
     hist_min = int(float(p.get("hist_min_sample") or 12))
     if int(family_hist_n) >= hist_min:
-        score += float(p["w_hist"])
+        if family_clear_rate is not None:
+            score += float(p["w_hist"]) * _clip(float(family_clear_rate), 0.0, 1.0)
+        else:
+            # Binary sample gate when clear-rate not supplied (PR1 / clean restart)
+            score += float(p["w_hist"])
 
     if force_coverage_active:
         score += float(p["w_cov"])
@@ -293,8 +328,12 @@ def score_candidates(
     Expected keys (optional unless noted):
       odds (required), prior_ev, prior_p, is_coin_flip, soft_decimal_odds,
       is_alt, is_short_main, has_structural_note, family_hist_n,
+      family_clear_rate (0–1 historical clear rate; scales w_hist when n≥12),
       force_coverage_active, force_clearability_active, has_pack, raw_ev,
       board_score
+
+    is_coin_flip: set by caller via is_coin_flip_line after match+family pairing;
+    do not blanket-flag even-odds boards without that contract.
     """
     rows = [dict(c) for c in candidates]
     batch_evs = [r.get("prior_ev") for r in rows]
@@ -308,6 +347,9 @@ def score_candidates(
         if pp is not None:
             pp = float(pp)
         bp = batch_prior_percentile(pev, batch_evs)
+        fcr = r.get("family_clear_rate")
+        if fcr is not None:
+            fcr = float(fcr)
         cl = clearability_score(
             odds=odds,
             prior_ev=pev,
@@ -320,6 +362,7 @@ def score_candidates(
             is_short_main=bool(r.get("is_short_main")),
             has_structural_note=bool(r.get("has_structural_note")),
             family_hist_n=int(r.get("family_hist_n") or 0),
+            family_clear_rate=fcr,
             force_coverage_active=bool(r.get("force_coverage_active")),
             force_clearability_active=bool(r.get("force_clearability_active")),
             has_pack=bool(r.get("has_pack")),

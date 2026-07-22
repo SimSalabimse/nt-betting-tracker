@@ -158,6 +158,41 @@ def test_coin_flip_skipped_when_only_one_side():
     )
 
 
+def test_coin_flip_no_prior_even_market_restricted_to_totals():
+    """Without prior, even-odds geometry applies only to totals/OU (not bare ML)."""
+    # Even ML pair without prior → not auto coin-flip
+    assert (
+        is_coin_flip_line(
+            odds=2.0,
+            peer_odds=2.05,
+            both_sides_present=True,
+            market_family="ml",
+        )
+        is False
+    )
+    # Even totals pair without prior → coin-flip
+    assert (
+        is_coin_flip_line(
+            odds=1.95,
+            peer_odds=1.95,
+            both_sides_present=True,
+            market_family="totals_over",
+            selection="Totalt over 2.5",
+        )
+        is True
+    )
+
+
+def test_family_clear_rate_scales_w_hist():
+    """n≥12 + clear rate scales w_hist; n≥12 without rate → full binary gate."""
+    base = clearability_score(odds=1.70, family_hist_n=0)
+    full = clearability_score(odds=1.70, family_hist_n=12)
+    half = clearability_score(odds=1.70, family_hist_n=12, family_clear_rate=0.5)
+    assert full == pytest.approx(base + DEFAULT_CLEARABILITY_WEIGHTS["w_hist"])
+    assert half == pytest.approx(base + 0.5 * DEFAULT_CLEARABILITY_WEIGHTS["w_hist"])
+    assert clearability_score(odds=1.70, family_hist_n=5, family_clear_rate=1.0) == base
+
+
 def test_short_main_penalty_applies():
     no_short = clearability_score(odds=1.75, is_short_main=False, prior_ev=None)
     with_short = clearability_score(odds=1.75, is_short_main=True, prior_ev=None)
@@ -192,63 +227,56 @@ def test_t3_non_vacuous_rank_negative_priors_alts_above_coin_ml():
     """
     haircut = 0.03
 
-    # Coin-flip mid ML @2.00 — market-mimic prior (typical Stage2 ml_mid blend)
-    # prior_p≈0.491, prior_ev≈−0.078, fair=−0.06 → rel≈−0.018; |disp| small
+    # Coin-flip mid ML @2.00 — market-mimic; prior_ev≈−0.078, fair=−0.06 → rel≈−0.018
     coin_ml = {
         "id": "coin_mid_ml",
         "odds": 2.0,
         "prior_p": 0.491,
         "prior_ev": -0.078,
-        "is_coin_flip": True,  # both H/A on board, prior near implied
+        "is_coin_flip": True,
         "is_alt": False,
         "is_short_main": False,
     }
 
-    # Alt HC @2.20 — prior beats pure-implied fair (still negative prior_ev)
-    # prior_p=0.52, implied≈0.455 → strong disp; prior_ev=(0.52-0.03)*2.2-1=0.078
-    # Wait: (0.49)*2.2 - 1 = 0.078 — positive! Use production-like negative:
-    # prior_p=0.48 → (0.45)*2.2 - 1 = -0.01; fair=-0.066; rel≈+0.056
+    # Alt HC @2.20 — prior_p=0.48 → prior_ev≈−0.010, fair≈−0.066 → rel≈+0.056
     alt_hc = {
         "id": "alt_hc_plus",
         "odds": 2.20,
         "prior_p": 0.48,
-        "prior_ev": (0.48 - haircut) * 2.20 - 1.0,  # ≈ -0.01
-        "is_coin_flip": False,  # only one HC side on board / not market-mimic
-        "is_alt": True,
-        "is_short_main": False,
-    }
-
-    # Alt totals O3.5 @2.10 — modest rel_prior improvement + disp + alt
-    alt_ou = {
-        "id": "alt_ou35",
-        "odds": 2.10,
-        "prior_p": 0.47,
-        "prior_ev": (0.47 - haircut) * 2.10 - 1.0,  # ≈ -0.076
+        "prior_ev": (0.48 - haircut) * 2.20 - 1.0,
         "is_coin_flip": False,
         "is_alt": True,
         "is_short_main": False,
     }
-    # Fix O3.5: want better than coin. prior_p=0.50 → pev=(0.47)*2.1-1=-0.013
-    alt_ou["prior_p"] = 0.50
-    alt_ou["prior_ev"] = (0.50 - haircut) * 2.10 - 1.0
 
-    # Dog ML @2.50 with mild positive rel_prior still negative absolute EV
+    # Alt O3.5 @2.10 — prior_p=0.50 → prior_ev≈−0.013, better rel than coin + alt flag
+    alt_ou = {
+        "id": "alt_ou35",
+        "odds": 2.10,
+        "prior_p": 0.50,
+        "prior_ev": (0.50 - haircut) * 2.10 - 1.0,
+        "is_coin_flip": False,
+        "is_alt": True,
+        "is_short_main": False,
+    }
+
+    # Dog ML @2.50 — prior_p=0.42 → prior_ev≈−0.025 (still negative absolute EV)
     dog_ml = {
         "id": "dog_ml",
         "odds": 2.50,
         "prior_p": 0.42,
-        "prior_ev": (0.42 - haircut) * 2.50 - 1.0,  # ≈ -0.025
+        "prior_ev": (0.42 - haircut) * 2.50 - 1.0,
         "is_coin_flip": False,
         "is_alt": False,
         "is_short_main": False,
     }
 
-    # Second coin-ish ML with worse rel_prior (even more market-mimic / slightly worse)
+    # Second coin-ish mid ML @1.95 — market-mimic, worse rel than alts
     coin_ml_b = {
         "id": "coin_mid_ml_b",
         "odds": 1.95,
         "prior_p": 0.505,
-        "prior_ev": (0.505 - haircut) * 1.95 - 1.0,  # ≈ -0.074
+        "prior_ev": (0.505 - haircut) * 1.95 - 1.0,
         "is_coin_flip": True,
         "is_alt": False,
         "is_short_main": False,

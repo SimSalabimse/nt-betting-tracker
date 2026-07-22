@@ -61,8 +61,8 @@ def prefilter_cfg(cfg: dict[str, Any]) -> dict[str, Any]:
         },
         "stage2": {
             "enabled": True,
-            # Absolute floor (after 5pp haircut). Fair mid-band sits near -haircut*odds
-            # (~-0.09 @1.90); only discard if worse than that by slack AND under floor.
+            # Absolute floor (after 3pp haircut). Fair mid-band sits near -haircut*odds
+            # (~-0.057 @1.90); only discard if worse than that by slack AND under floor.
             "min_prior_ev": -0.12,
             "short_odds_prior_ev_floor": -0.08,
             "prior_ev_slack_vs_fair": 0.04,
