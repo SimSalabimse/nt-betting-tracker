@@ -184,12 +184,12 @@ def test_reduced_half_or_step():
     )
     assert d.active_unit_nok == 10.0
     assert d.final_stake_nok == 10.0
-    # unit 15 → half illegal → step to 10
+    # unit 15 → half illegal → step to 12 (High-Volume ladder)
     d2 = compute_unit_stake(
         size_mode="REDUCED", unit_size_nok=15.0, remaining_room_nok=50.0
     )
-    assert d2.active_unit_nok == reduced_unit(15.0, 10.0) == 10.0
-    assert d2.final_stake_nok == 10.0
+    assert d2.active_unit_nok == reduced_unit(15.0, 10.0) == 12.0
+    assert d2.final_stake_nok == 12.0
     # unit 10 → stays 10
     d3 = compute_unit_stake(
         size_mode="REDUCED", unit_size_nok=10.0, remaining_room_nok=50.0
@@ -326,10 +326,11 @@ def test_flag_on_normal_unit_10():
         historical_rows=[],
     )
     assert len(picked) == 1
-    assert picked[0].stake_nok == 10.0
+    # High-Volume v2: grade B mult 1.4 × unit 10 = 14
+    assert picked[0].stake_nok == 14.0
     assert picked[0].stake_decision is not None
     assert picked[0].stake_decision["size_mode"] == "NORMAL"
-    assert picked[0].stake_decision["final_stake_nok"] == 10.0
+    assert picked[0].stake_decision["final_stake_nok"] == 14.0
     assert "size_mode=NORMAL" in picked[0].notes or "rules=" in picked[0].notes
 
 
@@ -351,8 +352,10 @@ def test_flag_on_unit_ladder_15_from_liquid():
         odds=1.8,
         match="A",
         selection="B",
+        grade="B",
     )
-    assert stake == 15.0
+    # 15 × 1.4 = 21
+    assert stake == 21.0
     assert dec["active_unit_nok"] == 15.0
 
 
@@ -372,8 +375,10 @@ def test_flag_on_reduced_mode():
         odds=1.8,
         match="A",
         selection="B",
+        grade="B",
     )
-    assert stake == 10.0  # half of 20
+    # reduced unit 10 × grade B 1.4 = 14
+    assert stake == 14.0
     assert dec["size_mode"] == "REDUCED"
 
 
@@ -445,7 +450,7 @@ def test_flag_on_remaining_below_floor_rejects():
 
 
 def test_flag_on_rebalance_does_not_exceed_unit():
-    """With unit 10, rebalance must not push stakes to phase stake_max 12."""
+    """With unit 10, rebalance must not exceed grade-B cap (10×1.4=14)."""
     cfg = _cfg(enabled=True)
     risk = _risk_v2(remaining=40.0, size_mode="NORMAL", unit=10.0, liquid=500.0)
     cands = [
@@ -456,13 +461,13 @@ def test_flag_on_rebalance_does_not_exceed_unit():
     picked, _ = build_portfolio(cfg, cands, _phase(), risk, historical_rows=[])
     assert len(picked) >= 1
     for p in picked:
-        assert p.stake_nok <= 10.0 + 1e-9
+        assert p.stake_nok <= 14.0 + 1e-9
         assert p.stake_nok >= 10.0 - 1e-9
 
 
 def test_flag_on_combination_reduced_and_room():
     cfg = _cfg(enabled=True)
-    # REDUCED unit 20 → 10; room 25 → stake 10
+    # REDUCED unit 20 → 10; grade B ×1.4 → 14; room 25 → stake 14
     risk = _risk_v2(remaining=25.0, size_mode="REDUCED", unit=20.0, liquid=3000.0)
     stake, dec = _stake_for_capital_v2(
         cfg,
@@ -477,7 +482,8 @@ def test_flag_on_combination_reduced_and_room():
         odds=1.9,
         match="MvG",
         selection="Vinner",
+        grade="B",
     )
-    assert stake == 10.0
+    assert stake == 14.0
     assert dec["size_mode"] == "REDUCED"
     assert dec["active_unit_nok"] == 10.0

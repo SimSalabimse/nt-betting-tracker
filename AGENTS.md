@@ -2,8 +2,9 @@
 
 Real-money capital desk. Engines in `nt/` are law. UI (LuminaNT, Flet desktop) presents and invokes — never invents bankroll math.
 
-**Status:** capital_v2 live · closed-loop ControlSignals · multi-factor PhaseState (v5).  
-Docs: `docs/CLOSED_LOOP_PHASE_REDESIGN_SUMMARY.md` · `docs/RESIDUAL_RISKS.md` · `docs/POST_AUDIT_IMPLEMENTATION_SUMMARY.md` · `docs/CLOSED_LOOP_VALIDATION.md`.
+**Status (permanent package):** clean-restart **500 NOK** era · capital_v2 live · **Exploration→Survival→Normal** bankroll regimes · multi-stage quant prefilter · engine deep queue (composition ≥**55%** preferred / ≤**25%** short-main · band **1.85–2.60**) · Coverage Health + soft gate · `force_coverage_priority` · totalgrense residual buffer · closed-loop ControlSignals · PhaseState v5 · **neutral sport start at zero data**.  
+
+Docs: `docs/PACKAGE_IMPLEMENTATION_SUMMARY.md` · `docs/RESEARCH_COVERAGE_FIX_SUMMARY.md` · `docs/RESEARCH_WORKFLOW.md` · `docs/BANKROLL_PLAN.md` · `docs/RESIDUAL_RISKS.md` · `docs/LUMINA_INTEGRATION.md` · `artifacts/PACKAGE_VALIDATION_REPORT.md`.
 
 ---
 
@@ -29,22 +30,44 @@ Docs: `docs/CLOSED_LOOP_PHASE_REDESIGN_SUMMARY.md` · `docs/RESIDUAL_RISKS.md` �
    python run_nt.py research board --odds <odds_file>
    python run_nt.py research light --odds <odds_file>   # if board did not auto-light
    ```  
-   Read shortlist + **Light coverage %** + **Deep queue** from board / `outbox/light_research/`.
+   Read shortlist + **Light coverage %** + **engine Deep queue** + **Coverage Health** from board / `outbox/light_research/` / `data/state/coverage_health.json`.
 
 4. **Tiered research (mandatory coverage)**  
 
    | Stage | Scope | Output | Can recommend? |
    |-------|--------|--------|----------------|
+   | **Prefilter** | Stage1 screens + Stage2 classical prior on light assess | discard noise/chalk/hopeless; `prior_ev` rank-only | **No** |
    | **Light** | ≥70–85% of shortlist; sports with ≥5 lines get ≥3 light | verdict pass/fail + notes | **No** |
-   | **Deep** | Only light-pass lines **agent/manual promotes** to deep | full `evidence/*.json` + honest `p_model` | **Yes** |
+   | **Deep queue** | Engine-built worklist (`engine_deep_queue: true`) from light-pass | ranked promote list (preferred ≥55%, short-main ≤25%) | **No** until packs |
+   | **Deep packs** | Agent writes full `evidence/*.json` + honest `p_model` for queue lines | gradeable packs | **Yes** |
 
-   - **P1:** light pass **never auto-promotes** to deep (`auto_promote_to_deep: false`). You promote intentionally.  
-   - Do **not** deep-dive 2–3 favorites while leaving basketball (or any large shortlist sport) at 0%.  
-   - Light is allowed to be quick/heuristic; Deep stays high quality (gates, sources, script).  
-   - Prefer kick-off balance: early-window and late-window both get Light; Deep queue should not be 100% late KO.
+   - **Assess never auto-promotes** (`auto_promote_to_deep: false`) — `auto_light_assess` always leaves `promote_to_deep=false`.  
+   - **Engine fills deep_queue** via anti-chalk `promotion_score` + **composition quotas** (see below).  
+   - **You must deep-research the deep queue** — queue alone does not invent `p_model` or place bets.  
+   - Do **not** deep-dive 2–3 short favourites while ignoring mid-price / preferred lines on the queue.  
+   - Light is quick/heuristic; Deep stays high quality (gates, sources, script).  
+   - Prefer kick-off balance: early and late KO both get Light; Deep queue must not be 100% chalk ML/O2.5.
 
-5. **Deep research (flagged deep queue — not only O2.5/ML)**  
-   Use web search / page open aggressively (Sofascore, FBref, HLTV, ATP/WTA, Flashscore, official sites, etc.).  
+### Engine deep queue (permanent — inherit every session)
+
+**Code:** `nt/light_research.py` (`promotion_score`, `build_deep_queue`) · config `research.tiers`.
+
+| Rule | Live default |
+|------|----------------|
+| Short chalk (odds &lt; **1.80**) | Heavy score penalty unless rare structural note |
+| Boost band **1.85–2.60** | Strong promotion weight (Calibration-survivable) |
+| Boost | Alt totals (O3.5+), handicaps, dogs (ML ≥1.85), period as preferred |
+| Soft-book longer than NT | Optional boost only if `soft_decimal_odds` / `soft_odds=` present — **never invent** |
+| Preferred share of queue | ≥ **55%** (odds ≥1.85 **or** non short-main with odds ≥1.80) |
+| Short-main cap | ≤ **25%** pure short-fav **ML / O2.5 / first-goal** |
+| Thin preferred pool | **Shrink queue** — never pad with chalk to hit target n |
+| Target size | ~**8–12** (`deep_target_n` 10 / `deep_max_n` 12), ≤3 per sport |
+
+**Short-main** = odds &lt; 1.85 **and** (ML / O2.5 / first-goal).  
+**Preferred (survivable)** = odds ≥ **1.85** **or** (non short-main **and** odds ≥ **1.80**). Short alts &lt;1.80 do **not** pad the preferred floor.
+
+5. **Deep research (engine deep queue first — not only O2.5/ML)**  
+   Work the **Deep queue** from light report / board. Use web search / page open aggressively (Sofascore, FBref, HLTV, ATP/WTA, Flashscore, official sites, etc.).  
    Quality over quantity. Multi-sport shortlist **and** market-scan interesting lines.
 
 ### Multi-sport research gates (engine-enforced)
@@ -74,24 +97,36 @@ Full design: **`docs/RESEARCH_GATES.md`**. Empty slip beats betting against your
 - Gate fields above on sensitive markets  
 - No mechanical filler; no correlated stack after demoted research
 
-5. **Ready check**  
+6. **Ready check + Coverage Health**  
    ```bash
    python run_nt.py research ready --odds <odds_file>
-   ```
+   ```  
+   Also read **`data/state/coverage_health.json`** (written on board/recommend):  
+   - `shortlist_deep_pct` — % of shortlist with deep pack  
+   - `deep_survivable_pct` — % of deep packs at odds ≥1.85 or preferred (non-chalk)  
+   - `mid_unresearched_n` / `empty_slip_risk` / `level` (`ok` \| `warn` \| `critical`)  
+   - Lumina DeskStrip + ShortlistBoard show the same metrics.
 
-6. **Recommend (default = real / logs pending)**  
+7. **Recommend (default = real / logs pending)**  
    ```bash
    python run_nt.py recommend --odds <odds_file>
+   # only if Coverage Health critical and user/ops explicitly override:
+   python run_nt.py recommend --odds <odds_file> --allow-low-coverage
    ```  
    Present the slip with reasoning.  
    - **Default = live recommend** — writes **Pending** to the ledger when the engine picks bets.  
+   - **Coverage soft gate:** if Coverage Health is **critical**, recommend is **blocked** (not a silent empty slip) unless `--allow-low-coverage`. Optional auto-expand of deep queue first.  
    - **Pending = intent, not NT confirmation.** It still counts as open risk until `place-ack`, settle, or `abandon`.  
    - **Dry-run only when the user asks** (`--dry-run` / “dry-run” / “preview only”).  
    - **Do not include already-open bets** (Pending or ConfirmedPlaced) in the “new place” advice.  
-   - Only recommend lines with **strong research backing**. Empty slip after honest research is success.  
-   - **ControlSignals / process gates:** active `temp_gate_raise` can **raise** `min_ev` and **force confirmed lineup** on avail-sensitive markets — does not invent edge. Soft correlation (league/script/KO) can demote packing of same-family stacks.
+   - Only recommend lines with **strong research backing**.  
+   - **Empty slip after honest deep research** (packs written, EV/grade fail) = success.  
+   - **Empty / near-empty because mid-price lines were never researched** = process miss — engine raises **`force_coverage_priority`** and soft-gates recommend.  
+   - **ControlSignals:**  
+     - `temp_gate_raise` — min_ev raise + force confirmed lineup (process_error path).  
+     - `force_coverage_priority` — research pressure (TTL **4–7d**, default 5; target band **`1.85-2.60`**; min_deep_packs 8–10). Raises next deep-queue weights; **does not invent p_model or soften EV/haircut**.
 
-7. **Place confirmation / abandon (real-money control)**  
+8. **Place confirmation / abandon (real-money control)**  
    ```bash
    # User confirmed ticket is live on Norsk Tipping
    python run_nt.py place-ack --ids <bet_id>[,<bet_id>...]
@@ -99,12 +134,61 @@ Full design: **`docs/RESEARCH_GATES.md`**. Empty slip beats betting against your
    python run_nt.py abandon --ids <bet_id> --reason missed_prematch
    python run_nt.py abandon --match "Humphries" --reason missed_prematch
    ```  
+   - **Operator default (this desk):** the user **always places** recommended tickets on NT. After live `recommend` writes Pending, **`place-ack` those new bet_ids** in the same session unless they say a bet was skipped/missed (then `abandon`). Do not leave tickets stuck on Pending after a place session.  
    - **ConfirmedPlaced** — still open risk until Win/Loss/Refunded.  
    - **Abandoned** — not open risk; not a phase/learning sample.  
    - Never leave unplaceable Pending counting against daily risk.
 
-8. **Dry-run (opt-in)**  
+9. **Dry-run (opt-in)**  
    Use `--dry-run` only if the user explicitly requests a dry-run / preview / no-write pass.
+
+---
+
+## Clean restart + neutral sport start (permanent)
+
+| Rule | Detail |
+|------|--------|
+| **Baseline** | `bankroll.baseline_nok: 500` · equity = baseline + Σ terminal P/L on `data/bets.csv` only |
+| **Era** | `bankroll.era_start` · `include_era_archive: false` (prior archives do **not** enter equity) |
+| **Fresh start** | `python scripts/fresh_start_500.py` — archives ledger/state, resets learning/signals/**coverage_health**, sets era_start, refresh → equity **500** |
+| **Zero data** | Learning mults **1.0 / 0** until `min_sample`; **no** sport hard-edges |
+| **Virgin explore** | Same `explore_virgin_ev_boost` for all sports at n=0 — **symmetrical** |
+| **Regime floor** | Exploration **4%** / Survival **7.5%**; weekly `EXPLORE_REGIME` quota may use **2.0–3.9%** (≤2 unit bets/week, mid/alt only) |
+| **Haircut / Grade A** | High-Volume v2: **3pp** haircut · Grade A + elevated EV for odds **≥2.5** · Grade C placeable with core reason |
+
+---
+
+## Bankroll regimes (Exploration → Survival → Normal)
+
+**Orthogonal to phase ladder.** Code: `nt/bankroll_regime.py` · config `bankroll_regime:` · binds via `risk.json`.
+
+| Regime | When | min-EV (after haircut) | Open-risk cap (pending only) |
+|--------|------|------------------------|------------------------------|
+| **Exploration** | settled **&lt; 40** **and** equity **&lt; 650** | **4%** + ≤**2 unit**/week at **2.0–3.9%** mid/alt (`EXPLORE_REGIME`) | **50 NOK** |
+| **Survival** | after Exploration exit until graduate | **7.5%** (no thin quota) | **50 NOK** |
+| **Normal** | settled ≥**100** **or** equity ≥**800** | `selection.standard_min_ev` (3%) | phase + capital_v2 only |
+
+**Open risk law:**
+
+- Counts **Pending + ConfirmedPlaced** only (`day_pending_risk`).  
+- **Frees immediately** on Win / Loss / Refunded (and Abandon).  
+- `remaining_risk = min(phase, portfolio_room, regime_cap − open_pending, totalgrense_usable)`.  
+- Soft mid-odds prefer (1.85–2.50) under Exploration/Survival — **sort only**, not hard ban.
+
+---
+
+## Totalgrense (NT account ceilings)
+
+**Code:** `nt/totalgrense.py` · config `norsk_tipping.totalgrense`.
+
+| Key | Default | Role |
+|-----|---------|------|
+| `residual_buffer_nok` | **5000** | Refuse if residual headroom &lt; buffer after stake |
+| `daily_limit_nok` / `monthly_limit_nok` | **null** | Operator mirror of NT; null = period unconstrained |
+| Place time | `created_at` → Europe/Oslo | Stake-commitment turnover |
+
+- **place-ack** fails closed if residual already &lt; buffer.  
+- Set real NT limits before relying on L6; buffer alone does nothing without limits.
 
 ---
 
@@ -118,8 +202,8 @@ Ledger equity formula is **unchanged**: `baseline + Σ performance P/L`. Engines
 | Peak / DD | **Settlement calendar day** peak (Oslo via `updated_at`) — not match-date-only |
 | size_mode (**capital hard floor**) | NORMAL → REDUCED (≥15% DD) → FROZEN (≥25% DD or manual freeze). Phase health may **only tighten** (e.g. force REDUCED), never loosen FROZEN. |
 | Unit ladder | 10 / 15 / 20 NOK from riskable liquid; whole kroner; **never stake in (0, min_stake)** |
-| Open room | Phase open budget ∩ portfolio open-risk cap (~18% riskable liquid) |
-| Daily / weekly | Hard loss stops on liquid SoD / SoW |
+| Open room | Phase open budget ∩ portfolio open-risk cap (~18% riskable liquid) ∩ **regime open cap** ∩ **totalgrense usable** |
+| Daily / weekly | Hard loss stops on liquid SoD / SoW; day-loss may shrink remaining (intentional) |
 | Secure bucket | Profit skims with working-equity softener |
 | **Kelly (P2)** | Optional **lift above unit only** when liquid ≥ **1500**, calibration n ≥ 30, Brier ≤ max; fail-closed if thin cal; max **1.5× unit**. Never pure continuous Kelly; never shrinks below unit. |
 | Audit | `data/state/stake_decisions.jsonl`, `capital_segments.json` |
@@ -166,8 +250,9 @@ After every settle:
    `actual_score`, `actual_lineup_status`, `predicted_vs_actual_xi_delta`, `script_realized`, `process_root_cause`.  
    Lumina SettleDesk blocks incomplete strict rows; engine rejects incomplete items.  
 3. Learning recompute (`run_learning`) + settlement analysis.  
-4. **ControlSignals (primary closed loop)** — on process_error class or poor retro: emit `temp_gate_raise` into `data/state/control_signals.jsonl` even at **n=1**.  
-   Effects: raise min_ev for sport/market · force confirmed availability on sensitive markets · TTL **7–14 days** (default 10).  
+4. **ControlSignals (primary closed loop)** — store `data/state/control_signals.jsonl`:  
+   - **`temp_gate_raise`** — on process_error / poor retro even at **n=1**: raise min_ev · force confirmed availability · TTL **7–14d** (default 10).  
+   - **`force_coverage_priority`** — on empty/near-empty recommend from **research starvation** (high `no p_model` share + mid unresearched): band **1.85–2.60** / alt totals / dogs / HC / period · TTL **4–7d** · does **not** change haircut or EV bar.  
 5. **Learning proposals** auto-resolve (`auto_apply_proposals: true`):  
    - Full permanent mult delta only if **n_hist ≥ 8** and **conf ≥ 0.40**  
    - Else soft-modify or reject noise  
@@ -178,6 +263,7 @@ After every settle:
 python run_nt.py control-signals list --json
 python run_nt.py control-signals emit --sport football --source force_review --reason "…"
 python run_nt.py control-signals revoke --sport football --actor agent
+# coverage: engine-emitted force_coverage_priority (sport=coverage); revoke with --sport coverage if needed
 
 # Failures index (offline)
 python run_nt.py failures rebuild
@@ -185,6 +271,8 @@ python run_nt.py failures query --q "rotation under"
 
 # Closed-loop validation (read-only)
 python scripts/validate_closed_loop.py -n 60
+# Coverage validation (read-only harness)
+python artifacts/_validate_coverage_fix.py
 ```
 
 ---
@@ -214,8 +302,16 @@ python run_nt.py simulate --sport basketball --home H --away A ...
 | Prefer quality over volume | Flood slip with weak EV lines |
 | Engines in `nt/` are law | Bypass risk/phase/diversify without user consent |
 | **Auto-apply learning proposals** after settle | Ask the user to accept/reject learnings |
-| Empty slip after honest research = success | Force seats to “use budget” |
-| Light → manual deep promote only | Expect light auto-promote to deep |
+| Empty slip after **honest deep research** = success | Force seats to “use budget” |
+| Deep-research engine **deep_queue** (anti-chalk) | Deep-dive only short ML/O2.5 favourites |
+| Treat Coverage Health **critical** as process miss | Silent empty slip while mid-price unresearched |
+| Respect recommend soft gate / use `--allow-low-coverage` only explicitly | Bypass coverage with `--force-mechanical` casually |
+| Light assess never promotes; engine builds deep_queue | Expect assess-time auto-promote or empty queue forever |
+| Prefilter discards majority noise/chalk; prior is rank-only | Use classical prior as recommend `p_model` |
+| Composition ≥55% preferred / ≤25% short-main | Pad deep queue with short ML/O2.5 chalk or short alts &lt;1.80 |
+| Respect Exploration/Survival min-EV + open cap + weekly EXPLORE_REGIME quota | Soften 5pp haircut or invent thin EV beyond 2 slots/week |
+| Sports equal at zero data (symmetric virgin explore) | Hardcode sport edges from thin history |
+| Totalgrense residual ≥ buffer when limits set | place-ack when residual headroom already &lt; buffer |
 | Grade A with uncertainty | Grade A on bare point p alone |
 | Kelly only when liquid+Brier gates pass | Kelly at small bankroll / thin calibration |
 | Trust unit ladder + room packing | EV-band stake above unit without Kelly lift |
@@ -241,18 +337,18 @@ python scripts/validate_closed_loop.py -n 60
 
 | Doc | Role |
 |-----|------|
-| `docs/CLOSED_LOOP_PHASE_REDESIGN_SUMMARY.md` | ControlSignals + Phase v5 file map |
-| `docs/CLOSED_LOOP_VALIDATION.md` | Replay metrics + size_mode floor check |
-| `docs/POST_AUDIT_IMPLEMENTATION_SUMMARY.md` | Earlier P0–P2 capital/Kelly/sims batch |
-| `docs/RESIDUAL_RISKS.md` | Honest remaining risks (final) |
-| `docs/PHASE_PLAN.md` | Phase ladder + v5 multi-factor note |
-| `docs/CAPITAL_V2_GO_LIVE.md` | Enable / rollback / monitoring |
-| `docs/PHASE2_ENGINE_BANKROLL_DESIGN.md` | Capital design |
-| `docs/RESEARCH_WORKFLOW.md` | Full stage map |
+| `docs/PACKAGE_IMPLEMENTATION_SUMMARY.md` | **This package** file map + confirmations |
+| `docs/RESEARCH_COVERAGE_FIX_SUMMARY.md` | Coverage Health + deep queue + force_coverage |
+| `docs/RESEARCH_WORKFLOW.md` | Full stage map (prefilter → deep) |
+| `docs/BANKROLL_PLAN.md` | Clean 500 + Calibration/Survival + multi-year |
+| `docs/PHASE_PLAN.md` | Phase ladder 1A–5 + v5 multi-factor |
+| `docs/CAPITAL_V2_GO_LIVE.md` | Capital v2 enable / rollback |
+| `docs/LUMINA_INTEGRATION.md` | LuminaNT cockpit contract (visuals) |
+| `docs/RESIDUAL_RISKS.md` | Honest remaining risks |
+| `artifacts/PACKAGE_VALIDATION_REPORT.md` | Success-metric validation |
+| `docs/CLOSED_LOOP_PHASE_REDESIGN_SUMMARY.md` | ControlSignals + Phase v5 |
+| `docs/DIVERSITY_AND_EXPLORE.md` | Virgin explore + diversify |
 | `docs/RESEARCH_GATES.md` | Gate field design |
-| `docs/SOURCES.md` | Source list |
-| `docs/AGENT.md` | Optional LLM agent co-pilot |
-| `docs/LUMINA_INTEGRATION.md` | LuminaNT ↔ engine contract |
 | `docs/SETTLEMENT_LEARNING.md` | Settle + learn loop |
 
 ### Desktop (Flet)
@@ -261,4 +357,14 @@ See `desktop/AGENTS.md` for UI layout rules. Engines remain law; UI only present
 
 ### LuminaNT
 
-Separate repo. Forensic desk over the same tracker root: ControlSignals table, Phase health radar, PostSettlementPacket Case File, SettleDesk packet fields, Calibration force-review emit, shortlist temp_gate chips. **Never rewrite historical `bets.csv` from the GUI** except via settle/engine APIs.
+Separate repo. Forensic desk over the same tracker root. **Permanent cockpit surfaces:**
+
+| Surface | Must show |
+|---------|-----------|
+| **DeskStrip primary** | Equity · Liquid · Open risk · Remaining · **Regime** (+cap) · Day TG (if active) · Mode · **Coverage** deep%/surv% · empty-slip · **COV FORCE** · Can bet |
+| **Open + planned risk** | Heatmap Pending×ConfirmedPlaced · stacked bars · correlation (multi-ticket match, sport share) |
+| **Capital Plan** | Risk rooms · Regime · open-cap / min-EV · TG · Coverage Health block |
+| **Shortlist / Decision board** | Deep/Surv/Mid · force_coverage · Regime · Day TG · warn/critical banners |
+| **Learnings** | ControlSignals table (temp_gate + force_coverage_priority) |
+
+Data: `risk.json` · `coverage_health.json` · `control_signals.jsonl` · `bets.csv`. Refresh if fingerprint lags. **Never rewrite historical `bets.csv` from the GUI** except via settle/engine APIs.

@@ -23,11 +23,19 @@ SizeMode = Literal["NORMAL", "REDUCED", "FROZEN"]
 
 # ── defaults (overridable via capital_v2_cfg) ─────────────────────────────
 
+# High-Volume v2: base unit 12 under 1500 liquid (was 10).
 DEFAULT_UNIT_LADDER: list[dict[str, Any]] = [
-    {"max_liquid_exclusive": 1500.0, "unit": 10.0},
+    {"max_liquid_exclusive": 1500.0, "unit": 12.0},
     {"max_liquid_exclusive": 2500.0, "unit": 15.0},
     {"max_liquid_exclusive": None, "unit": 20.0},
 ]
+
+DEFAULT_GRADE_STAKE_MULT: dict[str, float] = {
+    "C": 1.0,
+    "B": 1.4,
+    "A": 2.0,
+    "A_high_conf": 2.2,
+}
 
 
 def capital_v2_cfg(cfg: dict[str, Any] | None) -> dict[str, Any]:
@@ -63,11 +71,13 @@ def capital_v2_cfg(cfg: dict[str, Any] | None) -> dict[str, Any]:
         "secure_bucket": {
             "enabled": True,
             "trigger_multiple_of_ref": 1.30,
-            "transfer_fraction_of_profit_above_ref": 0.40,
+            # High-Volume v2: 27% of profit above ref×1.30 (was 40%)
+            "transfer_fraction_of_profit_above_ref": 0.27,
             # Softener: after transfer, working equity ≥ max(frac×ledger, units×unit)
             "min_working_frac_of_equity": 0.55,
             "min_working_units": 8.0,
         },
+        "grade_stake_mult": dict(DEFAULT_GRADE_STAKE_MULT),
         "kelly": {
             "enabled": True,
             "enabled_above_liquid": 1500.0,
@@ -84,7 +94,16 @@ def capital_v2_cfg(cfg: dict[str, Any] | None) -> dict[str, Any]:
     }
     # shallow merge top-level; nested dicts merge one level
     out = {**defaults, **raw}
-    for k in ("drawdown", "daily_loss", "weekly_loss", "portfolio_open_risk", "secure_bucket", "kelly", "audit"):
+    for k in (
+        "drawdown",
+        "daily_loss",
+        "weekly_loss",
+        "portfolio_open_risk",
+        "secure_bucket",
+        "kelly",
+        "audit",
+        "grade_stake_mult",
+    ):
         if isinstance(raw.get(k), dict):
             out[k] = {**(defaults.get(k) or {}), **raw[k]}
     if raw.get("unit_ladder"):
@@ -162,7 +181,7 @@ def reduced_unit(active_unit: float, min_stake: float) -> float:
     if half >= min_stake:
         return half
     # step down ladder
-    for step_u in (20.0, 15.0, 10.0):
+    for step_u in (20.0, 15.0, 12.0, 10.0):
         if step_u < u and step_u >= min_stake:
             return step_u
     return min_stake
@@ -211,6 +230,31 @@ class StakeDecision:
         return d
 
 
+def grade_stake_multiplier(
+    grade: str,
+    *,
+    high_confidence: bool = False,
+    v2: dict[str, Any] | None = None,
+) -> float:
+    """
+    High-Volume v2 grade stake mults: C 1.0 · B 1.4 · A 2.0 · A high-conf 2.2.
+    """
+    mults = dict(DEFAULT_GRADE_STAKE_MULT)
+    if v2 and isinstance(v2.get("grade_stake_mult"), dict):
+        mults.update({str(k).upper(): float(v) for k, v in v2["grade_stake_mult"].items()})
+    g = (grade or "C").strip().upper()
+    if g == "A" and high_confidence:
+        return float(mults.get("A_HIGH_CONF") or mults.get("A_high_conf") or 2.2)
+    if g in mults:
+        return float(mults[g])
+    # map A_high_conf key variants
+    if g == "A":
+        return float(mults.get("A") or 2.0)
+    if g == "B":
+        return float(mults.get("B") or 1.4)
+    return float(mults.get("C") or 1.0)
+
+
 def compute_unit_stake(
     *,
     size_mode: str,
@@ -222,6 +266,7 @@ def compute_unit_stake(
     high_odds: bool = False,
     high_odds_mult: float = 1.0,
     learning_stake_mult: float = 1.0,
+    grade_mult: float = 1.0,
     match: str = "",
     selection: str = "",
     inputs: dict[str, Any] | None = None,
@@ -231,6 +276,7 @@ def compute_unit_stake(
     Pure per-bet unit sizing (capital_v2).
 
     NORMAL → full unit; REDUCED → half / next lower step; FROZEN or risk stop → 0.
+    Grade mult (High-Volume v2) scales unit before room clip.
     Clip to remaining open-risk room; whole kroner; never (0, min_stake).
     """
     min_stake = float(min_stake)
@@ -243,7 +289,7 @@ def compute_unit_stake(
     base_inputs.setdefault("remaining_room", room)
     base_inputs.setdefault("high_odds", high_odds)
     base_inputs.setdefault("learning_stake_mult", float(learning_stake_mult or 1.0))
-
+    base_inputs.setdefault("grade_mult", float(grade_mult or 1.0))
     def _done(
         final: float,
         *,
@@ -281,8 +327,12 @@ def compute_unit_stake(
         constraints.append("active_unit_below_floor")
         return _done(0.0, recommended=active, reason="active_unit_below_floor", active=active)
 
-    # Target stake = active unit (optionally scaled by high-odds / learning, never below floor)
+    # Target stake = active unit × grade mult (High-Volume v2) × high-odds / learning
     raw = float(active)
+    gm = max(0.5, float(grade_mult or 1.0))
+    if abs(gm - 1.0) > 0.01:
+        raw *= gm
+        constraints.append(f"grade_mult:{gm}")
     if high_odds and float(high_odds_mult) > 0:
         raw *= float(high_odds_mult)
         constraints.append(f"high_odds_mult:{high_odds_mult}")

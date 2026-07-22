@@ -215,3 +215,54 @@ def validate_evidence_schema(ev: dict[str, Any]) -> list[str]:
 def ev_after_haircut(p_model: float, odds: float, haircut: float) -> float:
     p = max(0.01, min(0.99, p_model - haircut))
     return p * odds - 1.0
+
+
+def core_reason_text(evidence: dict[str, Any] | None) -> str:
+    """Best available written core reason from a research pack."""
+    if not evidence or not isinstance(evidence, dict):
+        return ""
+    for key in ("summary", "reason", "core_reason", "thesis"):
+        t = str(evidence.get(key) or "").strip()
+        if len(t) >= 20:
+            return t
+    takes = evidence.get("takeaways") or evidence.get("key_takeaways") or []
+    if isinstance(takes, list):
+        for t in takes:
+            s = str(t or "").strip()
+            if len(s) >= 20:
+                return s
+    return ""
+
+
+def has_core_reason(evidence: dict[str, Any] | None) -> bool:
+    """High-Volume v2: Grade C placeability requires a transparent written reason."""
+    return bool(core_reason_text(evidence))
+
+
+def is_strong_confidence(
+    evidence: dict[str, Any] | None,
+    grade: str,
+    *,
+    min_sources: int = 8,
+) -> bool:
+    """
+    Strong multi-source / high-confidence → may use strong_min_ev (1.5%).
+    Grade B+ and (≥min_sources or uncertainty or pack high_confidence flag).
+    """
+    g = (grade or "").strip().upper()
+    if g not in ("A", "B"):
+        return False
+    if not evidence or not isinstance(evidence, dict):
+        return False
+    if evidence.get("high_confidence") is True:
+        return True
+    sources = normalize_sources(evidence.get("sources"))
+    if len(sources) >= int(min_sources):
+        return True
+    # reuse grade-A uncertainty signal as high-confidence
+    try:
+        if _has_grade_a_uncertainty(evidence):
+            return True
+    except Exception:
+        pass
+    return False

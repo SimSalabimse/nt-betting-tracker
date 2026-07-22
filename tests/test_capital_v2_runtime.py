@@ -142,15 +142,15 @@ def test_flag_off_refresh_no_capital_file(tmp_path: Path, monkeypatch):
 # ── secure transfer ───────────────────────────────────────────────────────
 
 
-def test_secure_transfer_40pct_and_ref_reset():
+def test_secure_transfer_27pct_and_ref_reset():
     segs = empty_segments(baseline_nok=500.0, oslo_date="2026-07-21")
     segs["unit_hwm_reset_equity_nok"] = 500.0
     segs["secure_nok"] = 0.0
     out, info = apply_secure_transfer_to_segments(segs, ledger_equity=700.0)
     assert info["triggered"] is True
-    assert info["transferred"] == 80.0  # 0.4 * 200
-    assert out["secure_nok"] == 80.0
-    assert out["unit_hwm_reset_equity_nok"] == 620.0  # working equity
+    assert info["transferred"] == 54.0  # High-Volume v2: 0.27 * 200
+    assert out["secure_nok"] == 54.0
+    assert out["unit_hwm_reset_equity_nok"] == 646.0  # working equity after transfer
     assert len(out["secure_transfers"]) == 1
 
 
