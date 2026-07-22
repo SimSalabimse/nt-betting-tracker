@@ -116,6 +116,30 @@ def research_cfg(cfg: dict[str, Any]) -> dict[str, Any]:
             "fail_odds_above": 4.0,
             "pass_odds_lo": 1.45,
             "pass_odds_hi": 2.50,
+            # HV v3 clearability ranking (frozen weights; research-rank only)
+            "clearability": {
+                "w_mid": 25.0,
+                "w_rel_prior": 80.0,
+                "w_batch": 20.0,
+                "w_coin": -35.0,
+                "w_soft": 40.0,
+                "w_alt": 14.0,
+                "w_short": -55.0,
+                "w_struct": 15.0,
+                "w_disp": 25.0,
+                "w_hist": 15.0,
+                "w_cov": 30.0,
+                "w_cl_force": 35.0,
+                "w_fail": -40.0,
+                "rel_prior_clip_lo": -0.12,
+                "rel_prior_clip_hi": 0.08,
+                "rel_prior_scale": 0.08,
+                "disp_scale": 0.06,
+                "hist_min_sample": 12,
+                "fail_raw_ev": -0.05,
+                "coin_flip_eps": 0.02,
+                "even_market_rel": 0.05,
+            },
         },
         # Legacy flat gate keys (aliased into research.gates by research_gates package)
         "require_lineup_status_football": True,
@@ -163,7 +187,15 @@ def research_cfg(cfg: dict[str, Any]) -> dict[str, Any]:
         merged_g = {**base_g, **user_g, "sports": sports}
         out["gates"] = merged_g
     if isinstance(raw.get("tiers"), dict) or defaults.get("tiers"):
-        out["tiers"] = {**(defaults.get("tiers") or {}), **(raw.get("tiers") or {})}
+        base_t = dict(defaults.get("tiers") or {})
+        user_t = dict(raw.get("tiers") or {})
+        merged_t = {**base_t, **user_t}
+        # Deep-merge clearability weights so partial overrides keep frozen defaults
+        base_cl = dict(base_t.get("clearability") or {})
+        user_cl = dict(user_t.get("clearability") or {})
+        if base_cl or user_cl:
+            merged_t["clearability"] = {**base_cl, **user_cl}
+        out["tiers"] = merged_t
     return out
 
 

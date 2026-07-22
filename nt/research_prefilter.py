@@ -3,10 +3,13 @@ Multi-stage quantitative pre-filter (research funnel).
 
 Stage 1 — Fast screens: hard-discard noise / impossible EV / ultra-short chalk.
 Stage 2 — Lightweight classical prior: family anchor + implied blend; prior EV
-          after the same 5pp haircut as recommend (does not change haircut).
+          after the same 3pp haircut as recommend (does not change haircut).
 
 Research-ranking only — never invents recommendable p_model.
 Clean-restart neutral: no learning.json / sport mults.
+
+Clearability math (fair_ev / rel_prior / p_needed) lives in nt.clearability (HV v3);
+this module re-exports the shared helpers used by Stage2.
 """
 from __future__ import annotations
 
@@ -14,8 +17,30 @@ import re
 from dataclasses import asdict, dataclass
 from typing import Any
 
+from nt.clearability import (
+    fair_ev_after_haircut,
+    p_needed_for_min_ev,
+    relative_prior_ev,
+)
 from nt.defaults import research_cfg
 from nt.research_gates.infer import selection_family
+
+# Re-export for callers / tests that import math from the prefilter surface.
+__all__ = (
+    "PrefilterResult",
+    "fair_ev_after_haircut",
+    "family_prior_anchor",
+    "is_noise_special",
+    "p_needed_for_min_ev",
+    "prefilter_batch_stats",
+    "prefilter_cfg",
+    "prior_ev",
+    "rank_score_from_prior",
+    "relative_prior_ev",
+    "run_prefilter",
+    "stage1_fast_screen",
+    "stage2_classical_prior",
+)
 
 
 def prefilter_cfg(cfg: dict[str, Any]) -> dict[str, Any]:
@@ -74,12 +99,6 @@ def _haircut_min_ev(cfg: dict[str, Any]) -> tuple[float, float]:
         float(sel.get("probability_haircut", 0.03)),
         float(sel.get("standard_min_ev", 0.02)),
     )
-
-
-def p_needed_for_min_ev(odds: float, min_ev: float = 0.02, haircut: float = 0.03) -> float:
-    if odds <= 1.0:
-        return 0.99
-    return min(0.99, max(0.01, (1.0 + min_ev) / odds + haircut))
 
 
 def prior_ev(prior_p: float, odds: float, haircut: float = 0.03) -> float:
@@ -320,7 +339,8 @@ def stage2_classical_prior(
     prior_p = min(0.95, max(0.05, prior_p))
     pev = prior_ev(prior_p, odds, haircut)
     # Fair line after same haircut: always ≈ -haircut * odds (no edge claim)
-    fair_ev = -haircut * odds
+    # (shared SSOT with nt.clearability; relative_prior_ev = pev - fair_ev)
+    fair_ev = fair_ev_after_haircut(odds, haircut)
 
     # Base-rate conflict: short chalk fighting prior hard
     br_conflict = False

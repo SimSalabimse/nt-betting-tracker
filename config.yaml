@@ -393,6 +393,30 @@ research:
     fail_odds_above: 4.0
     pass_odds_lo: 1.45
     pass_odds_hi: 2.60
+    # HV v3 clearability ranking (frozen weights; research-rank only — never invents p_model)
+    # Soft books optional; relative prior works with all-negative Stage2 prior_ev after 3pp.
+    clearability:
+      w_mid: 25
+      w_rel_prior: 80
+      w_batch: 20
+      w_coin: -35
+      w_soft: 40
+      w_alt: 14
+      w_short: -55
+      w_struct: 15
+      w_disp: 25
+      w_hist: 15
+      w_cov: 30
+      w_cl_force: 35
+      w_fail: -40
+      rel_prior_clip_lo: -0.12
+      rel_prior_clip_hi: 0.08
+      rel_prior_scale: 0.08
+      disp_scale: 0.06
+      hist_min_sample: 12
+      fail_raw_ev: -0.05
+      coin_flip_eps: 0.02
+      even_market_rel: 0.05
 
   # Coverage Health (board/recommend + Lumina DeskStrip)
   coverage_health:
