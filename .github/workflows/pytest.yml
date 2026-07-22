@@ -24,9 +24,12 @@ jobs:
           pip install pytest
 
       - name: Run unit tests
-        # Skip ledger-size / live-data smoke that need a full production ledger
+        # Skip ledger-size / live-data smoke that need a full production ledger.
+        # Desktop Flet smoke is auto-skipped when flet is not installed
+        # (requirements-desktop.txt is optional; see test_desktop_smoke.py).
         run: >
           python -m pytest -q --tb=line
+          --ignore=tests/test_desktop_smoke.py
           -k "not test_compute_learning_has_sports
           and not test_overall_stats_settled_count
           and not test_deep_dive_payload

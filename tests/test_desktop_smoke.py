@@ -3,9 +3,14 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+import pytest
+
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 import nt_bootstrap  # noqa: F401
+
+# Legacy Flet desktop UI — optional; CI installs only requirements.txt (no flet).
+pytest.importorskip("flet")
 
 from desktop.services.state_service import StateService, is_valid_project_root
 from desktop.views.analytics import build_analytics
