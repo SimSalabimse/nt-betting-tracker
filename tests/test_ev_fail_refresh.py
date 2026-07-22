@@ -21,6 +21,7 @@ from nt.light_research import (
     LightRecord,
     build_deep_queue,
     ev_fail_refresh_triggered,
+    rank_inject_records,
     research_second_pass,
     tiers_cfg,
 )
@@ -242,7 +243,7 @@ def test_exhausted_not_requeued_without_force():
     )
     assert exhausted.key() not in {r.key() for r in queue}
 
-    # With force requeue and no injects, exhausted may return (operator path)
+    # With force requeue and no injects, exhausted MUST re-enter (operator path)
     queue_f = build_deep_queue(
         [exhausted],
         cfg,
@@ -251,9 +252,9 @@ def test_exhausted_not_requeued_without_force():
         pack_meta_by_key=meta,
         force_requeue_exhausted=True,
     )
-    # Thin preferred (short ML@2.0 is preferred by odds) — may include if pass composition
-    # At odds 2.0 ML is preferred; queue can be non-empty under force
-    assert isinstance(queue_f, list)
+    assert exhausted.key() in {r.key() for r in queue_f}, (
+        "force_requeue_exhausted=True with empty injects must re-queue exhausted preferred line"
+    )
 
 
 def test_research_second_pass_api(tmp_path: Path):
@@ -354,3 +355,136 @@ def test_w_fail_demotes_bad_raw_ev_in_score():
     )
     assert bad == pytest.approx(base + DEFAULT_CLEARABILITY_WEIGHTS["w_fail"])
     assert bad < base
+
+
+def test_inject_hard_cap_ranks_by_clearability_not_dump_order():
+    """
+    Review issue 1: >max_inject candidates — best clearability alts survive cap,
+    not the first N dump-order weak lines.
+    """
+    cfg = _cfg(second_pass_max_inject=5)
+    haircut = 0.03
+    # First 12 weak priors (would win dump-order cap of 12 / 5)
+    weak: list[LightRecord] = []
+    for i in range(12):
+        weak.append(
+            _rec(
+                f"Weak{i} vs Z",
+                f"Vinner: Weak{i}",
+                2.00,
+                family="ml",
+                prior_p=0.40,  # poor rel_prior
+                source="inject",
+                is_inject=True,
+            )
+        )
+    # Last 8 strong alts (must survive if ranked)
+    strong: list[LightRecord] = []
+    for i in range(8):
+        strong.append(
+            _rec(
+                f"Strong{i} vs Z",
+                f"Handikap +{i + 2}.5: Away",
+                2.15,
+                sport="tennis",
+                family="handicap",
+                prior_p=0.55,  # much better rel_prior + alt
+                source="inject",
+                is_inject=True,
+            )
+        )
+    # Dump order: weak first
+    ranked = rank_inject_records(weak + strong, cfg, max_inject=5)
+    assert len(ranked) == 5
+    strong_keys = {r.key() for r in strong}
+    n_strong = sum(1 for r in ranked if r.key() in strong_keys)
+    assert n_strong == 5, "hard-cap must keep high-clearability injects, not weak dump prefix"
+
+    # Through second_pass API
+    payload = research_second_pass(
+        cfg,
+        None,
+        records=[],
+        inject_candidates=[
+            {
+                "match": r.match,
+                "selection": r.selection,
+                "sport": r.sport,
+                "decimal_odds": r.decimal_odds,
+                "prior_p": r.prior_p,
+                "prior_ev": r.prior_ev,
+            }
+            for r in (weak + strong)
+        ],
+        pack_meta_by_key={},
+        force=True,
+        write=False,
+        mid_unresearched=0,
+        n_raw_ev_pass=0,
+    )
+    assert payload.get("ok") is True
+    assert int(payload.get("inject_n") or 0) == 5
+    # Injects fed to queue are the ranked top-5 (all strong)
+    # Queue may be empty if injects fail light prefilter — rank_inject already asserted.
+    # When queue non-empty, prefer strong keys
+    dq = payload.get("deep_queue") or []
+    if dq:
+        dq_keys = {(r.get("match"), r.get("selection")) for r in dq}
+        assert dq_keys & strong_keys
+
+
+def test_auto_second_pass_blocks_unknown_mid_unresearched(tmp_path: Path):
+    """force=False without mid_unresearched / coverage_health must not false-trigger."""
+    cfg = _cfg(tmp_path)
+    # No coverage_health.json written
+    payload = research_second_pass(
+        cfg,
+        None,
+        records=[
+            _rec(f"P{i}", f"Vinner: H{i}", 2.0, has_p=True, raw_ev=-0.08)
+            for i in range(8)
+        ],
+        inject_candidates=[],
+        force=False,
+        write=False,
+        # mid_unresearched deliberately omitted
+    )
+    assert payload.get("ok") is False
+    assert payload.get("reason") == "mid_unresearched_unknown"
+
+    # Explicit mid=0 allows auto trigger when packs fail EV
+    pack_meta = {}
+    for i in range(8):
+        k = (f"P{i}", f"Vinner: H{i}")
+        pack_meta[k] = {
+            "has_pack": True,
+            "p_model": 0.5,
+            "odds": 2.0,
+            "raw_ev": -0.08,
+            "deep_exhausted": True,
+        }
+    payload2 = research_second_pass(
+        cfg,
+        None,
+        records=[
+            _rec(f"P{i}", f"Vinner: H{i}", 2.0, has_p=True, raw_ev=-0.08)
+            for i in range(8)
+        ],
+        pack_meta_by_key=pack_meta,
+        inject_candidates=[
+            {
+                "match": "Alt vs Z",
+                "selection": "Handikap +3.5: Away",
+                "sport": "tennis",
+                "decimal_odds": 2.10,
+                "prior_p": 0.50,
+            }
+        ],
+        force=False,
+        write=False,
+        mid_unresearched=0,
+        n_raw_ev_pass=0,
+    )
+    assert payload2.get("ok") is True
+    assert payload2.get("mode") == "refresh"
+    assert float(payload2.get("raw_ev_pass_threshold") or 0) == pytest.approx(0.02)

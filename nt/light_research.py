@@ -75,24 +75,60 @@ def dual_track_sizes(
 
     clearable_n = min(8, max(5, round(0.70 * target))) clamped to target;
     coverage_n = remainder. Force flags raise the corresponding floor.
+
+    Single-flag behaviour (unchanged):
+      force_coverage → coverage_n = max(base, min(4, target//2)); clearable rest
+      force_clearability → clearable_n = max(base, min(8, round(0.80*target))); cov rest
+
+    Both flags: raise each floor from base, then **joint proportional scale** if
+    sum > target so neither floor fully undoes the other (e.g. target=8 both →
+    raised (6,4) scales to (5,3) not clearability-only (6,2)).
     """
     target = max(0, int(target))
     if target <= 0:
         return 0, 0
-    clearable_n = min(8, max(5, int(round(0.70 * target))))
-    clearable_n = min(clearable_n, target)
-    coverage_n = target - clearable_n
+    base_cl = min(8, max(5, int(round(0.70 * target))))
+    base_cl = min(base_cl, target)
+    base_cov = target - base_cl
 
-    if coverage_overlay_active:
-        coverage_n = max(coverage_n, min(4, target // 2))
+    cov_force = bool(coverage_overlay_active)
+    cl_force = bool(clearability_overlay_active)
+
+    if cov_force and not cl_force:
+        coverage_n = max(base_cov, min(4, target // 2))
         clearable_n = target - coverage_n
+        return int(clearable_n), int(coverage_n)
 
-    if clearability_overlay_active:
-        clearable_n = max(clearable_n, min(8, int(round(0.80 * target))))
+    if cl_force and not cov_force:
+        clearable_n = max(base_cl, min(8, int(round(0.80 * target))))
         clearable_n = min(clearable_n, target)
         coverage_n = target - clearable_n
+        return int(clearable_n), int(coverage_n)
 
-    return int(clearable_n), int(coverage_n)
+    if cov_force and cl_force:
+        cov_floor = min(4, target // 2)
+        cl_floor = min(8, int(round(0.80 * target)))
+        clearable_n = max(base_cl, cl_floor)
+        coverage_n = max(base_cov, cov_floor)
+        total = clearable_n + coverage_n
+        if total > target:
+            # Proportional joint scale of raised pair
+            clearable_n = int(round(clearable_n * target / float(total)))
+            clearable_n = max(0, min(target, clearable_n))
+            coverage_n = target - clearable_n
+            if target >= 2:
+                if coverage_n < 1:
+                    coverage_n = 1
+                    clearable_n = target - 1
+                elif clearable_n < 1:
+                    clearable_n = 1
+                    coverage_n = target - 1
+        else:
+            leftover = target - total
+            clearable_n += leftover  # clearability-primary remainder
+        return int(clearable_n), int(coverage_n)
+
+    return int(base_cl), int(base_cov)
 
 
 def ev_fail_refresh_triggered(
@@ -779,6 +815,9 @@ def _build_deep_queue_v3(
         pev = float(r.prior_ev) if r.prior_ev is not None else None
         bp = batch_prior_percentile(pev, batch_priors)
 
+        # family_hist_n / family_clear_rate: intentionally unwired in PR2.
+        # Learning state is sport-level only (no family clear-rate SSOT yet);
+        # w_hist stays 0 until a family-level ledger metric lands (post-PR2).
         cl = clearability_score(
             odds=float(r.decimal_odds),
             prior_ev=pev,
@@ -790,6 +829,8 @@ def _build_deep_queue_v3(
             is_alt=is_alt,
             is_short_main=_sm(r),
             has_structural_note=_is_structural_note(r),
+            family_hist_n=0,
+            family_clear_rate=None,
             force_coverage_active=force_cov and _mid_band(r),
             force_clearability_active=force_cl,
             has_pack=has_pack,
@@ -1800,6 +1841,110 @@ def _scan_pack_meta(
     return out
 
 
+def _score_inject_clearability(
+    rec: "LightRecord",
+    cfg: dict[str, Any],
+    *,
+    batch_priors: list[float | None] | None = None,
+    groups: dict[tuple[str, str], list[tuple[float, "LightRecord"]]] | None = None,
+) -> float:
+    """Clearability rank for inject hard-cap (research only; no p_model invent)."""
+    from nt.clearability import (
+        batch_prior_percentile,
+        clearability_score,
+        is_alt_preferred_macro,
+    )
+
+    haircut = _haircut_from_cfg(cfg)
+    tcfg = tiers_cfg(cfg)
+    pref_lo = float(tcfg.get("preferred_odds_lo") or 1.85)
+    fam = rec.market_family or selection_family(rec.selection, (rec.sport or "").lower())
+    pev = float(rec.prior_ev) if rec.prior_ev is not None else None
+    bp = batch_prior_percentile(pev, batch_priors or [pev])
+    is_coin = False
+    if groups is not None:
+        is_coin = _coin_flip_for_record(rec, groups, cfg)
+    return clearability_score(
+        odds=float(rec.decimal_odds),
+        prior_ev=pev,
+        prior_p=float(rec.prior_p) if rec.prior_p is not None else None,
+        haircut=haircut,
+        batch_percentile=bp,
+        is_coin_flip=is_coin,
+        is_alt=is_alt_preferred_macro(fam, rec.selection),
+        is_short_main=is_short_main_line(
+            rec.selection, rec.decimal_odds, fam, preferred_odds_lo=pref_lo
+        ),
+        has_structural_note=_is_structural_note(rec),
+        family_hist_n=0,
+        family_clear_rate=None,
+        cfg=cfg,
+    )
+
+
+def rank_inject_records(
+    inject_recs: list["LightRecord"],
+    cfg: dict[str, Any],
+    *,
+    max_inject: int,
+) -> list["LightRecord"]:
+    """
+    Rank inject candidates by clearability_score and hard-cap to max_inject.
+
+    Must run **before** build_deep_queue so large dumps do not drop high-clear
+    alts solely because they appear late in file order.
+    """
+    if not inject_recs or max_inject <= 0:
+        return []
+    batch_priors = [
+        float(r.prior_ev) if r.prior_ev is not None else None for r in inject_recs
+    ]
+    groups = _peer_odds_map(inject_recs)
+    scored: list[tuple[float, LightRecord]] = []
+    for r in inject_recs:
+        sc = _score_inject_clearability(
+            r, cfg, batch_priors=batch_priors, groups=groups
+        )
+        r.clearability_score = sc
+        scored.append((sc, r))
+    scored.sort(key=lambda x: (-x[0], x[1].decimal_odds))
+    return [r for _sc, r in scored[: int(max_inject)]]
+
+
+def _mid_unresearched_from_coverage(cfg: dict[str, Any]) -> int | None:
+    """Best-effort mid_unresearched_n from coverage_health.json; None if unknown."""
+    try:
+        from nt.config import path_from_config
+
+        paths = cfg.get("paths") or {}
+        if paths.get("state_dir"):
+            state = path_from_config(cfg, "state_dir")
+        else:
+            state = Path("data/state")
+        path = state / "coverage_health.json"
+        if not path.is_file():
+            return None
+        data = json.loads(path.read_text(encoding="utf-8"))
+        if not isinstance(data, dict):
+            return None
+        if data.get("mid_unresearched_n") is None:
+            return None
+        return int(data["mid_unresearched_n"])
+    except Exception:
+        return None
+
+
+def _raw_ev_pass_threshold(cfg: dict[str, Any]) -> float:
+    """
+    Min raw_ev after haircut treated as "pass" for EV-fail trigger counts.
+
+    Uses selection.standard_min_ev (default 0.02), not bare ≥0 — matches desk
+    min-EV bar better than the zero proxy (PR6 may refine with full funnel).
+    """
+    sel = cfg.get("selection") or {}
+    return float(sel.get("standard_min_ev", 0.02))
+
+
 def _records_from_dicts(
     items: list[dict[str, Any]],
     cfg: dict[str, Any],
@@ -1940,24 +2085,28 @@ def research_second_pass(
                 light_recs.extend(_records_from_dicts([r], cfg, source=str(r.get("source") or "auto")))
 
     pack_meta = pack_meta_by_key if pack_meta_by_key is not None else _scan_pack_meta(cfg, haircut=haircut)
+    raw_pass_thr = _raw_ev_pass_threshold(cfg)
 
-    # Mark exhausted on records
-    n_packs = 0
+    # Pack count SSOT: evidence index size, then light flags not already in meta
+    seen_pack_keys: set[tuple[str, str]] = set(pack_meta.keys())
+    n_packs = len(pack_meta)
     n_pass = 0
     exhausted_keys: list[tuple[str, str]] = []
+
+    # Count passes from pack_meta first (full evidence dir)
+    for k, meta in pack_meta.items():
+        rev = meta.get("raw_ev")
+        if rev is not None and float(rev) >= raw_pass_thr:
+            n_pass += 1
+
+    # Mark exhausted on light records
     for r in light_recs:
         meta = pack_meta.get(r.key())
         if meta:
             r.has_p_model = True
             r.has_deep_pack = True
-            n_packs += 1
             if meta.get("raw_ev") is not None:
                 r.raw_ev = float(meta["raw_ev"])
-                if float(meta["raw_ev"]) >= 0.0:  # raw_ev pass proxy (any non-neg after haircut)
-                    n_pass += 1
-                elif float(meta["raw_ev"]) >= exhausted_thr:
-                    # Between exhausted thr and 0 — not pass but not exhausted
-                    pass
             if meta.get("deep_exhausted") or (
                 r.raw_ev is not None and float(r.raw_ev) < exhausted_thr
             ):
@@ -1965,30 +2114,62 @@ def research_second_pass(
                 exhausted_keys.append(r.key())
                 r.reason = (r.reason or "") + " | deep_exhausted"
         elif r.has_p_model:
-            n_packs += 1
-            if r.raw_ev is not None and float(r.raw_ev) >= 0.0:
-                n_pass += 1
+            if r.key() not in seen_pack_keys:
+                n_packs += 1
+                seen_pack_keys.add(r.key())
+                if r.raw_ev is not None and float(r.raw_ev) >= raw_pass_thr:
+                    n_pass += 1
             if r.raw_ev is not None and float(r.raw_ev) < exhausted_thr:
                 r.deep_exhausted = True
                 exhausted_keys.append(r.key())
 
     if n_raw_ev_pass is not None:
         n_pass = int(n_raw_ev_pass)
-    mid_u = int(mid_unresearched) if mid_unresearched is not None else 0
 
+    # mid_unresearched: explicit arg > coverage_health > unknown
+    mid_unknown = False
+    if mid_unresearched is not None:
+        mid_u = int(mid_unresearched)
+    else:
+        cov_mid = _mid_unresearched_from_coverage(cfg)
+        if cov_mid is None:
+            mid_unknown = True
+            mid_u = -1  # sentinel for auto path
+        else:
+            mid_u = int(cov_mid)
+
+    if not force and mid_unknown:
+        # Fail-closed auto path: unknown mid coverage must not false-trigger EV-fail
+        return {
+            "ok": False,
+            "reason": "mid_unresearched_unknown",
+            "n_packs_with_p": n_packs,
+            "n_raw_ev_pass": n_pass,
+            "mid_unresearched": None,
+            "raw_ev_pass_threshold": raw_pass_thr,
+            "deep_queue": [],
+            "mode": "normal",
+            "note": (
+                "Pass mid_unresearched=0 explicitly or ensure coverage_health.json; "
+                "CLI/operator second-pass uses force=True"
+            ),
+        }
+
+    mid_for_trigger = mid_u if mid_u >= 0 else 0
     triggered = force or ev_fail_refresh_triggered(
-        n_packs_with_p=n_packs if n_packs else len(pack_meta),
+        n_packs_with_p=n_packs,
         n_raw_ev_pass=n_pass,
-        mid_unresearched=mid_u,
+        mid_unresearched=mid_for_trigger,
         min_deep_packs=min_deep,
     )
     if not triggered:
         return {
             "ok": False,
             "reason": "ev_fail_refresh_not_triggered",
-            "n_packs_with_p": n_packs or len(pack_meta),
+            "n_packs_with_p": n_packs,
             "n_raw_ev_pass": n_pass,
-            "mid_unresearched": mid_u,
+            "mid_unresearched": mid_u if mid_u >= 0 else None,
+            "raw_ev_pass_threshold": raw_pass_thr,
             "deep_queue": [],
             "mode": "normal",
         }
@@ -2018,8 +2199,12 @@ def research_second_pass(
         except Exception:
             pass
 
-    # Cap injects; prefer those with better prior/odds mid when pre-scored
-    inject_items = inject_items[: max(0, max_inject * 3)]  # soft pre-cap before assess
+    # Assess all inject candidates (soft pre-cap only for pathological dumps)
+    soft_cap = max(max_inject * 5, max_inject)
+    if len(inject_items) > soft_cap:
+        # Still score all if modest; only truncate extreme dumps before assess
+        # Keep soft_cap*2 max for assess cost control
+        inject_items = inject_items[: max(soft_cap * 2, 60)]
     inject_recs = _records_from_dicts(inject_items, cfg, source="inject")
     # Drop injects that already have packs
     inject_recs = [
@@ -2027,8 +2212,8 @@ def research_second_pass(
         for r in inject_recs
         if r.key() not in pack_meta and not r.has_p_model
     ]
-    # Rank injects by clearability later inside build_deep_queue; hard cap
-    inject_recs = inject_recs[:max_inject]
+    # Rank by clearability THEN hard-cap (not dump order)
+    inject_recs = rank_inject_records(inject_recs, cfg, max_inject=max_inject)
 
     # If no injects and not force_requeue, queue may be empty (correct)
     requeue = bool(force_requeue_exhausted) and len(inject_recs) == 0
@@ -2084,9 +2269,10 @@ def research_second_pass(
         "inject_n": len(inject_recs),
         "exhausted_n": len(exhausted_keys),
         "exhausted_keys": [{"match": m, "selection": s} for m, s in exhausted_keys],
-        "n_packs_with_p": n_packs or len(pack_meta),
+        "n_packs_with_p": n_packs,
         "n_raw_ev_pass": n_pass,
-        "mid_unresearched": mid_u,
+        "mid_unresearched": mid_u if mid_u >= 0 else None,
+        "raw_ev_pass_threshold": raw_pass_thr,
         "tiers_config": tcfg,
         "deep_queue": [_queue_line_export(r, tcfg) for r in deep_queue],
         "deep_queue_composition": _queue_composition_stats(deep_queue, tcfg),

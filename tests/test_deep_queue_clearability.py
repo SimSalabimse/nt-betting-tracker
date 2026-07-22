@@ -96,6 +96,32 @@ def test_dual_track_sizes_frozen():
     assert c_cl + v_cl == 8
 
 
+def test_dual_track_both_force_overlays_joint_clamp():
+    """
+    Both force flags: raise floors then proportional scale — coverage not fully
+    undone by clearability (old sequential path both → (6,2) == clearability-only).
+    """
+    c_cl_only, v_cl_only = dual_track_sizes(8, clearability_overlay_active=True)
+    c_cov_only, v_cov_only = dual_track_sizes(8, coverage_overlay_active=True)
+    c_both, v_both = dual_track_sizes(
+        8, coverage_overlay_active=True, clearability_overlay_active=True
+    )
+    assert c_both + v_both == 8
+    assert c_cl_only == 6 and v_cl_only == 2
+    assert c_cov_only == 4 and v_cov_only == 4
+    # Raised (6,4) scales to (5,3) — between the two single-flag extremes
+    assert (c_both, v_both) == (5, 3)
+    assert v_both > v_cl_only  # coverage share better than clearability-only
+    assert c_both > c_cov_only  # clearable share better than coverage-only
+
+    c10, v10 = dual_track_sizes(
+        10, coverage_overlay_active=True, clearability_overlay_active=True
+    )
+    assert c10 + v10 == 10
+    # base (7,3) → raised (8,4) total 12 → round scale (7,3) or (7,3)
+    assert c10 >= 6 and v10 >= 2
+
+
 def test_t13_dual_track_preferred_composition():
     """T13: dual-track composition ≥55% preferred when pool allows."""
     cfg = _cfg()
