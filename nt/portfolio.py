@@ -4,7 +4,13 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from nt.bets_io import band_roi_stats, odds_band
-from nt.evidence import ev_after_haircut, grade_evidence
+from nt.evidence import (
+    ev_after_haircut,
+    grade_evidence,
+    has_core_reason,
+    is_strong_confidence,
+    normalize_sources,
+)
 from nt.sport_taxonomy import normalize_sport
 
 
@@ -104,16 +110,20 @@ def _stake_for_capital_v2(
     odds: float,
     match: str,
     selection: str,
+    grade: str = "B",
+    high_confidence: bool = False,
 ) -> tuple[float, dict[str, Any]]:
     """
     Unit-ladder sizing when capital_v2.enabled.
     Returns (final_stake, stake_decision_dict).
+    High-Volume v2: grade_mult scales unit (C 1.0 · B 1.4 · A 2.0/2.2).
     """
     from nt.capital_v2 import (
         RULE_BUNDLE_VERSION,
         active_unit_for_mode,
         capital_v2_cfg,
         compute_unit_stake,
+        grade_stake_multiplier,
         unit_size,
     )
 
@@ -130,6 +140,9 @@ def _stake_for_capital_v2(
             liq = risk.get("working_equity_nok") or remaining_risk
         unit = unit_size(float(liq), v2)
     unit = float(unit)
+    g_mult = grade_stake_multiplier(
+        grade, high_confidence=high_confidence, v2=v2
+    )
 
     decision = compute_unit_stake(
         size_mode=size_mode,
@@ -141,6 +154,7 @@ def _stake_for_capital_v2(
         high_odds=high_odds,
         high_odds_mult=float(high_odds_mult),
         learning_stake_mult=float(learning_stake_mult or 1.0),
+        grade_mult=float(g_mult),
         match=match,
         selection=selection,
         rule_bundle_version=str(v2.get("rule_bundle_version") or RULE_BUNDLE_VERSION),
@@ -156,6 +170,8 @@ def _stake_for_capital_v2(
             "p_model": p_model,
             "odds": odds,
             "ev": ev,
+            "grade": grade,
+            "grade_mult": g_mult,
             "learning_stake_mult": learning_stake_mult,
             "active_unit": active_unit_for_mode(unit, size_mode, floor),
             "remaining_room": remaining_risk,
@@ -226,6 +242,7 @@ def rebalance_stakes(
     max_stake: float,
     *,
     reserve_extra_seats: int = 0,
+    max_stakes: list[float] | None = None,
 ) -> float:
     """
     Pack daily risk across the slip so we don't strand leftover under min_stake
@@ -233,7 +250,8 @@ def rebalance_stakes(
 
     1) Seat every pick at min_stake (NT floor)
     2) Reserve ``reserve_extra_seats * min_stake`` for unfilled seats still possible
-    3) Top up whole kroner to highest-EV picks (capped at max_stake) from *usable* only
+    3) Top up whole kroner to highest-EV picks (capped at max_stake or per-seat
+       max_stakes for High-Volume grade mults) from *usable* only
     4) Return leftover kroner after packing (for multi-pass fill)
 
     Returns leftover budget not assigned to stakes (may fund another min seat).
@@ -255,6 +273,8 @@ def rebalance_stakes(
         picked.clear()
         picked.extend(kept)
         n = len(picked)
+        if max_stakes is not None and len(max_stakes) != n:
+            max_stakes = None  # indices shifted — fall back to global cap
     if n == 0:
         return budget
 
@@ -270,7 +290,11 @@ def rebalance_stakes(
     leftover_usable = usable - used
     order = sorted(range(n), key=lambda i: picked[i].ev, reverse=True)
     for i in order:
-        while leftover_usable >= 1.0 - 1e-9 and stakes[i] < max_stake:
+        seat_cap = max_stake
+        if max_stakes is not None and i < len(max_stakes):
+            seat_cap = min(max_stake, float(max_stakes[i]))
+        seat_cap = max(min_stake, seat_cap)
+        while leftover_usable >= 1.0 - 1e-9 and stakes[i] < seat_cap - 1e-9:
             stakes[i] += 1.0
             leftover_usable -= 1.0
     for i, s in enumerate(stakes):
@@ -315,6 +339,8 @@ def build_portfolio(
 
     rejects: list[dict[str, Any]] = []
     scored: list[Recommendation] = []
+    # per-call provisional Exploration weekly explore quota consumption while scoring
+    build_portfolio._regime_explore_scored = 0  # type: ignore[attr-defined]
 
     if not risk.get("can_bet"):
         return [], [{"reason": "risk block", "detail": risk.get("reasons")}]
@@ -399,10 +425,25 @@ def build_portfolio(
         ev += float(priors.get(band, 0.0))
         ev += float(adj.get("ev_boost") or 0.0)
 
-        min_ev = float(sel["standard_min_ev"])
+        # High-Volume v2 EV floors after haircut (+ soft boosts already applied)
+        standard_floor = float(sel.get("standard_min_ev", 0.02))
+        strong_floor = float(sel.get("strong_min_ev", 0.015))
+        absolute_floor = float(sel.get("absolute_min_ev", 0.01))
+        strong_n = int(sel.get("strong_min_sources", 8))
+        strong = is_strong_confidence(c.evidence, grade, min_sources=strong_n)
+        min_ev = strong_floor if strong else standard_floor
         # Thin sport/market explore path: lower EV bar so non-football can build sample
         if adj.get("explored"):
             min_ev = min(min_ev, float(div_lim.get("explore_min_ev", 0.012)))
+        # Early-bankroll regime floor (Exploration 2% / Survival 3% under High-Volume v2)
+        regime_floor = risk.get("regime_min_ev")
+        if regime_floor is not None:
+            try:
+                min_ev = max(min_ev, float(regime_floor))
+            except (TypeError, ValueError):
+                pass
+        # Exploration weekly quota: mid/alt unit bets may use thin EV band
+        regime_explore = False
         if high:
             # Phase v5: concentration / poor calibration blocks high-odds entirely
             if high_odds_stress:
@@ -467,10 +508,61 @@ def build_portfolio(
         except Exception:
             pg_raise = 0.0
 
+        # Before EV reject: try Exploration regime-explore quota (after process_gate raise)
+        if (
+            not high
+            and regime_floor is not None
+            and float(ev) + 1e-12 < float(min_ev)
+            and str(risk.get("bankroll_regime") or "") == "exploration"
+        ):
+            try:
+                from nt.bankroll_regime import (
+                    EXPLORE_REGIME_TAG,
+                    can_use_regime_explore_quota,
+                )
+
+                weekly_used = int(risk.get("regime_weekly_explore_used") or 0)
+                # provisional slots already scored this round
+                weekly_used += int(getattr(build_portfolio, "_regime_explore_scored", 0) or 0)
+                regime_blob = dict(risk.get("regime") or {})
+                has_pack = bool(c.evidence and c.evidence.get("p_model") is not None)
+                if can_use_regime_explore_quota(
+                    regime=regime_blob,
+                    ev=float(ev),
+                    odds=odds,
+                    selection=c.selection or "",
+                    sport=c.sport or "",
+                    family=c.market_type or "",
+                    weekly_used=weekly_used,
+                    has_deep_pack=has_pack,
+                ):
+                    # pass at explore_min_ev only (process_gate still blocks if ev < raised min
+                    # unless still within explore band — apply process_gate on top of explore floor)
+                    explore_floor = float(
+                        regime_blob.get("explore_min_ev")
+                        or risk.get("regime_explore_min_ev")
+                        or 0.02
+                    )
+                    eff = explore_floor + float(pg_raise or 0.0)
+                    if float(ev) + 1e-12 >= eff:
+                        regime_explore = True
+                        min_ev = eff
+                        build_portfolio._regime_explore_scored = (  # type: ignore[attr-defined]
+                            int(getattr(build_portfolio, "_regime_explore_scored", 0) or 0)
+                            + 1
+                        )
+            except Exception:
+                regime_explore = False
+
+        # Absolute floor after all boosts/raises (High-Volume v2: never below 1%)
+        min_ev = max(float(min_ev), absolute_floor)
+
         if ev < min_ev:
             reason = f"EV {ev:.3f} < min {min_ev:.3f}"
             if pg_raise > 0:
                 reason += f" (process_gate:+{pg_raise:.3f})"
+            if strong:
+                reason += " (strong_floor)"
             rejects.append(
                 {
                     "match": c.match,
@@ -485,17 +577,7 @@ def build_portfolio(
             )
             continue
 
-        # Standard bets need at least grade B (structured evidence). High odds already require A.
-        if grade in ("F", "C") and not high:
-            rejects.append(
-                {
-                    "match": c.match,
-                    "selection": c.selection,
-                    "reason": f"evidence grade {grade} insufficient (need B+)",
-                    "issues": issues,
-                }
-            )
-            continue
+        # Grade F always rejected. Grade C: High-Volume v2 allows when core reason clear.
         if grade == "F":
             rejects.append(
                 {
@@ -506,6 +588,41 @@ def build_portfolio(
                 }
             )
             continue
+        if grade == "C" and not high:
+            allow_c = bool(sel.get("grade_c_placeable", True))
+            need_reason = bool(sel.get("grade_c_require_core_reason", True))
+            min_c_src = int(sel.get("grade_c_min_sources", 4))
+            n_src = len(normalize_sources((c.evidence or {}).get("sources")))
+            if not allow_c:
+                rejects.append(
+                    {
+                        "match": c.match,
+                        "selection": c.selection,
+                        "reason": "evidence grade C insufficient (need B+)",
+                        "issues": issues,
+                    }
+                )
+                continue
+            if need_reason and not has_core_reason(c.evidence):
+                rejects.append(
+                    {
+                        "match": c.match,
+                        "selection": c.selection,
+                        "reason": "grade C requires clear core reason (summary/takeaway ≥20 chars)",
+                        "issues": issues,
+                    }
+                )
+                continue
+            if n_src < min_c_src:
+                rejects.append(
+                    {
+                        "match": c.match,
+                        "selection": c.selection,
+                        "reason": f"grade C needs ≥{min_c_src} sources (got {n_src})",
+                        "issues": issues,
+                    }
+                )
+                continue
         if grade_a_only and grade != "A":
             rejects.append(
                 {
@@ -534,6 +651,8 @@ def build_portfolio(
                 odds=odds,
                 match=c.match,
                 selection=c.selection,
+                grade=grade,
+                high_confidence=strong,
             )
         else:
             stake = _stake_for(
@@ -556,6 +675,26 @@ def build_portfolio(
             )
             continue
 
+        # Regime-explore: force 1 unit stake (spec: unit bets only for quota)
+        if regime_explore:
+            unit = float(risk.get("unit_size_nok") or min_stake)
+            unit = max(float(min_stake), float(int(round(unit))))
+            stake = min(unit, float(remaining))
+            if stake + 1e-9 < min_stake:
+                rejects.append(
+                    {
+                        "match": c.match,
+                        "selection": c.selection,
+                        "reason": "EXPLORE_REGIME: insufficient room for unit stake",
+                    }
+                )
+                continue
+            stake = float(int(round(stake)))
+            if stake_decision is not None:
+                stake_decision = dict(stake_decision)
+                stake_decision["final_stake_nok"] = stake
+                stake_decision["regime_explore"] = True
+
         note_bits = []
         if high:
             note_bits.append(f"HIGH_ODDS grade={grade}")
@@ -564,7 +703,12 @@ def build_portfolio(
         # Dual-write p_model into notes for forensic recovery if side-car is missing
         note_bits.append(f"p_model={float(p_model):.4f}")
         note_bits.append(f"EV={ev:.3f}")
-        if adj.get("explored"):
+        if regime_explore:
+            from nt.bankroll_regime import EXPLORE_REGIME_TAG
+
+            note_bits.append(EXPLORE_REGIME_TAG)
+            note_bits.append("explore")
+        elif adj.get("explored"):
             note_bits.append("EXPLORE")
         if adj.get("stake_mult") and abs(float(adj["stake_mult"]) - 1.0) > 0.01:
             note_bits.append(f"learn_stake×{adj['stake_mult']}")
@@ -613,7 +757,7 @@ def build_portfolio(
             p_model=p_model,
             notes="; ".join(note_bits)[:400],
             high_odds=high,
-            explore=bool(adj.get("explored")),
+            explore=bool(adj.get("explored") or regime_explore),
             learning_stake_mult=learn_mult,
             learning_ev_boost=float(adj.get("ev_boost") or 0.0),
             market_key=mk,
@@ -629,6 +773,25 @@ def build_portfolio(
 
     # Sort by EV desc; optional explore-first reorder so thin sports get airtime
     scored.sort(key=lambda r: (r.ev, 1 if r.explore else 0), reverse=True)
+    # Early regime: soft-prefer mid-odds lower-variance lines (sort only, not hard ban)
+    if risk.get("regime_prefer_mid_odds") and risk.get("bankroll_regime") in (
+        "exploration",
+        "survival",
+        "calibration",  # legacy id if any state still holds it
+    ):
+        from nt.bankroll_regime import is_mid_odds_preferred
+
+        regime_blob = risk.get("regime") or {
+            "prefer_mid_odds": True,
+            "mid_odds_lo": 1.85,
+            "mid_odds_hi": 2.50,
+        }
+
+        def _mid_key(r: Recommendation) -> tuple:
+            mid = 1 if is_mid_odds_preferred(float(r.decimal_odds), regime_blob) else 0
+            return (mid, r.ev, 1 if r.explore else 0)
+
+        scored.sort(key=_mid_key, reverse=True)
     if div_lim.get("prefer_explore_first"):
         # Stable: explored non-football first among positive-EV, then pure EV
         scored.sort(
@@ -1100,10 +1263,23 @@ def build_portfolio(
     _fill_passes()
 
     # Multi-pass pack: reserve min seats for still-eligible candidates, then refill
-    budget = float(risk["remaining_risk_nok"])
+    # High-Volume v2: per-run stake sum ≤ max_run_stake_pct_of_equity × equity
+    # (also min'd with remaining_risk — fail-closed).
+    remaining_risk_budget = float(risk["remaining_risk_nok"])
+    equity_now = float(risk.get("equity_nok") or 0.0)
+    run_pct = float((cfg.get("recommend") or {}).get("max_run_stake_pct_of_equity") or 0.20)
+    if equity_now > 0 and run_pct > 0:
+        run_equity_cap = equity_now * run_pct
+    else:
+        run_equity_cap = remaining_risk_budget
+    budget = min(remaining_risk_budget, run_equity_cap)
+    build_portfolio._run_stake_cap_nok = budget  # type: ignore[attr-defined]
+    build_portfolio._run_stake_equity_cap_nok = run_equity_cap  # type: ignore[attr-defined]
     max_stake = float(phase.get("stake_max") or min_stake)
     if _capital_v2_enabled(cfg):
         # Unit ladder is the hard per-bet ceiling (active unit after size_mode).
+        # Grade mult can lift recommended above unit — rebalance may top toward
+        # max of unit and each seat's recommended final from scoring.
         from nt.capital_v2 import active_unit_for_mode, capital_v2_cfg, unit_size
 
         v2 = capital_v2_cfg(cfg)
@@ -1118,8 +1294,8 @@ def build_portfolio(
                 liq = risk.get("working_equity_nok") or budget
             u = unit_size(float(liq), v2)
         active_u = active_unit_for_mode(float(u), mode, floor)
-        # Cap rebalance top-up at active unit (not phase stake_max)
-        max_stake = max(floor, active_u) if active_u > 0 else floor
+        # Cap rebalance top-up at active unit × max grade mult (High-Volume v2)
+        max_stake = max(floor, active_u * 2.2) if active_u > 0 else floor
         for rec in picked:
             if rec.stake_decision is not None:
                 rec.stake_decision = dict(rec.stake_decision)
@@ -1129,10 +1305,21 @@ def build_portfolio(
                 if tag not in caps:
                     caps.append(tag)
                 rec.stake_decision["constraints_applied"] = caps
+                rec.stake_decision["run_stake_cap_nok"] = budget
+
+    def _seat_maxes() -> list[float]:
+        caps: list[float] = []
+        for rec in picked:
+            rec_cap = float(
+                (rec.stake_decision or {}).get("recommended_stake_nok")
+                or (rec.stake_decision or {}).get("final_stake_nok")
+                or max_stake
+            )
+            caps.append(max(min_stake, min(max_stake, rec_cap)))
+        return caps
 
     for _ in range(3):  # bounded retries
         extra = _count_extra_eligible()
-        # How many extra seats can budget still fund after current picks at min?
         fundable_extra = max(
             0,
             int(budget // min_stake) - len(picked),
@@ -1144,20 +1331,41 @@ def build_portfolio(
             min_stake,
             max_stake,
             reserve_extra_seats=reserve,
+            max_stakes=_seat_maxes(),
         )
         remaining = leftover
         if remaining < min_stake or len(picked) >= max_bets or reserve <= 0:
-            # Final pack with no reserve (use every whole krone on accepted seats)
-            rebalance_stakes(picked, budget, min_stake, max_stake, reserve_extra_seats=0)
+            rebalance_stakes(
+                picked,
+                budget,
+                min_stake,
+                max_stake,
+                reserve_extra_seats=0,
+                max_stakes=_seat_maxes(),
+            )
             break
         n_before = len(picked)
         _fill_passes()
         if len(picked) == n_before:
-            rebalance_stakes(picked, budget, min_stake, max_stake, reserve_extra_seats=0)
+            rebalance_stakes(
+                picked,
+                budget,
+                min_stake,
+                max_stake,
+                reserve_extra_seats=0,
+                max_stakes=_seat_maxes(),
+            )
             break
 
     # P0: never leave a fundable min-seat idle when diversify still allows it
-    rebalance_stakes(picked, budget, min_stake, max_stake, reserve_extra_seats=0)
+    rebalance_stakes(
+        picked,
+        budget,
+        min_stake,
+        max_stake,
+        reserve_extra_seats=0,
+        max_stakes=_seat_maxes(),
+    )
     used = sum(float(p.stake_nok) for p in picked)
     leftover_final = round(budget - used, 2)
     if leftover_final + 1e-9 >= min_stake and len(picked) < max_bets:
@@ -1165,7 +1373,25 @@ def build_portfolio(
         n_before = len(picked)
         _fill_passes()
         if len(picked) > n_before:
-            rebalance_stakes(picked, budget, min_stake, max_stake, reserve_extra_seats=0)
+            rebalance_stakes(
+                picked,
+                budget,
+                min_stake,
+                max_stake,
+                reserve_extra_seats=0,
+                max_stakes=_seat_maxes(),
+            )
+
+    # EXPLORE_REGIME unit bets must stay at 1 unit (rebalance must not top them up)
+    try:
+        from nt.bankroll_regime import EXPLORE_REGIME_TAG
+
+        unit = max(float(min_stake), float(int(round(float(risk.get("unit_size_nok") or min_stake)))))
+        for rec in picked:
+            if EXPLORE_REGIME_TAG in (rec.notes or ""):
+                rec.stake_nok = unit
+    except Exception:
+        pass
 
     # After final rebalance: fail-closed floor + refresh stake_decision finals (v2)
     if _capital_v2_enabled(cfg):
@@ -1180,8 +1406,35 @@ def build_portfolio(
                 sd["recommended_stake_nok"] = max(
                     float(sd.get("recommended_stake_nok") or 0.0), rec.stake_nok
                 )
+                sd["run_stake_cap_nok"] = budget
                 rec.stake_decision = sd
         # Drop any zeroed seats (should be rare; rebalance already drops by budget)
         picked[:] = [r for r in picked if r.stake_nok >= min_stake]
+
+    # Strict per-run sum check (High-Volume v2): never exceed budget
+    used_sum = sum(float(p.stake_nok) for p in picked)
+    if used_sum > budget + 1e-6 and picked:
+        # Scale down whole-krone greedily from lowest-EV first
+        ordered = sorted(picked, key=lambda r: float(r.ev))
+        over = used_sum - budget
+        for rec in ordered:
+            if over <= 1e-9:
+                break
+            cut = min(float(rec.stake_nok) - min_stake, over) if rec.stake_nok > min_stake else 0.0
+            if cut >= 1.0:
+                rec.stake_nok = float(int(rec.stake_nok - cut))
+                over = sum(float(p.stake_nok) for p in picked) - budget
+        # Drop seats that can no longer fund min stake under budget
+        while sum(float(p.stake_nok) for p in picked) > budget + 1e-6 and picked:
+            # drop lowest EV
+            worst = min(picked, key=lambda r: float(r.ev))
+            picked.remove(worst)
+            rejects.append(
+                {
+                    "match": worst.match,
+                    "selection": worst.selection,
+                    "reason": f"run stake budget {budget:.0f} NOK (20% equity / remaining)",
+                }
+            )
 
     return picked, rejects

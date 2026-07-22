@@ -120,9 +120,9 @@ def test_never_recommend_stake_below_floor():
 @pytest.mark.parametrize(
     "liquid,expected",
     [
-        (0, 10.0),
-        (500, 10.0),
-        (1499.99, 10.0),
+        (0, 12.0),  # High-Volume v2 base unit
+        (500, 12.0),
+        (1499.99, 12.0),
         (1500, 15.0),
         (2499.99, 15.0),
         (2500, 20.0),
@@ -157,8 +157,8 @@ def test_reduced_unit_exactly_half_when_legal():
 
 
 def test_reduced_unit_steps_down_when_half_below_floor():
-    # unit 15 → half 7 < 10 → next lower ladder step 10
-    assert reduced_unit(15.0, 10.0) == 10.0
+    # unit 15 → half 7 < 10 → next lower ladder step 12 (High-Volume v2)
+    assert reduced_unit(15.0, 10.0) == 12.0
 
 
 def test_reduced_unit_at_floor_stays_at_floor():
@@ -573,7 +573,7 @@ def test_load_fills_missing_keys(tmp_path: Path):
 def test_dd_reduced_then_stake_floor_chain():
     """
     Simulated path: peak 600, equity 510 (15% DD) → REDUCED half unit.
-    Liquid 510 → unit 10 → reduced 10 (floor). Floor handling remains fail-closed.
+    Liquid 510 → unit 12 → reduced 10 (floor). Floor handling remains fail-closed.
     """
     peak = 600.0
     equity = 510.0
@@ -581,8 +581,9 @@ def test_dd_reduced_then_stake_floor_chain():
     mode = size_mode_from_dd(dd)
     assert mode == "REDUCED"
     u = unit_size(equity)
-    assert u == 10.0
+    assert u == 12.0
     stake_unit = reduced_unit(u, 10.0)
+    # half of 12 = 6 < floor → step to 10
     assert stake_unit == 10.0
     assert apply_nt_floor(stake_unit, 10.0) == 10.0
     assert apply_nt_floor(5.0, 10.0) == 0.0

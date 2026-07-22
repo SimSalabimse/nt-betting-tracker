@@ -7,9 +7,10 @@ project:
   operator: Norsk Tipping Oddsen
 
 bankroll:
-  # Clean-restart era (LuminaNT autonomous research, 2026-07-18). Prior ledger archived under history/archives/.
+  # Clean-restart era (fresh start 2026-07-22, closed-loop + Phase v5).
+  # Prior live book archived under history/archives/fresh_start_20260721_235802/
   baseline_nok: 500.0
-  era_start: "2026-07-19"
+  era_start: "2026-07-22"
   # Equity = baseline + sum(settled P/L) over data/bets.csv only (no pre-restart archive in equity).
   include_era_archive: false
 
@@ -17,6 +18,14 @@ norsk_tipping:
   min_stake_nok: 10.0
   # Decimal odds only in this system
   max_legs_in_combo: 3
+  # NT account totalgrense (operator mirror). Headroom hard-binds remaining_risk.
+  # residual_buffer: refuse tickets that leave residual headroom below this (default 5000).
+  # Set daily_limit_nok / monthly_limit_nok to your NT limits (null = unconstrained period).
+  totalgrense:
+    enabled: true
+    residual_buffer_nok: 5000
+    daily_limit_nok: null
+    monthly_limit_nok: null
 
 # Phase ladder v4 (2026-07-13) — see docs/PHASE_PLAN.md
 # Hybrid: equity ladder is primary; settled-count may unlock at most +1 phase if stable.
@@ -28,8 +37,8 @@ phases:
     enter_settled: 0
     stake_min: 10
     stake_max: 12
-    # 4 seats so daily cap (~40) can pack 4×10 without stranding < min_stake remainder
-    max_bets_per_round: 4
+    # High-Volume v2: ~3 target; 5 seats so 20% run budget can pack without stranding
+    max_bets_per_round: 5
     max_doubles_per_round: 0
     daily_risk_pct: 0.08
     daily_risk_floor: 30
@@ -113,21 +122,70 @@ risk:
   # After this many consecutive settled losses, require grade A only
   loss_streak_grade_a_only: 3
 
-# Phase 2 capital_v2 — DEFAULT OFF. Enable only after docs/CAPITAL_V2_GO_LIVE.md.
-# Env override: CAPITAL_V2_ENABLED=true or NT_CAPITAL_V2_ENABLED=1
+# Early-bankroll regimes (orthogonal to phase ladder). Clean 500 NOK restart → Exploration.
+# Open-risk caps count Pending+ConfirmedPlaced only — free immediately on settlement (W/L).
+# Sports start equal (no regime sport mults). High-Volume v2: 3pp haircut hard.
+# Exploration: min-EV 2% after 3pp; open cap 100 so ~3 unit-scale bets fit under 20% run budget.
+bankroll_regime:
+  enabled: true
+  exploration:
+    exit_settled: 40            # OR equity ≥ exit_equity
+    exit_equity: 650
+    min_ev: 0.02                # 2% after 3pp haircut (High-Volume v2)
+    open_risk_cap_nok: 100      # pending-only; allows ~3 grade-B stakes at unit 12
+    prefer_mid_odds: true
+    mid_odds_lo: 1.85
+    mid_odds_hi: 2.60
+    weekly_explore_max: 2       # unit bets/week at thin EV band (legacy quota)
+    explore_min_ev: 0.01        # absolute-adjacent floor for thin quota only
+    explore_max_ev: 0.02        # exclusive upper (= full floor)
+    explore_odds_lo: 1.85
+    explore_odds_hi: 2.60
+    explore_require_alt_or_mid: true
+  survival:
+    exit_settled: 100           # OR equity ≥ exit_equity
+    exit_equity: 800
+    min_ev: 0.03                # 3% after haircut (was 7.5% — starved volume)
+    open_risk_cap_nok: 100
+    prefer_mid_odds: true
+    mid_odds_lo: 1.85
+    mid_odds_hi: 2.60
+
+# Phase 2 capital_v2 — live. Env: CAPITAL_V2_ENABLED / NT_CAPITAL_V2_ENABLED
 capital_v2:
   enabled: true
+  # High-Volume v2: base unit 12 under 1500 liquid; grade stake mults; secure 27%
+  unit_ladder:
+    - { max_liquid_exclusive: 1500.0, unit: 12.0 }
+    - { max_liquid_exclusive: 2500.0, unit: 15.0 }
+    - { max_liquid_exclusive: null, unit: 20.0 }
+  grade_stake_mult:
+    C: 1.0
+    B: 1.4
+    A: 2.0
+    A_high_conf: 2.2
+  secure_bucket:
+    enabled: true
+    trigger_multiple_of_ref: 1.30
+    transfer_fraction_of_profit_above_ref: 0.27   # was 0.40
 
 selection:
-  # Model probability is haircut before EV (NT margin + optimism).
-  probability_haircut: 0.05
-  standard_min_ev: 0.03
+  # High-Volume v2: hard 3pp haircut (was 5pp). Never softened by regime/coverage.
+  probability_haircut: 0.03
+  standard_min_ev: 0.02          # 2.0% after haircut
+  strong_min_ev: 0.015           # 1.5% when multi-source / high-confidence
+  absolute_min_ev: 0.01           # never place below 1.0%
+  strong_min_sources: 8
+  # Grade C placeable when core reason is clear (see portfolio)
+  grade_c_placeable: true
+  grade_c_require_core_reason: true
+  grade_c_min_sources: 4
   # P1: Grade A needs p_model_sd, edge CI, or multi-model — not bare point p
   grade_a_require_uncertainty: true
   # Odds > threshold are ALLOWED when evidence supports them — not banned.
   high_odds_threshold: 2.5
   high_odds_min_grade: A
-  high_odds_min_ev: 0.08
+  high_odds_min_ev: 0.05         # was 0.08 — still elevated vs standard
   high_odds_stake_multiplier: 0.6
   high_odds_max_per_round: 2
   # If historical band ROI is terrible with enough sample, raise the bar further
@@ -149,6 +207,10 @@ selection:
     high_odds: 12
   empty_slip_ok: true
 
+# Per research/recommend run: sum of stakes ≤ this fraction of equity
+# (also min'd with remaining_risk_nok — fail-closed).
+recommend:
+  max_run_stake_pct_of_equity: 0.20
 # Ledger-driven learning loop (recomputed on settle / `nt learn` / refresh)
 # Does NOT rewrite this file — live mults live in data/state/learning.json
 learning:
@@ -208,6 +270,24 @@ learning:
     max_raise: 0.05
     ttl_hours: 48
     clear_after_clean_settles: 3
+  # P0 ControlSignals (temp_gate_raise + force_coverage_priority)
+  control_signals:
+    enabled: true
+    min_ev_raise: 0.02
+    max_raise: 0.05
+    ttl_days: 10
+    force_confirmed_lineup: true
+    coverage_priority:
+      enabled: true
+      ttl_days: 5                 # clamp 4–7
+      min_deep_packs: 8
+      target_odds_band: "1.85-2.60"
+      prefer: [alt_totals, dogs, handicaps, period]
+      near_empty_max_picks: 1
+      min_no_pmodel_reject_share: 0.70
+      min_mid_unresearched: 3
+      coverage_preferred_share: 0.55
+      weight_boost: 30.0            # deep-queue score boost under active signal
 
 paths:
   bets: data/bets.csv
@@ -293,13 +373,60 @@ research:
     light_coverage_min_n: 8
     min_light_per_sport_when_n: 5    # if sport has ≥5 shortlist lines…
     min_light_per_sport: 3           # …light at least 3
-    deep_target_n: 8                 # promote ~8 to Deep queue
+    deep_target_n: 8                 # High-Volume v2: focused deep queue
     deep_max_n: 12
     auto_light_on_board: true        # board runs light pass automatically
+    # assess never promotes; engine fills deep_queue via anti-chalk scorer
+    auto_promote_to_deep: false
+    engine_deep_queue: true
+    deep_min_preferred_share: 0.55   # survivable preferred ≥55% of deep queue
+    deep_max_short_main_share: 0.25  # short fav ML / O2.5 / first-goal ≤25%
+    short_chalk_odds: 1.70           # Stage1 drop short-main below 1.70 (was 1.80)
+    preferred_odds_lo: 1.85          # primary survivable band floor
+    preferred_odds_hi: 2.60          # primary survivable band ceiling
+    alt_preferred_odds_lo: 1.80      # alt HC/totals/period only preferred if ≥ this
+    promo_mid_band_boost: 60         # was 50
+    promo_alt_boost: 14              # HC / alt totals (was ~8)
+    promo_short_chalk_penalty: -55   # was -45
+    soft_value_min_rel: 0.08         # soft ≥ NT × 1.08 when ref present
     fail_odds_below: 1.35
     fail_odds_above: 4.0
     pass_odds_lo: 1.45
-    pass_odds_hi: 2.50
+    pass_odds_hi: 2.60
+
+  # Coverage Health (board/recommend + Lumina DeskStrip)
+  coverage_health:
+    warn_deep_pct: 25
+    critical_deep_pct: 15
+    warn_survivable_pct: 45
+    critical_survivable_pct: 30
+    critical_mid_unresearched: 5
+    warn_mid_unresearched: 3
+    soft_gate: true              # block recommend when critical unless --allow-low-coverage
+    auto_expand_deep_queue: true
+
+  # Multi-stage quant pre-filter (Stage1 screens + Stage2 classical prior).
+  # Research-rank only — never invents p_model. Clean-restart neutral (no learning).
+  prefilter:
+    enabled: true
+    target_discard_share: 0.70     # soft metric for funnel health
+    stage1:
+      enabled: true
+      max_p_needed: 0.78
+      drop_short_chalk_ml: true    # short-main ML/O2.5/FG below short_chalk_odds (1.70)
+      # Allow short-main <1.70 only when rough_p_needed ≤ strong_data_p_needed (exception)
+      strong_data_p_needed: 0.55
+      drop_noise_specials: true
+      drop_ultra_short_alts: true  # non-main alts below ultra_short_alt_odds
+      ultra_short_alt_odds: 1.55
+    stage2:
+      enabled: true
+      min_prior_ev: -0.12          # absolute floor after 3pp haircut
+      short_odds_prior_ev_floor: -0.08  # stricter when odds < preferred_odds_lo
+      prior_ev_slack_vs_fair: 0.04 # also require worse than fair-by-slack
+      blend_weight_implied: 0.55
+      require_prior: false
+      base_rate_conflict_delta: 0.18
 
   # Multi-sport research gates — see docs/RESEARCH_GATES.md
   # Legacy flat keys still work (aliased). Prefer nested gates: below.

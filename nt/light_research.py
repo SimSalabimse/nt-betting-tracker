@@ -34,16 +34,429 @@ def tiers_cfg(cfg: dict[str, Any]) -> dict[str, Any]:
         "light_coverage_min_n": 8,  # always light at least this many if shortlist ≥ this
         "min_light_per_sport_when_n": 5,  # if sport has ≥5 shortlist lines…
         "min_light_per_sport": 3,  # …light at least 3
-        "deep_target_n": 8,  # promote ~this many to deep when auto
-        "deep_max_n": 12,  # cap auto deep promotions
+        "deep_target_n": 8,  # High-Volume v2: focused deep queue
+        "deep_max_n": 12,  # cap deep promotions
         "auto_light_on_board": True,
-        "auto_promote_to_deep": False,  # P1: never auto-promote; agent/manual only
+        "auto_promote_to_deep": False,  # assess never promotes (P1)
+        "engine_deep_queue": True,  # P0: engine fills deep_queue via anti-chalk scorer
+        "deep_min_preferred_share": 0.55,
+        "deep_max_short_main_share": 0.25,
+        "short_chalk_odds": 1.70,
+        "preferred_odds_lo": 1.85,
+        "preferred_odds_hi": 2.60,
+        "alt_preferred_odds_lo": 1.80,  # non-main alts only preferred if ≥ this
+        "promo_mid_band_boost": 60.0,
+        "promo_alt_boost": 14.0,
+        "promo_short_chalk_penalty": -55.0,
+        "soft_value_min_rel": 0.08,
         "fail_odds_below": 1.35,  # light-fail ultra-short unless exceptional
         "fail_odds_above": 4.0,  # light-fail longshots without deep plan
         "pass_odds_lo": 1.45,
-        "pass_odds_hi": 2.50,
+        "pass_odds_hi": 2.60,
     }
     return {**defaults, **raw}
+
+
+def parse_odds_band(band: str | None) -> tuple[float, float | None]:
+    """
+    Parse force_coverage / target odds band strings.
+    Supports: "1.85-2.60", "1.90+", "1.85+", bare "1.90".
+    Returns (lo, hi) with hi=None meaning open-ended.
+    """
+    raw = str(band or "").strip()
+    if not raw:
+        return 1.85, 2.60
+    m = re.match(
+        r"^\s*([0-9]+(?:\.[0-9]+)?)\s*-\s*([0-9]+(?:\.[0-9]+)?)\s*$",
+        raw,
+    )
+    if m:
+        return float(m.group(1)), float(m.group(2))
+    m = re.match(r"^\s*([0-9]+(?:\.[0-9]+)?)\s*\+\s*$", raw)
+    if m:
+        return float(m.group(1)), None
+    m = re.match(r"^\s*([0-9]+(?:\.[0-9]+)?)\s*$", raw)
+    if m:
+        return float(m.group(1)), None
+    return 1.85, 2.60
+
+
+def _is_ou25(selection: str) -> bool:
+    s = (selection or "").lower()
+    return "2.5" in s and ("over" in s or "under" in s or "over/under" in s)
+
+
+def _is_first_goal(selection: str) -> bool:
+    s = (selection or "").lower()
+    return bool(
+        re.search(r"1\.\s*mål|first goal|første mål", s, re.I)
+    )
+
+
+def _is_ml_family(family: str, selection: str) -> bool:
+    fam = (family or "").lower()
+    if fam == "ml" or fam.startswith("ml_"):
+        return True
+    s = (selection or "").lower()
+    return "vinner" in s or "to win" in s or re.search(r"\bhub\b", s) is not None
+
+
+def is_short_main_line(
+    selection: str,
+    odds: float,
+    family: str,
+    *,
+    preferred_odds_lo: float = 1.85,
+) -> bool:
+    """Short favourite ML / O2.5 / first-goal under preferred odds floor."""
+    if float(odds) >= float(preferred_odds_lo):
+        return False
+    if _is_ou25(selection) or _is_first_goal(selection):
+        return True
+    return _is_ml_family(family, selection)
+
+
+def is_preferred_line(
+    selection: str,
+    odds: float,
+    family: str,
+    *,
+    preferred_odds_lo: float = 1.85,
+    alt_preferred_odds_lo: float = 1.80,
+) -> bool:
+    """
+    Survivable preferred for deep-queue composition.
+
+    - Odds ≥ preferred_odds_lo (default 1.85), OR
+    - Non short-main (HC / alt totals / period / dogs markets) with odds ≥ alt_preferred_odds_lo (1.80).
+
+    Short alts below alt_preferred_odds_lo do NOT pad the preferred floor
+    (they fail Calibration min-EV after 5pp haircut too often).
+    """
+    o = float(odds)
+    if o >= float(preferred_odds_lo):
+        return True
+    if o < float(alt_preferred_odds_lo):
+        return False
+    return not is_short_main_line(
+        selection, odds, family, preferred_odds_lo=preferred_odds_lo
+    )
+
+
+def _parse_soft_odds(item: dict[str, Any] | None, rec: "LightRecord | None" = None) -> float | None:
+    """Optional soft-book ref; never invent. Fail-closed if absent/invalid."""
+    if item:
+        raw = item.get("soft_decimal_odds")
+        if raw is not None:
+            try:
+                v = float(raw)
+                if v > 1.01:
+                    return v
+            except (TypeError, ValueError):
+                pass
+        notes = str(item.get("notes") or "")
+        m = re.search(r"soft_odds\s*=\s*([0-9]+(?:\.[0-9]+)?)", notes, re.I)
+        if m:
+            try:
+                v = float(m.group(1))
+                if v > 1.01:
+                    return v
+            except ValueError:
+                pass
+    if rec and rec.strength_notes:
+        m = re.search(r"soft_odds\s*=\s*([0-9]+(?:\.[0-9]+)?)", rec.strength_notes, re.I)
+        if m:
+            try:
+                v = float(m.group(1))
+                if v > 1.01:
+                    return v
+            except ValueError:
+                pass
+    return None
+
+
+def promotion_score(
+    rec: "LightRecord",
+    cfg: dict[str, Any],
+    *,
+    soft_odds: float | None = None,
+    board_score: float = 0.0,
+    coverage_overlay: dict[str, Any] | None = None,
+) -> float:
+    """
+    Anti-chalk promotion score for deep worklist.
+    Higher = more worth deep research. Does not invent p_model.
+    Heavily favors survivable band 1.85–2.60; demotes short chalk.
+    """
+    tcfg = tiers_cfg(cfg)
+    odds = float(rec.decimal_odds)
+    family = rec.market_family or selection_family(rec.selection, (rec.sport or "").lower())
+    short_chalk = float(tcfg["short_chalk_odds"])
+    pref_lo = float(tcfg["preferred_odds_lo"])
+    pref_hi = float(tcfg["preferred_odds_hi"])
+    alt_lo = float(tcfg.get("alt_preferred_odds_lo") or short_chalk)
+    soft_rel = float(tcfg["soft_value_min_rel"])
+
+    mid_boost = float(tcfg.get("promo_mid_band_boost") or 60.0)
+    alt_boost = float(tcfg.get("promo_alt_boost") or 14.0)
+    short_pen = float(tcfg.get("promo_short_chalk_penalty") or -55.0)
+
+    score = 50.0
+    # Odds band — primary research band is preferred_lo–preferred_hi (High-Volume v2)
+    if pref_lo <= odds <= pref_hi:
+        score += mid_boost
+    elif alt_lo <= odds < pref_lo:
+        score += 20.0
+    elif pref_hi < odds <= 3.20:
+        score += 12.0
+    elif odds < short_chalk:
+        # Hard demote short chalk unless structural edge note (strong data)
+        structural = False
+        need = rec.rough_p_needed
+        if need is not None and float(need) <= 0.55 and not _is_first_goal(rec.selection):
+            structural = True
+        score += -15.0 if structural else short_pen
+
+    preferred = is_preferred_line(
+        rec.selection,
+        odds,
+        family,
+        preferred_odds_lo=pref_lo,
+        alt_preferred_odds_lo=alt_lo,
+    )
+    short_main = is_short_main_line(rec.selection, odds, family, preferred_odds_lo=pref_lo)
+    if preferred and not short_main:
+        score += 25.0
+    if short_main:
+        score -= 30.0
+    # Alt totals / HC / period explicit (boosted High-Volume v2)
+    fam = (family or "").lower()
+    sel = (rec.selection or "").lower()
+    if fam == "handicap" or "handikap" in sel:
+        score += alt_boost
+    if "3.5" in sel or "4.5" in sel or fam in ("totals_over", "totals_under") and "2.5" not in sel:
+        score += alt_boost
+    if fam == "period" or "1. omgang" in sel or "1. sett" in sel:
+        score += 6.0
+
+    if soft_odds is not None and odds > 1.0:
+        if soft_odds >= odds * (1.0 + soft_rel):
+            score += 30.0
+
+    ov = coverage_overlay or {}
+    if ov.get("active"):
+        # Boost target band / prefer tags under force_coverage_priority
+        band_lo, band_hi = parse_odds_band(str(ov.get("target_odds_band") or "1.85-2.60"))
+        in_band = odds >= band_lo and (band_hi is None or odds <= band_hi)
+        if in_band:
+            score += float(ov.get("weight_boost") or 30.0)
+        prefer = [str(x).lower() for x in (ov.get("prefer") or [])]
+        if "handicaps" in prefer and (fam == "handicap" or "handikap" in sel):
+            score += 10.0
+        if "alt_totals" in prefer and ("3.5" in sel or "4.5" in sel or "totalt" in sel):
+            score += 10.0
+        if "period" in prefer and (fam == "period" or "1. omgang" in sel or "1. sett" in sel):
+            score += 10.0
+        if "dogs" in prefer and odds >= pref_lo and _is_ml_family(family, rec.selection):
+            score += 10.0
+
+    if board_score:
+        score += min(15.0, 0.1 * float(board_score))
+
+    # Stage-2 classical prior EV (research-rank only; never invent when missing)
+    if rec.prior_available and rec.prior_ev is not None:
+        pev = float(rec.prior_ev)
+        if pev > 0:
+            score += min(25.0, 80.0 * pev)
+        elif pev < -0.02:
+            score += max(-25.0, 60.0 * pev)
+
+    return round(score, 3)
+
+
+def build_deep_queue(
+    records: list["LightRecord"],
+    cfg: dict[str, Any],
+    *,
+    soft_by_key: dict[tuple[str, str], float | None] | None = None,
+    board_score_by_key: dict[tuple[str, str], float] | None = None,
+    coverage_overlay: dict[str, Any] | None = None,
+) -> list["LightRecord"]:
+    """
+    Engine deep worklist with hard composition quotas (fail-closed shrink).
+    """
+    tcfg = tiers_cfg(cfg)
+    if not bool(tcfg.get("engine_deep_queue", True)):
+        # Legacy agent/merge-only path
+        auto_promote = bool(tcfg.get("auto_promote_to_deep", False))
+        promotable = [
+            r
+            for r in records
+            if r.verdict == "pass"
+            and r.promote_to_deep
+            and not r.has_p_model
+            and (auto_promote or r.source in ("agent", "merge"))
+        ]
+        return promotable[: int(tcfg["deep_max_n"])]
+
+    ov = coverage_overlay or {}
+    pref_lo = float(tcfg["preferred_odds_lo"])
+    alt_lo = float(tcfg.get("alt_preferred_odds_lo") or tcfg["short_chalk_odds"])
+    min_pref = float(tcfg["deep_min_preferred_share"])
+    max_short = float(tcfg["deep_max_short_main_share"])
+    if ov.get("active"):
+        min_pref = max(min_pref, float(ov.get("coverage_preferred_share") or 0.55))
+    target = int(tcfg["deep_target_n"])
+    if ov.get("active"):
+        target = max(target, int(ov.get("min_deep_packs") or target))
+    deep_max = int(tcfg["deep_max_n"])
+    target = min(target, deep_max)
+
+    soft_by_key = soft_by_key or {}
+    board_score_by_key = board_score_by_key or {}
+
+    def _pref(r: LightRecord) -> bool:
+        return is_preferred_line(
+            r.selection,
+            r.decimal_odds,
+            r.market_family,
+            preferred_odds_lo=pref_lo,
+            alt_preferred_odds_lo=alt_lo,
+        )
+
+    def _sm(r: LightRecord) -> bool:
+        return is_short_main_line(
+            r.selection, r.decimal_odds, r.market_family, preferred_odds_lo=pref_lo
+        )
+
+    candidates: list[tuple[float, LightRecord]] = []
+    for r in records:
+        if r.verdict != "pass" or r.has_p_model:
+            continue
+        if r.script_conflict or r.base_rate_conflict:
+            continue
+        k = r.key()
+        sc = promotion_score(
+            r,
+            cfg,
+            soft_odds=soft_by_key.get(k),
+            board_score=float(board_score_by_key.get(k) or 0.0),
+            coverage_overlay=ov,
+        )
+        # stash for reason tags
+        r.rough_ev_note = (r.rough_ev_note or "") + f" | promo_score={sc:.1f}"
+        candidates.append((sc, r))
+
+    candidates.sort(key=lambda x: (-x[0], x[1].decimal_odds))
+
+    preferred_pool = [(sc, r) for sc, r in candidates if _pref(r)]
+    short_pool = [(sc, r) for sc, r in candidates if _sm(r)]
+    other_pool = [
+        (sc, r)
+        for sc, r in candidates
+        if not _pref(r) and not _sm(r)
+    ]
+
+    # Fail-closed shrink: never pad with chalk to hit target
+    n_pref_avail = len(preferred_pool)
+    if n_pref_avail == 0:
+        # Only non-preferred exist — allow tiny queue under short-main cap only if odds still mid
+        # Prefer empty worklist over chalk flood
+        max_n = min(deep_max, max(0, int(target * max_short)))
+        # If max_short allows some short_main only when preferred empty → still prefer empty for P0
+        return []
+
+    # Max queue size such that preferred can still be ≥ min_pref of final size
+    # n_pref / n >= min_pref  =>  n <= n_pref / min_pref
+    max_n_from_pref = int(n_pref_avail / min_pref) if min_pref > 0 else deep_max
+    n_target = min(target, deep_max, max_n_from_pref)
+    if n_target < 1:
+        n_target = min(n_pref_avail, 1)
+
+    deep_queue: list[LightRecord] = []
+    sp_count: dict[str, int] = defaultdict(int)
+    short_count = 0
+    pref_count = 0
+    selected: set[tuple[str, str]] = set()
+
+    def _try_add(r: LightRecord, *, as_short: bool, as_pref: bool) -> bool:
+        nonlocal short_count, pref_count
+        if len(deep_queue) >= n_target:
+            return False
+        k = r.key()
+        if k in selected:
+            return False
+        sp = (r.sport or "").lower()
+        if sp_count[sp] >= 3:
+            return False
+        if as_short:
+            # enforce max short share on final size estimate
+            trial_n = len(deep_queue) + 1
+            if (short_count + 1) / max(trial_n, 1) > max_short + 1e-9:
+                return False
+            # also vs target
+            if (short_count + 1) / max(n_target, 1) > max_short + 1e-9:
+                return False
+        deep_queue.append(r)
+        selected.add(k)
+        sp_count[sp] += 1
+        if as_short:
+            short_count += 1
+        if as_pref:
+            pref_count += 1
+        return True
+
+    # Phase A: preferred first (score order)
+    for _sc, r in preferred_pool:
+        if len(deep_queue) >= n_target:
+            break
+        _try_add(r, as_short=False, as_pref=True)
+
+    # Ensure preferred share on current queue
+    def _pref_share() -> float:
+        if not deep_queue:
+            return 0.0
+        return pref_count / len(deep_queue)
+
+    # Phase B: fill remainder with other then short under cap (never pad chalk past floor)
+    for _sc, r in other_pool + short_pool:
+        if len(deep_queue) >= n_target:
+            break
+        is_p = _pref(r)
+        is_s = _sm(r)
+        # Do not add non-preferred if it would break preferred floor at target size
+        trial_n = len(deep_queue) + 1
+        trial_pref = pref_count + (1 if is_p else 0)
+        if not is_p and trial_pref / max(trial_n, 1) + 1e-9 < min_pref:
+            # only allow if we still have preferred capacity later — skip non-pref fill
+            if is_s:
+                continue
+            continue
+        _try_add(r, as_short=is_s, as_pref=is_p)
+
+    # If preferred share slipped below floor, drop short_main then non-preferred from tail
+    while deep_queue and _pref_share() + 1e-9 < min_pref:
+        removed = False
+        for i in range(len(deep_queue) - 1, -1, -1):
+            r = deep_queue[i]
+            if _sm(r):
+                deep_queue.pop(i)
+                short_count = max(0, short_count - 1)
+                if _pref(r):
+                    pref_count = max(0, pref_count - 1)
+                removed = True
+                break
+        if not removed:
+            for i in range(len(deep_queue) - 1, -1, -1):
+                r = deep_queue[i]
+                if not _pref(r):
+                    deep_queue.pop(i)
+                    removed = True
+                    break
+        if not removed:
+            break
+
+    return deep_queue
 
 
 @dataclass
@@ -69,6 +482,13 @@ class LightRecord:
     has_p_model: bool = False
     researched_at: str = ""
     source: str = "auto"  # auto | agent | merge
+    # Quant prefilter (research-rank only — not recommend p_model)
+    prior_p: float | None = None
+    prior_ev: float | None = None
+    prior_available: bool = False
+    prefilter_stage1: str = ""
+    prefilter_stage2: str = ""
+    prefilter_rank: float | None = None
 
     def key(self) -> tuple[str, str]:
         return (self.match or "", self.selection or "")
@@ -171,12 +591,95 @@ def auto_light_assess(
         if family in ("totals_over", "btts_yes"):
             weaknesses.append("overs/BTTS Yes need script lean not cagey")
 
+    # Multi-stage quant prefilter (Stage1 screens + Stage2 classical prior)
+    rec.script_conflict = False
+    rec.base_rate_conflict = False
+    try:
+        from nt.research_prefilter import run_prefilter
+
+        pf = run_prefilter(
+            selection=selection,
+            odds=float(odds),
+            sport=sport or "",
+            family=family,
+            cfg=cfg,
+        )
+        rec.prefilter_stage1 = pf.stage1_reason
+        rec.prefilter_stage2 = pf.stage2_reason
+        rec.prior_p = pf.prior_p
+        rec.prior_ev = pf.prior_ev
+        rec.prior_available = bool(pf.prior_available)
+        rec.prefilter_rank = pf.rank_score
+        if pf.base_rate_conflict:
+            rec.base_rate_conflict = True
+            weaknesses.append("stage2 base_rate_conflict vs short chalk")
+        if pf.discarded and rec.verdict == "pass":
+            rec.verdict = "fail"
+            rec.promote_to_deep = False
+            stage = pf.discard_stage or "prefilter"
+            rec.reason = f"light-fail:{stage}:{pf.stage1_reason if stage == 'stage1' else pf.stage2_reason}"
+            weaknesses.append(rec.reason)
+        elif pf.prior_ev is not None and pf.prior_available:
+            strengths.append(f"prior_ev={pf.prior_ev:+.3f} (research-rank only)")
+    except Exception as ex:  # noqa: BLE001
+        # Fail-open on prefilter crash — do not invent prior; leave light band result
+        weaknesses.append(f"prefilter_error:{ex}")
+
     rec.strength_notes = "; ".join(strengths) or "none flagged"
     rec.weakness_notes = "; ".join(weaknesses) or "none flagged"
     rec.rough_ev_note = f"min EV bar needs honest p_model ≥ {need_p:.2f} at odds {odds:.2f}"
-    rec.script_conflict = False
-    rec.base_rate_conflict = False
+    if rec.prior_ev is not None:
+        rec.rough_ev_note += f"; prior_ev={rec.prior_ev:+.3f}"
     return rec
+
+
+def _queue_composition_stats(
+    deep_queue: list["LightRecord"], tcfg: dict[str, Any]
+) -> dict[str, Any]:
+    pref_lo = float(tcfg.get("preferred_odds_lo") or 1.85)
+    alt_lo = float(tcfg.get("alt_preferred_odds_lo") or tcfg.get("short_chalk_odds") or 1.80)
+    n = len(deep_queue)
+    if n == 0:
+        return {
+            "n": 0,
+            "preferred_n": 0,
+            "short_main_n": 0,
+            "preferred_share": 0.0,
+            "short_main_share": 0.0,
+            "meets_preferred_floor": True,
+            "meets_short_main_cap": True,
+        }
+    pref_n = sum(
+        1
+        for r in deep_queue
+        if is_preferred_line(
+            r.selection,
+            r.decimal_odds,
+            r.market_family,
+            preferred_odds_lo=pref_lo,
+            alt_preferred_odds_lo=alt_lo,
+        )
+    )
+    sm_n = sum(
+        1
+        for r in deep_queue
+        if is_short_main_line(
+            r.selection, r.decimal_odds, r.market_family, preferred_odds_lo=pref_lo
+        )
+    )
+    pref_share = pref_n / n
+    sm_share = sm_n / n
+    return {
+        "n": n,
+        "preferred_n": pref_n,
+        "short_main_n": sm_n,
+        "preferred_share": round(pref_share, 3),
+        "short_main_share": round(sm_share, 3),
+        "meets_preferred_floor": pref_share + 1e-9
+        >= float(tcfg.get("deep_min_preferred_share") or 0.55),
+        "meets_short_main_cap": sm_share
+        <= float(tcfg.get("deep_max_short_main_share") or 0.25) + 1e-9,
+    }
 
 
 def light_path(cfg: dict[str, Any], day: str | None = None) -> Path:
@@ -332,6 +835,8 @@ def run_light_research(
             _add(it)
 
     records: list[LightRecord] = []
+    soft_by_key: dict[tuple[str, str], float | None] = {}
+    board_score_by_key: dict[tuple[str, str], float] = {}
     for it in must:
         rec = auto_light_assess(
             match=str(it.get("match") or ""),
@@ -345,43 +850,43 @@ def run_light_research(
             score=float(it.get("score") or 0),
         )
         records.append(rec)
+        k = rec.key()
+        soft_by_key[k] = _parse_soft_odds(it, rec)
+        board_score_by_key[k] = float(it.get("score") or 0)
 
-    # Cap promote_to_deep — only explicit agent/merge promotes (P1: no auto-promote)
-    deep_max = int(tcfg["deep_max_n"])
-    deep_target = int(tcfg["deep_target_n"])
-    auto_promote = bool(tcfg.get("auto_promote_to_deep", False))
-    promotable = [
-        r
-        for r in records
-        if r.verdict == "pass"
-        and r.promote_to_deep
-        and not r.has_p_model
-        and (auto_promote or r.source in ("agent", "merge"))
-    ]
     # Fail/conflict demotion: never keep promote on fail
     for r in records:
         if r.verdict == "fail":
             r.promote_to_deep = False
-    promotable.sort(key=lambda r: (-(1 if r.odds_band in ("1.5-1.8", "1.8-2.2") else 0), r.decimal_odds))
-    # diversify sports in deep queue
-    deep_queue: list[LightRecord] = []
-    sp_count: dict[str, int] = defaultdict(int)
-    for r in promotable:
-        sp = (r.sport or "").lower()
-        if sp_count[sp] >= 3 and len(deep_queue) < deep_target:
-            continue
-        if len(deep_queue) >= deep_max:
-            r.promote_to_deep = False
-            r.reason += " | deep queue full"
-            continue
-        deep_queue.append(r)
-        sp_count[sp] += 1
+
+    # P0: engine deep worklist (anti-chalk score + composition). Assess stays promote=False.
+    coverage_overlay: dict[str, Any] = {}
+    try:
+        from nt.control_signals import active_coverage_priority_overlay
+
+        coverage_overlay = active_coverage_priority_overlay(cfg)
+    except Exception:
+        coverage_overlay = {"active": False}
+
+    deep_queue = build_deep_queue(
+        records,
+        cfg,
+        soft_by_key=soft_by_key,
+        board_score_by_key=board_score_by_key,
+        coverage_overlay=coverage_overlay,
+    )
     promote_keys = {r.key() for r in deep_queue}
     for r in records:
-        if r.key() not in promote_keys and r.promote_to_deep and not r.has_p_model:
-            r.promote_to_deep = False
-            if "deep queue" not in r.reason:
-                r.reason += " | not selected for deep this round"
+        if r.key() in promote_keys:
+            r.promote_to_deep = True
+            r.tier = "light"
+            if "deep queue" not in (r.reason or ""):
+                r.reason = (r.reason or "") + " | engine deep queue"
+        else:
+            if r.promote_to_deep and not r.has_p_model:
+                r.promote_to_deep = False
+                if "not selected for deep" not in (r.reason or ""):
+                    r.reason = (r.reason or "") + " | not selected for deep this round"
 
     rec_dicts = [asdict(r) for r in records]
     shortlist_by_sport = {sp: len(lst) for sp, lst in by_sport.items()}
@@ -396,12 +901,61 @@ def run_light_research(
                 f"({stats['assessed_n']}/{shortlist_n})"
             )
 
+    # Prefilter funnel stats (Stage1+Stage2 discard share)
+    prefilter_stats: dict[str, Any] = {}
+    try:
+        from nt.research_prefilter import PrefilterResult, prefilter_batch_stats
+
+        pf_results: list[PrefilterResult] = []
+        for r in records:
+            discarded = r.verdict == "fail" and (
+                (r.prefilter_stage1 or "").startswith("stage1:")
+                and "pass" not in (r.prefilter_stage1 or "")
+                or (r.prefilter_stage2 or "").startswith("stage2:")
+                and "pass" not in (r.prefilter_stage2 or "")
+            )
+            # Prefer explicit stage markers from prefilter reasons
+            d_stage = ""
+            if r.verdict == "fail":
+                if "stage1:" in (r.reason or "") or (
+                    r.prefilter_stage1 and "pass" not in r.prefilter_stage1
+                ):
+                    if r.prefilter_stage1 and "pass" not in r.prefilter_stage1:
+                        d_stage = "stage1"
+                if not d_stage and r.prefilter_stage2 and "pass" not in r.prefilter_stage2:
+                    d_stage = "stage2"
+            pf_results.append(
+                PrefilterResult(
+                    stage1_pass=bool(
+                        r.prefilter_stage1 and "pass" in r.prefilter_stage1
+                    )
+                    or (not r.prefilter_stage1 and r.verdict != "fail"),
+                    stage1_reason=r.prefilter_stage1 or "",
+                    stage2_pass=bool(
+                        r.prefilter_stage2 and "pass" in r.prefilter_stage2
+                    )
+                    or (not r.prefilter_stage2 and r.verdict == "pass"),
+                    stage2_reason=r.prefilter_stage2 or "",
+                    prior_p=r.prior_p,
+                    prior_ev=r.prior_ev,
+                    prior_available=r.prior_available,
+                    base_rate_conflict=r.base_rate_conflict,
+                    rank_score=float(r.prefilter_rank or 0),
+                    discarded=bool(d_stage),
+                    discard_stage=d_stage,
+                )
+            )
+        prefilter_stats = prefilter_batch_stats(pf_results)
+    except Exception as ex:  # noqa: BLE001
+        prefilter_stats = {"error": str(ex)}
+
     payload = {
         "day": day or date.today().isoformat(),
         "odds_path": str(odds_path),
         "generated_at": utc_now(),
         "tiers_config": tcfg,
         "stats": stats,
+        "prefilter_stats": prefilter_stats,
         "warnings": warnings,
         "coverage_ok": stats["assessed_n"] >= need and not any("sport " in w for w in warnings),
         "deep_queue": [
@@ -411,9 +965,27 @@ def run_light_research(
                 "sport": r.sport,
                 "decimal_odds": r.decimal_odds,
                 "reason": r.reason,
+                "prior_ev": r.prior_ev,
+                "preferred": is_preferred_line(
+                    r.selection,
+                    r.decimal_odds,
+                    r.market_family,
+                    preferred_odds_lo=float(tcfg["preferred_odds_lo"]),
+                    alt_preferred_odds_lo=float(
+                        tcfg.get("alt_preferred_odds_lo") or tcfg["short_chalk_odds"]
+                    ),
+                ),
+                "short_main": is_short_main_line(
+                    r.selection,
+                    r.decimal_odds,
+                    r.market_family,
+                    preferred_odds_lo=float(tcfg["preferred_odds_lo"]),
+                ),
             }
             for r in deep_queue
         ],
+        "deep_queue_composition": _queue_composition_stats(deep_queue, tcfg),
+        "coverage_overlay_active": bool(coverage_overlay.get("active")),
         "records": rec_dicts,
         "shortlist_n": shortlist_n,
         "assessed_n": len(records),
@@ -464,6 +1036,38 @@ def render_light_markdown(payload: dict[str, Any]) -> str:
         f"By sport: `{stats.get('by_sport')}`",
         "",
     ]
+    pf = payload.get("prefilter_stats") or {}
+    if pf and not pf.get("error"):
+        lines.extend(
+            [
+                "## Quant prefilter (Stage1 + Stage2)",
+                "",
+                f"| Metric | Value |",
+                f"|--------|------:|",
+                f"| Assessed | {pf.get('n', 0)} |",
+                f"| Stage1 pass | {pf.get('stage1_pass_n', 0)} |",
+                f"| Stage2 pass | {pf.get('stage2_pass_n', 0)} |",
+                f"| Discarded | {pf.get('discard_n', 0)} ({100 * float(pf.get('discard_share') or 0):.0f}%) |",
+                f"| Stage1 discards | {pf.get('stage1_discard_n', 0)} |",
+                f"| Stage2 discards | {pf.get('stage2_discard_n', 0)} |",
+                "",
+            ]
+        )
+    comp = payload.get("deep_queue_composition") or {}
+    if comp:
+        lines.extend(
+            [
+                "## Deep queue composition",
+                "",
+                f"- Preferred share: **{comp.get('preferred_share')}** "
+                f"(floor met: {comp.get('meets_preferred_floor')})",
+                f"- Short-main share: **{comp.get('short_main_share')}** "
+                f"(cap met: {comp.get('meets_short_main_cap')})",
+                f"- n={comp.get('n')} preferred_n={comp.get('preferred_n')} "
+                f"short_main_n={comp.get('short_main_n')}",
+                "",
+            ]
+        )
     warns = payload.get("warnings") or []
     if warns:
         lines.append("## Warnings")
