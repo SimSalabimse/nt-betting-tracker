@@ -94,10 +94,17 @@ def process_error_rate_14d(
     days = int(days if days is not None else h["process_error_window_days"])
     reviews = load_reviews_window(cfg, days=days)
     n = len(reviews)
+    try:
+        from nt.settlement_taxonomy import is_process_error_class
+    except Exception:  # noqa: BLE001
+        def is_process_error_class(vc):  # type: ignore
+            return str(vc or "") in ("process_error", "research_process_miss")
+
     n_pe = sum(
         1
         for r in reviews
-        if str(r.get("variance_class") or "") == "process_error"
+        if is_process_error_class(r.get("variance_class"))
+        or str(r.get("legacy_label") or "") == "process_error"
     )
     min_n = int(h["process_error_min_reviews"])
     if n < min_n:

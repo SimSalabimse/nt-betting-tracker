@@ -3,10 +3,23 @@ P0: PostSettlementPacket — structured settlement forensics.
 
 Fail-closed when variance_tag=process_error or research_quality_retro=poor:
 critical fields required before settle writes the ledger.
+
+Every settled bet also carries predictability / variance_class / learning_weight
+taxonomy (soft-required; auto-filled from retro/tag heuristics when absent).
 """
 from __future__ import annotations
 
 from typing import Any
+
+from nt.settlement_taxonomy import (
+    PREDICTABILITY,
+    VARIANCE_CLASS,
+    compute_learning_weight,
+    merge_taxonomy_into,
+    normalize_predictability,
+    normalize_variance_class,
+    taxonomy_from_item,
+)
 
 SCHEMA_VERSION = 1
 
@@ -36,7 +49,7 @@ def _norm_enum(val: Any, allowed: frozenset[str]) -> str:
 
 
 def build_packet_from_item(item: dict[str, Any]) -> dict[str, Any]:
-    """Build packet from settle item / UI payload."""
+    """Build packet from settle item / UI payload (includes taxonomy)."""
     score = item.get("actual_score") or item.get("score") or item.get("actual_score")
     if score is None:
         score = ""
@@ -47,7 +60,7 @@ def build_packet_from_item(item: dict[str, Any]) -> dict[str, Any]:
     else:
         root_norm = root_l
 
-    return {
+    packet: dict[str, Any] = {
         "schema_version": SCHEMA_VERSION,
         "bet_id": str(item.get("bet_id") or ""),
         "actual_score": str(score).strip(),
@@ -67,6 +80,29 @@ def build_packet_from_item(item: dict[str, Any]) -> dict[str, Any]:
         "notes": str(item.get("notes") or item.get("settlement_notes") or "").strip(),
     }
 
+    # Soft-require taxonomy: agent values if valid, else auto from retro/tag/notes
+    classified_by = str(item.get("classified_by") or "auto")
+    tax = taxonomy_from_item(item, classified_by=classified_by)
+    # Prefer explicit valid enums from item when present
+    pred = normalize_predictability(item.get("predictability"))
+    vc = normalize_variance_class(item.get("variance_class"))
+    if pred:
+        tax["predictability"] = pred
+    if vc:
+        tax["variance_class"] = vc
+    if pred or vc:
+        tax["learning_weight"] = compute_learning_weight(
+            tax["predictability"], tax["variance_class"]
+        )
+        if item.get("classified_by"):
+            tax["classified_by"] = str(item.get("classified_by"))
+        if item.get("classification_notes"):
+            tax["classification_notes"] = str(item.get("classification_notes"))[:240]
+        if item.get("classified_at"):
+            tax["classified_at"] = str(item.get("classified_at"))
+    merge_taxonomy_into(packet, tax)
+    return packet
+
 
 def validate_packet(
     packet: dict[str, Any],
@@ -74,13 +110,29 @@ def validate_packet(
     strict: bool,
 ) -> tuple[bool, list[str]]:
     """
-    Validate packet. When strict=True, critical fields are required (fail-closed).
+    Validate packet. When strict=True, critical forensic fields required.
+    Taxonomy is soft: invalid enums are normalized upstream; missing values
+    should already be auto-filled by build_packet_from_item.
     """
     errors: list[str] = []
-    # bet_id is preferred but settle may match by match/selection first —
-    # never fail non-strict on missing id alone.
+    # Soft taxonomy sanity (never fail closed alone — auto defaults handle settle)
+    pred = str(packet.get("predictability") or "").strip().lower()
+    if pred and pred not in PREDICTABILITY:
+        errors.append(
+            "predictability must be highly_predictable|moderately_predictable|"
+            "weakly_predictable|unpredictable_from_available_info"
+        )
+    vc = str(packet.get("variance_class") or "").strip().lower()
+    if vc and vc not in VARIANCE_CLASS:
+        errors.append(
+            "variance_class must be systematic_script_form|research_process_miss|"
+            "model_error|one_off_injury_late|one_off_referee|true_randomness|unknown"
+        )
 
     if not strict:
+        # Soft taxonomy only: strip taxonomy errors for non-strict so settle never
+        # blocks on missing taxonomy (auto-fill is law).
+        errors = []
         return True, errors
 
     score = str(packet.get("actual_score") or "").strip()
@@ -130,13 +182,20 @@ def packet_to_notes_blob(packet: dict[str, Any]) -> str:
         f"script:{packet.get('script_realized') or ''}",
         f"root:{(packet.get('process_root_cause') or '')[:60]}",
     ]
+    pred = packet.get("predictability")
+    vc = packet.get("variance_class")
+    lw = packet.get("learning_weight")
+    if pred or vc or lw is not None:
+        parts.append(f"pred:{pred or ''}")
+        parts.append(f"vclass:{vc or ''}")
+        parts.append(f"lw:{lw if lw is not None else ''}")
     return "psp{" + "; ".join(parts) + "}"
 
 
 def validate_settle_item(item: dict[str, Any]) -> tuple[bool, list[str], dict[str, Any]]:
     """
     Full check for one settle item. Returns (ok, errors, packet).
-    Non-strict: always ok structurally (empty packet fields allowed).
+    Non-strict: always ok structurally; taxonomy auto-filled.
     """
     packet = build_packet_from_item(item)
     strict = is_strict_packet_required(item)

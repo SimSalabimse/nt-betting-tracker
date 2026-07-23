@@ -307,12 +307,23 @@ After every settle:
 2. **PostSettlementPacket** — if `variance_tag=process_error` (or research_miss/miss) **or** `research_quality_retro=poor|wrong|miss`, **required fields** before ledger write:  
    `actual_score`, `actual_lineup_status`, `predicted_vs_actual_xi_delta`, `script_realized`, `process_root_cause`.  
    Lumina SettleDesk blocks incomplete strict rows; engine rejects incomplete items.  
-3. Learning recompute (`run_learning`) + settlement analysis.  
-4. **ControlSignals (primary closed loop)** — store `data/state/control_signals.jsonl`:  
-   - **`temp_gate_raise`** — on process_error / poor retro even at **n=1**: raise min_ev · force confirmed availability · TTL **7–14d** (default 10).  
+3. **Taxonomy (every settled bet)** — fill on the packet / settle item (agent preferred; engine auto-fills if blank):  
+   | Field | Values |
+   |-------|--------|
+   | `predictability` | `highly_predictable` · `moderately_predictable` · `weakly_predictable` · `unpredictable_from_available_info` |
+   | `variance_class` | `systematic_script_form` · `research_process_miss` · `model_error` · `one_off_injury_late` · `one_off_referee` · `true_randomness` · `unknown` |
+   | `learning_weight` | `clamp(base[class] × pred_mult[predictability], 0, 1)` — engine formula in `nt/settlement_taxonomy.py` |
+   | `classification_notes` / `classified_by` / `classified_at` | short free text · `agent\|auto\|backfill\|user` · ISO-8601 |
+
+   **Weight intent:** systematic/process misses move mults; late injury / ref / true randomness barely do (base 0.05–0.10).  
+   Legacy map: `process_error` / `research_miss` → `research_process_miss`; `expected`/`skill` → `systematic_script_form`; `variance`/`luck` → `true_randomness`.  
+   Backfill: `python scripts/backfill_settlement_taxonomy.py` (last 30 + re-weight report).  
+4. Learning recompute (`run_learning`) + settlement analysis — sample influence × `learning_weight`.  
+5. **ControlSignals (primary closed loop)** — store `data/state/control_signals.jsonl`:  
+   - **`temp_gate_raise`** — on process_error / poor retro even at **n=1**, **only if `learning_weight` ≥ `min_learning_weight_for_gate` (default 0.5)**: raise min_ev · force confirmed availability · TTL **7–14d** (default 10). Near-zero weight one-offs **skip** temp_gate.  
    - **`force_coverage_priority`** — on empty/near-empty recommend from **research starvation** (high `no p_model` share + mid unresearched): band **1.85–2.60** / alt totals / dogs / HC / period · TTL **4–7d** · does **not** change haircut or EV bar.  
    - **`temp_ev_relax`** — empty deep-queue safety net on large boards (Mechanism B): allowlisted lines only · ΔEV 1–2pp · stake ×0.80 · TTL **24h** · clear_on_settle · never invents p_model · **never** stack with process_gate raise on the same candidate.  
-5. **Learning proposals** auto-resolve (`auto_apply_proposals: true`):  
+6. **Learning proposals** auto-resolve (`auto_apply_proposals: true`):  
    - Full permanent mult delta only if **n_hist ≥ 8** and **conf ≥ 0.40**  
    - Else soft-modify or reject noise  
    - Mult patches can be overwritten by next full recompute — **do not treat mults as durable process control**; ControlSignals are.
@@ -377,6 +388,7 @@ python run_nt.py simulate --sport basketball --home H --away A ...
 | Kelly only when liquid+Brier gates pass | Kelly at small bankroll / thin calibration |
 | Trust unit ladder + room packing | EV-band stake above unit without Kelly lift |
 | Fill PostSettlementPacket on process_error / poor retro | Settle without root cause / score / XI delta |
+| Classify predictability + variance_class + learning_weight every settle | Leave taxonomy blank forever or invent p_model to "fix" |
 | Trust ControlSignals as process loop | Expect permanent mults alone to stick after recompute |
 | Respect RESEARCH_ONLY / size_mode floor | Force recommend when phase health blocks |
 

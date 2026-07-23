@@ -330,6 +330,8 @@ learning:
     max_raise: 0.05
     ttl_hours: 48
     clear_after_clean_settles: 3
+  # Settlement taxonomy: sample influence × learning_weight; CS gate threshold
+  min_learning_weight_for_gate: 0.5   # process_error temp_gate only if weight ≥ this
   # P0 ControlSignals (temp_gate_raise + force_coverage_priority + temp_ev_relax)
   control_signals:
     enabled: true
@@ -337,6 +339,7 @@ learning:
     max_raise: 0.05
     ttl_days: 10
     force_confirmed_lineup: true
+    min_learning_weight_for_gate: 0.5  # one-offs / true_randomness skip temp_gate
     coverage_priority:
       enabled: true
       ttl_days: 5                 # clamp 4–7

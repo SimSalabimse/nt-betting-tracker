@@ -429,6 +429,12 @@ def run_settle(cfg: dict[str, Any], results_path: Path) -> dict[str, Any]:
                 ),
                 "script_realized": (packet or {}).get("script_realized"),
                 "process_root_cause": (packet or {}).get("process_root_cause"),
+                "predictability": (packet or {}).get("predictability"),
+                "variance_class": (packet or {}).get("variance_class"),
+                "learning_weight": (packet or {}).get("learning_weight"),
+                "classification_notes": (packet or {}).get("classification_notes"),
+                "classified_by": (packet or {}).get("classified_by"),
+                "classified_at": (packet or {}).get("classified_at"),
             }
         )
 
@@ -451,6 +457,11 @@ def run_settle(cfg: dict[str, Any], results_path: Path) -> dict[str, Any]:
             "variance_tag": variance_tag,
             "research_quality_retro": research_retro,
             "auto_fetched": bool(item.get("auto_fetched")),
+            "predictability": (packet or {}).get("predictability"),
+            "variance_class": (packet or {}).get("variance_class"),
+            "learning_weight": (packet or {}).get("learning_weight"),
+            "classification_notes": (packet or {}).get("classification_notes"),
+            "classified_by": (packet or {}).get("classified_by"),
         }
         with open(edges, "a", encoding="utf-8") as f:
             f.write(json.dumps(lesson, ensure_ascii=False) + "\n")

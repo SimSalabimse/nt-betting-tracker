@@ -54,11 +54,72 @@ def _bucket_stats(items: list[dict[str, str]]) -> dict[str, float]:
     }
 
 
-def _process_weight(r: dict[str, str], learn_cfg: dict[str, Any], decisions: dict[str, Any]) -> float:
-    """How much this row should influence learning mults."""
+def load_settlement_taxonomy_by_bet(cfg: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    """
+    Latest settlement_reviews taxonomy fields keyed by bet_id.
+    Later lines for the same bet_id overwrite earlier ones.
+    """
+    out: dict[str, dict[str, Any]] = {}
+    try:
+        from nt.settlement_review import settlement_reviews_path
+
+        path = settlement_reviews_path(cfg)
+        if not path.is_file():
+            return out
+        with open(path, encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    rec = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                if not isinstance(rec, dict):
+                    continue
+                bid = str(rec.get("bet_id") or "").strip()
+                if not bid:
+                    continue
+                lw = rec.get("learning_weight")
+                try:
+                    lw_f = float(lw) if lw is not None else None
+                except (TypeError, ValueError):
+                    lw_f = None
+                out[bid] = {
+                    "predictability": rec.get("predictability"),
+                    "variance_class": rec.get("variance_class"),
+                    "learning_weight": lw_f,
+                    "classified_by": rec.get("classified_by"),
+                    "classification_notes": rec.get("classification_notes"),
+                }
+    except Exception:
+        return out
+    return out
+
+
+def _process_weight(
+    r: dict[str, str],
+    learn_cfg: dict[str, Any],
+    decisions: dict[str, Any],
+    taxonomy_by_bet: dict[str, dict[str, Any]] | None = None,
+) -> float:
+    """How much this row should influence learning mults.
+
+    Multiplies process×recency base by settlement taxonomy learning_weight
+    when available (one-offs barely move mults).
+    """
     mode = str(learn_cfg.get("weight_mode") or "weighted")
     if mode == "equal":
-        return 1.0
+        # Still apply taxonomy so one-offs don't dominate even in equal mode
+        tax_w = 1.0
+        bid = r.get("bet_id") or ""
+        tax = (taxonomy_by_bet or {}).get(bid) if taxonomy_by_bet else None
+        if tax and tax.get("learning_weight") is not None:
+            try:
+                tax_w = max(0.0, min(1.0, float(tax["learning_weight"])))
+            except (TypeError, ValueError):
+                tax_w = 1.0
+        return tax_w
     bid = r.get("bet_id") or ""
     dec = decisions.get(bid) if decisions else None
     src = (r.get("source") or "").strip()
@@ -67,18 +128,19 @@ def _process_weight(r: dict[str, str], learn_cfg: dict[str, Any], decisions: dic
 
     if mode == "process_only":
         if has_model and grade in ("A", "B"):
-            return float(learn_cfg.get("full_process_weight", 1.0))
-        return 0.0
-
-    # weighted (default)
-    if has_model and grade in ("A", "B"):
-        base = float(learn_cfg.get("full_process_weight", 1.0))
-    elif src == "era_archive":
-        base = float(learn_cfg.get("archive_process_weight", 0.35))
-    elif src == "recommend" or grade:
-        base = float(learn_cfg.get("live_no_model_weight", 0.60))
+            base = float(learn_cfg.get("full_process_weight", 1.0))
+        else:
+            return 0.0
     else:
-        base = float(learn_cfg.get("archive_process_weight", 0.35))
+        # weighted (default)
+        if has_model and grade in ("A", "B"):
+            base = float(learn_cfg.get("full_process_weight", 1.0))
+        elif src == "era_archive":
+            base = float(learn_cfg.get("archive_process_weight", 0.35))
+        elif src == "recommend" or grade:
+            base = float(learn_cfg.get("live_no_model_weight", 0.60))
+        else:
+            base = float(learn_cfg.get("archive_process_weight", 0.35))
 
     # half-life decay by date
     half = float(learn_cfg.get("half_life_days", 60) or 60)
@@ -92,6 +154,15 @@ def _process_weight(r: dict[str, str], learn_cfg: dict[str, Any], decisions: dic
             base *= decay
         except ValueError:
             pass
+
+    # Taxonomy learning_weight: one-offs / true randomness barely move mults
+    tax = (taxonomy_by_bet or {}).get(bid) if taxonomy_by_bet else None
+    if tax and tax.get("learning_weight") is not None:
+        try:
+            tax_w = max(0.0, min(1.0, float(tax["learning_weight"])))
+            base *= tax_w
+        except (TypeError, ValueError):
+            pass
     return max(0.0, base)
 
 
@@ -99,14 +170,15 @@ def _bucket_stats_weighted(
     items: list[dict[str, str]],
     learn_cfg: dict[str, Any],
     decisions: dict[str, Any],
+    taxonomy_by_bet: dict[str, dict[str, Any]] | None = None,
 ) -> dict[str, float]:
-    """ROI using process×recency weights; n remains raw count for min_sample gates."""
+    """ROI using process×recency×taxonomy weights; n remains raw count for min_sample gates."""
     raw = _bucket_stats(items)
     w_stake = 0.0
     w_pl = 0.0
     w_sum = 0.0
     for r in items:
-        w = _process_weight(r, learn_cfg, decisions)
+        w = _process_weight(r, learn_cfg, decisions, taxonomy_by_bet)
         if w <= 0:
             continue
         st = fnum(r.get("stake_nok")) or 0.0
@@ -187,10 +259,12 @@ def _group_learning(
     recent_n: int,
     learn_cfg: dict[str, Any],
     decisions: dict[str, Any] | None = None,
+    taxonomy_by_bet: dict[str, dict[str, Any]] | None = None,
 ) -> dict[str, dict[str, Any]]:
     from collections import defaultdict
 
     decisions = decisions or {}
+    taxonomy_by_bet = taxonomy_by_bet or {}
     buckets: dict[str, list[dict[str, str]]] = defaultdict(list)
     for r in settled:
         k = key_fn(r)
@@ -202,9 +276,9 @@ def _group_learning(
     min_sample = int(learn_cfg.get("min_sample", 12))
     recent_weight = float(learn_cfg.get("recent_weight", 0.4))
     for name, items in buckets.items():
-        all_s = _bucket_stats_weighted(items, learn_cfg, decisions)
+        all_s = _bucket_stats_weighted(items, learn_cfg, decisions, taxonomy_by_bet)
         recent_items = items[-recent_n:] if recent_n > 0 else items
-        rec_s = _bucket_stats_weighted(recent_items, learn_cfg, decisions)
+        rec_s = _bucket_stats_weighted(recent_items, learn_cfg, decisions, taxonomy_by_bet)
         blended = _blend_roi(
             float(all_s["roi"]),
             float(all_s["n"]),
@@ -228,7 +302,7 @@ def _group_learning(
         # Layered ROIs: short = last ~10 (or half recent window), medium = recent_window, long = all-time
         short_n = max(5, min(10, recent_n // 2 if recent_n else 10))
         short_items = items[-short_n:] if short_n > 0 else items
-        short_s = _bucket_stats_weighted(short_items, learn_cfg, decisions)
+        short_s = _bucket_stats_weighted(short_items, learn_cfg, decisions, taxonomy_by_bet)
         # Explicit blend used by recommend (existing) + expose layers for UI / proposals
         layer_short = float(short_s["roi"])
         layer_medium = float(rec_s["roi"])
@@ -458,8 +532,10 @@ def _recent_settlement_impacts(
     markets: dict[str, dict[str, Any]],
     *,
     limit: int = 12,
+    taxonomy_by_bet: dict[str, dict[str, Any]] | None = None,
 ) -> list[dict[str, Any]]:
     """Last settled bets with the group mults they currently push."""
+    taxonomy_by_bet = taxonomy_by_bet or {}
     out: list[dict[str, Any]] = []
     for r in reversed(settled[-limit:]):
         sport = normalize_sport(r.get("sport"), default="unknown")
@@ -467,6 +543,8 @@ def _recent_settlement_impacts(
         sp = sports.get(sport) or {}
         mk = markets.get(market) or {}
         pl = fnum(r.get("p_l_nok")) or 0.0
+        bid = str(r.get("bet_id") or "")
+        tax = taxonomy_by_bet.get(bid) or {}
         out.append(
             {
                 "date": r.get("date") or "",
@@ -482,6 +560,9 @@ def _recent_settlement_impacts(
                 "sport_status": sp.get("status"),
                 "market_stake_now": mk.get("stake_mult"),
                 "market_status": mk.get("status"),
+                "predictability": tax.get("predictability"),
+                "variance_class": tax.get("variance_class"),
+                "learning_weight": tax.get("learning_weight"),
                 "impact_hint": (
                     f"{sport} ×{sp.get('stake_mult', 1.0)} · {market} ×{mk.get('stake_mult', 1.0)}"
                     if sp or mk
@@ -522,12 +603,15 @@ def compute_learning(
     except Exception:
         decisions = {}
 
+    taxonomy_by_bet = load_settlement_taxonomy_by_bet(cfg)
+
     sports = _group_learning(
         settled,
         lambda r: normalize_sport(r.get("sport"), default="unknown"),
         recent_n,
         learn_cfg,
         decisions,
+        taxonomy_by_bet,
     )
     markets = _group_learning(
         # Prefer selection text so NT market_type strings don't fragment families
@@ -536,6 +620,7 @@ def compute_learning(
         recent_n,
         learn_cfg,
         decisions,
+        taxonomy_by_bet,
     )
     bands = _group_learning(
         settled,
@@ -543,6 +628,7 @@ def compute_learning(
         recent_n,
         learn_cfg,
         decisions,
+        taxonomy_by_bet,
     )
 
     lessons = _lessons(settled, sports, markets, bands, max_lessons=int(learn_cfg.get("max_lessons", 14)))
@@ -624,7 +710,22 @@ def compute_learning(
         reverse=True,
     )
 
-    recent_settlements = _recent_settlement_impacts(settled, sports, markets, limit=12)
+    recent_settlements = _recent_settlement_impacts(
+        settled, sports, markets, limit=12, taxonomy_by_bet=taxonomy_by_bet
+    )
+
+    # Compact taxonomy rollup for learning_history
+    tax_classes: dict[str, int] = {}
+    tax_weights: list[float] = []
+    for bid, tax in taxonomy_by_bet.items():
+        vc = str(tax.get("variance_class") or "unknown")
+        tax_classes[vc] = tax_classes.get(vc, 0) + 1
+        if tax.get("learning_weight") is not None:
+            try:
+                tax_weights.append(float(tax["learning_weight"]))
+            except (TypeError, ValueError):
+                pass
+    mean_lw = round(sum(tax_weights) / len(tax_weights), 4) if tax_weights else None
 
     return {
         "enabled": True,
@@ -642,6 +743,7 @@ def compute_learning(
             "stake_mult_max": float(learn_cfg.get("stake_mult_max", 1.18)),
             "block_min_sample": int(learn_cfg.get("block_min_sample", 20)),
             "block_roi_below": float(learn_cfg.get("block_roi_below", -0.18)),
+            "taxonomy_weighting": True,
         },
         "sports": sports,
         "markets": markets,
@@ -649,6 +751,11 @@ def compute_learning(
         "lessons": lessons,
         "recent_settlements": recent_settlements,
         "multiplier_moves": moves,
+        "taxonomy_summary": {
+            "n_classified": len(taxonomy_by_bet),
+            "mean_learning_weight": mean_lw,
+            "by_variance_class": tax_classes,
+        },
         "summary": {
             "n_settled": len(settled),
             "era_roi": round((pl_all / stake_all) if stake_all else 0.0, 4),
@@ -658,6 +765,8 @@ def compute_learning(
             "n_moves": len(moves),
             "best_sports": [_pack(k, s) for k, s in best_items],
             "worst_sports": [_pack(k, s) for k, s in worst_items],
+            "n_taxonomy": len(taxonomy_by_bet),
+            "mean_learning_weight": mean_lw,
             "layers": {
                 "short_window": max(5, min(10, recent_n // 2 if recent_n else 10)),
                 "medium_window": recent_n,
@@ -665,11 +774,12 @@ def compute_learning(
                 "weights": {"short": 0.35, "medium": 0.40, "long": 0.25},
                 "note": (
                     "Recommend still uses recent_weight blend; "
-                    "roi_layered / layers.* are for UI + settlement proposals"
+                    "roi_layered / layers.* are for UI + settlement proposals; "
+                    "sample influence × settlement learning_weight (taxonomy)"
                 ),
             },
         },
-        "version": 3,
+        "version": 4,
     }
 
 
@@ -693,11 +803,14 @@ def append_learning_history(cfg: dict[str, Any], payload: dict[str, Any]) -> Non
     path = learning_history_path(cfg)
     path.parent.mkdir(parents=True, exist_ok=True)
     sports = payload.get("sports") or {}
+    tax_sum = payload.get("taxonomy_summary") or {}
     snap = {
         "ts": payload.get("updated_at") or utc_now(),
         "n_settled": (payload.get("summary") or {}).get("n_settled"),
         "era_roi": (payload.get("summary") or {}).get("era_roi"),
         "n_moves": (payload.get("summary") or {}).get("n_moves"),
+        "mean_learning_weight": (payload.get("summary") or {}).get("mean_learning_weight"),
+        "taxonomy_summary": tax_sum,
         "sports": {
             k: {
                 "n": v.get("n"),

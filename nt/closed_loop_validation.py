@@ -70,8 +70,20 @@ def _load_reviews_by_bet(cfg: dict[str, Any]) -> dict[str, dict[str, Any]]:
 
 
 def _is_process_error_class(review: dict[str, Any] | None, row: dict[str, Any]) -> bool:
-    if review and str(review.get("variance_class") or "") == "process_error":
-        return True
+    if review:
+        try:
+            from nt.settlement_taxonomy import is_process_error_class
+
+            if is_process_error_class(review.get("variance_class")):
+                return True
+        except Exception:
+            if str(review.get("variance_class") or "") in (
+                "process_error",
+                "research_process_miss",
+            ):
+                return True
+        if str(review.get("legacy_label") or "") == "process_error":
+            return True
     notes = str(row.get("notes") or "").lower()
     if "feel:process_error" in notes or "research_retro:poor" in notes:
         return True

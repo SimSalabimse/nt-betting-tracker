@@ -16,6 +16,11 @@ from nt.analytics import infer_market
 from nt.bets_io import fnum, load_bets, odds_band, utc_now
 from nt.config import path_from_config
 from nt.learning import load_learning, learning_path
+from nt.settlement_taxonomy import (
+    is_process_error_class,
+    merge_taxonomy_into,
+    taxonomy_from_item,
+)
 
 
 def settlement_reviews_path(cfg: dict[str, Any]) -> Path:
@@ -50,55 +55,84 @@ def _classify_variance(
     odds: float,
     variance_tag: str | None,
     research_quality_retro: str | None,
+    item: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """
-    Heuristic skill vs variance label.
-    - variance_tag from user overrides when present
-    - else: high p_model loss → bad luck / process miss; low p_model win → variance up
+    Taxonomy-aware skill vs variance classification.
+
+    Returns legacy-compatible keys (label/weight/detail) plus full taxonomy:
+    predictability, variance_class, learning_weight, classification_notes, …
     """
-    tag = (variance_tag or "").strip().lower()
-    if tag in ("variance", "luck", "noise", "random"):
-        return {"label": "variance", "weight": 0.35, "detail": "User marked as variance/luck"}
-    if tag in ("skill", "edge", "expected", "process"):
-        return {"label": "skill", "weight": 1.0, "detail": "User marked as expected/skill"}
-    if tag in ("process_error", "research_miss", "miss"):
-        return {"label": "process_error", "weight": 1.15, "detail": "User marked research miss"}
+    item = dict(item or {})
+    if variance_tag and not item.get("variance_tag"):
+        item["variance_tag"] = variance_tag
+    if research_quality_retro and not item.get("research_quality_retro"):
+        item["research_quality_retro"] = research_quality_retro
 
-    retro = (research_quality_retro or "").strip().lower()
-    if retro in ("poor", "wrong", "miss"):
-        return {"label": "process_error", "weight": 1.2, "detail": "Retro research quality poor"}
-    if retro in ("good", "solid", "correct"):
-        base_w = 0.9
+    tag = (variance_tag or item.get("variance_tag") or "").strip().lower()
+    retro = (
+        research_quality_retro or item.get("research_quality_retro") or ""
+    ).strip().lower()
+
+    # Seed heuristic label when agent did not provide taxonomy / tags
+    if not item.get("variance_class") and not tag and retro not in (
+        "poor",
+        "wrong",
+        "miss",
+        "good",
+        "solid",
+        "correct",
+        "ok",
+    ):
+        if p_model is not None and 0 < p_model < 1 and odds and odds > 1:
+            implied = 1.0 / odds
+            edge = p_model - implied
+            if result == "Win":
+                if p_model >= 0.62:
+                    item.setdefault("variance_tag", "expected")
+                elif p_model <= 0.48:
+                    item.setdefault("variance_tag", "variance")
+            elif result == "Loss":
+                if p_model >= 0.68:
+                    item.setdefault("variance_tag", "variance")
+                elif p_model <= 0.52 and edge < 0.02:
+                    item.setdefault("variance_tag", "process_error")
+                else:
+                    item.setdefault("variance_tag", "expected")
+
+    tax = taxonomy_from_item(item, classified_by=str(item.get("classified_by") or "auto"))
+    vc = str(tax["variance_class"])
+    weight = float(tax["learning_weight"])
+
+    # Legacy label for narrative / closed-loop compat
+    if is_process_error_class(vc):
+        label = "process_error"
+    elif vc == "true_randomness":
+        label = "variance"
+    elif vc == "systematic_script_form":
+        label = "skill"
+    elif vc == "model_error":
+        label = "model_error"
     else:
-        base_w = 1.0
+        label = "unknown"
 
-    if p_model is None or not (0 < p_model < 1):
-        return {"label": "unknown", "weight": 0.7 * base_w, "detail": "No p_model — moderate weight"}
+    detail_bits = [tax.get("classification_notes") or ""]
+    if p_model is not None and 0 < float(p_model) < 1:
+        detail_bits.append(f"p={float(p_model):.2f}")
+    detail = " · ".join(b for b in detail_bits if b) or f"{vc}/{tax['predictability']}"
 
-    implied = (1.0 / odds) if odds and odds > 1 else 0.5
-    edge = p_model - implied
-
-    if result == "Win":
-        if p_model >= 0.62:
-            return {"label": "skill", "weight": 1.0 * base_w, "detail": f"Win with p={p_model:.2f} (edge {edge:+.2f})"}
-        if p_model <= 0.48:
-            return {"label": "variance", "weight": 0.4 * base_w, "detail": f"Upset win p={p_model:.2f} — downweight"}
-        return {"label": "mixed", "weight": 0.75 * base_w, "detail": f"Win p={p_model:.2f}"}
-    if result == "Loss":
-        if p_model >= 0.68:
-            return {
-                "label": "variance",
-                "weight": 0.45 * base_w,
-                "detail": f"Loss despite high p={p_model:.2f} — protect edge",
-            }
-        if p_model <= 0.52 and edge < 0.02:
-            return {
-                "label": "process_error",
-                "weight": 1.1 * base_w,
-                "detail": f"Loss on thin/no edge p={p_model:.2f}",
-            }
-        return {"label": "skill", "weight": 0.95 * base_w, "detail": f"Loss p={p_model:.2f} — learning signal"}
-    return {"label": "neutral", "weight": 0.5, "detail": result}
+    out = {
+        "label": label,
+        "weight": weight,
+        "detail": detail,
+        "predictability": tax["predictability"],
+        "variance_class": vc,
+        "learning_weight": weight,
+        "classification_notes": tax.get("classification_notes"),
+        "classified_by": tax.get("classified_by"),
+        "classified_at": tax.get("classified_at"),
+    }
+    return out
 
 
 def analyze_settled_batch(
@@ -146,13 +180,35 @@ def analyze_settled_batch(
         implied = (1.0 / odds) if odds > 1 else None
         edge = (p_model_f - implied) if (p_model_f is not None and implied is not None) else None
 
+        # Prefer taxonomy already on packet / settle item
+        packet = item.get("post_settlement_packet") if isinstance(
+            item.get("post_settlement_packet"), dict
+        ) else {}
+        seed = dict(item)
+        if packet:
+            for k in (
+                "predictability",
+                "variance_class",
+                "learning_weight",
+                "classification_notes",
+                "classified_by",
+                "classified_at",
+                "variance_tag",
+                "research_quality_retro",
+                "notes",
+                "key_events",
+            ):
+                if packet.get(k) is not None and seed.get(k) is None:
+                    seed[k] = packet.get(k)
+
         cls = _classify_variance(
             result=result,
             p_model=p_model_f,
             odds=odds,
-            variance_tag=item.get("variance_tag") or item.get("feel"),
-            research_quality_retro=item.get("research_quality_retro")
-            or item.get("research_retro"),
+            variance_tag=seed.get("variance_tag") or seed.get("feel"),
+            research_quality_retro=seed.get("research_quality_retro")
+            or seed.get("research_retro"),
+            item=seed,
         )
 
         research_ok = None
@@ -162,14 +218,19 @@ def analyze_settled_batch(
         elif result == "Loss" and p_model_f and p_model_f < 0.55:
             research_ok = True  # correctly low confidence
             process_hits += 1
-        elif result == "Loss" and edge is not None and edge > 0.05 and cls["label"] == "process_error":
+        elif (
+            result == "Loss"
+            and edge is not None
+            and edge > 0.05
+            and is_process_error_class(cls.get("variance_class") or cls.get("label"))
+        ):
             research_ok = False
             process_misses += 1
         elif result == "Loss" and p_model_f and p_model_f >= 0.65 and cls["label"] == "variance":
             research_ok = True  # process ok, variance
             process_hits += 1
 
-        if cls["label"] == "variance":
+        if cls["label"] == "variance" or str(cls.get("variance_class")) == "true_randomness":
             var_pl += pl
         else:
             skill_pl += pl * float(cls.get("weight") or 1)
@@ -195,8 +256,15 @@ def analyze_settled_batch(
             "edge": round(edge, 4) if edge is not None else None,
             "score": item.get("score") or item.get("actual_score"),
             "key_events": item.get("key_events"),
-            "variance_class": cls["label"],
-            "learning_weight": round(float(cls["weight"]), 3),
+            # New taxonomy (authoritative)
+            "predictability": cls.get("predictability"),
+            "variance_class": cls.get("variance_class") or cls["label"],
+            "learning_weight": round(float(cls.get("learning_weight") or cls["weight"]), 4),
+            "classification_notes": cls.get("classification_notes"),
+            "classified_by": cls.get("classified_by") or "auto",
+            "classified_at": cls.get("classified_at"),
+            # Compat
+            "legacy_label": cls["label"],
             "variance_detail": cls["detail"],
             "research_ok": research_ok,
             "research_quality_retro": item.get("research_quality_retro")
@@ -206,6 +274,14 @@ def analyze_settled_batch(
             "notes": item.get("notes") or item.get("settlement_notes"),
             "auto_fetched": bool(item.get("auto_fetched")),
         }
+        merge_taxonomy_into(review, {
+            "predictability": review["predictability"],
+            "variance_class": review["variance_class"],
+            "learning_weight": review["learning_weight"],
+            "classification_notes": review["classification_notes"],
+            "classified_by": review["classified_by"],
+            "classified_at": review["classified_at"],
+        })
         reviews.append(review)
 
     # Aggregate factor notes
@@ -234,10 +310,19 @@ def analyze_settled_batch(
     proposals = build_learning_proposals(cfg, reviews, learning)
 
     # P0: ControlSignals primary closed loop (process_error / poor retro → temp_gate_raise)
+    # Emit only when learning_weight ≥ threshold (default 0.5) — one-offs skip temp_gate.
     process_gate_events: list[dict[str, Any]] = []
     control_signal_events: list[dict[str, Any]] = []
     try:
         from nt.process_gates import upsert_process_error_gates
+
+        learn_cfg = cfg.get("learning") or {}
+        cs_cfg = dict(learn_cfg.get("control_signals") or {})
+        min_lw_gate = float(
+            cs_cfg.get("min_learning_weight_for_gate")
+            or learn_cfg.get("min_learning_weight_for_gate")
+            or 0.5
+        )
 
         # Match reviews back to settle items for packet / retro
         items_by_id = {
@@ -256,25 +341,45 @@ def analyze_settled_batch(
                 or item.get("research_quality_retro")
                 or ""
             ).strip().lower()
-            is_process = r.get("variance_class") == "process_error"
+            is_process = is_process_error_class(
+                r.get("variance_class") or r.get("legacy_label")
+            )
             is_poor = retro in ("poor", "wrong", "miss")
-            if is_process or is_poor:
-                src = "process_error" if is_process else "research_retro_poor"
-                ev = upsert_process_error_gates(
-                    cfg,
-                    sport=sp,
-                    market=mk,
-                    bet_id=bid,
-                    source=src,
-                    process_root_cause=str(
-                        packet.get("process_root_cause")
-                        or item.get("process_root_cause")
-                        or ""
-                    ),
-                    packet=packet if isinstance(packet, dict) else None,
-                )
-                process_gate_events.append(ev)
-                control_signal_events.append(ev)
+            lw = float(r.get("learning_weight") if r.get("learning_weight") is not None else 0.0)
+            if not (is_process or is_poor):
+                continue
+            if lw < min_lw_gate:
+                skip_ev = {
+                    "ok": True,
+                    "skipped": True,
+                    "reason": "learning_weight_below_gate_threshold",
+                    "bet_id": bid,
+                    "learning_weight": lw,
+                    "min_learning_weight_for_gate": min_lw_gate,
+                    "variance_class": r.get("variance_class"),
+                }
+                process_gate_events.append(skip_ev)
+                control_signal_events.append(skip_ev)
+                continue
+            src = "process_error" if is_process else "research_retro_poor"
+            ev = upsert_process_error_gates(
+                cfg,
+                sport=sp,
+                market=mk,
+                bet_id=bid,
+                source=src,
+                process_root_cause=str(
+                    packet.get("process_root_cause")
+                    or item.get("process_root_cause")
+                    or ""
+                ),
+                packet=packet if isinstance(packet, dict) else None,
+            )
+            if isinstance(ev, dict):
+                ev = dict(ev)
+                ev["learning_weight"] = lw
+            process_gate_events.append(ev)
+            control_signal_events.append(ev)
     except Exception as ex:  # noqa: BLE001
         process_gate_events.append({"ok": False, "error": str(ex)})
         control_signal_events.append({"ok": False, "error": str(ex)})
