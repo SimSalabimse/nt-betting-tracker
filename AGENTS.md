@@ -2,9 +2,9 @@
 
 Real-money capital desk. Engines in `nt/` are law. UI (LuminaNT, Flet desktop) presents and invokes — never invents bankroll math.
 
-**Status (permanent package):** clean-restart **500 NOK** era · capital_v2 live · **Exploration→Survival→Normal** bankroll regimes · multi-stage quant prefilter · engine deep queue (composition ≥**55%** preferred / ≤**25%** short-main · band **1.85–2.60**) · Coverage Health + soft gate · `force_coverage_priority` · totalgrense residual buffer · closed-loop ControlSignals · PhaseState v5 · **neutral sport start at zero data**.  
+**Status (permanent package):** clean-restart **500 NOK** era · capital_v2 live · **hybrid half-steps (1A+/1B+) + continuous unit** · **secure bucket Variant A** (soft/hard skim) · **Exploration→Survival→Normal** bankroll regimes · multi-stage quant prefilter · engine deep queue (composition ≥**55%** preferred / ≤**25%** short-main · band **1.85–2.60**) · Coverage Health + soft gate · `force_coverage_priority` · totalgrense residual buffer · closed-loop ControlSignals · PhaseState v5 · **neutral sport start at zero data**.  
 
-Docs: `docs/PACKAGE_IMPLEMENTATION_SUMMARY.md` · `docs/RESEARCH_COVERAGE_FIX_SUMMARY.md` · `docs/RESEARCH_WORKFLOW.md` · `docs/BANKROLL_PLAN.md` · `docs/RESIDUAL_RISKS.md` · `docs/LUMINA_INTEGRATION.md` · `artifacts/PACKAGE_VALIDATION_REPORT.md`.
+Docs: `docs/PACKAGE_IMPLEMENTATION_SUMMARY.md` · `docs/RESEARCH_COVERAGE_FIX_SUMMARY.md` · `docs/RESEARCH_WORKFLOW.md` · `docs/BANKROLL_PLAN.md` · `docs/CAPITAL_HYBRID_PROGRESSION.md` · `docs/RESIDUAL_RISKS.md` · `docs/LUMINA_INTEGRATION.md` · `artifacts/PACKAGE_VALIDATION_REPORT.md`.
 
 ---
 
@@ -195,29 +195,48 @@ Full design: **`docs/RESEARCH_GATES.md`**. Empty slip beats betting against your
 ## Capital v2 (live policy)
 
 **Live config:** `capital_v2.enabled: true` (see `docs/CAPITAL_V2_GO_LIVE.md` for rollback).  
-Ledger equity formula is **unchanged**: `baseline + Σ performance P/L`. Engines remain sole bankroll truth.
+Ledger equity formula is **unchanged**: `baseline + Σ performance P/L`. Engines remain sole bankroll truth.  
+**Hybrid progression examples + MC:** `docs/CAPITAL_HYBRID_PROGRESSION.md` · `python scripts/mc_phase_progression.py`
 
 | Layer | Behaviour |
 |-------|-----------|
 | Peak / DD | **Settlement calendar day** peak (Oslo via `updated_at`) — not match-date-only |
 | size_mode (**capital hard floor**) | NORMAL → REDUCED (≥15% DD) → FROZEN (≥25% DD or manual freeze). Phase health may **only tighten** (e.g. force REDUCED), never loosen FROZEN. |
-| Unit ladder | 10 / 15 / 20 NOK from riskable liquid; whole kroner; **never stake in (0, min_stake)** |
-| Open room | Phase open budget ∩ portfolio open-risk cap (~18% riskable liquid) ∩ **regime open cap** ∩ **totalgrense usable** |
+| **Unit (primary)** | When `phase_continuous.enabled`: **continuous unit** = `stake_min + (equity − enter) / scale_factor` (whole krone, clamp band) with **carry-forward floor** so promotions never drop unit. Fallback liquid ladder: **12 / 15 / 20** (`capital_v2.unit_ladder`). Never stake in (0, min_stake). |
+| Open room | Phase open budget (continuous **lerp** of floor/ceil/pct toward next phase) ∩ portfolio open-risk cap (~18% riskable liquid) ∩ **regime open cap** ∩ **totalgrense usable** |
 | Daily / weekly | Hard loss stops on liquid SoD / SoW; day-loss may shrink remaining (intentional) |
-| Secure bucket | Profit skims with working-equity softener |
+| **Secure bucket Variant A** | Soft **1.25× ref / 15%** of (eq−ref); hard **1.50× ref / 30%** — **hard replaces soft, never stacked**. Min-working softener max(55% eq, 8×unit); **liquid floor** never skim below phase `daily_risk_ceil`; ref → working after skim. Unlock: auto after **25** settles since lock, or manual 7d cooldown. |
 | **Kelly (P2)** | Optional **lift above unit only** when liquid ≥ **1500**, calibration n ≥ 30, Brier ≤ max; fail-closed if thin cal; max **1.5× unit**. Never pure continuous Kelly; never shrinks below unit. |
 | Audit | `data/state/stake_decisions.jsonl`, `capital_segments.json` |
 
+### Config key pointers (do not invent values)
+
+| Concern | Keys |
+|---------|------|
+| Enable capital stack | `capital_v2.enabled` |
+| Liquid unit fallback | `capital_v2.unit_ladder` · grade mults `capital_v2.grade_stake_mult` |
+| Secure Variant A | `capital_v2.secure_bucket.variant: A` · `soft_trigger_multiple_of_ref` / `soft_transfer_fraction` · `hard_trigger_multiple_of_ref` / `hard_transfer_fraction` · `min_working_frac_of_equity` · `min_working_units` · `unlock_after_settled` · `manual_unlock_cooldown_days` |
+| Half-steps | `phases."1A+"` / `phases."1B+"` · `hard_phase_id` (parent hard gates) |
+| Continuous unit / open-risk | `phase_continuous.enabled` · `phase_continuous.scale_factor` (default **100**) |
+| Phase ladder numbers | `phases.*.enter_equity` / `stake_min` / `stake_max` / `daily_risk_*` |
+| Stability / demote | `phase_stability.*` |
+
 **Stranded remainder:** liquid may sit under one unit while open risk is high — UI surfaces this; do not force a ticket below floor.
 
+**Secure unlock (operator):**  
+`python run_nt.py capital unlock-secure --confirm` (manual; respects cooldown)  
 **Unfreeze (after human review only):**  
 `python run_nt.py capital unfreeze --confirm`
 
 ---
 
-## Phase system (v5 multi-factor)
+## Phase system (v5 multi-factor + hybrid half-steps)
 
-**Labels stay 1A–5** (`config.yaml` ladder). `phase_id` is still equity/count hybrid (seats, daily open budget, soft stake band).
+**Labels:** **1A → 1A+ → 1B → 1B+ → 2 → … → 5** (`config.yaml`).  
+`phase_id` is equity/count hybrid (seats, daily open budget, soft stake band).  
+**Half-steps** (`1A+`, `1B+`) keep **parent hard gates** via `hard_phase_id` (max_doubles / max_bets) while display id and continuous sizing advance.  
+**Continuous unit / open-risk** progress inside each band when `phase_continuous.enabled` — unit is non-decreasing at promotions (carry-forward floor).  
+Examples 500→550 and MC milestones: **`docs/CAPITAL_HYBRID_PROGRESSION.md`**.
 
 **Additionally** `evaluate_phase` attaches multi-factor `phase_state` and health overlays:
 
@@ -342,6 +361,7 @@ python scripts/validate_closed_loop.py -n 60
 | `docs/RESEARCH_WORKFLOW.md` | Full stage map (prefilter → deep) |
 | `docs/BANKROLL_PLAN.md` | Clean 500 + Calibration/Survival + multi-year |
 | `docs/PHASE_PLAN.md` | Phase ladder 1A–5 + v5 multi-factor |
+| `docs/CAPITAL_HYBRID_PROGRESSION.md` | Half-steps + continuous unit + Variant A skim; before/after 500→550; MC |
 | `docs/CAPITAL_V2_GO_LIVE.md` | Capital v2 enable / rollback |
 | `docs/LUMINA_INTEGRATION.md` | LuminaNT cockpit contract (visuals) |
 | `docs/RESIDUAL_RISKS.md` | Honest remaining risks |
