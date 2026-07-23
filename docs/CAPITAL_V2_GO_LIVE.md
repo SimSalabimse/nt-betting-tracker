@@ -18,7 +18,7 @@ When `capital_v2.enabled = true` (or env override), the engine uses the **fail-c
 | L3 | Daily hard stop: min(4% liquid SoD, 3 units) |
 | Open room | Phase open budget + **18%** portfolio open-risk on riskable liquid |
 | L6 sizing | Unit ladder 10/15/20; REDUCED half/step; never stake in (0, 10) |
-| Secure | 40% of profit above ref×1.30, **capped** so working ≥ max(55% equity, 8×unit); ref → working equity |
+| Secure | **Variant A:** soft equity≥1.25×ref → 15% of (eq−ref); hard ≥1.50×ref → 30% (hard replaces soft). Liquid floor: never skim below phase `daily_risk_ceil`. Unlock: auto after 25 settles since lock, or manual 7d cooldown (`capital unlock-secure`). Min-working softener max(55% eq, 8×unit); ref → working after skim |
 | Audit | `stake_decisions.jsonl` + `capital_segments.json` |
 
 Ledger equity formula is **unchanged** (engine remains sole bankroll truth).

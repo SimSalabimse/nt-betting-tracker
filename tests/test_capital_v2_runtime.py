@@ -58,8 +58,16 @@ def _cfg(tmp_path: Path, *, enabled: bool) -> dict:
             "enabled": enabled,
             "secure_bucket": {
                 "enabled": True,
-                "trigger_multiple_of_ref": 1.30,
-                "transfer_fraction_of_profit_above_ref": 0.40,
+                # Explicit Variant A (matches live defaults / asserted soft 15%)
+                "variant": "A",
+                "soft_trigger_multiple_of_ref": 1.25,
+                "soft_transfer_fraction": 0.15,
+                "hard_trigger_multiple_of_ref": 1.50,
+                "hard_transfer_fraction": 0.30,
+                "min_working_frac_of_equity": 0.55,
+                "min_working_units": 8.0,
+                "unlock_after_settled": 25,
+                "manual_unlock_cooldown_days": 7,
             },
         },
         "risk": {"stop_day_loss_pct_of_equity": 0.08, "stop_day_loss_floor_nok": 40},

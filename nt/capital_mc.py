@@ -15,7 +15,11 @@ from dataclasses import dataclass, field
 from datetime import date, timedelta
 from typing import Any, Callable
 
-from nt.capital_runtime import apply_secure_transfer_to_segments, ensure_day_week_snapshots
+from nt.capital_runtime import (
+    apply_secure_transfer_to_segments,
+    ensure_day_week_snapshots,
+    maybe_auto_unlock_secure,
+)
 from nt.capital_v2 import (
     RULE_BUNDLE_VERSION,
     active_unit_for_mode,
@@ -453,7 +457,7 @@ def simulate_path(
             # count once per day if still hard-stopped (matches "stays fired")
             n_weekly_stops += 1
 
-        # Secure transfer after settle (skip if frozen)
+        # Secure unlock + transfer after settle (mirrors live: floor + unlock cycle)
         segs["freeze"] = segs.get("freeze") or {
             "active": freeze_manual,
             "reason": "dd_25pct" if freeze_manual else None,
@@ -461,7 +465,28 @@ def simulate_path(
             "unfreeze_requires": "manual",
         }
         segs["freeze"]["active"] = freeze_manual
-        segs, info = apply_secure_transfer_to_segments(segs, ledger_equity=equity, v2=v2)
+        settled_n = sum(
+            1 for r in rows if r.get("result") in ("Win", "Loss", "Refunded")
+        )
+        segs, unlock_info = maybe_auto_unlock_secure(
+            segs, settled_count=settled_n, v2=v2
+        )
+        defer_skim = bool(segs.get("defer_secure_skim")) or bool(
+            unlock_info.get("unlocked")
+        )
+        if defer_skim:
+            segs = dict(segs)
+            segs.pop("defer_secure_skim", None)
+            info = {"triggered": False, "reason": "skipped_same_tick_after_unlock"}
+        else:
+            segs, info = apply_secure_transfer_to_segments(
+                segs,
+                ledger_equity=equity,
+                v2=v2,
+                phase_daily_risk_ceil=float(phase.get("daily_risk_ceil") or 0.0) or None,
+                open_risk=float(open_risk),
+                settled_count=settled_n,
+            )
         if info.get("triggered"):
             n_secure += 1
 

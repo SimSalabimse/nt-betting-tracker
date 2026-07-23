@@ -190,9 +190,23 @@ def cmd_capital(args: argparse.Namespace) -> int:
             force=bool(getattr(args, "force", False)),
         )
         if result.get("ok"):
+            # refresh may re-evaluate capital; defer_secure_skim skips same-tick re-skim
             bankroll, phase, risk = refresh_state(cfg)
             result["riskable_liquid_nok"] = risk.get("riskable_liquid_nok")
             result["working_equity_nok"] = risk.get("working_equity_nok")
+            result["secure_nok_after_refresh"] = risk.get("secure_nok")
+            try:
+                from nt.capital_segments import load_segments as _load_segs
+
+                segs_after = _load_segs(cfg)
+                sync = segs_after.get("_last_sync") or {}
+                result["secure_unlock"] = sync.get("secure_unlock")
+                result["secure_transfer"] = sync.get("secure_transfer")
+                result["skim_deferred_after_unlock"] = sync.get(
+                    "skim_deferred_after_unlock"
+                )
+            except Exception:
+                pass
         print(json.dumps(result, indent=2, default=str))
         return 0 if result.get("ok") else 1
 

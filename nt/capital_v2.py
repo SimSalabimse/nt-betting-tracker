@@ -600,7 +600,7 @@ def compute_secure_transfer(
     secure_nok: float,
     ref_hwm: float,
     trigger_multiple: float = 1.30,
-    transfer_fraction: float = 0.40,
+    transfer_fraction: float = 0.27,  # Variant B legacy single-tier (was 0.40)
     unit_size_nok: float | None = None,
     min_working_frac: float = 0.55,
     min_working_units: float = 8.0,

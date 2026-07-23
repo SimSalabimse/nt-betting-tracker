@@ -247,6 +247,9 @@ def release_secure_to_working(
     """
     Release entire secure bucket to working capital (secure → 0).
     Does not change unit_hwm_reset_equity_nok. Logs audit on secure_unlocks.
+
+    Sets ``defer_secure_skim`` so the next sync/tick does not immediately
+    re-skim after unlock (unlock sticks for one capital pass).
     """
     out = dict(segments)
     released = max(0.0, float(out.get("secure_nok") or 0.0))
@@ -260,8 +263,11 @@ def release_secure_to_working(
         info["reason"] = "secure_already_zero"
         return out, info
     out["secure_nok"] = 0.0
+    out.pop("secure_lock_epoch_untrusted", None)
     if settled_count is not None:
         out["secure_lock_settled_count"] = int(settled_count)
+    # Skip skim on the same capital pass / next refresh after unlock
+    out["defer_secure_skim"] = True
     entry = {
         "ts": utc_now(),
         "action": "unlock_secure",
@@ -291,6 +297,10 @@ def maybe_auto_unlock_secure(
     """
     Auto-unlock after unlock_after_settled (default 25) performance-settled
     bets since last skim/lock epoch. Releases entire secure → working.
+
+    Fail-closed migration: if ``secure_lock_epoch_untrusted`` (pre-PR file with
+    secure but no lock key), seed lock epoch to current settled_count and
+    **do not** unlock — requires 25 *additional* settles after seed.
     """
     v2 = v2 or capital_v2_cfg({})
     sb = v2.get("secure_bucket") or {}
@@ -306,10 +316,24 @@ def maybe_auto_unlock_secure(
     secure = max(0.0, float(segments.get("secure_nok") or 0.0))
     if secure < 1e-9:
         info["reason"] = "secure_already_zero"
-        return dict(segments), info
+        out = dict(segments)
+        out.pop("secure_lock_epoch_untrusted", None)
+        return out, info
+
+    n = int(settled_count)
+    # Pre-PR / missing epoch: seed to current settled, never unlock this pass
+    if segments.get("secure_lock_epoch_untrusted"):
+        out = dict(segments)
+        out["secure_lock_settled_count"] = n
+        out.pop("secure_lock_epoch_untrusted", None)
+        info["reason"] = "seeded_lock_epoch_migration"
+        info["settled_since_lock"] = 0
+        info["unlock_after_settled"] = int(sb.get("unlock_after_settled") or 25)
+        info["seeded_lock_settled_count"] = n
+        return out, info
+
     need = int(sb.get("unlock_after_settled") or 25)
     lock_n = int(segments.get("secure_lock_settled_count") or 0)
-    n = int(settled_count)
     if n - lock_n < need:
         info["reason"] = "below_settled_threshold"
         info["settled_since_lock"] = n - lock_n
@@ -467,19 +491,33 @@ def sync_capital_v2_state(
     open_risk = day_pending_risk(rows, today)
     settled_n = sum(1 for r in rows if is_performance_settled(r.get("result")))
 
-    # Auto-unlock before skim so liquid is available if threshold met
+    # Auto-unlock (or seed untrusted lock epoch) before skim
     segs, unlock_info = maybe_auto_unlock_secure(
         segs, settled_count=settled_n, v2=v2
     )
 
-    segs, transfer_info = apply_secure_transfer_to_segments(
-        segs,
-        ledger_equity=ledger_equity,
-        v2=v2,
-        phase_daily_risk_ceil=phase_daily_risk_ceil,
-        open_risk=open_risk,
-        settled_count=settled_n,
-    )
+    # Skip skim same tick after unlock (or one-shot defer from manual unlock)
+    defer_skim = bool(segs.get("defer_secure_skim")) or bool(unlock_info.get("unlocked"))
+    if defer_skim:
+        segs = dict(segs)
+        segs.pop("defer_secure_skim", None)
+        transfer_info = {
+            "triggered": False,
+            "transferred": 0.0,
+            "reason": "skipped_same_tick_after_unlock",
+            "tier": None,
+            "secure_after": max(0.0, float(segs.get("secure_nok") or 0.0)),
+            "ref_hwm_after": segs.get("unit_hwm_reset_equity_nok"),
+        }
+    else:
+        segs, transfer_info = apply_secure_transfer_to_segments(
+            segs,
+            ledger_equity=ledger_equity,
+            v2=v2,
+            phase_daily_risk_ceil=phase_daily_risk_ceil,
+            open_risk=open_risk,
+            settled_count=settled_n,
+        )
 
     secure = max(0.0, float(segs.get("secure_nok") or 0.0))
     liquid = riskable_liquid(ledger_equity, secure, open_risk)
@@ -505,6 +543,7 @@ def sync_capital_v2_state(
         "riskable_liquid_nok": liquid,
         "oslo_date": today,
         "week_id": week_id,
+        "skim_deferred_after_unlock": bool(defer_skim and unlock_info.get("unlocked")),
     }
 
     if persist:

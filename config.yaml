@@ -172,10 +172,14 @@ capital_v2:
     soft_transfer_fraction: 0.15
     hard_trigger_multiple_of_ref: 1.50
     hard_transfer_fraction: 0.30
-    # Variant B (legacy single-tier): trigger 1.30×, transfer 0.27 of profit above ref
+    # --- Switch recipes (do not enable B and C at once; last YAML key wins) ---
+    # To use Variant B (single-tier 1.30× / 0.27): set variant: B below.
+    #   Soft/hard keys are ignored when variant != A. Optional explicit:
+    # variant: B
     # trigger_multiple_of_ref: 1.30
     # transfer_fraction_of_profit_above_ref: 0.27
-    # Variant C (aggressive single-tier example): trigger 1.40×, transfer 0.35
+    # To use Variant C (single-tier 1.40× / 0.35): set variant: C and:
+    # variant: C
     # trigger_multiple_of_ref: 1.40
     # transfer_fraction_of_profit_above_ref: 0.35
     min_working_frac_of_equity: 0.55
