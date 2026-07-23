@@ -54,7 +54,7 @@ Docs: `docs/PACKAGE_IMPLEMENTATION_SUMMARY.md` · `docs/RESEARCH_COVERAGE_FIX_SU
 
 | Rule | Live default |
 |------|----------------|
-| Short chalk (odds &lt; **1.80**) | Heavy score penalty unless rare structural note |
+| Short chalk (odds &lt; **1.70** / `short_chalk_odds`) | Heavy score penalty unless rare structural note |
 | Boost band **1.85–2.60** | Strong promotion weight (Calibration-survivable) |
 | Boost | Alt totals (O3.5+), handicaps, dogs (ML ≥1.85), period as preferred |
 | Soft-book longer than NT | Optional boost only if `soft_decimal_odds` / `soft_odds=` present — **never invent** |

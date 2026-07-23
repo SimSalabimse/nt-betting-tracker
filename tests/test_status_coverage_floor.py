@@ -153,13 +153,18 @@ def test_coverage_floor_section_when_temp_ev_relax_active(tmp_path: Path):
 
     md = generate_status(cfg, _bankroll(), _phase(), _risk())
     assert "## Coverage floor" in md
-    assert "temp_ev_relax" in md
-    assert "active" in md
-    assert "0.020" in md or "−0.020" in md or "-0.020" in md or "ΔEV" in md
+    # Exact active token — must not match substring of "inactive"
+    assert "temp_ev_relax**: active" in md
+    ter_lines = [l for l in md.splitlines() if "temp_ev_relax" in l]
+    assert ter_lines, "expected temp_ev_relax line in Coverage floor section"
+    assert "inactive" not in ter_lines[0]
+    assert "ΔEV" in ter_lines[0]
+    assert "0.020" in ter_lines[0] or "−0.020" in ter_lines[0] or "-0.020" in ter_lines[0]
     assert "line_keys=2" in md
-    assert "deep_target_n_effective" in md
-    # 80//8 = 10
-    assert "10" in md
+    # Board-sized effective target (80//8=10) — full field, not bare "10" (stake band also has 10)
+    assert "deep_target_n_effective**: 10" in md
+    assert "board/shortlist n=80" in md
+    assert "static fallback" not in md
     assert "scaffold tags=1" in md
     assert "sport_rotation tags=1" in md
     assert "coverage_floor**: enabled" in md
@@ -170,7 +175,11 @@ def test_coverage_floor_section_inactive_relax(tmp_path: Path):
     md = generate_status(cfg, _bankroll(), _phase(), _risk())
     assert "## Coverage floor" in md
     assert "temp_ev_relax**: inactive" in md
+    assert "temp_ev_relax**: active" not in md
     assert "coverage_floor**: enabled" in md
+    # No board → do not claim a live effective target
+    assert "deep_target_n_effective**: n/a (static fallback=8" in md
+    assert "deep_target_n_effective**: 8" not in md
 
 
 def test_collect_coverage_floor_soft_fail_missing_files(tmp_path: Path):
@@ -179,9 +188,14 @@ def test_collect_coverage_floor_soft_fail_missing_files(tmp_path: Path):
     info = collect_coverage_floor_status(cfg)
     assert info.get("coverage_floor_enabled") is True
     assert info["temp_ev_relax"]["active"] is False
+    assert info.get("deep_target_n_effective") is None
+    assert info.get("deep_target_source") == "static_fallback_no_board"
+    assert info.get("deep_target_n_static") == 8
     section = format_coverage_floor_section(info)
     assert "Coverage floor" in section
-    assert "inactive" in section
+    assert "temp_ev_relax**: inactive" in section
+    assert "static fallback=8" in section
+    assert "deep_target_n_effective**: 8" not in section
 
 
 def test_write_status_includes_coverage_floor(tmp_path: Path):
@@ -197,6 +211,9 @@ def test_write_status_includes_coverage_floor(tmp_path: Path):
     assert path.is_file()
     text = path.read_text(encoding="utf-8")
     assert "## Coverage floor" in text
-    assert "temp_ev_relax" in text
-    assert "active" in text
+    assert "temp_ev_relax**: active" in text
+    ter_lines = [l for l in text.splitlines() if "temp_ev_relax" in l]
+    assert ter_lines and "inactive" not in ter_lines[0]
     assert "line_keys=1" in text
+    # No light LATEST → static fallback label, not fake effective
+    assert "static fallback=8" in text

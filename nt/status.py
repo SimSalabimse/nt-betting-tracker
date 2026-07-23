@@ -163,15 +163,22 @@ def collect_coverage_floor_status(cfg: dict[str, Any]) -> dict[str, Any]:
                 out["deep_queue_n"] = len(q)
 
     out["board_lines"] = board_lines
+    # Only set deep_target_n_effective when we have a real board/shortlist size.
+    # Without board size, keep effective=None and surface static via deep_target_n_static
+    # so operators do not misread "effective=8" as this board's floor target.
     if dynamic_deep_target_n is not None and board_lines is not None:
         try:
             out["deep_target_n_effective"] = int(dynamic_deep_target_n(cfg, board_lines))
+            out["deep_target_source"] = "board"
         except Exception as ex:  # noqa: BLE001
             out["notes"].append(f"target_compute:{ex}")
-    elif dynamic_deep_target_n is not None and out.get("deep_target_n_static") is not None:
-        # No board size — surface static target as fallback label only
-        out["deep_target_n_effective"] = out["deep_target_n_static"]
+            out["deep_target_source"] = "unavailable"
+    elif out.get("deep_target_n_static") is not None:
+        out["deep_target_n_effective"] = None
+        out["deep_target_source"] = "static_fallback_no_board"
         out["notes"].append("target_from_static_no_board")
+    else:
+        out["deep_target_source"] = "unavailable"
 
     # Active temp_ev_relax overlay (ControlSignals)
     try:
@@ -203,22 +210,30 @@ def format_coverage_floor_section(info: dict[str, Any]) -> str:
         lines.append("")
         return "\n".join(lines)
 
-    # deep_target
+    # deep_target — distinguish board-sized effective vs static fallback (no board)
     target = info.get("deep_target_n_effective")
     board = info.get("board_lines")
     dyn = info.get("deep_target_dynamic")
+    src = info.get("deep_target_source")
+    static_n = info.get("deep_target_n_static")
     target_bits = []
-    if target is not None:
+    if target is not None and src == "board":
         target_bits.append(f"**deep_target_n_effective**: {target}")
+        meta = []
+        if board is not None:
+            meta.append(f"board/shortlist n={board}")
+        if dyn is not None:
+            meta.append("dynamic on" if dyn else "dynamic off")
+        if meta:
+            target_bits.append(f"({'; '.join(meta)})")
+    elif src == "static_fallback_no_board" or (target is None and static_n is not None):
+        # No board size — do not label static as "effective"
+        dyn_s = "dynamic on" if dyn else "dynamic off" if dyn is not None else "dynamic n/a"
+        target_bits.append(
+            f"**deep_target_n_effective**: n/a (static fallback={static_n}; {dyn_s}; no board)"
+        )
     else:
         target_bits.append("**deep_target_n_effective**: n/a")
-    meta = []
-    if board is not None:
-        meta.append(f"board/shortlist n={board}")
-    if dyn is not None:
-        meta.append("dynamic on" if dyn else "dynamic off")
-    if meta:
-        target_bits.append(f"({'; '.join(meta)})")
     lines.append("- " + " ".join(target_bits))
 
     # floor config summary
