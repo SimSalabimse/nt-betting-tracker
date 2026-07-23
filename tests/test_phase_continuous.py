@@ -122,7 +122,7 @@ def cfg_ladder(tmp_path: Path) -> dict:
                 "label": "Build",
                 "enter_equity": 750,
                 "enter_settled": 90,
-                "stake_min": 12,
+                "stake_min": 14,
                 "stake_max": 18,
                 "max_bets_per_round": 5,
                 "max_doubles_per_round": 1,
@@ -135,13 +135,39 @@ def cfg_ladder(tmp_path: Path) -> dict:
                 "label": "Expand",
                 "enter_equity": 1200,
                 "enter_settled": 130,
-                "stake_min": 15,
+                "stake_min": 16,
                 "stake_max": 28,
                 "max_bets_per_round": 6,
                 "max_doubles_per_round": 2,
                 "daily_risk_pct": 0.09,
                 "daily_risk_floor": 70,
                 "daily_risk_ceil": 140,
+                "next": "4",
+            },
+            "4": {
+                "label": "Mature",
+                "enter_equity": 2500,
+                "enter_settled": 180,
+                "stake_min": 28,
+                "stake_max": 45,
+                "max_bets_per_round": 7,
+                "max_doubles_per_round": 2,
+                "daily_risk_pct": 0.07,
+                "daily_risk_floor": 100,
+                "daily_risk_ceil": 250,
+                "next": "5",
+            },
+            "5": {
+                "label": "Scale",
+                "enter_equity": 5000,
+                "enter_settled": 250,
+                "stake_min": 45,
+                "stake_max": 70,
+                "max_bets_per_round": 8,
+                "max_doubles_per_round": 3,
+                "daily_risk_pct": 0.06,
+                "daily_risk_floor": 120,
+                "daily_risk_ceil": 400,
                 "next": None,
             },
         },
@@ -209,11 +235,11 @@ def test_unit_increases_between_500_and_560(cfg_ladder):
     cfg = cfg_ladder
     rows = _minimal_rows()
 
-    # Inside Phase 2: clear room in [12, 18] with scale 100
+    # Inside Phase 2: room above bridged stake_min 14 with scale 100
     u750 = continuous_unit_size(cfg, "2", 750.0)
     u850 = continuous_unit_size(cfg, "2", 850.0)
-    assert u750 == 12.0
-    assert u850 == 13.0
+    assert u750 == 14.0  # bridged / carry floor from 1B+
+    assert u850 == 15.0  # 14 + 100/100
     assert u850 > u750
 
     # Wide single band: 500 → 600 crosses a whole-krone step (560 still same floor)
@@ -387,3 +413,101 @@ def test_continuous_disabled_no_unit_override(cfg_ladder):
     # Open risk stays at phase static (no lerp)
     assert phase["daily_risk_floor"] == 34.0
     assert phase["daily_risk_ceil"] == 47.0
+
+
+def test_unit_non_decreasing_at_each_promotion_boundary(cfg_ladder):
+    """
+    R1/R2: unit at enter must be >= unit at enter − ε for every promotion.
+
+    Covers half-steps and full phases (1B+→2, 2→3, 3→4, 4→5).
+    """
+    cfg = cfg_ladder
+    rows = _minimal_rows()
+    phases = cfg["phases"]
+    order = list(phases.keys())
+    eps = 0.01
+
+    for i in range(1, len(order)):
+        pid = order[i]
+        enter = float(phases[pid].get("enter_equity") or 0.0)
+        if enter <= 0:
+            continue
+        # Equity-only selection (settled=0) so phase_id tracks equity ladder
+        pre = evaluate_phase(cfg, equity=enter - eps, settled_count=0, rows=rows)
+        at = evaluate_phase(cfg, equity=enter, settled_count=0, rows=rows)
+        assert pre["phase_id"] == order[i - 1], (
+            f"pre-boundary at {enter - eps}: expected {order[i - 1]}, got {pre['phase_id']}"
+        )
+        assert at["phase_id"] == pid, (
+            f"at boundary {enter}: expected {pid}, got {at['phase_id']}"
+        )
+        u_pre = float(pre["unit_size_nok"])
+        u_at = float(at["unit_size_nok"])
+        assert u_at >= u_pre, (
+            f"unit drop at {order[i - 1]}→{pid} enter={enter}: "
+            f"{u_pre} → {u_at}"
+        )
+
+
+def test_unit_non_decreasing_live_config_promotions():
+    """Same boundary monotonicity on live config.yaml ladder."""
+    cfg = load_config()
+    assert phase_continuous_cfg(cfg).get("enabled")
+    phases = cfg["phases"]
+    order = list(phases.keys())
+    eps = 0.01
+    rows: list[dict[str, str]] = []
+
+    # Isolated state so live phase.json sticky health does not interfere
+    import tempfile
+    from pathlib import Path as P
+
+    with tempfile.TemporaryDirectory() as td:
+        state = P(td) / "state"
+        state.mkdir()
+        cfg = {
+            **cfg,
+            "paths": {
+                **(cfg.get("paths") or {}),
+                "state_dir": str(state),
+                "bets": str(P(td) / "bets.csv"),
+            },
+            "phase_health": {"enabled": False},
+        }
+        (P(td) / "bets.csv").write_text(
+            "bet_id,date,match,selection,decimal_odds,stake_nok,result,p_l_nok,"
+            "payout_nok,updated_at\n",
+            encoding="utf-8",
+        )
+        for i in range(1, len(order)):
+            pid = order[i]
+            enter = float(phases[pid].get("enter_equity") or 0.0)
+            if enter <= 0:
+                continue
+            pre = evaluate_phase(cfg, equity=enter - eps, settled_count=0, rows=rows)
+            at = evaluate_phase(cfg, equity=enter, settled_count=0, rows=rows)
+            assert pre["phase_id"] == order[i - 1]
+            assert at["phase_id"] == pid
+            assert float(at["unit_size_nok"]) >= float(pre["unit_size_nok"]), (
+                f"live drop {order[i - 1]}→{pid} @ {enter}: "
+                f"{pre['unit_size_nok']} → {at['unit_size_nok']}"
+            )
+
+
+def test_review_r1_measured_boundaries_no_drop(cfg_ladder):
+    """Exact equities called out in PR-2 review R1 table."""
+    cfg = cfg_ladder
+    rows = _minimal_rows()
+    cases = [
+        (749.99, 750.0),
+        (1199.99, 1200.0),
+        (2499.99, 2500.0),
+        (4999.99, 5000.0),
+    ]
+    for lo, hi in cases:
+        p_lo = evaluate_phase(cfg, equity=lo, settled_count=0, rows=rows)
+        p_hi = evaluate_phase(cfg, equity=hi, settled_count=0, rows=rows)
+        assert p_hi["unit_size_nok"] >= p_lo["unit_size_nok"], (
+            f"{lo}→{hi}: {p_lo['phase_id']}@{p_lo['unit_size_nok']} → "
+            f"{p_hi['phase_id']}@{p_hi['unit_size_nok']}"
+        )

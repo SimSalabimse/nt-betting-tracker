@@ -8,17 +8,17 @@
 - Ledger: 31 bets (0 archive + 31 later)
 
 ## Phase (auto)
-- **1A+** — Protect+
-- Stake band: 12–14 NOK
-- Max bets/round: 5 | Max doubles: 0
+- **1A** — Protect
+- Stake band: 10–12 NOK
+- Max bets/round: 4 | Max doubles: 0
 - Rolling ROI: 16.6%
 
 ## Daily risk (auto — changes with equity/phase)
-- Cap: **47.59 NOK** (`capital_v2 fail-closed: L0 freeze → L1 DD(15% REDUCED/25% FROZEN) → L2 weekly(8%|6u) → L3 daily(4%|3u) → remaining=min(phase_cap−open[−day_loss], portfolio_open_room 18% liquid); settlement-day P/L Europe/Oslo; working=equity−secure; phase_health may tighten size_mode/research_only only; unit = phase_continuous (primary) when enabled else liquid unit ladder`)
+- Cap: **42.00 NOK** (`capital_v2 fail-closed: L0 freeze → L1 DD(15% REDUCED/25% FROZEN) → L2 weekly(8%|6u) → L3 daily(4%|3u) → remaining=min(phase_cap−open[−day_loss], portfolio_open_room 18% liquid); settlement-day P/L Europe/Oslo; working=equity−secure`)
 - Open pending: 34.00
-- Remaining today: **13.59 NOK**
-- Today P/L: +0.00 | Stop if ≤ -20.68
-- Can bet: **True**
+- Remaining today: **8.00 NOK**
+- Today P/L: +22.88 | Stop if ≤ -21.08
+- Can bet: **False**
 
 ## High odds policy
 - Odds **> 2.5 are allowed** when evidence grade **A**, EV ≥ high-odds min after haircut, and stake uses high-odds multiplier.
@@ -47,4 +47,4 @@
 
 Optional: `project` (bankroll sim) · `agent ask` (assist only)
 
-Updated: 2026-07-23T16:34:31Z
+Updated: 2026-07-21T21:23:33Z

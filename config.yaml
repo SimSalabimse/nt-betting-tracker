@@ -90,7 +90,8 @@ phases:
     label: Build
     enter_equity: 750
     enter_settled: 90
-    stake_min: 12
+    # stake_min bridges 1B+ continuous at 750 (~14); code also carry-forwards
+    stake_min: 14
     stake_max: 18
     max_bets_per_round: 5
     max_doubles_per_round: 1
@@ -102,7 +103,8 @@ phases:
     label: Expand
     enter_equity: 1200
     enter_settled: 130
-    stake_min: 15
+    # bridges phase 2 continuous at 1200 (~16)
+    stake_min: 16
     stake_max: 28
     max_bets_per_round: 6
     max_doubles_per_round: 2
@@ -114,7 +116,8 @@ phases:
     label: Mature
     enter_equity: 2500
     enter_settled: 180
-    stake_min: 18
+    # bridges phase 3 continuous at 2500 (~28, band max)
+    stake_min: 28
     stake_max: 45
     max_bets_per_round: 7
     max_doubles_per_round: 2
@@ -126,7 +129,8 @@ phases:
     label: Scale
     enter_equity: 5000
     enter_settled: 250
-    stake_min: 20
+    # bridges phase 4 continuous at 5000 (~45, band max)
+    stake_min: 45
     stake_max: 70
     max_bets_per_round: 8
     max_doubles_per_round: 3

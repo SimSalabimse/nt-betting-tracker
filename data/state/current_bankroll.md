@@ -1,6 +1,6 @@
 # Current Bankroll (generated — do not hand-edit)
 
-**Baseline**: 500.00 NOK (era start 2026-07-22)
+**Baseline**: 500.00 NOK (era start 2026-07-19)
 
 **Equity**: **550.99 NOK**
 
@@ -14,4 +14,4 @@
 
 **Formula**: `equity = baseline + sum(terminal P/L in data/bets.csv); open_risk = Pending+ConfirmedPlaced; Abandoned excluded from risk`
 
-**Updated**: 2026-07-23T16:34:31Z
+**Updated**: 2026-07-21T21:23:33Z

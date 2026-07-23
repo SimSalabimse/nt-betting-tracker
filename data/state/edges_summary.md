@@ -1,6 +1,6 @@
 # Learning summary (auto)
 
-Updated: **2026-07-23T16:34:31Z**
+Updated: **2026-07-21T21:23:33Z**
 Settled sample: **28** · era ROI **+16.6%**
 
 ## Sport multipliers

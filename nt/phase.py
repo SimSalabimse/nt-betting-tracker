@@ -81,12 +81,13 @@ def progress_inside_phase(cfg: dict[str, Any], phase_id: str, equity: float) -> 
     return max(0.0, min(1.0, (float(equity) - enter) / span))
 
 
-def continuous_unit_size(cfg: dict[str, Any], phase_id: str, equity: float) -> float:
+def _raw_continuous_unit(
+    cfg: dict[str, Any], phase_id: str, equity: float
+) -> float:
     """
-    unit = base_unit + (equity - enter) / scale_factor
-    base_unit = phase stake_min; clamped to [stake_min, stake_max], whole krone.
-
-    Visible ~1 NOK unit step every scale_factor equity (default 100).
+    In-band formula only (no carry-forward):
+    unit = stake_min + (equity - enter) / scale_factor
+    clamped to [stake_min, stake_max], whole krone.
     """
     pc = phase_continuous_cfg(cfg)
     phases = (cfg or {}).get("phases") or {}
@@ -99,7 +100,52 @@ def continuous_unit_size(cfg: dict[str, Any], phase_id: str, equity: float) -> f
     scale = max(1.0, float(pc.get("scale_factor") or 100.0))
     raw = stake_min + (float(equity) - enter) / scale
     unit = max(stake_min, min(stake_max, raw))
-    # whole krone (floor toward zero for positive)
+    return float(int(unit)) if unit > 0 else 0.0
+
+
+def continuous_unit_size(cfg: dict[str, Any], phase_id: str, equity: float) -> float:
+    """
+    Continuous unit for a phase at equity (whole krone).
+
+    1. In-band: stake_min + (equity - enter) / scale_factor, clamp [stake_min, stake_max]
+    2. Carry-forward floor: max with previous phase's continuous unit evaluated at
+       **this phase's enter_equity** (promotion boundary), chained up the ladder.
+       Prevents unit drop on full promotions (1B+→2, 2→3, …) when config
+       stake_min undercuts the unit already earned.
+    3. Final clamp: never above current stake_max; never below carry floor when
+       stake_max >= floor (if misconfigured stake_max < floor, keep floor —
+       fail closed to non-decreasing).
+
+    Visible ~1 NOK unit step every scale_factor equity (default 100).
+    """
+    phases = (cfg or {}).get("phases") or {}
+    p = phases.get(phase_id) or {}
+    stake_min = float(p.get("stake_min") or 10.0)
+    stake_max = float(p.get("stake_max") or stake_min)
+    if stake_max < stake_min:
+        stake_max = stake_min
+
+    unit = _raw_continuous_unit(cfg, phase_id, equity)
+    order = list(phases.keys())
+    if phase_id not in order:
+        return unit
+
+    i = order.index(phase_id)
+    if i <= 0:
+        return unit
+
+    # Carry-forward floor from prior phase at this phase's enter (promotion edge).
+    # Recursive continuous_unit_size chains floors through the whole ladder.
+    enter = float(p.get("enter_equity") or 0.0)
+    prev_id = order[i - 1]
+    floor_u = continuous_unit_size(cfg, prev_id, enter)
+    unit = max(unit, floor_u)
+
+    # Prefer stake_max as soft cap, but never decrease below the carry floor.
+    if stake_max >= floor_u:
+        unit = min(unit, stake_max)
+    # else: misconfigured band — keep floor (non-decreasing wins)
+
     return float(int(unit)) if unit > 0 else 0.0
 
 

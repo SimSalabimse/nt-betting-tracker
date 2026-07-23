@@ -9,7 +9,7 @@
   "era_archive_bets": 0,
   "post_archive_bets": 31,
   "total_bets": 31,
-  "era_start": "2026-07-22",
-  "updated_at": "2026-07-23T16:34:31Z",
+  "era_start": "2026-07-19",
+  "updated_at": "2026-07-21T21:23:33Z",
   "formula": "equity = baseline + sum(terminal P/L in data/bets.csv); open_risk = Pending+ConfirmedPlaced; Abandoned excluded from risk"
 }

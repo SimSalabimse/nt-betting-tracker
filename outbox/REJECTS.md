@@ -1,5 +1,5 @@
-# Rejects — 2026-07-23
+# Rejects — 2026-07-21
 
-Total rejects: **1** (full log: `REJECTS_2026-07-23.jsonl`)
+Total rejects: **1** (full log: `REJECTS_2026-07-21.jsonl`)
 
-- {'match': 'Zed FC vs Yed FC', 'selection': 'Zed FC to Win', 'reason': 'no p_model', 'grade': 'F', 'issues': ['missing evidence pack']}
+- {'reason': 'risk block', 'detail': []}
