@@ -61,10 +61,48 @@ Docs: `docs/PACKAGE_IMPLEMENTATION_SUMMARY.md` · `docs/RESEARCH_COVERAGE_FIX_SU
 | Preferred share of queue | ≥ **55%** (odds ≥1.85 **or** non short-main with odds ≥1.80) |
 | Short-main cap | ≤ **25%** pure short-fav **ML / O2.5 / first-goal** |
 | Thin preferred pool | **Shrink queue** — never pad with chalk to hit target n |
-| Target size | ~**8–12** (`deep_target_n` 10 / `deep_max_n` 12), ≤3 per sport |
+| Target size | Dynamic via `deep_target_dynamic` (~**8–15**; `deep_target_min`/`max`/`divisor`) — never pad chalk to hit n |
 
 **Short-main** = odds &lt; 1.85 **and** (ML / O2.5 / first-goal).  
 **Preferred (survivable)** = odds ≥ **1.85** **or** (non short-main **and** odds ≥ **1.80**). Short alts &lt;1.80 do **not** pad the preferred floor.
+
+### Coverage floor + temp_ev_relax (permanent)
+
+Two orthogonal mechanisms. Operators see both on **`data/state/status.md`** → **Coverage floor** section.
+
+#### Mechanism A — quality-preserving floor (never softens EV)
+
+**Code:** `nt/light_research.py` (`coverage_floor_cfg`, `dynamic_deep_target_n`, `build_deep_queue`)  
+**Config:** `research.coverage_floor` + `research.tiers.deep_target_*`
+
+| Piece | Behaviour |
+|-------|-----------|
+| Dynamic `deep_target_n` | `clamp(board_lines // divisor, min, max)` when `deep_target_dynamic` |
+| Top-promo scaffold | Force top **~20%** by `promotion_score` into queue consideration (`top_promo_scaffold_pct`) — still composition-capped; never pure short-main chalk |
+| Sport rotation | Sports with ≥`sport_rotation_min_lines` (default **5**) eligible light-pass and **zero** deep picks get one forced preferred/non-chalk line when composition allows |
+| `require_real_pack` | Queue never includes rows that already have `p_model` as invented work |
+
+**Never invents `p_model`. Never softens min_EV / haircut.** Expands *what to research*, not *what clears EV*.
+
+#### Mechanism B — `temp_ev_relax` safety net (auditable ControlSignal)
+
+**Code:** `nt/control_signals.py` (`emit_temp_ev_relax`, `active_temp_ev_relax_overlay`, `maybe_emit_temp_ev_relax*`) · applied in `nt/portfolio.py`  
+**Config:** `learning.control_signals.temp_ev_relax` (optional mirror `research.coverage_floor.ev_relax`)
+
+| Rule | Live default |
+|------|----------------|
+| When | Large board (≥`min_board_matches` **15**) **and** coverage health **warn/critical** **and** deep_queue empty **and** light-pass survivors exist |
+| Soften | Per-line allowlist only · `delta_ev` **1–2pp** · TTL **24h** · `clear_on_settle` |
+| Stake | Extra **×0.80** (20% haircut) while active on that line |
+| Never | High-odds (when `exclude_high_odds`) · grade **C** (when `exclude_grade_c`) · grade **F** · global min_EV rewrite |
+| Blocked | If **`process_gate_raise` > 0** for the candidate → skip relax entirely (fail-closed coexistence with process_error gate) |
+
+**Agent mandate:**
+
+- **Do not invent `p_model`** to fill seats or clear EV.  
+- **Do not manually lower min_EV** outside ControlSignals (`temp_ev_relax` / engine emit only).  
+- Prefer Mechanism A (more deep research) over waiting for B.  
+- Verify: `python scripts/verify_coverage_floor.py --synthetic-large`
 
 5. **Deep research (engine deep queue first — not only O2.5/ML)**  
    Work the **Deep queue** from light report / board. Use web search / page open aggressively (Sofascore, FBref, HLTV, ATP/WTA, Flashscore, official sites, etc.).  
@@ -124,7 +162,8 @@ Full design: **`docs/RESEARCH_GATES.md`**. Empty slip beats betting against your
    - **Empty / near-empty because mid-price lines were never researched** = process miss — engine raises **`force_coverage_priority`** and soft-gates recommend.  
    - **ControlSignals:**  
      - `temp_gate_raise` — min_ev raise + force confirmed lineup (process_error path).  
-     - `force_coverage_priority` — research pressure (TTL **4–7d**, default 5; target band **`1.85-2.60`**; min_deep_packs 8–10). Raises next deep-queue weights; **does not invent p_model or soften EV/haircut**.
+     - `force_coverage_priority` — research pressure (TTL **4–7d**, default 5; target band **`1.85-2.60`**; min_deep_packs 8–10). Raises next deep-queue weights; **does not invent p_model or soften EV/haircut**.  
+     - `temp_ev_relax` — **safety net only** (Mechanism B): per-line min_EV soften ≤2pp + stake ×0.80 · TTL 24h · never high-odds/grade-C · blocked when process_gate active. See **Coverage floor + temp_ev_relax** above.
 
 8. **Place confirmation / abandon (real-money control)**  
    ```bash
@@ -253,6 +292,7 @@ After every settle:
 4. **ControlSignals (primary closed loop)** — store `data/state/control_signals.jsonl`:  
    - **`temp_gate_raise`** — on process_error / poor retro even at **n=1**: raise min_ev · force confirmed availability · TTL **7–14d** (default 10).  
    - **`force_coverage_priority`** — on empty/near-empty recommend from **research starvation** (high `no p_model` share + mid unresearched): band **1.85–2.60** / alt totals / dogs / HC / period · TTL **4–7d** · does **not** change haircut or EV bar.  
+   - **`temp_ev_relax`** — empty deep-queue safety net on large boards (Mechanism B): allowlisted lines only · ΔEV 1–2pp · stake ×0.80 · TTL **24h** · clear_on_settle · never invents p_model · **never** stack with process_gate raise on the same candidate.  
 5. **Learning proposals** auto-resolve (`auto_apply_proposals: true`):  
    - Full permanent mult delta only if **n_hist ≥ 8** and **conf ≥ 0.40**  
    - Else soft-modify or reject noise  
@@ -309,6 +349,8 @@ python run_nt.py simulate --sport basketball --home H --away A ...
 | Light assess never promotes; engine builds deep_queue | Expect assess-time auto-promote or empty queue forever |
 | Prefilter discards majority noise/chalk; prior is rank-only | Use classical prior as recommend `p_model` |
 | Composition ≥55% preferred / ≤25% short-main | Pad deep queue with short ML/O2.5 chalk or short alts &lt;1.80 |
+| Trust Mechanism A floor (dynamic target / scaffold / sport rotation) for research pressure | Soften min_EV by hand or invent p_model to “fill” the floor |
+| Let engine emit `temp_ev_relax` only under safety-net conditions | Manually lower min_EV outside ControlSignals or stack relax over process_gate |
 | Respect Exploration/Survival min-EV + open cap + weekly EXPLORE_REGIME quota | Soften 5pp haircut or invent thin EV beyond 2 slots/week |
 | Sports equal at zero data (symmetric virgin explore) | Hardcode sport edges from thin history |
 | Totalgrense residual ≥ buffer when limits set | place-ack when residual headroom already &lt; buffer |
