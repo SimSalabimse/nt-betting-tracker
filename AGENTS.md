@@ -2,9 +2,22 @@
 
 Real-money capital desk. Engines in `nt/` are law. UI (LuminaNT, Flet desktop) presents and invokes — never invents bankroll math.
 
+> ### System status 2026-07
+> | Live | Notes |
+> |------|--------|
+> | **500 NOK** clean-restart era · capital_v2 ON | Equity = baseline + Σ terminal P/L on `data/bets.csv` only |
+> | **Hybrid phases** `1A/1A+/1B/1B+` + continuous unit | [`docs/CAPITAL_HYBRID_PROGRESSION.md`](docs/CAPITAL_HYBRID_PROGRESSION.md) |
+> | **Secure Variant A** soft 1.25×/15% · hard 1.50×/30% | Hard replaces soft — never stacked |
+> | **Coverage floor (A)** + **`temp_ev_relax` (B)** | Floor never invents `p_model`; relax is allowlisted safety net only |
+> | **Settlement taxonomy** `learning_weight` · CS gate ≥**0.5** | [`docs/SETTLEMENT_LEARNING.md`](docs/SETTLEMENT_LEARNING.md) |
+> | **Desk skills** `/daily-run` · `/missed-audit` · `/chain-explain` · `/bankroll-tune` · `/learning-rootcause` | [`docs/DESK_SKILLS.md`](docs/DESK_SKILLS.md) |
+> | **Reasoning chains** on recommend | `data/state/reasoning_chains.jsonl` + `## Reasoning` in `PLACE_THESE.md` |
+>
+> Package narrative: permanent rules below. Skills invoke guide: **`docs/DESK_SKILLS.md`**. Capital hybrid: **`docs/CAPITAL_HYBRID_PROGRESSION.md`**. Taxonomy: **`docs/SETTLEMENT_LEARNING.md`**.
+
 **Status (permanent package):** clean-restart **500 NOK** era · capital_v2 live · **hybrid half-steps (1A+/1B+) + continuous unit** · **secure bucket Variant A** (soft/hard skim) · **Exploration→Survival→Normal** bankroll regimes · multi-stage quant prefilter · engine deep queue (composition ≥**55%** preferred / ≤**25%** short-main · band **1.85–2.60**) · Coverage Health + soft gate · `force_coverage_priority` · totalgrense residual buffer · closed-loop ControlSignals · PhaseState v5 · **neutral sport start at zero data**.  
 
-Docs: `docs/PACKAGE_IMPLEMENTATION_SUMMARY.md` · `docs/RESEARCH_COVERAGE_FIX_SUMMARY.md` · `docs/RESEARCH_WORKFLOW.md` · `docs/BANKROLL_PLAN.md` · `docs/CAPITAL_HYBRID_PROGRESSION.md` · `docs/RESIDUAL_RISKS.md` · `docs/LUMINA_INTEGRATION.md` · `artifacts/PACKAGE_VALIDATION_REPORT.md`.
+Docs: `docs/PACKAGE_IMPLEMENTATION_SUMMARY.md` · `docs/RESEARCH_COVERAGE_FIX_SUMMARY.md` · `docs/RESEARCH_WORKFLOW.md` · `docs/BANKROLL_PLAN.md` · `docs/CAPITAL_HYBRID_PROGRESSION.md` · `docs/DESK_SKILLS.md` · `docs/SETTLEMENT_LEARNING.md` · `docs/RESIDUAL_RISKS.md` · `docs/LUMINA_INTEGRATION.md` · `artifacts/PACKAGE_VALIDATION_REPORT.md`.
 
 ---
 

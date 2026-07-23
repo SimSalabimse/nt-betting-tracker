@@ -190,7 +190,26 @@ def run_recommend(
         flag = " **HIGH ODDS**" if r.high_odds else ""
         lines.append(f"- {r.match} / {r.selection}:{flag} {r.notes}")
 
-    place_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    place_md = "\n".join(lines) + "\n"
+    # Reasoning chains (minimal path): JSONL + ## Reasoning in PLACE_THESE (dry-run OK)
+    reasoning_chains: list = []
+    reasoning_path = None
+    try:
+        from nt.reasoning_chain import dump_reasoning_for_recommend
+
+        place_md, reasoning_chains, reasoning_path = dump_reasoning_for_recommend(
+            cfg,
+            picked,
+            rejects,
+            place_md=place_md,
+            phase_id=phase.get("phase_id"),
+            bet_ids=None,  # bet_ids assigned only after Pending log
+        )
+    except Exception:
+        reasoning_chains = []
+        reasoning_path = None
+
+    place_path.write_text(place_md, encoding="utf-8")
     # stable latest pointer
     (outbox / "PLACE_THESE.md").write_text(place_path.read_text(encoding="utf-8"), encoding="utf-8")
 
@@ -349,4 +368,6 @@ def run_recommend(
         "daily_cap": risk["daily_risk_cap_nok"],
         "equity": bankroll["equity_nok"],
         "force_mechanical": force_mechanical,
+        "n_reasoning_chains": len(reasoning_chains),
+        "reasoning_chains_path": str(reasoning_path) if reasoning_path else None,
     }

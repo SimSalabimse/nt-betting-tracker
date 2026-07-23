@@ -390,6 +390,16 @@ paths:
   agent_audit_jsonl: data/state/agent_audit.jsonl
   # v6: calibration log (p_model vs outcome)
   calibration_jsonl: data/state/calibration.jsonl
+  # Recommend reasoning chains (pick + near-miss audit)
+  reasoning_chains_jsonl: data/state/reasoning_chains.jsonl
+
+# Minimal reasoning-chain dump on recommend (dry-run OK) → JSONL + PLACE_THESE ## Reasoning
+reasoning:
+  enabled: true
+  jsonl: data/state/reasoning_chains.jsonl
+  max_near_miss: 8
+  near_miss_ev_slack: 0.04
+  place_md_section: true
 
 # --- v5 additive policy (all optional; missing keys use safe defaults in nt/defaults.py) ---
 
