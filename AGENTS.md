@@ -406,6 +406,34 @@ python scripts/validate_closed_loop.py -n 60
 
 ---
 
+## Desk skills (Grok)
+
+User-scope skills in `%USERPROFILE%\.grok\skills\` — load **this file first**, force real tools, list deliverable paths. Full invoke guide: **`docs/DESK_SKILLS.md`**. Optional helpers: `scripts/skill_*.ps1`.
+
+| Slash | Skill | When |
+|-------|--------|------|
+| `/daily-run` | Full day desk | results → odds → board+light → deep queue → scaffolds → recommend + Reasoning Chains → `outbox/PLACE_THESE.md` → place-ack |
+| `/missed-audit` | Mid-band misses | 1.80–2.20 out of deep; `promotion_score` components; cheapest fix; Bodø/Glimt −1.5 & tennis/snooker patterns |
+| `/chain-explain` | Reasoning Chain | forensic justify one match/selection (or whole slip) |
+| `/bankroll-tune` | Capital tune | secure/phase/unit/regime proposal → `scripts/mc_phase_progression.py` + `capital` CLI |
+| `/learning-rootcause` | Taxonomy | predictability + variance_class + learning_weight; `settlement_taxonomy` + `backfill_settlement_taxonomy.py` |
+
+```powershell
+# Grok (CWD = tracker root)
+# /daily-run
+# /missed-audit
+# /chain-explain <match> | <selection>
+# /bankroll-tune
+# /learning-rootcause
+
+# PowerShell helpers
+.\scripts\skill_list.ps1
+.\scripts\skill_invoke.ps1 daily-run
+.\scripts\skill_smoke.ps1
+```
+
+---
+
 ## Related docs
 
 | Doc | Role |
@@ -413,6 +441,7 @@ python scripts/validate_closed_loop.py -n 60
 | `docs/PACKAGE_IMPLEMENTATION_SUMMARY.md` | **This package** file map + confirmations |
 | `docs/RESEARCH_COVERAGE_FIX_SUMMARY.md` | Coverage Health + deep queue + force_coverage |
 | `docs/RESEARCH_WORKFLOW.md` | Full stage map (prefilter → deep) |
+| `docs/DESK_SKILLS.md` | Grok desk skills install + PowerShell invoke |
 | `docs/BANKROLL_PLAN.md` | Clean 500 + Calibration/Survival + multi-year |
 | `docs/PHASE_PLAN.md` | Phase ladder 1A–5 + v5 multi-factor |
 | `docs/CAPITAL_HYBRID_PROGRESSION.md` | Half-steps + continuous unit + Variant A skim; before/after 500→550; MC |
