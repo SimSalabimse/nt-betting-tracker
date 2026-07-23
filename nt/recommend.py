@@ -39,12 +39,14 @@ def refresh_state(cfg: dict[str, Any]) -> tuple[dict, dict, dict]:
         from nt.capital_runtime import capital_v2_enabled, sync_capital_v2_state
 
         if capital_v2_enabled(cfg):
+            cont_unit = phase.get("unit_size_nok") if phase.get("phase_continuous_enabled") else None
             segments = sync_capital_v2_state(
                 cfg,
                 bankroll["equity_nok"],
                 rows,
                 persist=True,
                 phase_daily_risk_ceil=float(phase.get("daily_risk_ceil") or 0.0) or None,
+                unit_size_override=float(cont_unit) if cont_unit is not None else None,
             )
     except Exception:
         segments = None

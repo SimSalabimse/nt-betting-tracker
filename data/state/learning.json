@@ -1,7 +1,7 @@
 {
   "enabled": true,
-  "updated_at": "2026-07-21T21:23:33Z",
-  "previous_updated_at": "2026-07-21T21:23:33Z",
+  "updated_at": "2026-07-23T16:34:31Z",
+  "previous_updated_at": "2026-07-23T16:34:31Z",
   "config_snapshot": {
     "min_sample": 12,
     "recent_window": 30,

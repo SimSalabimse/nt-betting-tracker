@@ -473,10 +473,14 @@ def sync_capital_v2_state(
     *,
     persist: bool = True,
     phase_daily_risk_ceil: float | None = None,
+    unit_size_override: float | None = None,
 ) -> dict[str, Any]:
     """
     When capital_v2.enabled: load segments → auto-unlock → secure transfer →
     snapshots → save. When disabled: no-op empty load (does not write).
+
+    ``unit_size_override``: when phase_continuous is enabled, pass continuous
+    unit so day/week snapshots freeze the hybrid unit (not pure liquid ladder).
 
     Returns segments dict used for subsequent risk evaluation.
     """
@@ -521,7 +525,11 @@ def sync_capital_v2_state(
 
     secure = max(0.0, float(segs.get("secure_nok") or 0.0))
     liquid = riskable_liquid(ledger_equity, secure, open_risk)
-    unit = unit_size(liquid, v2)
+    # Prefer phase continuous unit when provided; else liquid ladder
+    if unit_size_override is not None and float(unit_size_override) > 0:
+        unit = float(unit_size_override)
+    else:
+        unit = unit_size(liquid, v2)
     realized_day = day_realized_pl(rows, today)
     realized_week = week_realized_pl(rows, week_id)
 

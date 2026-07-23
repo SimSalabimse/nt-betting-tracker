@@ -1,6 +1,6 @@
-# Bets to place — 2026-07-21
+# Bets to place — 2026-07-23
 
-Phase **1A** | Equity **550.99** | Remaining risk **8.00** / cap **42.00**
+Phase **1A+** | Equity **550.99** | Remaining risk **13.59** / cap **47.59**
 
 Research coverage: 0/1 candidates have p_model.
 

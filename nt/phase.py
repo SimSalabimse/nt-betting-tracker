@@ -36,6 +36,131 @@ def _phase_order(cfg: dict[str, Any]) -> list[str]:
     return list(cfg["phases"].keys())
 
 
+# ── Continuous unit / open-risk (phase_continuous) ─────────────────────────
+
+
+def phase_continuous_cfg(cfg: dict[str, Any] | None) -> dict[str, Any]:
+    """Defaults for hybrid continuous sizing inside each phase band."""
+    raw = dict((cfg or {}).get("phase_continuous") or {})
+    return {
+        "enabled": bool(raw.get("enabled", False)),
+        "scale_factor": float(raw.get("scale_factor", 100.0)),
+    }
+
+
+def resolve_hard_phase_id(cfg: dict[str, Any], phase_id: str) -> str:
+    """
+    Hard gates (max_doubles, max_bets) use parent when half-steps set
+    ``hard_phase_id`` or ``inherits_hard_gates_from``. Display phase_id stays
+    the half-step (e.g. 1A+).
+    """
+    phases = (cfg or {}).get("phases") or {}
+    p = phases.get(phase_id) or {}
+    hard = p.get("hard_phase_id") or p.get("inherits_hard_gates_from") or phase_id
+    hard_s = str(hard)
+    if hard_s in phases:
+        return hard_s
+    return str(phase_id)
+
+
+def progress_inside_phase(cfg: dict[str, Any], phase_id: str, equity: float) -> float:
+    """
+    progress = clamp((equity - enter) / max(1, next_enter - enter), 0, 1)
+
+    0 at phase enter equity; ~1 approaching next phase enter.
+    Terminal phase (no next) → 1.0.
+    """
+    phases = (cfg or {}).get("phases") or {}
+    p = phases.get(phase_id) or {}
+    enter = float(p.get("enter_equity") or 0.0)
+    nxt = p.get("next")
+    if not nxt or nxt not in phases:
+        return 1.0
+    next_enter = float(phases[nxt].get("enter_equity") or enter)
+    span = max(1.0, next_enter - enter)
+    return max(0.0, min(1.0, (float(equity) - enter) / span))
+
+
+def continuous_unit_size(cfg: dict[str, Any], phase_id: str, equity: float) -> float:
+    """
+    unit = base_unit + (equity - enter) / scale_factor
+    base_unit = phase stake_min; clamped to [stake_min, stake_max], whole krone.
+
+    Visible ~1 NOK unit step every scale_factor equity (default 100).
+    """
+    pc = phase_continuous_cfg(cfg)
+    phases = (cfg or {}).get("phases") or {}
+    p = phases.get(phase_id) or {}
+    stake_min = float(p.get("stake_min") or 10.0)
+    stake_max = float(p.get("stake_max") or stake_min)
+    if stake_max < stake_min:
+        stake_max = stake_min
+    enter = float(p.get("enter_equity") or 0.0)
+    scale = max(1.0, float(pc.get("scale_factor") or 100.0))
+    raw = stake_min + (float(equity) - enter) / scale
+    unit = max(stake_min, min(stake_max, raw))
+    # whole krone (floor toward zero for positive)
+    return float(int(unit)) if unit > 0 else 0.0
+
+
+def continuous_open_risk_params(
+    cfg: dict[str, Any], phase_id: str, equity: float
+) -> dict[str, float]:
+    """
+    Lerp daily open-risk knobs from current phase toward next by progress 0–1.
+
+    When continuous disabled or no next phase, return current phase values.
+    """
+    phases = (cfg or {}).get("phases") or {}
+    p = phases.get(phase_id) or {}
+    cur_floor = float(p.get("daily_risk_floor") or 0.0)
+    cur_ceil = float(p.get("daily_risk_ceil") or cur_floor)
+    cur_pct = float(p.get("daily_risk_pct") or 0.0)
+    pc = phase_continuous_cfg(cfg)
+    if not pc.get("enabled"):
+        return {
+            "daily_risk_floor": cur_floor,
+            "daily_risk_ceil": cur_ceil,
+            "daily_risk_pct": cur_pct,
+        }
+    prog = progress_inside_phase(cfg, phase_id, equity)
+    nxt = p.get("next")
+    if not nxt or nxt not in phases:
+        return {
+            "daily_risk_floor": cur_floor,
+            "daily_risk_ceil": cur_ceil,
+            "daily_risk_pct": cur_pct,
+        }
+    n = phases[nxt]
+    nxt_floor = float(n.get("daily_risk_floor") or cur_floor)
+    nxt_ceil = float(n.get("daily_risk_ceil") or cur_ceil)
+    nxt_pct = float(n.get("daily_risk_pct") or cur_pct)
+    return {
+        "daily_risk_floor": round(cur_floor + prog * (nxt_floor - cur_floor), 4),
+        "daily_risk_ceil": round(cur_ceil + prog * (nxt_ceil - cur_ceil), 4),
+        "daily_risk_pct": round(cur_pct + prog * (nxt_pct - cur_pct), 6),
+    }
+
+
+def hard_gate_fields(cfg: dict[str, Any], phase_id: str) -> dict[str, Any]:
+    """max_doubles / max_bets from hard parent phase when configured."""
+    phases = (cfg or {}).get("phases") or {}
+    hard_id = resolve_hard_phase_id(cfg, phase_id)
+    hard_p = phases.get(hard_id) or phases.get(phase_id) or {}
+    display_p = phases.get(phase_id) or hard_p
+    return {
+        "phase_hard_id": hard_id,
+        "max_bets_per_round": int(
+            hard_p.get("max_bets_per_round", display_p.get("max_bets_per_round", 3))
+        ),
+        "max_doubles_per_round": int(
+            hard_p.get(
+                "max_doubles_per_round", display_p.get("max_doubles_per_round", 0)
+            )
+        ),
+    }
+
+
 def evaluate_phase(
     cfg: dict[str, Any],
     equity: float,
@@ -44,7 +169,7 @@ def evaluate_phase(
     current_phase: str | None = None,
 ) -> dict[str, Any]:
     """
-    Phase selection (v4 safe hybrid):
+    Phase selection (v4 safe hybrid + half-steps + continuous sizing):
 
     1. equity_phase  = highest phase whose enter_equity is met
     2. count_phase   = highest phase whose enter_settled is met
@@ -53,6 +178,8 @@ def evaluate_phase(
     4. demote one step if rolling ROI deeply negative
     5. demote one step if equity is in a large drawdown vs peak equity
     6. at most one step advance vs previous written phase
+    7. hard gates (max_doubles, max_bets) from hard_phase_id parent when set
+    8. continuous unit / open-risk progress inside band when phase_continuous
     """
     phases = cfg["phases"]
     order = _phase_order(cfg)
@@ -127,6 +254,12 @@ def evaluate_phase(
             reasons.append(f"one-step advance cap from {current_phase} → {chosen}")
 
     p = phases[chosen]
+    gates = hard_gate_fields(cfg, chosen)
+    hard_id = gates["phase_hard_id"]
+    prog = progress_inside_phase(cfg, chosen, equity)
+    pc = phase_continuous_cfg(cfg)
+    open_params = continuous_open_risk_params(cfg, chosen, equity)
+    cont_unit = continuous_unit_size(cfg, chosen, equity) if pc.get("enabled") else None
 
     # ── v5 multi-factor PhaseState (alongside ladder) ─────────────────────
     from nt.phase_factors import compute_phase_factors, phase_health_cfg
@@ -190,16 +323,23 @@ def evaluate_phase(
     if high_odds_stress:
         reasons.append("phase_health: high_odds_stress_block (concentration/calibration)")
 
-    return {
+    if pc.get("enabled"):
+        reasons.append(
+            f"phase_continuous: progress={prog:.3f} unit={cont_unit} "
+            f"hard_id={hard_id} open_ceil={open_params['daily_risk_ceil']:.1f}"
+        )
+
+    out: dict[str, Any] = {
         "phase_id": chosen,
+        "phase_hard_id": hard_id,
         "label": p.get("label", chosen),
         "stake_min": float(p["stake_min"]),
         "stake_max": float(p["stake_max"]),
-        "max_bets_per_round": int(p["max_bets_per_round"]),
-        "max_doubles_per_round": int(p["max_doubles_per_round"]),
-        "daily_risk_pct": float(p["daily_risk_pct"]),
-        "daily_risk_floor": float(p["daily_risk_floor"]),
-        "daily_risk_ceil": float(p["daily_risk_ceil"]),
+        "max_bets_per_round": int(gates["max_bets_per_round"]),
+        "max_doubles_per_round": int(gates["max_doubles_per_round"]),
+        "daily_risk_pct": float(open_params["daily_risk_pct"]),
+        "daily_risk_floor": float(open_params["daily_risk_floor"]),
+        "daily_risk_ceil": float(open_params["daily_risk_ceil"]),
         "next": p.get("next"),
         "equity_phase": equity_phase,
         "count_phase": count_phase,
@@ -209,6 +349,8 @@ def evaluate_phase(
         "reasons": reasons,
         "equity_nok": equity,
         "settled_count": settled_count,
+        "progress_inside_phase": round(prog, 6),
+        "phase_continuous_enabled": bool(pc.get("enabled")),
         # v5 multi-factor
         "phase_model": "v5_multifactor",
         "phase_state": factors,
@@ -219,6 +361,10 @@ def evaluate_phase(
         "process_health_action": process_health_action,
         "process_health_reason": process_health_reason,
     }
+    if cont_unit is not None:
+        out["unit_size_nok"] = float(cont_unit)
+        out["unit_size_source"] = "phase_continuous"
+    return out
 
 
 def _parse_phase_ts(s: str) -> datetime | None:

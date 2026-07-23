@@ -27,9 +27,11 @@ norsk_tipping:
     daily_limit_nok: null
     monthly_limit_nok: null
 
-# Phase ladder v4 (2026-07-13) — see docs/PHASE_PLAN.md
+# Phase ladder v4 + hybrid half-steps (1A+/1B+) — see docs/PHASE_PLAN.md
 # Hybrid: equity ladder is primary; settled-count may unlock at most +1 phase if stable.
 # daily_risk = clamp(equity * daily_risk_pct, floor, ceil)  — recomputed every run.
+# Half-steps keep parent hard gates via hard_phase_id (max_doubles, max_bets).
+# Continuous unit / open-risk progress inside each band when phase_continuous.enabled.
 phases:
   "1A":
     label: Protect
@@ -43,18 +45,46 @@ phases:
     daily_risk_pct: 0.08
     daily_risk_floor: 30
     daily_risk_ceil: 42
+    next: "1A+"
+  "1A+":
+    label: Protect+
+    enter_equity: 540
+    enter_settled: 30
+    # stake floor = 1A max so continuous unit does not drop at half-step
+    stake_min: 12
+    stake_max: 14
+    max_bets_per_round: 5
+    max_doubles_per_round: 0
+    daily_risk_pct: 0.085
+    daily_risk_floor: 34
+    daily_risk_ceil: 47
+    hard_phase_id: "1A"   # doubles / max_bets / hard gates inherit 1A
     next: "1B"
   "1B":
     label: Stabilize
     enter_equity: 580
     enter_settled: 60
-    stake_min: 10
+    stake_min: 12
     stake_max: 15
     max_bets_per_round: 4
     max_doubles_per_round: 0   # no doubles until Phase 2
     daily_risk_pct: 0.09
     daily_risk_floor: 38
     daily_risk_ceil: 52
+    next: "1B+"
+  "1B+":
+    label: Stabilize+
+    enter_equity: 620
+    enter_settled: 75
+    # stake floor bridges 1B toward Phase 2 continuous
+    stake_min: 13
+    stake_max: 16
+    max_bets_per_round: 4
+    max_doubles_per_round: 0
+    daily_risk_pct: 0.095
+    daily_risk_floor: 44
+    daily_risk_ceil: 62
+    hard_phase_id: "1B"   # doubles / max_bets / hard gates inherit 1B
     next: "2"
   "2":
     label: Build
@@ -104,6 +134,14 @@ phases:
     daily_risk_floor: 120
     daily_risk_ceil: 400
     next: null
+
+# Continuous unit + open-risk progress inside each named phase / half-step.
+# unit = stake_min + (equity - enter) / scale_factor  (clamped to [stake_min, stake_max], whole krone)
+# ~1 NOK unit step per scale_factor equity (default 100 → visible every ~80–120 NOK).
+# open-risk floor/ceil/pct lerp from current phase toward next by progress_inside_phase.
+phase_continuous:
+  enabled: true
+  scale_factor: 100.0
 
 # Stability gates for count-unlock and demotion (see docs/PHASE_PLAN.md)
 phase_stability:

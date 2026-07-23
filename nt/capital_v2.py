@@ -159,8 +159,13 @@ def unit_size(working_liquid: float, cfg_v2: dict[str, Any] | None = None) -> fl
     """
     Absolute unit in NOK from working liquid (riskable liquid before new stakes).
 
-    Ladder (Set B): <1500 → 10; <2500 → 15; else → 20.
+    Ladder (High-Volume v2): <1500 → 12; <2500 → 15; else → 20.
     Always at least min_stake_nok.
+
+    When ``phase_continuous.enabled``, live risk prefers continuous unit from
+    ``nt.phase.continuous_unit_size`` (equity progress inside the phase band)
+    over this pure liquid ladder. This helper remains the ladder SSOT and the
+    fallback when continuous is off.
     """
     v2 = cfg_v2 or capital_v2_cfg({})
     floor = float(v2.get("min_stake_nok") or 10.0)
