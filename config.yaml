@@ -270,7 +270,7 @@ learning:
     max_raise: 0.05
     ttl_hours: 48
     clear_after_clean_settles: 3
-  # P0 ControlSignals (temp_gate_raise + force_coverage_priority)
+  # P0 ControlSignals (temp_gate_raise + force_coverage_priority + temp_ev_relax)
   control_signals:
     enabled: true
     min_ev_raise: 0.02
@@ -288,6 +288,20 @@ learning:
       min_mid_unresearched: 3
       coverage_preferred_share: 0.55
       weight_boost: 30.0            # deep-queue score boost under active signal
+    # Mechanism B: temporary auditable EV softening (safety net only)
+    # Per-line allowlist · never softens haircut · exclude high-odds / grade C
+    temp_ev_relax:
+      enabled: true
+      delta_min: 0.01
+      delta_max: 0.02
+      ttl_hours: 24
+      clear_on_settle: true
+      stake_mult: 0.80          # extra 20% reduction while active
+      top_n_survivors: 3
+      min_board_matches: 15
+      require_coverage_warn: true
+      exclude_high_odds: true
+      exclude_grade_c: true
 
 paths:
   bets: data/bets.csv

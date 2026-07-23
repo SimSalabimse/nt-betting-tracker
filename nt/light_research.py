@@ -1199,6 +1199,31 @@ def run_light_research(
         "assessed_n": len(records),
     }
 
+    # Mechanism B: temp_ev_relax safety net when large board + coverage warn + empty deep queue
+    try:
+        from nt.control_signals import maybe_emit_temp_ev_relax_from_light
+
+        unique_matches = len({(r.match or "").strip() for r in records if (r.match or "").strip()})
+        # Prefer unique shortlist matches when available
+        shortlist_matches = len(
+            {
+                str(it.get("match") or "").strip()
+                for it in items
+                if str(it.get("match") or "").strip()
+            }
+        )
+        ter_out = maybe_emit_temp_ev_relax_from_light(
+            cfg,
+            records=records,
+            deep_queue=deep_queue,
+            board_matches=max(unique_matches, shortlist_matches),
+            coverage_level=None,  # load coverage_health.json when present
+            shortlist_n=shortlist_n,
+        )
+        payload["temp_ev_relax"] = ter_out
+    except Exception as ex:  # noqa: BLE001
+        payload["temp_ev_relax"] = {"ok": False, "error": str(ex)}
+
     path = None
     if write:
         path = save_light_batch(cfg, payload, day=day)

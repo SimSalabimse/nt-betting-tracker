@@ -138,6 +138,20 @@ def research_cfg(cfg: dict[str, Any]) -> dict[str, Any]:
             "sport_rotation_min_lines": 5,
             "require_real_pack": True,
             "coverage_pressure_boost": 40.0,
+            # Optional mirror of learning.control_signals.temp_ev_relax (prefer control_signals)
+            "ev_relax": {
+                "enabled": True,
+                "delta_min": 0.01,
+                "delta_max": 0.02,
+                "ttl_hours": 24,
+                "clear_on_settle": True,
+                "stake_mult": 0.80,
+                "top_n_survivors": 3,
+                "min_board_matches": 15,
+                "require_coverage_warn": True,
+                "exclude_high_odds": True,
+                "exclude_grade_c": True,
+            },
         },
         # Legacy flat gate keys (aliased into research.gates by research_gates package)
         "require_lineup_status_football": True,

@@ -292,6 +292,7 @@ def run_settle(cfg: dict[str, Any], results_path: Path) -> dict[str, Any]:
     now = utc_now()
     settled = []
     errors = []
+    temp_ev_relax_clear: dict[str, Any] = {}
 
     for item in items:
         bet = _match_bet(rows, item)
@@ -466,6 +467,18 @@ def run_settle(cfg: dict[str, Any], results_path: Path) -> dict[str, Any]:
     write_bets(path, rows)
     bankroll, phase, risk = refresh_state(cfg)
 
+    # Mechanism B: clear temp_ev_relax on settle (TTL safety net ends after results land)
+    temp_ev_relax_clear: dict[str, Any] = {}
+    if settled:
+        try:
+            from nt.control_signals import clear_temp_ev_relax_on_settle
+
+            temp_ev_relax_clear = clear_temp_ev_relax_on_settle(
+                cfg, actor="settle", reason="clear_on_settle"
+            )
+        except Exception as ex:  # noqa: BLE001
+            temp_ev_relax_clear = {"ok": False, "error": str(ex)}
+
     # Learning loop: recompute sport/market/band mults from full ledger
     learning_summary: dict[str, Any] = {}
     try:
@@ -550,6 +563,7 @@ def run_settle(cfg: dict[str, Any], results_path: Path) -> dict[str, Any]:
         "phase": phase["phase_id"],
         "daily_cap": risk["daily_risk_cap_nok"],
         "learning": learning_summary,
+        "temp_ev_relax_clear": temp_ev_relax_clear,
         "review": {
             "summary": review_report.get("summary"),
             "narrative": review_report.get("narrative"),
