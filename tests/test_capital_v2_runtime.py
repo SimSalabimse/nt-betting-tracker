@@ -58,8 +58,16 @@ def _cfg(tmp_path: Path, *, enabled: bool) -> dict:
             "enabled": enabled,
             "secure_bucket": {
                 "enabled": True,
-                "trigger_multiple_of_ref": 1.30,
-                "transfer_fraction_of_profit_above_ref": 0.40,
+                # Explicit Variant A (matches live defaults / asserted soft 15%)
+                "variant": "A",
+                "soft_trigger_multiple_of_ref": 1.25,
+                "soft_transfer_fraction": 0.15,
+                "hard_trigger_multiple_of_ref": 1.50,
+                "hard_transfer_fraction": 0.30,
+                "min_working_frac_of_equity": 0.55,
+                "min_working_units": 8.0,
+                "unlock_after_settled": 25,
+                "manual_unlock_cooldown_days": 7,
             },
         },
         "risk": {"stop_day_loss_pct_of_equity": 0.08, "stop_day_loss_floor_nok": 40},
@@ -142,15 +150,17 @@ def test_flag_off_refresh_no_capital_file(tmp_path: Path, monkeypatch):
 # ── secure transfer ───────────────────────────────────────────────────────
 
 
-def test_secure_transfer_27pct_and_ref_reset():
+def test_secure_transfer_variant_a_soft_and_ref_reset():
     segs = empty_segments(baseline_nok=500.0, oslo_date="2026-07-21")
     segs["unit_hwm_reset_equity_nok"] = 500.0
     segs["secure_nok"] = 0.0
+    # Variant A soft: equity 700 ≥ 1.25×500=625, < 1.50×500=750 → 15% of 200 = 30
     out, info = apply_secure_transfer_to_segments(segs, ledger_equity=700.0)
     assert info["triggered"] is True
-    assert info["transferred"] == 54.0  # High-Volume v2: 0.27 * 200
-    assert out["secure_nok"] == 54.0
-    assert out["unit_hwm_reset_equity_nok"] == 646.0  # working equity after transfer
+    assert info["tier"] == "soft"
+    assert info["transferred"] == 30.0
+    assert out["secure_nok"] == 30.0
+    assert out["unit_hwm_reset_equity_nok"] == 670.0  # working equity after transfer
     assert len(out["secure_transfers"]) == 1
 
 
@@ -194,14 +204,15 @@ def test_sync_persists_secure_and_snapshots(tmp_path: Path, monkeypatch):
     path = segments_path(cfg)
     assert path.is_file()
     disk = json.loads(path.read_text(encoding="utf-8"))
-    assert disk["secure_nok"] == 80.0
-    assert disk["unit_hwm_reset_equity_nok"] == 620.0
+    # Variant A soft: 0.15 * (700-500) = 30
+    assert disk["secure_nok"] == 30.0
+    assert disk["unit_hwm_reset_equity_nok"] == 670.0
     assert disk["day_snapshot"]["oslo_date"] == fixed_day
-    assert disk["day_snapshot"]["liquid_start_nok"] == riskable_liquid(700.0, 80.0, 0.0)
+    assert disk["day_snapshot"]["liquid_start_nok"] == riskable_liquid(700.0, 30.0, 0.0)
     assert disk["week_snapshot"]["week_id"] == "2026-W30"
     # second sync same equity: no double transfer
     segs2 = sync_capital_v2_state(cfg, 700.0, [], persist=True)
-    assert segs2["secure_nok"] == 80.0
+    assert segs2["secure_nok"] == 30.0
     assert len(segs2["secure_transfers"]) == 1
 
 
@@ -392,9 +403,10 @@ def test_sync_then_risk_sees_secure(tmp_path: Path, monkeypatch):
     cfg = _cfg(tmp_path, enabled=True)
     segs = sync_capital_v2_state(cfg, 700.0, [], persist=True)
     risk = evaluate_risk(cfg, 700.0, PHASE, [], segments=segs)
-    assert risk["secure_nok"] == 80.0
-    assert risk["working_equity_nok"] == 620.0
+    # Variant A soft: 30 secure, working 670
+    assert risk["secure_nok"] == 30.0
+    assert risk["working_equity_nok"] == 670.0
     # phase cap on working equity
     assert risk["daily_risk_cap_nok"] == round(
-        max(30.0, min(42.0, 620.0 * 0.08)), 2
+        max(30.0, min(42.0, 670.0 * 0.08)), 2
     )

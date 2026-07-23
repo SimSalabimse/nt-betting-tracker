@@ -106,8 +106,8 @@ def cmd_refresh(_: argparse.Namespace) -> int:
 
 
 def cmd_capital(args: argparse.Namespace) -> int:
-    """capital_v2 operator tools: status / unfreeze / segments (Phase 2.6–2.7)."""
-    from nt.capital_runtime import capital_v2_enabled, unfreeze_capital
+    """capital_v2 operator tools: status / unfreeze / unlock-secure / segments."""
+    from nt.capital_runtime import capital_v2_enabled, manual_unlock_secure, unfreeze_capital
     from nt.capital_segments import load_segments, segments_path
     from nt.capital_v2 import capital_v2_cfg
 
@@ -126,6 +126,8 @@ def cmd_capital(args: argparse.Namespace) -> int:
                     "config_enabled_flag": bool((cfg.get("capital_v2") or {}).get("enabled")),
                     "secure_nok": segs.get("secure_nok"),
                     "unit_hwm_reset_equity_nok": segs.get("unit_hwm_reset_equity_nok"),
+                    "secure_lock_settled_count": segs.get("secure_lock_settled_count"),
+                    "last_manual_unlock_at": segs.get("last_manual_unlock_at"),
                     "freeze": segs.get("freeze"),
                     "day_snapshot": segs.get("day_snapshot"),
                     "week_snapshot": segs.get("week_snapshot"),
@@ -171,6 +173,40 @@ def cmd_capital(args: argparse.Namespace) -> int:
         bankroll, phase, risk = refresh_state(cfg)
         result["risk_size_mode"] = risk.get("size_mode")
         result["can_bet"] = risk.get("can_bet")
+        print(json.dumps(result, indent=2, default=str))
+        return 0 if result.get("ok") else 1
+
+    if sub in ("unlock-secure", "unlock_secure"):
+        if not bool(args.confirm):
+            print(
+                "Refusing unlock-secure without --confirm (releases secure → working).",
+                file=sys.stderr,
+            )
+            return 2
+        result = manual_unlock_secure(
+            cfg,
+            reason=str(args.reason or "manual_unlock"),
+            actor=str(args.actor or "cli"),
+            force=bool(getattr(args, "force", False)),
+        )
+        if result.get("ok"):
+            # refresh may re-evaluate capital; defer_secure_skim skips same-tick re-skim
+            bankroll, phase, risk = refresh_state(cfg)
+            result["riskable_liquid_nok"] = risk.get("riskable_liquid_nok")
+            result["working_equity_nok"] = risk.get("working_equity_nok")
+            result["secure_nok_after_refresh"] = risk.get("secure_nok")
+            try:
+                from nt.capital_segments import load_segments as _load_segs
+
+                segs_after = _load_segs(cfg)
+                sync = segs_after.get("_last_sync") or {}
+                result["secure_unlock"] = sync.get("secure_unlock")
+                result["secure_transfer"] = sync.get("secure_transfer")
+                result["skim_deferred_after_unlock"] = sync.get(
+                    "skim_deferred_after_unlock"
+                )
+            except Exception:
+                pass
         print(json.dumps(result, indent=2, default=str))
         return 0 if result.get("ok") else 1
 
@@ -945,7 +981,7 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("refresh", help="Recompute state files").set_defaults(func=cmd_refresh)
     p_cap = sub.add_parser(
         "capital",
-        help="capital_v2 status / unfreeze / segments (flag-gated runtime; default off)",
+        help="capital_v2 status / unfreeze / unlock-secure / segments",
     )
     cap = p_cap.add_subparsers(dest="capital_cmd", required=True)
     cap.add_parser("status", help="Show capital_v2 enable flag, freeze, secure, risk rooms").set_defaults(
@@ -964,6 +1000,23 @@ def main(argv: list[str] | None = None) -> int:
     p_uf.add_argument("--reason", default="manual_unfreeze")
     p_uf.add_argument("--actor", default="cli")
     p_uf.set_defaults(func=cmd_capital)
+    p_us = cap.add_parser(
+        "unlock-secure",
+        help="Release secure bucket → working (7d manual cooldown; requires --confirm)",
+    )
+    p_us.add_argument(
+        "--confirm",
+        action="store_true",
+        help="Required — explicit operator confirmation",
+    )
+    p_us.add_argument("--reason", default="manual_unlock")
+    p_us.add_argument("--actor", default="cli")
+    p_us.add_argument(
+        "--force",
+        action="store_true",
+        help="Bypass manual unlock cooldown (ops only)",
+    )
+    p_us.set_defaults(func=cmd_capital)
     p_learn = sub.add_parser(
         "learn",
         help="Recompute learning mults; list/accept/reject proposals",

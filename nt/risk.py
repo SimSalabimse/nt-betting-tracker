@@ -149,12 +149,16 @@ def _evaluate_risk_legacy(
     min_stake = float(cfg["norsk_tipping"]["min_stake_nok"])
     can_bet = (not stopped) and remaining >= min_stake and not research_only
 
-    return {
+    out: dict[str, Any] = {
         "date": today,
         "equity_nok": equity,
         "phase_id": phase["phase_id"],
+        "phase_hard_id": phase.get("phase_hard_id") or phase["phase_id"],
+        "progress_inside_phase": phase.get("progress_inside_phase"),
         "daily_risk_cap_nok": cap,
         "daily_risk_pct": phase["daily_risk_pct"],
+        "daily_risk_floor": phase.get("daily_risk_floor"),
+        "daily_risk_ceil": phase.get("daily_risk_ceil"),
         "open_pending_risk_nok": open_pending,
         "remaining_risk_nok": max(0.0, remaining),
         "today_realized_pl_nok": realized,
@@ -171,6 +175,11 @@ def _evaluate_risk_legacy(
             "open_risk = Pending + ConfirmedPlaced stakes"
         ),
     }
+    # Continuous unit when phase engine provided it
+    if phase.get("unit_size_nok") is not None:
+        out["unit_size_nok"] = float(phase["unit_size_nok"])
+        out["unit_size_source"] = phase.get("unit_size_source") or "phase_continuous"
+    return out
 
 
 def _evaluate_risk_capital_v2(
@@ -242,9 +251,27 @@ def _evaluate_risk_capital_v2(
     else:
         liquid_sow = liquid_now
 
-    unit_sod = float(day_snap.get("unit_size_nok") or 0.0) or unit_size(liquid_sod, v2)
-    unit_sow = float(week_snap.get("unit_size_nok") or 0.0) or unit_size(liquid_sow, v2)
-    unit_now = unit_size(liquid_now, v2)
+    # Phase continuous unit is primary when enabled (gradual unit vs equity).
+    # Liquid ladder is the fallback when continuous is off, and a soft *floor*
+    # reference only (does not override continuous). Continuous already clamps
+    # to phase stake_max so stakes cannot runaway inside a band.
+    ladder_now = unit_size(liquid_now, v2)
+    ladder_sod = unit_size(liquid_sod, v2)
+    ladder_sow = unit_size(liquid_sow, v2)
+    cont_unit = phase.get("unit_size_nok")
+    cont_on = bool(phase.get("phase_continuous_enabled")) and cont_unit is not None
+    if cont_on:
+        unit_now = float(cont_unit)
+        unit_source = "phase_continuous"
+    else:
+        unit_now = ladder_now
+        unit_source = "unit_ladder"
+    unit_sod = float(day_snap.get("unit_size_nok") or 0.0) or (
+        float(cont_unit) if cont_on else ladder_sod
+    )
+    unit_sow = float(week_snap.get("unit_size_nok") or 0.0) or (
+        float(cont_unit) if cont_on else ladder_sow
+    )
 
     peak = peak_equity_settlement(rows, baseline)
     dd = drawdown_from_peak(equity, peak)
@@ -387,8 +414,12 @@ def _evaluate_risk_capital_v2(
         "date": today,
         "equity_nok": equity,
         "phase_id": phase["phase_id"],
+        "phase_hard_id": phase.get("phase_hard_id") or phase["phase_id"],
+        "progress_inside_phase": phase.get("progress_inside_phase"),
         "daily_risk_cap_nok": phase_cap,
         "daily_risk_pct": phase["daily_risk_pct"],
+        "daily_risk_floor": phase.get("daily_risk_floor"),
+        "daily_risk_ceil": phase.get("daily_risk_ceil"),
         "open_pending_risk_nok": open_pending,
         "remaining_risk_nok": remaining,
         "today_realized_pl_nok": realized_day,
@@ -401,7 +432,8 @@ def _evaluate_risk_capital_v2(
             "L2 weekly(8%|6u) → L3 daily(4%|3u) → "
             "remaining=min(phase_cap−open[−day_loss], portfolio_open_room 18% liquid); "
             "settlement-day P/L Europe/Oslo; working=equity−secure; "
-            "phase_health may tighten size_mode/research_only only"
+            "phase_health may tighten size_mode/research_only only; "
+            "unit = phase_continuous (primary) when enabled else liquid unit ladder"
         ),
         # capital_v2 diagnostics (downstream 2.3 sizing / App)
         "capital_v2_enabled": True,
@@ -412,6 +444,9 @@ def _evaluate_risk_capital_v2(
         "liquid_start_of_day_nok": liquid_sod,
         "liquid_start_of_week_nok": liquid_sow,
         "unit_size_nok": unit_now,
+        "unit_size_source": unit_source,
+        "unit_size_ladder_nok": ladder_now,
+        "unit_size_continuous_nok": float(cont_unit) if cont_on else None,
         "unit_size_sod_nok": unit_sod,
         "peak_equity_nok": peak,
         "drawdown_from_peak": round(dd, 6),
@@ -426,6 +461,7 @@ def _evaluate_risk_capital_v2(
             "process_health_reason": phase.get("process_health_reason"),
             "phase_state": phase.get("phase_state"),
         },
+        "phase_continuous_enabled": bool(phase.get("phase_continuous_enabled")),
         "freeze_manual": freeze_manual,
         "dd_frozen": dd_frozen and not freeze_manual,
         "week_id": week_id,

@@ -7,10 +7,11 @@ stake_decisions.jsonl audit. All gated by capital_v2.enabled (default false).
 from __future__ import annotations
 
 import json
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from nt.bets_io import utc_now
+from nt.bets_io import is_performance_settled, utc_now
 from nt.capital_segments import is_frozen, load_segments, save_segments
 from nt.capital_v2 import (
     RULE_BUNDLE_VERSION,
@@ -92,16 +93,60 @@ def append_stake_decision(cfg: dict[str, Any], record: dict[str, Any]) -> dict[s
     return rec
 
 
+def _secure_bucket_transfer_kwargs(sb: dict[str, Any]) -> dict[str, Any]:
+    """
+    Build compute_secure_transfer kwargs from secure_bucket config.
+
+    Variant A (default): soft/hard tiers when soft_* and hard_* are present.
+    Variant B / legacy: single trigger_multiple + transfer_fraction when
+    variant is B/C or soft/hard not fully set.
+    """
+    variant = str(sb.get("variant") or "A").upper()
+    soft_m = sb.get("soft_trigger_multiple_of_ref")
+    soft_f = sb.get("soft_transfer_fraction")
+    hard_m = sb.get("hard_trigger_multiple_of_ref")
+    hard_f = sb.get("hard_transfer_fraction")
+    use_a = (
+        variant == "A"
+        and soft_m is not None
+        and soft_f is not None
+        and hard_m is not None
+        and hard_f is not None
+    )
+    kw: dict[str, Any] = {
+        "min_working_frac": float(sb.get("min_working_frac_of_equity") or 0.55),
+        "min_working_units": float(sb.get("min_working_units") or 8.0),
+    }
+    if use_a:
+        kw["soft_trigger_multiple"] = float(soft_m)
+        kw["soft_transfer_fraction"] = float(soft_f)
+        kw["hard_trigger_multiple"] = float(hard_m)
+        kw["hard_transfer_fraction"] = float(hard_f)
+    else:
+        # Variant B (1.30/0.27), C, or explicit single-tier
+        kw["trigger_multiple"] = float(sb.get("trigger_multiple_of_ref") or 1.30)
+        kw["transfer_fraction"] = float(
+            sb.get("transfer_fraction_of_profit_above_ref") or 0.27
+        )
+    return kw
+
+
 def apply_secure_transfer_to_segments(
     segments: dict[str, Any],
     *,
     ledger_equity: float,
     v2: dict[str, Any] | None = None,
+    phase_daily_risk_ceil: float | None = None,
+    open_risk: float = 0.0,
+    settled_count: int | None = None,
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     """
     Pure-ish: return (updated_segments, transfer_info).
     Skips when freeze active or secure_bucket disabled.
     Idempotent after ref reset (re-run below trigger → no-op).
+
+    Variant A soft/hard skim by default. Never skim below phase daily_risk_ceil
+    liquid floor when phase_daily_risk_ceil is provided.
     """
     v2 = v2 or capital_v2_cfg({})
     out = dict(segments)
@@ -110,6 +155,7 @@ def apply_secure_transfer_to_segments(
         "triggered": False,
         "transferred": 0.0,
         "reason": "skipped",
+        "tier": None,
     }
     if not bool(sb.get("enabled", True)):
         info["reason"] = "secure_bucket_disabled"
@@ -122,15 +168,15 @@ def apply_secure_transfer_to_segments(
     secure = max(0.0, float(out.get("secure_nok") or 0.0))
     working_now = max(0.0, float(ledger_equity) - secure)
     u = unit_size(working_now, v2)
+    xfer_kw = _secure_bucket_transfer_kwargs(sb)
     result = compute_secure_transfer(
         ledger_equity=ledger_equity,
         secure_nok=secure,
         ref_hwm=ref if ref > 0 else float(ledger_equity),
-        trigger_multiple=float(sb.get("trigger_multiple_of_ref") or 1.30),
-        transfer_fraction=float(sb.get("transfer_fraction_of_profit_above_ref") or 0.40),
         unit_size_nok=u,
-        min_working_frac=float(sb.get("min_working_frac_of_equity") or 0.55),
-        min_working_units=float(sb.get("min_working_units") or 8.0),
+        phase_daily_risk_ceil=phase_daily_risk_ceil,
+        open_risk=float(open_risk or 0.0),
+        **xfer_kw,
     )
     info = {
         "triggered": result.triggered,
@@ -141,12 +187,18 @@ def apply_secure_transfer_to_segments(
         "reason": result.reason,
         "min_working_required": result.min_working_required,
         "transfer_capped_by_buffer": result.transfer_capped_by_buffer,
+        "tier": result.tier,
+        "transfer_capped_by_liquid_floor": result.transfer_capped_by_liquid_floor,
+        "liquid_floor_required": result.liquid_floor_required,
     }
     if not result.triggered:
         return out, info
 
     out["secure_nok"] = result.secure_after
     out["unit_hwm_reset_equity_nok"] = result.ref_hwm_after
+    # Lock epoch for auto-unlock: settled count at skim time
+    if settled_count is not None:
+        out["secure_lock_settled_count"] = int(settled_count)
     transfers = list(out.get("secure_transfers") or [])
     transfers.append(
         {
@@ -158,11 +210,211 @@ def apply_secure_transfer_to_segments(
             "ref_hwm_after_nok": result.ref_hwm_after,
             "working_equity_after_nok": result.working_equity_after,
             "reason": result.reason,
+            "tier": result.tier,
             "rule_bundle_version": RULE_BUNDLE_VERSION,
+            "settled_count_at_lock": out.get("secure_lock_settled_count"),
         }
     )
     out["secure_transfers"] = transfers
     return out, info
+
+
+def _parse_utc_ts(ts: str | None) -> datetime | None:
+    if not ts:
+        return None
+    s = str(ts).strip()
+    if not s:
+        return None
+    try:
+        if s.endswith("Z"):
+            s = s[:-1] + "+00:00"
+        dt = datetime.fromisoformat(s)
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt.astimezone(timezone.utc)
+    except (TypeError, ValueError):
+        return None
+
+
+def release_secure_to_working(
+    segments: dict[str, Any],
+    *,
+    reason: str,
+    actor: str = "system",
+    settled_count: int | None = None,
+    kind: str = "auto",
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    """
+    Release entire secure bucket to working capital (secure → 0).
+    Does not change unit_hwm_reset_equity_nok. Logs audit on secure_unlocks.
+
+    Sets ``defer_secure_skim`` so the next sync/tick does not immediately
+    re-skim after unlock (unlock sticks for one capital pass).
+    """
+    out = dict(segments)
+    released = max(0.0, float(out.get("secure_nok") or 0.0))
+    info: dict[str, Any] = {
+        "unlocked": False,
+        "released_nok": 0.0,
+        "reason": reason,
+        "kind": kind,
+    }
+    if released < 1e-9:
+        info["reason"] = "secure_already_zero"
+        return out, info
+    out["secure_nok"] = 0.0
+    out.pop("secure_lock_epoch_untrusted", None)
+    if settled_count is not None:
+        out["secure_lock_settled_count"] = int(settled_count)
+    # Skip skim on the same capital pass / next refresh after unlock
+    out["defer_secure_skim"] = True
+    entry = {
+        "ts": utc_now(),
+        "action": "unlock_secure",
+        "kind": kind,
+        "released_nok": round(released, 2),
+        "reason": reason,
+        "actor": actor,
+        "settled_count": settled_count,
+        "rule_bundle_version": RULE_BUNDLE_VERSION,
+    }
+    unlocks = list(out.get("secure_unlocks") or [])
+    unlocks.append(entry)
+    out["secure_unlocks"] = unlocks
+    if kind == "manual":
+        out["last_manual_unlock_at"] = entry["ts"]
+    info["unlocked"] = True
+    info["released_nok"] = round(released, 2)
+    return out, info
+
+
+def maybe_auto_unlock_secure(
+    segments: dict[str, Any],
+    *,
+    settled_count: int,
+    v2: dict[str, Any] | None = None,
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    """
+    Auto-unlock after unlock_after_settled (default 25) performance-settled
+    bets since last skim/lock epoch. Releases entire secure → working.
+
+    Fail-closed migration: if ``secure_lock_epoch_untrusted`` (pre-PR file with
+    secure but no lock key), seed lock epoch to current settled_count and
+    **do not** unlock — requires 25 *additional* settles after seed.
+    """
+    v2 = v2 or capital_v2_cfg({})
+    sb = v2.get("secure_bucket") or {}
+    info: dict[str, Any] = {
+        "unlocked": False,
+        "released_nok": 0.0,
+        "reason": "no_auto_unlock",
+        "kind": "auto",
+    }
+    if not bool(sb.get("enabled", True)):
+        info["reason"] = "secure_bucket_disabled"
+        return dict(segments), info
+    secure = max(0.0, float(segments.get("secure_nok") or 0.0))
+    if secure < 1e-9:
+        info["reason"] = "secure_already_zero"
+        out = dict(segments)
+        out.pop("secure_lock_epoch_untrusted", None)
+        return out, info
+
+    n = int(settled_count)
+    # Pre-PR / missing epoch: seed to current settled, never unlock this pass
+    if segments.get("secure_lock_epoch_untrusted"):
+        out = dict(segments)
+        out["secure_lock_settled_count"] = n
+        out.pop("secure_lock_epoch_untrusted", None)
+        info["reason"] = "seeded_lock_epoch_migration"
+        info["settled_since_lock"] = 0
+        info["unlock_after_settled"] = int(sb.get("unlock_after_settled") or 25)
+        info["seeded_lock_settled_count"] = n
+        return out, info
+
+    need = int(sb.get("unlock_after_settled") or 25)
+    lock_n = int(segments.get("secure_lock_settled_count") or 0)
+    if n - lock_n < need:
+        info["reason"] = "below_settled_threshold"
+        info["settled_since_lock"] = n - lock_n
+        info["unlock_after_settled"] = need
+        return dict(segments), info
+    return release_secure_to_working(
+        segments,
+        reason=f"auto_unlock_after_{need}_settled",
+        actor="system",
+        settled_count=n,
+        kind="auto",
+    )
+
+
+def manual_unlock_secure(
+    cfg: dict[str, Any],
+    *,
+    reason: str = "manual_unlock",
+    actor: str = "operator",
+    settled_count: int | None = None,
+    force: bool = False,
+) -> dict[str, Any]:
+    """
+    Manual unlock: release entire secure → working, subject to
+    manual_unlock_cooldown_days (default 7) between manual unlocks.
+    Pass force=True to bypass cooldown (ops only).
+    """
+    v2 = capital_v2_cfg(cfg)
+    sb = v2.get("secure_bucket") or {}
+    baseline = float((cfg.get("bankroll") or {}).get("baseline_nok") or 500.0)
+    segs = load_segments(cfg, baseline_nok=baseline)
+    secure = max(0.0, float(segs.get("secure_nok") or 0.0))
+    if secure < 1e-9:
+        return {
+            "ok": False,
+            "unlocked": False,
+            "released_nok": 0.0,
+            "reason": "secure_already_zero",
+        }
+    cooldown_days = float(sb.get("manual_unlock_cooldown_days") or 7)
+    last = _parse_utc_ts(segs.get("last_manual_unlock_at"))
+    if last is not None and not force and cooldown_days > 0:
+        now = datetime.now(timezone.utc)
+        elapsed_days = (now - last).total_seconds() / 86400.0
+        if elapsed_days + 1e-9 < cooldown_days:
+            remaining = round(cooldown_days - elapsed_days, 2)
+            return {
+                "ok": False,
+                "unlocked": False,
+                "released_nok": 0.0,
+                "reason": "manual_unlock_cooldown",
+                "cooldown_days": cooldown_days,
+                "days_remaining": remaining,
+                "last_manual_unlock_at": segs.get("last_manual_unlock_at"),
+            }
+    n = settled_count
+    if n is None:
+        try:
+            from nt.bets_io import load_bets
+            from nt.config import path_from_config as _pfc
+
+            rows = load_bets(_pfc(cfg, "bets"))
+            n = sum(1 for r in rows if is_performance_settled(r.get("result")))
+        except Exception:
+            n = int(segs.get("secure_lock_settled_count") or 0)
+    segs, info = release_secure_to_working(
+        segs,
+        reason=reason,
+        actor=actor,
+        settled_count=n,
+        kind="manual",
+    )
+    path = save_segments(cfg, segs)
+    return {
+        "ok": bool(info.get("unlocked")),
+        "unlocked": bool(info.get("unlocked")),
+        "released_nok": info.get("released_nok", 0.0),
+        "reason": info.get("reason"),
+        "segments_path": str(path),
+        "secure_nok_after": segs.get("secure_nok"),
+    }
 
 
 def ensure_day_week_snapshots(
@@ -220,10 +472,15 @@ def sync_capital_v2_state(
     rows: list[dict[str, str]],
     *,
     persist: bool = True,
+    phase_daily_risk_ceil: float | None = None,
+    unit_size_override: float | None = None,
 ) -> dict[str, Any]:
     """
-    When capital_v2.enabled: load segments → secure transfer → snapshots → save.
-    When disabled: no-op empty load (does not write).
+    When capital_v2.enabled: load segments → auto-unlock → secure transfer →
+    snapshots → save. When disabled: no-op empty load (does not write).
+
+    ``unit_size_override``: when phase_continuous is enabled, pass continuous
+    unit so day/week snapshots freeze the hybrid unit (not pure liquid ladder).
 
     Returns segments dict used for subsequent risk evaluation.
     """
@@ -233,16 +490,46 @@ def sync_capital_v2_state(
         return load_segments(cfg, baseline_nok=baseline)
 
     segs = load_segments(cfg, baseline_nok=baseline)
-    segs, transfer_info = apply_secure_transfer_to_segments(
-        segs, ledger_equity=ledger_equity, v2=v2
-    )
-
     today = oslo_today()
     week_id = oslo_iso_week_id(today)
     open_risk = day_pending_risk(rows, today)
+    settled_n = sum(1 for r in rows if is_performance_settled(r.get("result")))
+
+    # Auto-unlock (or seed untrusted lock epoch) before skim
+    segs, unlock_info = maybe_auto_unlock_secure(
+        segs, settled_count=settled_n, v2=v2
+    )
+
+    # Skip skim same tick after unlock (or one-shot defer from manual unlock)
+    defer_skim = bool(segs.get("defer_secure_skim")) or bool(unlock_info.get("unlocked"))
+    if defer_skim:
+        segs = dict(segs)
+        segs.pop("defer_secure_skim", None)
+        transfer_info = {
+            "triggered": False,
+            "transferred": 0.0,
+            "reason": "skipped_same_tick_after_unlock",
+            "tier": None,
+            "secure_after": max(0.0, float(segs.get("secure_nok") or 0.0)),
+            "ref_hwm_after": segs.get("unit_hwm_reset_equity_nok"),
+        }
+    else:
+        segs, transfer_info = apply_secure_transfer_to_segments(
+            segs,
+            ledger_equity=ledger_equity,
+            v2=v2,
+            phase_daily_risk_ceil=phase_daily_risk_ceil,
+            open_risk=open_risk,
+            settled_count=settled_n,
+        )
+
     secure = max(0.0, float(segs.get("secure_nok") or 0.0))
     liquid = riskable_liquid(ledger_equity, secure, open_risk)
-    unit = unit_size(liquid, v2)
+    # Prefer phase continuous unit when provided; else liquid ladder
+    if unit_size_override is not None and float(unit_size_override) > 0:
+        unit = float(unit_size_override)
+    else:
+        unit = unit_size(liquid, v2)
     realized_day = day_realized_pl(rows, today)
     realized_week = week_realized_pl(rows, week_id)
 
@@ -260,9 +547,11 @@ def sync_capital_v2_state(
         "ts": utc_now(),
         "ledger_equity_nok": round(float(ledger_equity), 2),
         "secure_transfer": transfer_info,
+        "secure_unlock": unlock_info,
         "riskable_liquid_nok": liquid,
         "oslo_date": today,
         "week_id": week_id,
+        "skim_deferred_after_unlock": bool(defer_skim and unlock_info.get("unlocked")),
     }
 
     if persist:

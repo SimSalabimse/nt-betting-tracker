@@ -143,7 +143,17 @@ def rebuild_failure_index(cfg: dict[str, Any]) -> dict[str, Any]:
                     r = json.loads(line)
                 except json.JSONDecodeError:
                     continue
-                if str(r.get("variance_class") or "") != "process_error":
+                vc = str(r.get("variance_class") or "")
+                legacy = str(r.get("legacy_label") or "")
+                is_pe = vc in ("process_error", "research_process_miss") or legacy == "process_error"
+                if not is_pe:
+                    try:
+                        from nt.settlement_taxonomy import is_process_error_class
+
+                        is_pe = is_process_error_class(vc)
+                    except Exception:
+                        pass
+                if not is_pe:
                     continue
                 docs.append(
                     _doc(
@@ -155,11 +165,12 @@ def rebuild_failure_index(cfg: dict[str, Any]) -> dict[str, Any]:
                                 "match",
                                 "selection",
                                 "variance_detail",
+                                "classification_notes",
                                 "notes",
                                 "sport",
                             )
                         )
-                        + " process_error",
+                        + " process_error research_process_miss",
                         match=str(r.get("match") or ""),
                         selection=str(r.get("selection") or ""),
                         sport=str((r.get("factors") or {}).get("sport") or ""),

@@ -39,6 +39,10 @@ def load_segments(cfg: dict[str, Any], *, baseline_nok: float | None = None) -> 
         return empty_segments(baseline_nok=base)
     if not isinstance(data, dict):
         return empty_segments(baseline_nok=base)
+    # Fail-closed migration: pre-PR files lack lock epoch. If secure is held and
+    # the key was absent, do NOT default to 0 (that would auto-unlock after 25
+    # total settles). Mark untrusted so runtime seeds epoch to current settled.
+    had_lock_epoch_key = "secure_lock_settled_count" in data
     # ensure required keys
     empty = empty_segments(baseline_nok=base)
     for k, v in empty.items():
@@ -53,6 +57,13 @@ def load_segments(cfg: dict[str, Any], *, baseline_nok: float | None = None) -> 
     data.setdefault("secure_nok", 0.0)
     data.setdefault("secure_transfers", [])
     data.setdefault("unit_hwm_reset_equity_nok", base)
+    data.setdefault("secure_lock_settled_count", 0)
+    data.setdefault("last_manual_unlock_at", None)
+    data.setdefault("secure_unlocks", [])
+    secure_now = max(0.0, float(data.get("secure_nok") or 0.0))
+    if not had_lock_epoch_key and secure_now > 1e-9:
+        # Internal flag stripped on save after seed; never unlock on default-0.
+        data["secure_lock_epoch_untrusted"] = True
     return data
 
 
@@ -61,6 +72,12 @@ def save_segments(cfg: dict[str, Any], segments: dict[str, Any]) -> Path:
     path = segments_path(cfg)
     path.parent.mkdir(parents=True, exist_ok=True)
     payload = dict(segments)
+    # Drop in-memory diagnostics. If lock epoch is still untrusted (not yet
+    # seeded by sync), omit lock count so next load re-detects migration.
+    payload.pop("_last_sync", None)
+    if payload.pop("secure_lock_epoch_untrusted", None):
+        payload.pop("secure_lock_settled_count", None)
+    # defer_secure_skim is intentionally persisted until next sync consumes it
     payload["updated_at"] = utc_now()
     payload["rule_bundle_version"] = payload.get("rule_bundle_version") or RULE_BUNDLE_VERSION
     path.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")

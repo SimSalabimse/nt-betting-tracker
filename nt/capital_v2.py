@@ -70,12 +70,21 @@ def capital_v2_cfg(cfg: dict[str, Any] | None) -> dict[str, Any]:
         },
         "secure_bucket": {
             "enabled": True,
+            # Variant A (live default): soft 1.25×/15%, hard 1.50×/30% (hard replaces soft)
+            "variant": "A",
+            "soft_trigger_multiple_of_ref": 1.25,
+            "soft_transfer_fraction": 0.15,
+            "hard_trigger_multiple_of_ref": 1.50,
+            "hard_transfer_fraction": 0.30,
+            # Variant B legacy single-tier (1.30× / 0.27) — still parsed if variant=B or soft/hard unset
             "trigger_multiple_of_ref": 1.30,
-            # High-Volume v2: 27% of profit above ref×1.30 (was 40%)
             "transfer_fraction_of_profit_above_ref": 0.27,
             # Softener: after transfer, working equity ≥ max(frac×ledger, units×unit)
             "min_working_frac_of_equity": 0.55,
             "min_working_units": 8.0,
+            # Unlock secure → liquid
+            "unlock_after_settled": 25,
+            "manual_unlock_cooldown_days": 7,
         },
         "grade_stake_mult": dict(DEFAULT_GRADE_STAKE_MULT),
         "kelly": {
@@ -150,8 +159,13 @@ def unit_size(working_liquid: float, cfg_v2: dict[str, Any] | None = None) -> fl
     """
     Absolute unit in NOK from working liquid (riskable liquid before new stakes).
 
-    Ladder (Set B): <1500 → 10; <2500 → 15; else → 20.
+    Ladder (High-Volume v2): <1500 → 12; <2500 → 15; else → 20.
     Always at least min_stake_nok.
+
+    When ``phase_continuous.enabled``, live risk prefers continuous unit from
+    ``nt.phase.continuous_unit_size`` (equity progress inside the phase band)
+    over this pure liquid ladder. This helper remains the ladder SSOT and the
+    fallback when continuous is off.
     """
     v2 = cfg_v2 or capital_v2_cfg({})
     floor = float(v2.get("min_stake_nok") or 10.0)
@@ -522,6 +536,10 @@ class SecureTransferResult:
     reason: str
     min_working_required: float = 0.0
     transfer_capped_by_buffer: bool = False
+    # Variant A tier: "soft" | "hard" | "legacy" | None (no trigger)
+    tier: str | None = None
+    transfer_capped_by_liquid_floor: bool = False
+    liquid_floor_required: float = 0.0
 
 
 def min_working_buffer_nok(
@@ -542,22 +560,74 @@ def min_working_buffer_nok(
     return round(max(by_frac, by_units), 2)
 
 
+def _resolve_secure_tier(
+    *,
+    equity: float,
+    ref: float,
+    trigger_multiple: float,
+    transfer_fraction: float,
+    soft_trigger_multiple: float | None,
+    soft_transfer_fraction: float | None,
+    hard_trigger_multiple: float | None,
+    hard_transfer_fraction: float | None,
+) -> tuple[str | None, float, float]:
+    """
+    Pick skim tier and (trigger_level, fraction).
+
+    Variant A: hard (if equity ≥ hard trigger) replaces soft — never stacked.
+    Legacy single-tier when soft/hard not configured.
+    Returns (tier, trigger_equity, fraction) or (None, trigger, 0) when below all.
+    """
+    use_variant_a = (
+        soft_trigger_multiple is not None
+        and soft_transfer_fraction is not None
+        and hard_trigger_multiple is not None
+        and hard_transfer_fraction is not None
+    )
+    if use_variant_a:
+        hard_trig = ref * float(hard_trigger_multiple)
+        soft_trig = ref * float(soft_trigger_multiple)
+        if equity + 1e-9 >= hard_trig:
+            return "hard", hard_trig, float(hard_transfer_fraction)
+        if equity + 1e-9 >= soft_trig:
+            return "soft", soft_trig, float(soft_transfer_fraction)
+        return None, soft_trig, 0.0
+    # Legacy / Variant B single trigger
+    trig = ref * float(trigger_multiple)
+    if equity + 1e-9 >= trig:
+        return "legacy", trig, float(transfer_fraction)
+    return None, trig, 0.0
+
+
 def compute_secure_transfer(
     *,
     ledger_equity: float,
     secure_nok: float,
     ref_hwm: float,
     trigger_multiple: float = 1.30,
-    transfer_fraction: float = 0.40,
+    transfer_fraction: float = 0.27,  # Variant B legacy single-tier (was 0.40)
     unit_size_nok: float | None = None,
     min_working_frac: float = 0.55,
     min_working_units: float = 8.0,
+    # Variant A soft/hard (when all four set, hard replaces soft — not stacked)
+    soft_trigger_multiple: float | None = None,
+    soft_transfer_fraction: float | None = None,
+    hard_trigger_multiple: float | None = None,
+    hard_transfer_fraction: float | None = None,
+    # Never skim if post-skim liquid would fall below phase daily_risk_ceil
+    phase_daily_risk_ceil: float | None = None,
+    open_risk: float = 0.0,
 ) -> SecureTransferResult:
     """
-    When equity ≥ ref_hwm * trigger_multiple, move transfer_fraction of
+    When equity hits a secure-bucket trigger, move a fraction of
     (equity - ref_hwm) into secure, subject to:
     - never secure more than current working equity (secure ≤ equity)
     - after transfer, working ≥ max(55% equity, 8 × unit) (softener)
+    - after transfer, liquid (equity − secure_after − open_risk) ≥ phase daily_risk_ceil
+      when phase_daily_risk_ceil is provided
+
+    Variant A (preferred): soft 1.25×/15%, hard 1.50×/30% (hard only if hard fires).
+    Legacy: single trigger_multiple / transfer_fraction.
 
     Reset ref HWM to **new working equity** after transfer.
     """
@@ -575,58 +645,93 @@ def compute_secure_transfer(
         min_working_frac=min_working_frac,
         min_working_units=min_working_units,
     )
-    trigger = ref * float(trigger_multiple)
-    if equity + 1e-9 < trigger:
-        working = riskable_equity(equity, secure)
+    open_r = max(0.0, float(open_risk))
+    liquid_floor = (
+        max(0.0, float(phase_daily_risk_ceil))
+        if phase_daily_risk_ceil is not None
+        else 0.0
+    )
+
+    tier, _trig_level, frac = _resolve_secure_tier(
+        equity=equity,
+        ref=ref,
+        trigger_multiple=trigger_multiple,
+        transfer_fraction=transfer_fraction,
+        soft_trigger_multiple=soft_trigger_multiple,
+        soft_transfer_fraction=soft_transfer_fraction,
+        hard_trigger_multiple=hard_trigger_multiple,
+        hard_transfer_fraction=hard_transfer_fraction,
+    )
+    working_before = riskable_equity(equity, secure)
+    if tier is None:
         return SecureTransferResult(
             transferred=0.0,
             secure_after=secure,
             ref_hwm_after=ref,
-            working_equity_after=working,
+            working_equity_after=working_before,
             triggered=False,
             reason="below_trigger",
             min_working_required=min_work,
+            tier=None,
+            liquid_floor_required=liquid_floor,
         )
+
     profit_above = equity - ref
-    transfer = whole_krone(float(transfer_fraction) * profit_above)
-    working_before = riskable_equity(equity, secure)
+    transfer = whole_krone(float(frac) * profit_above)
     # Cap 1: cannot move more than current working
     max_by_working = whole_krone(working_before)
     # Cap 2: leave minimum working buffer
-    # working_after = working_before - transfer ≥ min_work
-    # transfer ≤ working_before - min_work
     room_above_buffer = working_before - min_work
     max_by_buffer = whole_krone(max(0.0, room_above_buffer))
+    # Cap 3: liquid floor — equity − secure_after − open ≥ daily_risk_ceil
+    # ⇒ secure_after ≤ equity − open − ceil ⇒ transfer ≤ that − secure
+    capped_by_liquid = False
+    max_by_liquid = max_by_working  # no extra cap when floor unset
+    if phase_daily_risk_ceil is not None:
+        max_secure_total = equity - open_r - liquid_floor
+        max_by_liquid = whole_krone(max(0.0, max_secure_total - secure))
+
     capped_by_buffer = False
     if max_by_working >= 1.0:
         if transfer > max_by_buffer + 1e-9:
-            capped_by_buffer = transfer > max_by_buffer
-        transfer = min(transfer, max_by_working, max_by_buffer)
+            capped_by_buffer = True
+        if transfer > max_by_liquid + 1e-9:
+            capped_by_liquid = True
+        transfer = min(transfer, max_by_working, max_by_buffer, max_by_liquid)
     else:
         transfer = 0.0
+
     if transfer < 1.0:
-        working = working_before
+        reason = "transfer_below_1_nok_or_buffer"
+        if phase_daily_risk_ceil is not None and max_by_liquid < 1.0:
+            reason = "liquid_floor_blocks_skim"
+            capped_by_liquid = True
+        elif capped_by_buffer or max_by_buffer < 1.0:
+            reason = "transfer_below_1_nok_or_buffer"
         return SecureTransferResult(
             transferred=0.0,
             secure_after=secure,
             ref_hwm_after=ref,
-            working_equity_after=working,
+            working_equity_after=working_before,
             triggered=False,
-            reason="transfer_below_1_nok_or_buffer",
+            reason=reason,
             min_working_required=min_work,
             transfer_capped_by_buffer=capped_by_buffer or max_by_buffer < 1.0,
+            tier=None,
+            transfer_capped_by_liquid_floor=capped_by_liquid,
+            liquid_floor_required=liquid_floor,
         )
+
     secure_after = round(secure + transfer, 2)
     if secure_after > equity:
         secure_after = round(equity, 2)
         transfer = round(max(0.0, secure_after - secure), 2)
     working_after = riskable_equity(equity, secure_after)
+
     # Final buffer enforce (float safety)
     if working_after + 1e-9 < min_work and transfer >= 1.0:
-        # reduce transfer further
         allowed_secure = round(max(0.0, equity - min_work), 2)
         if allowed_secure + 1e-9 < secure:
-            # already below buffer — no additional transfer
             return SecureTransferResult(
                 transferred=0.0,
                 secure_after=secure,
@@ -636,6 +741,8 @@ def compute_secure_transfer(
                 reason="already_at_working_buffer",
                 min_working_required=min_work,
                 transfer_capped_by_buffer=True,
+                tier=None,
+                liquid_floor_required=liquid_floor,
             )
         transfer = whole_krone(max(0.0, allowed_secure - secure))
         if transfer < 1.0:
@@ -648,20 +755,99 @@ def compute_secure_transfer(
                 reason="transfer_below_1_nok_or_buffer",
                 min_working_required=min_work,
                 transfer_capped_by_buffer=True,
+                tier=None,
+                liquid_floor_required=liquid_floor,
             )
         secure_after = round(secure + transfer, 2)
         working_after = riskable_equity(equity, secure_after)
         capped_by_buffer = True
+
+    # Final liquid-floor enforce
+    if phase_daily_risk_ceil is not None:
+        liquid_after = equity - secure_after - open_r
+        if liquid_after + 1e-9 < liquid_floor and transfer >= 1.0:
+            allowed_secure = round(max(0.0, equity - open_r - liquid_floor), 2)
+            if allowed_secure + 1e-9 < secure:
+                return SecureTransferResult(
+                    transferred=0.0,
+                    secure_after=secure,
+                    ref_hwm_after=ref,
+                    working_equity_after=working_before,
+                    triggered=False,
+                    reason="liquid_floor_blocks_skim",
+                    min_working_required=min_work,
+                    transfer_capped_by_liquid_floor=True,
+                    tier=None,
+                    liquid_floor_required=liquid_floor,
+                )
+            transfer = whole_krone(max(0.0, allowed_secure - secure))
+            if transfer < 1.0:
+                return SecureTransferResult(
+                    transferred=0.0,
+                    secure_after=secure,
+                    ref_hwm_after=ref,
+                    working_equity_after=working_before,
+                    triggered=False,
+                    reason="liquid_floor_blocks_skim",
+                    min_working_required=min_work,
+                    transfer_capped_by_liquid_floor=True,
+                    tier=None,
+                    liquid_floor_required=liquid_floor,
+                )
+            secure_after = round(secure + transfer, 2)
+            working_after = riskable_equity(equity, secure_after)
+            capped_by_liquid = True
+
     ref_after = working_after
+    reason_bits = [f"secure_transfer_{tier}"]
+    if capped_by_buffer:
+        reason_bits.append("buffer_capped")
+    if capped_by_liquid:
+        reason_bits.append("liquid_floor_capped")
     return SecureTransferResult(
         transferred=transfer,
         secure_after=secure_after,
         ref_hwm_after=ref_after,
         working_equity_after=working_after,
         triggered=True,
-        reason="secure_transfer" + ("_buffer_capped" if capped_by_buffer else ""),
+        reason="_".join(reason_bits) if len(reason_bits) > 1 else reason_bits[0],
         min_working_required=min_work,
         transfer_capped_by_buffer=capped_by_buffer,
+        tier=tier,
+        transfer_capped_by_liquid_floor=capped_by_liquid,
+        liquid_floor_required=liquid_floor,
+    )
+
+
+def compute_secure_transfer_variant_a(
+    *,
+    ledger_equity: float,
+    secure_nok: float,
+    ref_hwm: float,
+    soft_trigger_multiple: float = 1.25,
+    soft_transfer_fraction: float = 0.15,
+    hard_trigger_multiple: float = 1.50,
+    hard_transfer_fraction: float = 0.30,
+    unit_size_nok: float | None = None,
+    min_working_frac: float = 0.55,
+    min_working_units: float = 8.0,
+    phase_daily_risk_ceil: float | None = None,
+    open_risk: float = 0.0,
+) -> SecureTransferResult:
+    """Variant A skim: soft 1.25×/15%, hard 1.50×/30% (hard replaces soft)."""
+    return compute_secure_transfer(
+        ledger_equity=ledger_equity,
+        secure_nok=secure_nok,
+        ref_hwm=ref_hwm,
+        soft_trigger_multiple=soft_trigger_multiple,
+        soft_transfer_fraction=soft_transfer_fraction,
+        hard_trigger_multiple=hard_trigger_multiple,
+        hard_transfer_fraction=hard_transfer_fraction,
+        unit_size_nok=unit_size_nok,
+        min_working_frac=min_working_frac,
+        min_working_units=min_working_units,
+        phase_daily_risk_ceil=phase_daily_risk_ceil,
+        open_risk=open_risk,
     )
 
 
@@ -706,6 +892,10 @@ def empty_segments(
         "secure_nok": 0.0,
         "secure_transfers": [],
         "unit_hwm_reset_equity_nok": float(baseline_nok),
+        # Unlock epoch: settled_count at last skim (or unlock). Auto-unlock after N more.
+        "secure_lock_settled_count": 0,
+        "last_manual_unlock_at": None,
+        "secure_unlocks": [],
         "freeze": {
             "active": False,
             "reason": None,

@@ -149,7 +149,8 @@ def test_flag_on_sizing_unit_not_phase_band(tmp_path):
     ]
     picked, _ = build_portfolio(cfg, cands, PHASE, risk, historical_rows=[])
     assert len(picked) == 1
-    assert picked[0].stake_nok == 10.0
+    # HV v2: grade B mult 1.4 × unit 10 → whole_krone 14 (not phase stake band)
+    assert picked[0].stake_nok == 14.0
     assert picked[0].stake_decision is not None
     assert picked[0].stake_decision["size_mode"] == "NORMAL"
 

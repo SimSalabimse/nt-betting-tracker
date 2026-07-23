@@ -39,7 +39,15 @@ def refresh_state(cfg: dict[str, Any]) -> tuple[dict, dict, dict]:
         from nt.capital_runtime import capital_v2_enabled, sync_capital_v2_state
 
         if capital_v2_enabled(cfg):
-            segments = sync_capital_v2_state(cfg, bankroll["equity_nok"], rows, persist=True)
+            cont_unit = phase.get("unit_size_nok") if phase.get("phase_continuous_enabled") else None
+            segments = sync_capital_v2_state(
+                cfg,
+                bankroll["equity_nok"],
+                rows,
+                persist=True,
+                phase_daily_risk_ceil=float(phase.get("daily_risk_ceil") or 0.0) or None,
+                unit_size_override=float(cont_unit) if cont_unit is not None else None,
+            )
     except Exception:
         segments = None
     if segments is not None:
@@ -182,7 +190,26 @@ def run_recommend(
         flag = " **HIGH ODDS**" if r.high_odds else ""
         lines.append(f"- {r.match} / {r.selection}:{flag} {r.notes}")
 
-    place_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    place_md = "\n".join(lines) + "\n"
+    # Reasoning chains (minimal path): JSONL + ## Reasoning in PLACE_THESE (dry-run OK)
+    reasoning_chains: list = []
+    reasoning_path = None
+    try:
+        from nt.reasoning_chain import dump_reasoning_for_recommend
+
+        place_md, reasoning_chains, reasoning_path = dump_reasoning_for_recommend(
+            cfg,
+            picked,
+            rejects,
+            place_md=place_md,
+            phase_id=phase.get("phase_id"),
+            bet_ids=None,  # bet_ids assigned only after Pending log
+        )
+    except Exception:
+        reasoning_chains = []
+        reasoning_path = None
+
+    place_path.write_text(place_md, encoding="utf-8")
     # stable latest pointer
     (outbox / "PLACE_THESE.md").write_text(place_path.read_text(encoding="utf-8"), encoding="utf-8")
 
@@ -341,4 +368,6 @@ def run_recommend(
         "daily_cap": risk["daily_risk_cap_nok"],
         "equity": bankroll["equity_nok"],
         "force_mechanical": force_mechanical,
+        "n_reasoning_chains": len(reasoning_chains),
+        "reasoning_chains_path": str(reasoning_path) if reasoning_path else None,
     }

@@ -2,9 +2,22 @@
 
 Real-money capital desk. Engines in `nt/` are law. UI (LuminaNT, Flet desktop) presents and invokes — never invents bankroll math.
 
-**Status (permanent package):** clean-restart **500 NOK** era · capital_v2 live · **Exploration→Survival→Normal** bankroll regimes · multi-stage quant prefilter · engine deep queue (composition ≥**55%** preferred / ≤**25%** short-main · band **1.85–2.60**) · Coverage Health + soft gate · `force_coverage_priority` · totalgrense residual buffer · closed-loop ControlSignals · PhaseState v5 · **neutral sport start at zero data**.  
+> ### System status 2026-07
+> | Live | Notes |
+> |------|--------|
+> | **500 NOK** clean-restart era · capital_v2 ON | Equity = baseline + Σ terminal P/L on `data/bets.csv` only |
+> | **Hybrid phases** `1A/1A+/1B/1B+` + continuous unit | [`docs/CAPITAL_HYBRID_PROGRESSION.md`](docs/CAPITAL_HYBRID_PROGRESSION.md) |
+> | **Secure Variant A** soft 1.25×/15% · hard 1.50×/30% | Hard replaces soft — never stacked |
+> | **Coverage floor (A)** + **`temp_ev_relax` (B)** | Floor never invents `p_model`; relax is allowlisted safety net only |
+> | **Settlement taxonomy** `learning_weight` · CS gate ≥**0.5** | [`docs/SETTLEMENT_LEARNING.md`](docs/SETTLEMENT_LEARNING.md) |
+> | **Desk skills** `/daily-run` · `/missed-audit` · `/chain-explain` · `/bankroll-tune` · `/learning-rootcause` | [`docs/DESK_SKILLS.md`](docs/DESK_SKILLS.md) |
+> | **Reasoning chains** on recommend | `data/state/reasoning_chains.jsonl` + `## Reasoning` in `PLACE_THESE.md` |
+>
+> Package narrative: permanent rules below. Skills invoke guide: **`docs/DESK_SKILLS.md`**. Capital hybrid: **`docs/CAPITAL_HYBRID_PROGRESSION.md`**. Taxonomy: **`docs/SETTLEMENT_LEARNING.md`**.
 
-Docs: `docs/PACKAGE_IMPLEMENTATION_SUMMARY.md` · `docs/RESEARCH_COVERAGE_FIX_SUMMARY.md` · `docs/RESEARCH_WORKFLOW.md` · `docs/BANKROLL_PLAN.md` · `docs/RESIDUAL_RISKS.md` · `docs/LUMINA_INTEGRATION.md` · `artifacts/PACKAGE_VALIDATION_REPORT.md`.
+**Status (permanent package):** clean-restart **500 NOK** era · capital_v2 live · **hybrid half-steps (1A+/1B+) + continuous unit** · **secure bucket Variant A** (soft/hard skim) · **Exploration→Survival→Normal** bankroll regimes · multi-stage quant prefilter · engine deep queue (composition ≥**55%** preferred / ≤**25%** short-main · band **1.85–2.60**) · Coverage Health + soft gate · `force_coverage_priority` · totalgrense residual buffer · closed-loop ControlSignals · PhaseState v5 · **neutral sport start at zero data**.  
+
+Docs: `docs/PACKAGE_IMPLEMENTATION_SUMMARY.md` · `docs/RESEARCH_COVERAGE_FIX_SUMMARY.md` · `docs/RESEARCH_WORKFLOW.md` · `docs/BANKROLL_PLAN.md` · `docs/CAPITAL_HYBRID_PROGRESSION.md` · `docs/DESK_SKILLS.md` · `docs/SETTLEMENT_LEARNING.md` · `docs/RESIDUAL_RISKS.md` · `docs/LUMINA_INTEGRATION.md` · `artifacts/PACKAGE_VALIDATION_REPORT.md`.
 
 ---
 
@@ -54,17 +67,55 @@ Docs: `docs/PACKAGE_IMPLEMENTATION_SUMMARY.md` · `docs/RESEARCH_COVERAGE_FIX_SU
 
 | Rule | Live default |
 |------|----------------|
-| Short chalk (odds &lt; **1.80**) | Heavy score penalty unless rare structural note |
+| Short chalk (odds &lt; **1.70** / `short_chalk_odds`) | Heavy score penalty unless rare structural note |
 | Boost band **1.85–2.60** | Strong promotion weight (Calibration-survivable) |
 | Boost | Alt totals (O3.5+), handicaps, dogs (ML ≥1.85), period as preferred |
 | Soft-book longer than NT | Optional boost only if `soft_decimal_odds` / `soft_odds=` present — **never invent** |
 | Preferred share of queue | ≥ **55%** (odds ≥1.85 **or** non short-main with odds ≥1.80) |
 | Short-main cap | ≤ **25%** pure short-fav **ML / O2.5 / first-goal** |
 | Thin preferred pool | **Shrink queue** — never pad with chalk to hit target n |
-| Target size | ~**8–12** (`deep_target_n` 10 / `deep_max_n` 12), ≤3 per sport |
+| Target size | Dynamic via `deep_target_dynamic` (~**8–15**; `deep_target_min`/`max`/`divisor`) — never pad chalk to hit n |
 
 **Short-main** = odds &lt; 1.85 **and** (ML / O2.5 / first-goal).  
 **Preferred (survivable)** = odds ≥ **1.85** **or** (non short-main **and** odds ≥ **1.80**). Short alts &lt;1.80 do **not** pad the preferred floor.
+
+### Coverage floor + temp_ev_relax (permanent)
+
+Two orthogonal mechanisms. Operators see both on **`data/state/status.md`** → **Coverage floor** section.
+
+#### Mechanism A — quality-preserving floor (never softens EV)
+
+**Code:** `nt/light_research.py` (`coverage_floor_cfg`, `dynamic_deep_target_n`, `build_deep_queue`)  
+**Config:** `research.coverage_floor` + `research.tiers.deep_target_*`
+
+| Piece | Behaviour |
+|-------|-----------|
+| Dynamic `deep_target_n` | `clamp(board_lines // divisor, min, max)` when `deep_target_dynamic` |
+| Top-promo scaffold | Force top **~20%** by `promotion_score` into queue consideration (`top_promo_scaffold_pct`) — still composition-capped; never pure short-main chalk |
+| Sport rotation | Sports with ≥`sport_rotation_min_lines` (default **5**) eligible light-pass and **zero** deep picks get one forced preferred/non-chalk line when composition allows |
+| `require_real_pack` | Queue never includes rows that already have `p_model` as invented work |
+
+**Never invents `p_model`. Never softens min_EV / haircut.** Expands *what to research*, not *what clears EV*.
+
+#### Mechanism B — `temp_ev_relax` safety net (auditable ControlSignal)
+
+**Code:** `nt/control_signals.py` (`emit_temp_ev_relax`, `active_temp_ev_relax_overlay`, `maybe_emit_temp_ev_relax*`) · applied in `nt/portfolio.py`  
+**Config:** `learning.control_signals.temp_ev_relax` (optional mirror `research.coverage_floor.ev_relax`)
+
+| Rule | Live default |
+|------|----------------|
+| When | Large board (≥`min_board_matches` **15**) **and** coverage health **warn/critical** **and** deep_queue empty **and** light-pass survivors exist |
+| Soften | Per-line allowlist only · `delta_ev` **1–2pp** · TTL **24h** · `clear_on_settle` |
+| Stake | Extra **×0.80** (20% haircut) while active on that line |
+| Never | High-odds (when `exclude_high_odds`) · grade **C** (when `exclude_grade_c`) · grade **F** · global min_EV rewrite |
+| Blocked | If **`process_gate_raise` > 0** for the candidate → skip relax entirely (fail-closed coexistence with process_error gate) |
+
+**Agent mandate:**
+
+- **Do not invent `p_model`** to fill seats or clear EV.  
+- **Do not manually lower min_EV** outside ControlSignals (`temp_ev_relax` / engine emit only).  
+- Prefer Mechanism A (more deep research) over waiting for B.  
+- Verify: `python scripts/verify_coverage_floor.py --synthetic-large`
 
 5. **Deep research (engine deep queue first — not only O2.5/ML)**  
    Work the **Deep queue** from light report / board. Use web search / page open aggressively (Sofascore, FBref, HLTV, ATP/WTA, Flashscore, official sites, etc.).  
@@ -124,7 +175,8 @@ Full design: **`docs/RESEARCH_GATES.md`**. Empty slip beats betting against your
    - **Empty / near-empty because mid-price lines were never researched** = process miss — engine raises **`force_coverage_priority`** and soft-gates recommend.  
    - **ControlSignals:**  
      - `temp_gate_raise` — min_ev raise + force confirmed lineup (process_error path).  
-     - `force_coverage_priority` — research pressure (TTL **4–7d**, default 5; target band **`1.85-2.60`**; min_deep_packs 8–10). Raises next deep-queue weights; **does not invent p_model or soften EV/haircut**.
+     - `force_coverage_priority` — research pressure (TTL **4–7d**, default 5; target band **`1.85-2.60`**; min_deep_packs 8–10). Raises next deep-queue weights; **does not invent p_model or soften EV/haircut**.  
+     - `temp_ev_relax` — **safety net only** (Mechanism B): per-line min_EV soften ≤2pp + stake ×0.80 · TTL 24h · never high-odds/grade-C · blocked when process_gate active. See **Coverage floor + temp_ev_relax** above.
 
 8. **Place confirmation / abandon (real-money control)**  
    ```bash
@@ -195,29 +247,48 @@ Full design: **`docs/RESEARCH_GATES.md`**. Empty slip beats betting against your
 ## Capital v2 (live policy)
 
 **Live config:** `capital_v2.enabled: true` (see `docs/CAPITAL_V2_GO_LIVE.md` for rollback).  
-Ledger equity formula is **unchanged**: `baseline + Σ performance P/L`. Engines remain sole bankroll truth.
+Ledger equity formula is **unchanged**: `baseline + Σ performance P/L`. Engines remain sole bankroll truth.  
+**Hybrid progression examples + MC:** `docs/CAPITAL_HYBRID_PROGRESSION.md` · `python scripts/mc_phase_progression.py`
 
 | Layer | Behaviour |
 |-------|-----------|
 | Peak / DD | **Settlement calendar day** peak (Oslo via `updated_at`) — not match-date-only |
 | size_mode (**capital hard floor**) | NORMAL → REDUCED (≥15% DD) → FROZEN (≥25% DD or manual freeze). Phase health may **only tighten** (e.g. force REDUCED), never loosen FROZEN. |
-| Unit ladder | 10 / 15 / 20 NOK from riskable liquid; whole kroner; **never stake in (0, min_stake)** |
-| Open room | Phase open budget ∩ portfolio open-risk cap (~18% riskable liquid) ∩ **regime open cap** ∩ **totalgrense usable** |
+| **Unit (primary)** | When `phase_continuous.enabled`: **continuous unit** = `stake_min + (equity − enter) / scale_factor` (whole krone, clamp band) with **carry-forward floor** so promotions never drop unit. Fallback liquid ladder: **12 / 15 / 20** (`capital_v2.unit_ladder`). Never stake in (0, min_stake). |
+| Open room | Phase open budget (continuous **lerp** of floor/ceil/pct toward next phase) ∩ portfolio open-risk cap (~18% riskable liquid) ∩ **regime open cap** ∩ **totalgrense usable** |
 | Daily / weekly | Hard loss stops on liquid SoD / SoW; day-loss may shrink remaining (intentional) |
-| Secure bucket | Profit skims with working-equity softener |
+| **Secure bucket Variant A** | Soft **1.25× ref / 15%** of (eq−ref); hard **1.50× ref / 30%** — **hard replaces soft, never stacked**. Min-working softener max(55% eq, 8×unit); **liquid floor** never skim below phase `daily_risk_ceil`; ref → working after skim. Unlock: auto after **25** settles since lock, or manual 7d cooldown. |
 | **Kelly (P2)** | Optional **lift above unit only** when liquid ≥ **1500**, calibration n ≥ 30, Brier ≤ max; fail-closed if thin cal; max **1.5× unit**. Never pure continuous Kelly; never shrinks below unit. |
 | Audit | `data/state/stake_decisions.jsonl`, `capital_segments.json` |
 
+### Config key pointers (do not invent values)
+
+| Concern | Keys |
+|---------|------|
+| Enable capital stack | `capital_v2.enabled` |
+| Liquid unit fallback | `capital_v2.unit_ladder` · grade mults `capital_v2.grade_stake_mult` |
+| Secure Variant A | `capital_v2.secure_bucket.variant: A` · `soft_trigger_multiple_of_ref` / `soft_transfer_fraction` · `hard_trigger_multiple_of_ref` / `hard_transfer_fraction` · `min_working_frac_of_equity` · `min_working_units` · `unlock_after_settled` · `manual_unlock_cooldown_days` |
+| Half-steps | `phases."1A+"` / `phases."1B+"` · `hard_phase_id` (parent hard gates) |
+| Continuous unit / open-risk | `phase_continuous.enabled` · `phase_continuous.scale_factor` (default **100**) |
+| Phase ladder numbers | `phases.*.enter_equity` / `stake_min` / `stake_max` / `daily_risk_*` |
+| Stability / demote | `phase_stability.*` |
+
 **Stranded remainder:** liquid may sit under one unit while open risk is high — UI surfaces this; do not force a ticket below floor.
 
+**Secure unlock (operator):**  
+`python run_nt.py capital unlock-secure --confirm` (manual; respects cooldown)  
 **Unfreeze (after human review only):**  
 `python run_nt.py capital unfreeze --confirm`
 
 ---
 
-## Phase system (v5 multi-factor)
+## Phase system (v5 multi-factor + hybrid half-steps)
 
-**Labels stay 1A–5** (`config.yaml` ladder). `phase_id` is still equity/count hybrid (seats, daily open budget, soft stake band).
+**Labels:** **1A → 1A+ → 1B → 1B+ → 2 → … → 5** (`config.yaml`).  
+`phase_id` is equity/count hybrid (seats, daily open budget, soft stake band).  
+**Half-steps** (`1A+`, `1B+`) keep **parent hard gates** via `hard_phase_id` (max_doubles / max_bets) while display id and continuous sizing advance.  
+**Continuous unit / open-risk** progress inside each band when `phase_continuous.enabled` — unit is non-decreasing at promotions (carry-forward floor).  
+Examples 500→550 and MC milestones: **`docs/CAPITAL_HYBRID_PROGRESSION.md`**.
 
 **Additionally** `evaluate_phase` attaches multi-factor `phase_state` and health overlays:
 
@@ -249,11 +320,23 @@ After every settle:
 2. **PostSettlementPacket** — if `variance_tag=process_error` (or research_miss/miss) **or** `research_quality_retro=poor|wrong|miss`, **required fields** before ledger write:  
    `actual_score`, `actual_lineup_status`, `predicted_vs_actual_xi_delta`, `script_realized`, `process_root_cause`.  
    Lumina SettleDesk blocks incomplete strict rows; engine rejects incomplete items.  
-3. Learning recompute (`run_learning`) + settlement analysis.  
-4. **ControlSignals (primary closed loop)** — store `data/state/control_signals.jsonl`:  
-   - **`temp_gate_raise`** — on process_error / poor retro even at **n=1**: raise min_ev · force confirmed availability · TTL **7–14d** (default 10).  
+3. **Taxonomy (every settled bet)** — fill on the packet / settle item (agent preferred; engine auto-fills if blank):  
+   | Field | Values |
+   |-------|--------|
+   | `predictability` | `highly_predictable` · `moderately_predictable` · `weakly_predictable` · `unpredictable_from_available_info` |
+   | `variance_class` | `systematic_script_form` · `research_process_miss` · `model_error` · `one_off_injury_late` · `one_off_referee` · `true_randomness` · `unknown` |
+   | `learning_weight` | `clamp(base[class] × pred_mult[predictability], 0, 1)` — engine formula in `nt/settlement_taxonomy.py` |
+   | `classification_notes` / `classified_by` / `classified_at` | short free text · `agent\|auto\|backfill\|user` · ISO-8601 |
+
+   **Weight intent:** systematic/process misses move mults; late injury / ref / true randomness barely do (base 0.05–0.10).  
+   Legacy map: `process_error` / `research_miss` → `research_process_miss`; `expected`/`skill` → `systematic_script_form`; `variance`/`luck` → `true_randomness`.  
+   Backfill: `python scripts/backfill_settlement_taxonomy.py` (last 30 + re-weight report).  
+4. Learning recompute (`run_learning`) + settlement analysis — sample influence × `learning_weight`.  
+5. **ControlSignals (primary closed loop)** — store `data/state/control_signals.jsonl`:  
+   - **`temp_gate_raise`** — on process_error / poor retro even at **n=1**, **only if `learning_weight` ≥ `min_learning_weight_for_gate` (default 0.5)**: raise min_ev · force confirmed availability · TTL **7–14d** (default 10). Near-zero weight one-offs **skip** temp_gate.  
    - **`force_coverage_priority`** — on empty/near-empty recommend from **research starvation** (high `no p_model` share + mid unresearched): band **1.85–2.60** / alt totals / dogs / HC / period · TTL **4–7d** · does **not** change haircut or EV bar.  
-5. **Learning proposals** auto-resolve (`auto_apply_proposals: true`):  
+   - **`temp_ev_relax`** — empty deep-queue safety net on large boards (Mechanism B): allowlisted lines only · ΔEV 1–2pp · stake ×0.80 · TTL **24h** · clear_on_settle · never invents p_model · **never** stack with process_gate raise on the same candidate.  
+6. **Learning proposals** auto-resolve (`auto_apply_proposals: true`):  
    - Full permanent mult delta only if **n_hist ≥ 8** and **conf ≥ 0.40**  
    - Else soft-modify or reject noise  
    - Mult patches can be overwritten by next full recompute — **do not treat mults as durable process control**; ControlSignals are.
@@ -309,6 +392,8 @@ python run_nt.py simulate --sport basketball --home H --away A ...
 | Light assess never promotes; engine builds deep_queue | Expect assess-time auto-promote or empty queue forever |
 | Prefilter discards majority noise/chalk; prior is rank-only | Use classical prior as recommend `p_model` |
 | Composition ≥55% preferred / ≤25% short-main | Pad deep queue with short ML/O2.5 chalk or short alts &lt;1.80 |
+| Trust Mechanism A floor (dynamic target / scaffold / sport rotation) for research pressure | Soften min_EV by hand or invent p_model to “fill” the floor |
+| Let engine emit `temp_ev_relax` only under safety-net conditions | Manually lower min_EV outside ControlSignals or stack relax over process_gate |
 | Respect Exploration/Survival min-EV + open cap + weekly EXPLORE_REGIME quota | Soften 5pp haircut or invent thin EV beyond 2 slots/week |
 | Sports equal at zero data (symmetric virgin explore) | Hardcode sport edges from thin history |
 | Totalgrense residual ≥ buffer when limits set | place-ack when residual headroom already &lt; buffer |
@@ -316,6 +401,7 @@ python run_nt.py simulate --sport basketball --home H --away A ...
 | Kelly only when liquid+Brier gates pass | Kelly at small bankroll / thin calibration |
 | Trust unit ladder + room packing | EV-band stake above unit without Kelly lift |
 | Fill PostSettlementPacket on process_error / poor retro | Settle without root cause / score / XI delta |
+| Classify predictability + variance_class + learning_weight every settle | Leave taxonomy blank forever or invent p_model to "fix" |
 | Trust ControlSignals as process loop | Expect permanent mults alone to stick after recompute |
 | Respect RESEARCH_ONLY / size_mode floor | Force recommend when phase health blocks |
 
@@ -333,6 +419,34 @@ python scripts/validate_closed_loop.py -n 60
 
 ---
 
+## Desk skills (Grok)
+
+User-scope skills in `%USERPROFILE%\.grok\skills\` — load **this file first**, force real tools, list deliverable paths. Full invoke guide: **`docs/DESK_SKILLS.md`**. Optional helpers: `scripts/skill_*.ps1`.
+
+| Slash | Skill | When |
+|-------|--------|------|
+| `/daily-run` | Full day desk | results → odds → board+light → deep queue → scaffolds → recommend + Reasoning Chains → `outbox/PLACE_THESE.md` → place-ack |
+| `/missed-audit` | Mid-band misses | 1.80–2.20 out of deep; `promotion_score` components; cheapest fix; Bodø/Glimt −1.5 & tennis/snooker patterns |
+| `/chain-explain` | Reasoning Chain | forensic justify one match/selection (or whole slip) |
+| `/bankroll-tune` | Capital tune | secure/phase/unit/regime proposal → `scripts/mc_phase_progression.py` + `capital` CLI |
+| `/learning-rootcause` | Taxonomy | predictability + variance_class + learning_weight; `settlement_taxonomy` + `backfill_settlement_taxonomy.py` |
+
+```powershell
+# Grok (CWD = tracker root)
+# /daily-run
+# /missed-audit
+# /chain-explain <match> | <selection>
+# /bankroll-tune
+# /learning-rootcause
+
+# PowerShell helpers
+.\scripts\skill_list.ps1
+.\scripts\skill_invoke.ps1 daily-run
+.\scripts\skill_smoke.ps1
+```
+
+---
+
 ## Related docs
 
 | Doc | Role |
@@ -340,8 +454,10 @@ python scripts/validate_closed_loop.py -n 60
 | `docs/PACKAGE_IMPLEMENTATION_SUMMARY.md` | **This package** file map + confirmations |
 | `docs/RESEARCH_COVERAGE_FIX_SUMMARY.md` | Coverage Health + deep queue + force_coverage |
 | `docs/RESEARCH_WORKFLOW.md` | Full stage map (prefilter → deep) |
+| `docs/DESK_SKILLS.md` | Grok desk skills install + PowerShell invoke |
 | `docs/BANKROLL_PLAN.md` | Clean 500 + Calibration/Survival + multi-year |
 | `docs/PHASE_PLAN.md` | Phase ladder 1A–5 + v5 multi-factor |
+| `docs/CAPITAL_HYBRID_PROGRESSION.md` | Half-steps + continuous unit + Variant A skim; before/after 500→550; MC |
 | `docs/CAPITAL_V2_GO_LIVE.md` | Capital v2 enable / rollback |
 | `docs/LUMINA_INTEGRATION.md` | LuminaNT cockpit contract (visuals) |
 | `docs/RESIDUAL_RISKS.md` | Honest remaining risks |

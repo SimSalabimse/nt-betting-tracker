@@ -12,15 +12,72 @@ You supply **odds** and **results**. The system owns stakes, phase, daily risk, 
 | **Human final approval** | Recommend proposes; you place. Agent never auto-bets |
 | **Backward compatible** | v5 is additive — your ledger and LuminaNT desktop keep working |
 
-Deep docs: [`docs/VISION.md`](docs/VISION.md) · [`docs/BANKROLL_PLAN.md`](docs/BANKROLL_PLAN.md) · [`docs/RESEARCH_WORKFLOW.md`](docs/RESEARCH_WORKFLOW.md) · [`docs/SOURCES.md`](docs/SOURCES.md) · [`docs/BET_TYPES.md`](docs/BET_TYPES.md) · [`docs/SIMULATION.md`](docs/SIMULATION.md) · [`docs/AGENT.md`](docs/AGENT.md) · [`docs/MIGRATION.md`](docs/MIGRATION.md) · [`docs/PHASE_PLAN.md`](docs/PHASE_PLAN.md)
+Deep docs: [`docs/VISION.md`](docs/VISION.md) · [`docs/BANKROLL_PLAN.md`](docs/BANKROLL_PLAN.md) · [`docs/RESEARCH_WORKFLOW.md`](docs/RESEARCH_WORKFLOW.md) · [`docs/CAPITAL_HYBRID_PROGRESSION.md`](docs/CAPITAL_HYBRID_PROGRESSION.md) · [`docs/DESK_SKILLS.md`](docs/DESK_SKILLS.md) · [`docs/SETTLEMENT_LEARNING.md`](docs/SETTLEMENT_LEARNING.md) · [`docs/SOURCES.md`](docs/SOURCES.md) · [`docs/AGENT.md`](docs/AGENT.md) · [`docs/PHASE_PLAN.md`](docs/PHASE_PLAN.md)
+
+---
+
+## 2-minute new-user / Grok flow
+
+Clean-restart **500 NOK** desk with capital_v2 live. Engines in `nt/` are law — Grok skills encode workflow only.
+
+### Daily path (preferred)
+
+1. Drop Oddsen dump into `inbox/odds_*.txt` (or pass an explicit path).
+2. In Grok (CWD = tracker root): **`/daily-run`**  
+   → results draft → market-scan → board + light → engine deep queue → deep packs → `recommend` + **Reasoning Chains** → `outbox/PLACE_THESE.md` → `place-ack`.
+3. Or CLI smoke (no ledger write):
+
+```bash
+python scripts/dry_run_daily_path.py
+# or manually:
+python run_nt.py research board --odds inbox/odds_YYYY-MM-DD.txt
+python run_nt.py research light --odds inbox/odds_YYYY-MM-DD.txt
+python run_nt.py recommend --odds inbox/odds_YYYY-MM-DD.txt --dry-run
+```
+
+### What is live (do not re-derive)
+
+| Layer | Live default |
+|-------|----------------|
+| **Secure bucket Variant A** | Soft **1.25×** ref / **15%** skim · hard **1.50×** / **30%** (hard replaces soft, never stacked) |
+| **Hybrid phases** | `1A → 1A+ → 1B → 1B+ → …` + **continuous unit** (`phase_continuous.enabled`) |
+| **Coverage floor (A)** | Dynamic deep target + top-promo scaffold + sport rotation — **never invents `p_model`** |
+| **`temp_ev_relax` (B)** | Safety net only: per-line ΔEV 1–2pp · stake ×0.80 · TTL 24h · blocked if process_gate active |
+| **Settlement taxonomy** | Every settle: `predictability` + `variance_class` → **`learning_weight`**; ControlSignal temp_gate only if weight ≥ **0.5** |
+| **Reasoning chains** | On recommend (dry-run OK): `data/state/reasoning_chains.jsonl` + `## Reasoning` in `PLACE_THESE.md` |
+
+### Desk skills (Grok)
+
+Full install + invoke: [`docs/DESK_SKILLS.md`](docs/DESK_SKILLS.md) · law: root [`AGENTS.md`](AGENTS.md).
+
+| Slash | Role |
+|-------|------|
+| `/daily-run` | Full day desk → place-ack |
+| `/missed-audit` | Mid-band 1.80–2.20 out of deep queue |
+| `/chain-explain` | Forensic Reasoning Chain for one line / slip |
+| `/bankroll-tune` | Secure / phase / unit / regime + MC |
+| `/learning-rootcause` | Taxonomy + `learning_weight` + ControlSignals |
+
+```powershell
+.\scripts\skill_list.ps1
+.\scripts\skill_invoke.ps1 daily-run
+.\scripts\skill_smoke.ps1
+python scripts/dry_run_daily_path.py
+```
+
+### Capital + research pointers
+
+- Hybrid half-steps + continuous unit + Variant A: [`docs/CAPITAL_HYBRID_PROGRESSION.md`](docs/CAPITAL_HYBRID_PROGRESSION.md)
+- Prefilter → light → deep queue → packs: [`docs/RESEARCH_WORKFLOW.md`](docs/RESEARCH_WORKFLOW.md)
+- Settle taxonomy + learning loop: [`docs/SETTLEMENT_LEARNING.md`](docs/SETTLEMENT_LEARNING.md)
 
 ---
 
 ## Your only jobs
 
-1. Accept baseline bankroll in `config.yaml` (**500 NOK**, era 2026-06-28).
+1. Accept baseline bankroll in `config.yaml` (**500 NOK**, clean-restart era).
 2. Research → evidence packs → paste **Oddsen** odds into `inbox/` → `recommend` → place `outbox/PLACE_THESE.md`.
-3. Drop results in `inbox/` → `settle` → review with `analyze` / `learn`.
+3. Drop results in `inbox/` → `settle` → review with `analyze` / `learn` (taxonomy + ControlSignals auto).
 
 ---
 

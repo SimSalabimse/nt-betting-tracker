@@ -41,10 +41,10 @@ def test_phase_safe_hybrid_not_max_from_count_alone():
     chosen_i = order.index(phase["phase_id"])
     assert chosen_i <= eq_i + 1
     assert phase["phase_id"] != "4" or b["equity_nok"] >= 2500
-    # Near ~580–750 band: equity phase should be 1A or 1B (not mature)
+    # Near ~580–750 band: equity phase should be early ladder (not mature)
     if b["equity_nok"] < 750:
-        assert phase["equity_phase"] in ("1A", "1B")
-        assert phase["phase_id"] in ("1A", "1B", "2")
+        assert phase["equity_phase"] in ("1A", "1A+", "1B", "1B+")
+        assert phase["phase_id"] in ("1A", "1A+", "1B", "1B+", "2")
 
 
 def test_daily_cap_matches_phase_clamp():

@@ -41,7 +41,7 @@ def test_state_matches_cli_equity():
     st = svc.reload(write_state=True)
     b = st.bankroll
     assert abs(float(b["equity_nok"]) - (float(b["baseline_nok"]) + float(b["realized_pl_nok"]))) < 0.02
-    assert st.phase["phase_id"] in ("1A", "1B", "2", "3", "4", "5")
+    assert st.phase["phase_id"] in ("1A", "1A+", "1B", "1B+", "2", "3", "4", "5")
     assert len(st.rows) >= 1
     assert not st.errors
     assert st.equity_curve

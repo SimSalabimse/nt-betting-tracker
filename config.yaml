@@ -27,9 +27,11 @@ norsk_tipping:
     daily_limit_nok: null
     monthly_limit_nok: null
 
-# Phase ladder v4 (2026-07-13) — see docs/PHASE_PLAN.md
+# Phase ladder v4 + hybrid half-steps (1A+/1B+) — see docs/PHASE_PLAN.md
 # Hybrid: equity ladder is primary; settled-count may unlock at most +1 phase if stable.
 # daily_risk = clamp(equity * daily_risk_pct, floor, ceil)  — recomputed every run.
+# Half-steps keep parent hard gates via hard_phase_id (max_doubles, max_bets).
+# Continuous unit / open-risk progress inside each band when phase_continuous.enabled.
 phases:
   "1A":
     label: Protect
@@ -43,24 +45,53 @@ phases:
     daily_risk_pct: 0.08
     daily_risk_floor: 30
     daily_risk_ceil: 42
+    next: "1A+"
+  "1A+":
+    label: Protect+
+    enter_equity: 540
+    enter_settled: 30
+    # stake floor = 1A max so continuous unit does not drop at half-step
+    stake_min: 12
+    stake_max: 14
+    max_bets_per_round: 5
+    max_doubles_per_round: 0
+    daily_risk_pct: 0.085
+    daily_risk_floor: 34
+    daily_risk_ceil: 47
+    hard_phase_id: "1A"   # doubles / max_bets / hard gates inherit 1A
     next: "1B"
   "1B":
     label: Stabilize
     enter_equity: 580
     enter_settled: 60
-    stake_min: 10
+    stake_min: 12
     stake_max: 15
     max_bets_per_round: 4
     max_doubles_per_round: 0   # no doubles until Phase 2
     daily_risk_pct: 0.09
     daily_risk_floor: 38
     daily_risk_ceil: 52
+    next: "1B+"
+  "1B+":
+    label: Stabilize+
+    enter_equity: 620
+    enter_settled: 75
+    # stake floor bridges 1B toward Phase 2 continuous
+    stake_min: 13
+    stake_max: 16
+    max_bets_per_round: 4
+    max_doubles_per_round: 0
+    daily_risk_pct: 0.095
+    daily_risk_floor: 44
+    daily_risk_ceil: 62
+    hard_phase_id: "1B"   # doubles / max_bets / hard gates inherit 1B
     next: "2"
   "2":
     label: Build
     enter_equity: 750
     enter_settled: 90
-    stake_min: 12
+    # stake_min bridges 1B+ continuous at 750 (~14); code also carry-forwards
+    stake_min: 14
     stake_max: 18
     max_bets_per_round: 5
     max_doubles_per_round: 1
@@ -72,7 +103,8 @@ phases:
     label: Expand
     enter_equity: 1200
     enter_settled: 130
-    stake_min: 15
+    # bridges phase 2 continuous at 1200 (~16)
+    stake_min: 16
     stake_max: 28
     max_bets_per_round: 6
     max_doubles_per_round: 2
@@ -84,7 +116,8 @@ phases:
     label: Mature
     enter_equity: 2500
     enter_settled: 180
-    stake_min: 18
+    # bridges phase 3 continuous at 2500 (~28, band max)
+    stake_min: 28
     stake_max: 45
     max_bets_per_round: 7
     max_doubles_per_round: 2
@@ -96,7 +129,8 @@ phases:
     label: Scale
     enter_equity: 5000
     enter_settled: 250
-    stake_min: 20
+    # bridges phase 4 continuous at 5000 (~45, band max)
+    stake_min: 45
     stake_max: 70
     max_bets_per_round: 8
     max_doubles_per_round: 3
@@ -104,6 +138,14 @@ phases:
     daily_risk_floor: 120
     daily_risk_ceil: 400
     next: null
+
+# Continuous unit + open-risk progress inside each named phase / half-step.
+# unit = stake_min + (equity - enter) / scale_factor  (clamped to [stake_min, stake_max], whole krone)
+# ~1 NOK unit step per scale_factor equity (default 100 → visible every ~80–120 NOK).
+# open-risk floor/ceil/pct lerp from current phase toward next by progress_inside_phase.
+phase_continuous:
+  enabled: true
+  scale_factor: 100.0
 
 # Stability gates for count-unlock and demotion (see docs/PHASE_PLAN.md)
 phase_stability:
@@ -154,7 +196,7 @@ bankroll_regime:
 # Phase 2 capital_v2 — live. Env: CAPITAL_V2_ENABLED / NT_CAPITAL_V2_ENABLED
 capital_v2:
   enabled: true
-  # High-Volume v2: base unit 12 under 1500 liquid; grade stake mults; secure 27%
+  # High-Volume v2: base unit 12 under 1500 liquid; grade stake mults; secure Variant A
   unit_ladder:
     - { max_liquid_exclusive: 1500.0, unit: 12.0 }
     - { max_liquid_exclusive: 2500.0, unit: 15.0 }
@@ -166,8 +208,26 @@ capital_v2:
     A_high_conf: 2.2
   secure_bucket:
     enabled: true
-    trigger_multiple_of_ref: 1.30
-    transfer_fraction_of_profit_above_ref: 0.27   # was 0.40
+    # Variant A (live): soft 1.25×/15%, hard 1.50×/30% (hard replaces soft, not stacked)
+    variant: A
+    soft_trigger_multiple_of_ref: 1.25
+    soft_transfer_fraction: 0.15
+    hard_trigger_multiple_of_ref: 1.50
+    hard_transfer_fraction: 0.30
+    # --- Switch recipes (do not enable B and C at once; last YAML key wins) ---
+    # To use Variant B (single-tier 1.30× / 0.27): set variant: B below.
+    #   Soft/hard keys are ignored when variant != A. Optional explicit:
+    # variant: B
+    # trigger_multiple_of_ref: 1.30
+    # transfer_fraction_of_profit_above_ref: 0.27
+    # To use Variant C (single-tier 1.40× / 0.35): set variant: C and:
+    # variant: C
+    # trigger_multiple_of_ref: 1.40
+    # transfer_fraction_of_profit_above_ref: 0.35
+    min_working_frac_of_equity: 0.55
+    min_working_units: 8.0
+    unlock_after_settled: 25          # auto release secure→working after N settles since skim
+    manual_unlock_cooldown_days: 7    # min days between manual unlocks
 
 selection:
   # High-Volume v2: hard 3pp haircut (was 5pp). Never softened by regime/coverage.
@@ -270,13 +330,16 @@ learning:
     max_raise: 0.05
     ttl_hours: 48
     clear_after_clean_settles: 3
-  # P0 ControlSignals (temp_gate_raise + force_coverage_priority)
+  # Settlement taxonomy: sample influence × learning_weight; CS gate threshold
+  min_learning_weight_for_gate: 0.5   # process_error temp_gate only if weight ≥ this
+  # P0 ControlSignals (temp_gate_raise + force_coverage_priority + temp_ev_relax)
   control_signals:
     enabled: true
     min_ev_raise: 0.02
     max_raise: 0.05
     ttl_days: 10
     force_confirmed_lineup: true
+    min_learning_weight_for_gate: 0.5  # one-offs / true_randomness skip temp_gate
     coverage_priority:
       enabled: true
       ttl_days: 5                 # clamp 4–7
@@ -288,6 +351,21 @@ learning:
       min_mid_unresearched: 3
       coverage_preferred_share: 0.55
       weight_boost: 30.0            # deep-queue score boost under active signal
+    # Mechanism B: temporary auditable EV softening (safety net only)
+    # Per-line allowlist · never softens haircut · grade F always excluded
+    # Fail-closed: if process_gate_raise > 0 for a candidate, skip temp_ev_relax
+    temp_ev_relax:
+      enabled: true
+      delta_min: 0.01
+      delta_max: 0.02
+      ttl_hours: 24
+      clear_on_settle: true     # per-signal flag also stamped on emit; settle clears only clearable ids
+      stake_mult: 0.80          # extra 20% reduction while active
+      top_n_survivors: 3
+      min_board_matches: 15
+      require_coverage_warn: true
+      exclude_high_odds: true   # honored in portfolio (default fail-closed)
+      exclude_grade_c: true     # honored in portfolio (default fail-closed)
 
 paths:
   bets: data/bets.csv
@@ -312,6 +390,16 @@ paths:
   agent_audit_jsonl: data/state/agent_audit.jsonl
   # v6: calibration log (p_model vs outcome)
   calibration_jsonl: data/state/calibration.jsonl
+  # Recommend reasoning chains (pick + near-miss audit)
+  reasoning_chains_jsonl: data/state/reasoning_chains.jsonl
+
+# Minimal reasoning-chain dump on recommend (dry-run OK) → JSONL + PLACE_THESE ## Reasoning
+reasoning:
+  enabled: true
+  jsonl: data/state/reasoning_chains.jsonl
+  max_near_miss: 8
+  near_miss_ev_slack: 0.04
+  place_md_section: true
 
 # --- v5 additive policy (all optional; missing keys use safe defaults in nt/defaults.py) ---
 
@@ -373,8 +461,14 @@ research:
     light_coverage_min_n: 8
     min_light_per_sport_when_n: 5    # if sport has ≥5 shortlist lines…
     min_light_per_sport: 3           # …light at least 3
-    deep_target_n: 8                 # High-Volume v2: focused deep queue
-    deep_max_n: 12
+    deep_target_n: 8                 # High-Volume v2: focused deep queue (static fallback)
+    # Hard cap for queue size. Keep ≥ deep_target_max so dynamic target can reach max.
+    # Force paths (scaffold / sport rotation) may expand up to this cap above n_target.
+    deep_max_n: 15
+    deep_target_dynamic: true        # scale target with board width
+    deep_target_min: 8
+    deep_target_max: 15              # effective max when dynamic (must be ≤ deep_max_n)
+    deep_target_divisor: 8           # target = clamp(min, max, board_lines // divisor)
     auto_light_on_board: true        # board runs light pass automatically
     # assess never promotes; engine fills deep_queue via anti-chalk scorer
     auto_promote_to_deep: false
@@ -393,6 +487,15 @@ research:
     fail_odds_above: 4.0
     pass_odds_lo: 1.45
     pass_odds_hi: 2.60
+
+  # Coverage floor (Mechanism A) — dynamic target + scaffolds; never invents p_model
+  # 0 values are meaningful (e.g. top_promo_scaffold_pct: 0 disables scaffolds).
+  coverage_floor:
+    enabled: true
+    top_promo_scaffold_pct: 0.20     # force top 20% by promo_score; 0 = off
+    sport_rotation_min_lines: 5      # eligible light-pass (no p_model/conflict); 0 = off
+    require_real_pack: true          # enforced: queue never includes has_p_model rows
+    coverage_pressure_boost: 40      # extra promo boost when force_coverage active (in-band)
 
   # Coverage Health (board/recommend + Lumina DeskStrip)
   coverage_health:
