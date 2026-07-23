@@ -252,18 +252,19 @@ def _parse_soft_odds(item: dict[str, Any] | None, rec: "LightRecord | None" = No
     return None
 
 
-def promotion_score(
+def promotion_score_components(
     rec: "LightRecord",
     cfg: dict[str, Any],
     *,
     soft_odds: float | None = None,
     board_score: float = 0.0,
     coverage_overlay: dict[str, Any] | None = None,
-) -> float:
+) -> dict[str, Any]:
     """
-    Anti-chalk promotion score for deep worklist.
-    Higher = more worth deep research. Does not invent p_model.
-    Heavily favors survivable band 1.85–2.60; demotes short chalk.
+    Auditable breakdown of anti-chalk promotion_score (research rank only).
+
+    Returns ``{total, components, scorer}``. Total matches ``promotion_score``.
+    Does not invent p_model.
     """
     tcfg = tiers_cfg(cfg)
     odds = float(rec.decimal_odds)
@@ -278,21 +279,20 @@ def promotion_score(
     alt_boost = float(tcfg.get("promo_alt_boost") or 14.0)
     short_pen = float(tcfg.get("promo_short_chalk_penalty") or -55.0)
 
-    score = 50.0
+    components: dict[str, float] = {"base": 50.0}
     # Odds band — primary research band is preferred_lo–preferred_hi (High-Volume v2)
     if pref_lo <= odds <= pref_hi:
-        score += mid_boost
+        components["mid_band"] = mid_boost
     elif alt_lo <= odds < pref_lo:
-        score += 20.0
+        components["near_pref_band"] = 20.0
     elif pref_hi < odds <= 3.20:
-        score += 12.0
+        components["longish_band"] = 12.0
     elif odds < short_chalk:
-        # Hard demote short chalk unless structural edge note (strong data)
         structural = False
         need = rec.rough_p_needed
         if need is not None and float(need) <= 0.55 and not _is_first_goal(rec.selection):
             structural = True
-        score += -15.0 if structural else short_pen
+        components["short_chalk"] = -15.0 if structural else short_pen
 
     preferred = is_preferred_line(
         rec.selection,
@@ -303,57 +303,86 @@ def promotion_score(
     )
     short_main = is_short_main_line(rec.selection, odds, family, preferred_odds_lo=pref_lo)
     if preferred and not short_main:
-        score += 25.0
+        components["preferred"] = 25.0
     if short_main:
-        score -= 30.0
-    # Alt totals / HC / period explicit (boosted High-Volume v2)
+        components["short_main"] = -30.0
     fam = (family or "").lower()
     sel = (rec.selection or "").lower()
     if fam == "handicap" or "handikap" in sel:
-        score += alt_boost
+        components["handicap"] = alt_boost
     if "3.5" in sel or "4.5" in sel or fam in ("totals_over", "totals_under") and "2.5" not in sel:
-        score += alt_boost
+        components["alt_total"] = alt_boost
     if fam == "period" or "1. omgang" in sel or "1. sett" in sel:
-        score += 6.0
+        components["period"] = 6.0
 
     if soft_odds is not None and odds > 1.0:
         if soft_odds >= odds * (1.0 + soft_rel):
-            score += 30.0
+            components["soft_value"] = 30.0
 
     ov = coverage_overlay or {}
     if ov.get("active"):
-        # Boost target band / prefer tags under force_coverage_priority
         band_lo, band_hi = parse_odds_band(str(ov.get("target_odds_band") or "1.85-2.60"))
         in_band = odds >= band_lo and (band_hi is None or odds <= band_hi)
         if in_band:
             wb = ov.get("weight_boost")
-            score += 30.0 if wb is None else float(wb)
-            # Mechanism A: stronger coverage pressure (config research.coverage_floor)
+            components["coverage_band"] = 30.0 if wb is None else float(wb)
             cfc = coverage_floor_cfg(cfg)
             if cfc.get("enabled", True):
-                score += float(_cfg_num(cfc, "coverage_pressure_boost", 0.0))
+                pressure = float(_cfg_num(cfc, "coverage_pressure_boost", 0.0))
+                if pressure:
+                    components["coverage_pressure"] = pressure
         prefer = [str(x).lower() for x in (ov.get("prefer") or [])]
         if "handicaps" in prefer and (fam == "handicap" or "handikap" in sel):
-            score += 10.0
+            components["cov_prefer_hc"] = 10.0
         if "alt_totals" in prefer and ("3.5" in sel or "4.5" in sel or "totalt" in sel):
-            score += 10.0
+            components["cov_prefer_alt"] = 10.0
         if "period" in prefer and (fam == "period" or "1. omgang" in sel or "1. sett" in sel):
-            score += 10.0
+            components["cov_prefer_period"] = 10.0
         if "dogs" in prefer and odds >= pref_lo and _is_ml_family(family, rec.selection):
-            score += 10.0
+            components["cov_prefer_dogs"] = 10.0
 
     if board_score:
-        score += min(15.0, 0.1 * float(board_score))
+        components["board_score"] = min(15.0, 0.1 * float(board_score))
 
-    # Stage-2 classical prior EV (research-rank only; never invent when missing)
     if rec.prior_available and rec.prior_ev is not None:
         pev = float(rec.prior_ev)
         if pev > 0:
-            score += min(25.0, 80.0 * pev)
+            components["prior_ev"] = min(25.0, 80.0 * pev)
         elif pev < -0.02:
-            score += max(-25.0, 60.0 * pev)
+            components["prior_ev"] = max(-25.0, 60.0 * pev)
 
-    return round(score, 3)
+    total = round(sum(float(v) for v in components.values()), 3)
+    return {
+        "total": total,
+        "components": {k: round(float(v), 3) for k, v in components.items()},
+        "scorer": "promotion_score",
+        "preferred": preferred,
+        "short_main": short_main,
+    }
+
+
+def promotion_score(
+    rec: "LightRecord",
+    cfg: dict[str, Any],
+    *,
+    soft_odds: float | None = None,
+    board_score: float = 0.0,
+    coverage_overlay: dict[str, Any] | None = None,
+) -> float:
+    """
+    Anti-chalk promotion score for deep worklist.
+    Higher = more worth deep research. Does not invent p_model.
+    Heavily favors survivable band 1.85–2.60; demotes short chalk.
+    """
+    return float(
+        promotion_score_components(
+            rec,
+            cfg,
+            soft_odds=soft_odds,
+            board_score=board_score,
+            coverage_overlay=coverage_overlay,
+        )["total"]
+    )
 
 
 def build_deep_queue(

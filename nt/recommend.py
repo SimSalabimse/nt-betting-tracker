@@ -100,7 +100,7 @@ def run_recommend(
     reject_path = outbox / f"REJECTS_{ts}.md"
 
     if require and not coverage.get("ready_for_recommend"):
-        # Hard gate: research-first workflow
+        # Hard gate: research-first workflow — still emit near-miss chains from light LATEST
         block_md = [
             f"# Bets to place — {ts}",
             "",
@@ -127,7 +127,46 @@ def run_recommend(
             "Override (not recommended): `recommend --force-mechanical`",
             "",
         ]
-        place_path.write_text("\n".join(block_md) + "\n", encoding="utf-8")
+        place_md = "\n".join(block_md) + "\n"
+        reasoning_chains: list = []
+        reasoning_path = None
+        try:
+            from nt.reasoning_chain import dump_reasoning_for_recommend
+
+            # Synthetic rejects from board candidates (no p_model) for near-miss audit
+            synth_rejects = [
+                {
+                    "match": getattr(c, "match", None) or (c.get("match") if isinstance(c, dict) else ""),
+                    "selection": getattr(c, "selection", None)
+                    or (c.get("selection") if isinstance(c, dict) else ""),
+                    "odds": getattr(c, "decimal_odds", None)
+                    if not isinstance(c, dict)
+                    else c.get("decimal_odds") or c.get("odds"),
+                    "decimal_odds": getattr(c, "decimal_odds", None)
+                    if not isinstance(c, dict)
+                    else c.get("decimal_odds") or c.get("odds"),
+                    "sport": getattr(c, "sport", None) or (c.get("sport") if isinstance(c, dict) else ""),
+                    "reason": "no p_model / blocked recommend (research required)",
+                    "kind": "near_miss",
+                    "rejected_at_stage": "blocked_no_research",
+                    "source": "blocked",
+                    "near_miss": True,
+                }
+                for c in candidates
+            ]
+            place_md, reasoning_chains, reasoning_path = dump_reasoning_for_recommend(
+                cfg,
+                [],
+                synth_rejects,
+                place_md=place_md,
+                phase_id=phase.get("phase_id"),
+                blocked=True,
+                block_reason="no_research",
+            )
+        except Exception:
+            reasoning_chains = []
+            reasoning_path = None
+        place_path.write_text(place_md, encoding="utf-8")
         (outbox / "PLACE_THESE.md").write_text(place_path.read_text(encoding="utf-8"), encoding="utf-8")
         reject_path.write_text(
             f"# Rejects — {ts}\n\n- workflow block: no research packs on board\n",
@@ -151,6 +190,8 @@ def run_recommend(
             "daily_cap": risk["daily_risk_cap_nok"],
             "equity": bankroll["equity_nok"],
             "workflow": "research_board → fill_evidence → recommend",
+            "n_reasoning_chains": len(reasoning_chains),
+            "reasoning_chains_path": str(reasoning_path) if reasoning_path else None,
         }
 
     rows = load_bets(path_from_config(cfg, "bets"))
