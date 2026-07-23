@@ -509,7 +509,32 @@ def build_portfolio(
             if st["roi"] < float(band_cfg.get("bad_roi_below", -0.10)):
                 min_ev += float(band_cfg.get("extra_ev_required", 0.05))
 
-        # P1: process_error closed-loop temporary min_ev raise
+        # Mechanism B: per-line temp_ev_relax (allowlist only; never global).
+        # Grade F always excluded. exclude_high_odds / exclude_grade_c honor config
+        # (default true). Applied *before* process_gate so gate raise cannot be
+        # cancelled by the safety-net soften (fail-closed coexistence).
+        used_ev_relax = False
+        relax_delta = 0.0
+        relax_stake_mult = 1.0
+        if ev_relax.get("active") and relax_keys and grade != "F":
+            from nt.control_signals import line_key_match
+
+            exclude_high = bool(ev_relax.get("exclude_high_odds", True))
+            exclude_c = bool(ev_relax.get("exclude_grade_c", True))
+            if exclude_high and high:
+                pass
+            elif exclude_c and grade == "C":
+                pass
+            else:
+                lk = line_key_match(c.match or "", c.selection or "")
+                if lk in relax_keys:
+                    relax_delta = float(ev_relax.get("delta_ev") or 0.0)
+                    if relax_delta > 0:
+                        min_ev = float(min_ev) - relax_delta
+                        used_ev_relax = True
+                        relax_stake_mult = float(ev_relax.get("stake_mult") or 0.80)
+
+        # P1: process_error closed-loop temporary min_ev raise (always on top of relax)
         pg_raise = 0.0
         try:
             from nt.process_gates import process_gate_raise
@@ -523,33 +548,6 @@ def build_portfolio(
                 min_ev += pg_raise
         except Exception:
             pg_raise = 0.0
-
-        # Mechanism B: per-line temp_ev_relax (never high-odds / grade C or F / global)
-        used_ev_relax = False
-        relax_delta = 0.0
-        relax_stake_mult = 1.0
-        if (
-            ev_relax.get("active")
-            and relax_keys
-            and not high
-            and grade not in ("C", "F")
-        ):
-            from nt.control_signals import line_key_match
-
-            lk = line_key_match(c.match or "", c.selection or "")
-            exclude_high = bool(ev_relax.get("exclude_high_odds", True))
-            exclude_c = bool(ev_relax.get("exclude_grade_c", True))
-            # high already gated above; grade C gated above when exclude_c
-            if exclude_c and grade == "C":
-                pass
-            elif exclude_high and high:
-                pass
-            elif lk in relax_keys:
-                relax_delta = float(ev_relax.get("delta_ev") or 0.0)
-                if relax_delta > 0:
-                    min_ev = float(min_ev) - relax_delta
-                    used_ev_relax = True
-                    relax_stake_mult = float(ev_relax.get("stake_mult") or 0.80)
 
         # Before EV reject: try Exploration regime-explore quota (after process_gate raise)
         if (

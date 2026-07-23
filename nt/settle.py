@@ -292,7 +292,6 @@ def run_settle(cfg: dict[str, Any], results_path: Path) -> dict[str, Any]:
     now = utc_now()
     settled = []
     errors = []
-    temp_ev_relax_clear: dict[str, Any] = {}
 
     for item in items:
         bet = _match_bet(rows, item)

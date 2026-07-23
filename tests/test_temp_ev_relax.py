@@ -293,15 +293,41 @@ def test_high_odds_excluded(tmp_path: Path):
 
 
 def test_grade_c_excluded(tmp_path: Path):
+    """True grade-C pack (placeable under HV v2) must not receive min_ev soften."""
+    from nt.evidence import grade_evidence
+
     cfg = _cfg(tmp_path)
-    p_border = 0.54  # EV = 0.02
+    p_border = 0.54  # EV = 0.02 after haircut
     emit_temp_ev_relax(
         cfg,
         delta_ev=0.02,
         line_keys=["Weak Pack Match|Over 2.5"],
         force=True,
     )
-    thin = _pack(p_border, thin=True)
+    # Grade C recipe: ≥3 sources (max(3, need//2)), has p_model, missing failure_modes
+    # → issues non-empty but not F. Long summary so grade_c_require_core_reason passes.
+    grade_c_pack = {
+        "match": "Weak Pack Match",
+        "selection": "Over 2.5",
+        "p_model": p_border,
+        "summary": "clear core reason with enough characters for grade C placeable path",
+        # missing failure_modes → issues → grade C (not F)
+        "context_risk": "low",
+        "availability_status": "predicted",
+        "availability_notes": "full strength expected for test pack",
+        "script_lean": "high_scoring",
+        "selection_vs_script": "agree",
+        "base_rate_conflict": False,
+        "sources": [
+            {"url": f"https://example.com/c{i}", "takeaway": "ok stats", "kind": "stats"}
+            for i in range(4)
+        ],
+    }
+    g, _iss = grade_evidence(
+        grade_c_pack, cfg, 2.0, selection="Over 2.5", sport="football"
+    )
+    assert g == "C", f"expected grade C pack, got {g} issues={_iss}"
+
     c = Candidate(
         date="2026-07-23",
         match="Weak Pack Match",
@@ -310,16 +336,21 @@ def test_grade_c_excluded(tmp_path: Path):
         sport="football",
         market_type="totals",
         p_model=p_border,
-        evidence=thin,
+        evidence=grade_c_pack,
     )
     picked, rejects = build_portfolio(cfg, [c], _phase(), _risk(), [], learning={})
-    # Grade C/F: must not place via relax
+    # Without relax, EV 0.02 < standard 0.03 → reject. Must not place via soften.
     assert not any(p.match == "Weak Pack Match" for p in picked)
-    # If EV-rejected, confirm relax was not applied
-    for r in rejects:
-        if isinstance(r, dict) and r.get("match") == "Weak Pack Match":
-            if r.get("grade") in ("C", "F"):
-                assert not r.get("temp_ev_relax_delta")
+    c_rej = [
+        r
+        for r in rejects
+        if isinstance(r, dict) and r.get("match") == "Weak Pack Match"
+    ]
+    assert c_rej
+    # EV path: prove relax was not applied (would have lowered min to ~0.01)
+    assert c_rej[0].get("grade") == "C"
+    assert not c_rej[0].get("temp_ev_relax_delta")
+    assert "EV" in str(c_rej[0].get("reason") or "")
 
 
 def test_stake_mult_applied(tmp_path: Path):
@@ -535,3 +566,233 @@ def test_trigger_excludes_high_odds_survivors(tmp_path: Path):
     )
     assert r["ok"]
     assert r["signal"]["line_keys"] == ["Mid|HC +1.5"]
+
+
+def test_process_gate_not_cancelled_by_relax(tmp_path: Path):
+    """process_gate +2pp and relax -2pp must not net to zero — gate stays on top."""
+    cfg = _cfg(tmp_path)
+    p_border = 0.54  # EV = 0.02
+    emit_temp_ev_relax(
+        cfg,
+        delta_ev=0.02,
+        line_keys=["Gate Match|Handicap +1.5"],
+        force=True,
+    )
+    emit_temp_gate_raise(cfg, sport="football", market="handicap", bet_id="pe1")
+    c = Candidate(
+        date="2026-07-23",
+        match="Gate Match",
+        selection="Handicap +1.5",
+        decimal_odds=2.0,
+        sport="football",
+        market_type="handicap",
+        p_model=p_border,
+        evidence=_pack(p_border, grade_sources=6),
+    )
+    picked, rejects = build_portfolio(cfg, [c], _phase(), _risk(), [], learning={})
+    # base min 0.03 - 0.02 relax + 0.02 process_gate = 0.03; EV 0.02 → reject
+    assert not any(p.match == "Gate Match" for p in picked)
+    rej = [
+        r for r in rejects if isinstance(r, dict) and r.get("match") == "Gate Match"
+    ]
+    assert rej
+    reason = str(rej[0].get("reason") or "")
+    assert "process_gate" in reason
+    # Effective min should still be ~0.03 (not fully cancelled to absolute 0.01 alone)
+    assert rej[0].get("temp_ev_relax_delta") == 0.02
+    assert rej[0].get("process_gate_raise") and float(rej[0]["process_gate_raise"]) >= 0.02
+    # EV 0.02 should be below effective min (≈0.03)
+    assert "EV 0.020" in reason or "EV 0.02" in reason
+
+
+def test_haircut_invariant_under_relax(tmp_path: Path):
+    """Relax must never change probability_haircut / ev_after_haircut."""
+    from nt.evidence import ev_after_haircut
+
+    cfg = _cfg(tmp_path)
+    haircut = float(cfg["selection"]["probability_haircut"])
+    p, odds = 0.54, 2.0
+    base_ev = ev_after_haircut(p, odds, haircut)
+    emit_temp_ev_relax(
+        cfg, delta_ev=0.02, line_keys=["H|S"], force=True
+    )
+    # Haircut config unchanged; formula result identical
+    assert float(cfg["selection"]["probability_haircut"]) == haircut
+    assert ev_after_haircut(p, odds, haircut) == base_ev
+    assert abs(base_ev - 0.02) < 1e-9
+
+    c = Candidate(
+        date="2026-07-23",
+        match="H",
+        selection="S",
+        decimal_odds=odds,
+        sport="football",
+        market_type="handicap",
+        p_model=p,
+        evidence=_pack(p, grade_sources=6),
+    )
+    picked, _ = build_portfolio(cfg, [c], _phase(), _risk(), [], learning={})
+    assert len(picked) == 1
+    # Portfolio EV equals haircut formula (not softened p)
+    assert abs(picked[0].ev - base_ev) < 1e-6
+    assert "temp_ev_relax" in (picked[0].notes or "")
+
+
+def test_absolute_floor_binds_after_relax(tmp_path: Path):
+    """After delta, absolute_min_ev still law — EV below floor is rejected."""
+    cfg = _cfg(tmp_path)
+    # absolute_min_ev=0.01; p such that EV=0.005
+    # (p-0.03)*2 - 1 = 0.005 → (p-0.03)=0.5025 → p=0.5325
+    p_thin = 0.5325
+    emit_temp_ev_relax(
+        cfg,
+        delta_ev=0.02,
+        line_keys=["Floor Match|Handicap +1.5"],
+        force=True,
+    )
+    c = Candidate(
+        date="2026-07-23",
+        match="Floor Match",
+        selection="Handicap +1.5",
+        decimal_odds=2.0,
+        sport="football",
+        market_type="handicap",
+        p_model=p_thin,
+        evidence=_pack(p_thin, grade_sources=6),
+    )
+    picked, rejects = build_portfolio(cfg, [c], _phase(), _risk(), [], learning={})
+    assert not any(p.match == "Floor Match" for p in picked)
+    rej = [
+        r for r in rejects if isinstance(r, dict) and r.get("match") == "Floor Match"
+    ]
+    assert rej
+    # min after relax would be 0.03-0.02=0.01 absolute floor
+    reason = str(rej[0].get("reason") or "")
+    assert "EV" in reason
+    assert "0.010" in reason or "min 0.01" in reason
+
+
+def test_clear_mixed_clear_on_settle_flags(tmp_path: Path):
+    """Only signals with clear_on_settle=true are tombstoned; others remain."""
+    cfg = _cfg(tmp_path)
+    a = emit_temp_ev_relax(
+        cfg, delta_ev=0.02, line_keys=["Keep|A"], force=True, source="keep"
+    )
+    b = emit_temp_ev_relax(
+        cfg, delta_ev=0.02, line_keys=["Drop|B"], force=True, source="drop"
+    )
+    assert a["ok"] and b["ok"]
+    # Patch first signal to opt out of settle-clear
+    path = Path(cfg["paths"]["control_signals_jsonl"])
+    lines = path.read_text(encoding="utf-8").strip().splitlines()
+    recs = [json.loads(ln) for ln in lines]
+    for rec in recs:
+        if rec.get("kind") == "temp_ev_relax" and "Keep|A" in (rec.get("line_keys") or []):
+            rec["clear_on_settle"] = False
+    path.write_text(
+        "\n".join(json.dumps(r, ensure_ascii=False) for r in recs) + "\n",
+        encoding="utf-8",
+    )
+    out = clear_temp_ev_relax_on_settle(cfg, actor="pytest")
+    assert out["ok"]
+    assert out.get("cleared") == 1
+    assert out.get("n_kept") == 1
+    ov = active_temp_ev_relax_overlay(cfg)
+    assert ov["active"] is True
+    assert "Keep|A" in ov["line_key_set"]
+    assert "Drop|B" not in ov["line_key_set"]
+
+
+def test_run_settle_clears_temp_ev_relax(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    """run_settle with a successful settle invokes clear and reports temp_ev_relax_clear."""
+    from nt.bets_io import write_bets
+    from nt.settle import run_settle
+
+    cfg = _cfg(tmp_path)
+    state = Path(cfg["paths"]["state_dir"])
+    bets_path = tmp_path / "bets.csv"
+    cfg["paths"]["bets"] = str(bets_path)
+    cfg["paths"]["edges_jsonl"] = str(tmp_path / "edges.jsonl")
+    cfg["paths"]["outbox"] = str(tmp_path / "outbox")
+    cfg["paths"]["status"] = str(state / "status.md")
+    cfg["paths"]["bankroll_md"] = str(state / "current_bankroll.md")
+    cfg["bankroll"] = {"baseline_nok": 500.0, "era_start": "2026-07-01"}
+    cfg["phases"] = {
+        "1A": {
+            "label": "Protect",
+            "enter_equity": 0,
+            "enter_settled": 0,
+            "stake_min": 10,
+            "stake_max": 12,
+            "max_bets_per_round": 4,
+            "max_doubles_per_round": 0,
+            "daily_risk_pct": 0.08,
+            "daily_risk_floor": 30,
+            "daily_risk_ceil": 42,
+            "next": "1B",
+        }
+    }
+    cfg["risk"] = {
+        "loss_streak_grade_a_only": 99,
+        "stop_day_loss_pct_of_equity": 0.08,
+        "stop_day_loss_floor_nok": 40,
+    }
+    cfg["capital_v2"] = {"enabled": False}
+    (tmp_path / "outbox").mkdir(exist_ok=True)
+
+    write_bets(
+        bets_path,
+        [
+            {
+                "bet_id": "t1",
+                "date": "2026-07-23",
+                "match": "Settle Team A vs B",
+                "selection": "Over 2.5",
+                "decimal_odds": "2.000",
+                "stake_nok": "10.00",
+                "result": "Pending",
+                "p_l_nok": "",
+                "payout_nok": "",
+                "sport": "football",
+                "market_type": "totals",
+                "odds_band": "1.8-2.2",
+                "research_grade": "B",
+                "phase": "1A",
+                "notes": "",
+                "source": "test",
+                "created_at": "2026-07-23T10:00:00Z",
+                "updated_at": "2026-07-23T10:00:00Z",
+            }
+        ],
+        backup=False,
+    )
+
+    # Keep refresh lightweight (focus is clear wiring after settled non-empty)
+    import nt.settle as settle_mod
+
+    monkeypatch.setattr(
+        settle_mod,
+        "refresh_state",
+        lambda c: (
+            {"equity_nok": 500.0},
+            {"phase_id": "1A"},
+            {"daily_risk_cap_nok": 40.0, "remaining_risk_nok": 40.0},
+        ),
+    )
+
+    emit_temp_ev_relax(
+        cfg, delta_ev=0.02, line_keys=["Settle Team A vs B|Over 2.5"], force=True
+    )
+    assert active_temp_ev_relax_overlay(cfg)["active"] is True
+
+    results = tmp_path / "results.yaml"
+    results.write_text(
+        "results:\n  - bet_id: t1\n    outcome: loss\n    payout_nok: 0\n",
+        encoding="utf-8",
+    )
+    out = run_settle(cfg, results)
+    assert out.get("settled"), f"expected settle success, got {out}"
+    clear_info = out.get("temp_ev_relax_clear") or {}
+    assert clear_info.get("ok") is True
+    assert clear_info.get("cleared", 0) >= 1
+    assert active_temp_ev_relax_overlay(cfg)["active"] is False

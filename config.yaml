@@ -289,19 +289,20 @@ learning:
       coverage_preferred_share: 0.55
       weight_boost: 30.0            # deep-queue score boost under active signal
     # Mechanism B: temporary auditable EV softening (safety net only)
-    # Per-line allowlist · never softens haircut · exclude high-odds / grade C
+    # Per-line allowlist · never softens haircut · grade F always excluded
+    # process_gate_raise always applied after relax (cannot be cancelled)
     temp_ev_relax:
       enabled: true
       delta_min: 0.01
       delta_max: 0.02
       ttl_hours: 24
-      clear_on_settle: true
+      clear_on_settle: true     # per-signal flag also stamped on emit; settle clears only clearable ids
       stake_mult: 0.80          # extra 20% reduction while active
       top_n_survivors: 3
       min_board_matches: 15
       require_coverage_warn: true
-      exclude_high_odds: true
-      exclude_grade_c: true
+      exclude_high_odds: true   # honored in portfolio (default fail-closed)
+      exclude_grade_c: true     # honored in portfolio (default fail-closed)
 
 paths:
   bets: data/bets.csv

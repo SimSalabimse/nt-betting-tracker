@@ -10,6 +10,7 @@ Signals:
 from __future__ import annotations
 
 import json
+import uuid
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Iterable
@@ -159,19 +160,49 @@ def _signal_revoked(
     revokes: list[dict[str, Any]],
     sig_ts: datetime,
 ) -> bool:
-    """Apply tombstones (sport/market and/or kind-scoped)."""
+    """Apply tombstones (sport/market, kind-scoped, and/or per-signal target_ts)."""
     kind = str(rec.get("kind") or "")
     sp = str(rec.get("sport") or "").strip().lower()
     mk = str(rec.get("market") or "").strip().lower()
+    rec_ts_raw = str(rec.get("ts") or "")
+    rec_sid = str(rec.get("signal_id") or "").strip()
     for r in revokes:
         r_ts = r.get("_ts") or _now()
         if r_ts < sig_ts:
             continue  # revoke only kills signals already present
         r_kinds = r.get("revoke_kinds")
         r_sig_kind = str(r.get("signal_kind") or "").strip()
+        target_id = str(r.get("target_signal_id") or "").strip()
+        target_ts = r.get("target_ts")
+        # Per-signal revoke by stable signal_id (preferred; ts can collide at 1s grain)
+        if target_id:
+            if not rec_sid or rec_sid != target_id:
+                continue
+            if r_sig_kind and r_sig_kind not in (kind, "*"):
+                continue
+            return True
+        # Legacy per-signal pin by emit ts (only safe when unique)
+        if target_ts is not None and str(target_ts) != "":
+            if rec_ts_raw != str(target_ts):
+                continue
+            # When multiple signals share the same second-granularity ts, also
+            # require line_keys overlap if revoke carries target_line_keys.
+            tlk = r.get("target_line_keys")
+            if tlk is not None:
+                rec_keys = set(normalize_line_keys(rec.get("line_keys") or []))
+                want_keys = set(normalize_line_keys(tlk))
+                if want_keys and not (rec_keys & want_keys):
+                    continue
+            if r_sig_kind and r_sig_kind not in (kind, "*"):
+                continue
+            if r_kinds:
+                kinds_l = {str(x).strip() for x in r_kinds if x is not None}
+                if kind not in kinds_l and "*" not in kinds_l:
+                    continue
+            return True
         if r.get("revoke_all") and not r_kinds and not r_sig_kind:
             return True
-        # Kind-scoped revoke (temp_ev_relax clear, etc.)
+        # Kind-scoped revoke (all signals of kind — manual / bulk)
         if r_kinds:
             kinds_l = {str(x).strip() for x in r_kinds if x is not None}
             if "*" in kinds_l or kind in kinds_l:
@@ -187,7 +218,7 @@ def _signal_revoked(
             continue
         # Legacy sport/market revoke — primarily temp_gate_raise
         if kind == "temp_ev_relax":
-            # Sport-only revokes do not clear temp_ev_relax (use revoke_kinds)
+            # Sport-only revokes do not clear temp_ev_relax (use revoke_kinds / target_ts)
             continue
         r_sp = str(r.get("sport") or "").strip().lower() or "*"
         r_mk = str(r.get("market") or "").strip().lower() or "*"
@@ -461,6 +492,7 @@ def emit_temp_ev_relax(
 
     rec = {
         "kind": "temp_ev_relax",
+        "signal_id": f"ter-{uuid.uuid4().hex[:12]}",
         "ts": utc_now(),
         "expires_at": expires,
         "ttl_hours": ttl_h,
@@ -560,31 +592,57 @@ def clear_temp_ev_relax_on_settle(
     reason: str = "clear_on_settle",
 ) -> dict[str, Any]:
     """
-    Revoke active temp_ev_relax signals when clear_on_settle is enabled.
+    Revoke active temp_ev_relax signals that opted into clear_on_settle.
+
+    Per-signal tombstones (target_ts) so mixed clear_on_settle flags are honored:
+    only records with clear_on_settle=true are revoked; others stay active until TTL.
 
     Soft-fail friendly: returns ok=False only on write issues; no-op if none active.
     """
     ter = temp_ev_relax_cfg(cfg)
+    # Global config off: never clear (even if individual records stamped true)
     if not ter.get("clear_on_settle", True):
         return {"ok": True, "cleared": 0, "skipped": "clear_on_settle_false"}
     active = load_active_by_kind(cfg, "temp_ev_relax")
     if not active:
         return {"ok": True, "cleared": 0}
-    # Only clear signals that opted into clear_on_settle (default true)
-    n_clearable = sum(1 for a in active if a.get("clear_on_settle", True))
-    if n_clearable == 0:
+    clearable = [a for a in active if a.get("clear_on_settle", True)]
+    if not clearable:
         return {"ok": True, "cleared": 0, "skipped": "signals_not_clearable"}
+    cleared = 0
+    revokes: list[dict[str, Any]] = []
     try:
-        out = revoke_signals(
-            cfg,
-            revoke_kinds=["temp_ev_relax"],
-            actor=actor,
-            reason=reason,
-        )
-        out["cleared"] = n_clearable
-        return out
+        for a in clearable:
+            sid = str(a.get("signal_id") or "").strip()
+            rec: dict[str, Any] = {
+                "kind": "revoke",
+                "ts": utc_now(),
+                "signal_kind": "temp_ev_relax",
+                "actor": actor,
+                "reason": reason,
+                "schema_version": 1,
+            }
+            if sid:
+                rec["target_signal_id"] = sid
+            else:
+                # Legacy records without signal_id: pin by ts + line_keys
+                target = a.get("ts")
+                if not target:
+                    continue
+                rec["target_ts"] = target
+                rec["target_line_keys"] = list(a.get("line_keys") or [])
+            _append_signal(cfg, rec)
+            revokes.append(rec)
+            cleared += 1
+        return {
+            "ok": True,
+            "cleared": cleared,
+            "n_active_before": len(active),
+            "n_kept": len(active) - cleared,
+            "revokes": revokes,
+        }
     except Exception as ex:  # noqa: BLE001
-        return {"ok": False, "cleared": 0, "error": str(ex)}
+        return {"ok": False, "cleared": cleared, "error": str(ex)}
 
 
 def load_coverage_health_level(cfg: dict[str, Any]) -> str:
@@ -787,45 +845,12 @@ def maybe_emit_temp_ev_relax_from_light(
 
 def active_coverage_priority_overlay(cfg: dict[str, Any]) -> dict[str, Any]:
     """
-    force_coverage_priority overlay (read-only helper for deep-queue weights).
+    force_coverage_priority overlay for deep-queue weights.
 
-    Returns inactive defaults when no coverage signal is stored / module unused.
-    Kept here so light_research import does not fail.
+    Fail-closed inactive until force_coverage_priority has full active-load +
+    revoke-tombstone hygiene (emit/load path on other plan branches). A half-live
+    stub that ignored revokes would boost deep-queue scores incorrectly.
+    Import-safe stub for light_research.
     """
-    cs = control_signals_cfg(cfg)
-    cov = dict(cs.get("coverage_priority") or {})
-    if not cs.get("enabled", True) or not bool(cov.get("enabled", True)):
-        return {"active": False}
-
-    # Optional future: load kind == force_coverage_priority from JSONL
-    active = [
-        a
-        for a in load_all_signals(cfg)
-        if str(a.get("kind") or "") == "force_coverage_priority"
-        and not a.get("revoked")
-    ]
-    now = _now()
-    live: list[dict[str, Any]] = []
-    for a in active:
-        exp = _parse_ts(str(a.get("expires_at") or ""))
-        if exp and exp < now:
-            continue
-        live.append(a)
-    if not live:
-        return {"active": False}
-
-    latest = live[-1]
-    return {
-        "active": True,
-        "target_odds_band": latest.get("target_odds_band")
-        or cov.get("target_odds_band")
-        or "1.85-2.60",
-        "prefer": latest.get("prefer") or cov.get("prefer") or [],
-        "min_deep_packs": latest.get("min_deep_packs") or cov.get("min_deep_packs"),
-        "coverage_preferred_share": latest.get("coverage_preferred_share")
-        or cov.get("coverage_preferred_share"),
-        "weight_boost": latest.get("weight_boost")
-        if latest.get("weight_boost") is not None
-        else cov.get("weight_boost", 30.0),
-        "sources": [str(a.get("source") or "force_coverage_priority") for a in live[:4]],
-    }
+    _ = cfg  # reserved for future full implementation
+    return {"active": False}
