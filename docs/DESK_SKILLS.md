@@ -8,11 +8,11 @@ Engines in `nt/` remain law. Skills encode **workflows**; they never invent `p_m
 
 | Slash | Directory | Role |
 |-------|-----------|------|
-| `/daily-run` | `~/.grok/skills/daily-run/` | Full day: results → odds → board+light → deep queue → scaffolds → recommend + Reasoning Chains → `PLACE_THESE.md` → place-ack |
+| `/daily-run` | `~/.grok/skills/daily-run/` | Full day: results → odds → board+light → deep queue → scaffolds → recommend + Reasoning Chains (`## Reasoning` + `## Near-miss / Rejected`, empty/blocked too) → `PLACE_THESE.md` → place-ack |
 | `/missed-audit` | `~/.grok/skills/missed-audit/` | Mid-band 1.80–2.20 out of deep; `promotion_score` components; cheapest fix; AH/tennis/snooker patterns |
-| `/chain-explain` | `~/.grok/skills/chain-explain/` | Full Reasoning Chain for match/selection |
+| `/chain-explain` | `~/.grok/skills/chain-explain/` | Full Reasoning Chain for match/selection — light SSOT promo components + near-miss stage/reason |
 | `/bankroll-tune` | `~/.grok/skills/bankroll-tune/` | Secure/phase/unit/regime proposal → MC (`mc_phase_progression.py`) + capital tools |
-| `/learning-rootcause` | `~/.grok/skills/learning-rootcause/` | Taxonomy + `learning_weight` + ControlSignals; backfill script |
+| `/learning-rootcause` | `~/.grok/skills/learning-rootcause/` | Taxonomy + `learning_weight` + ControlSignals; **safe** backfill (proposed file default; `--apply` for live) |
 
 Each skill **must** load root `AGENTS.md` first and use real CLI/tools.
 
@@ -91,21 +91,53 @@ python run_nt.py control-signals list --json
 python run_nt.py learn --proposals
 
 python scripts/verify_coverage_floor.py --synthetic-large
+python scripts/verify_chain_residuals.py
 python scripts/mc_phase_progression.py --paths 50
-python scripts/backfill_settlement_taxonomy.py --n 30 --dry-run
+# Safe taxonomy backfill: proposed only (default) — never live without --apply
+python scripts/backfill_settlement_taxonomy.py --n 30
+python scripts/backfill_settlement_taxonomy.py --n 30 --apply   # after review
+python scripts/backfill_settlement_taxonomy.py --n 30 --dry-run # classify only
 ```
+
+### `/daily-run` richer chain output
+
+After `recommend`, always check:
+
+- `outbox/PLACE_THESE.md` → `## Reasoning` (picks) **and** `## Near-miss / Rejected` (even empty slip / blocked)
+- `data/state/reasoning_chains.jsonl` — kinds: `pick` · `near_miss` · `rejected_prefilter`
+- Light join: each chain should carry `light.promotion_score` + components when light LATEST exists (not notes-only)
+
+### `/chain-explain` richer output
+
+When explaining a line / slip:
+
+1. Prefer the latest chain row for that `(match, selection)` from `reasoning_chains.jsonl`
+2. Surface `rejected_at_stage`, `reject_reason`, `promotion_score` + component top drivers
+3. If light LATEST has the line and chain is thin, re-join via light SSOT (promo scorer)
+
+### Safe taxonomy backfill
+
+| Flag | Effect |
+|------|--------|
+| *(default)* | Write `data/state/settlement_reviews_backfill.jsonl` only — **never** mutates live reviews |
+| `--apply` | Merge into live `settlement_reviews.jsonl` after operator review |
+| `--dry-run` | Classify only — no write |
+
+`/learning-rootcause` must default to proposed path; only pass `--apply` when the operator explicitly confirms.
 
 ## Deliverable paths (common)
 
 | Artifact | Path |
 |----------|------|
 | Place slip | `outbox/PLACE_THESE.md` |
+| Reasoning chains | `data/state/reasoning_chains.jsonl` |
 | Light research | `outbox/light_research/` |
 | Deep queue SSOT | `data/state/deep_queue.json` |
 | Coverage Health | `data/state/coverage_health.json` |
 | Status / risk | `data/state/status.md` · `risk.json` · `phase.json` |
 | Evidence packs | `evidence/*.json` |
 | Settlement reviews | `data/state/settlement_reviews.jsonl` |
+| Taxonomy backfill (proposed) | `data/state/settlement_reviews_backfill.jsonl` |
 | ControlSignals | `data/state/control_signals.jsonl` |
 | Learning | `data/state/learning.json` |
 

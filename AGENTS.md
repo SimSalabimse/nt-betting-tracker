@@ -11,7 +11,7 @@ Real-money capital desk. Engines in `nt/` are law. UI (LuminaNT, Flet desktop) p
 > | **Coverage floor (A)** + **`temp_ev_relax` (B)** | Floor never invents `p_model`; relax is allowlisted safety net only |
 > | **Settlement taxonomy** `learning_weight` · CS gate ≥**0.5** | [`docs/SETTLEMENT_LEARNING.md`](docs/SETTLEMENT_LEARNING.md) |
 > | **Desk skills** `/daily-run` · `/missed-audit` · `/chain-explain` · `/bankroll-tune` · `/learning-rootcause` | [`docs/DESK_SKILLS.md`](docs/DESK_SKILLS.md) |
-> | **Reasoning chains** on recommend | `data/state/reasoning_chains.jsonl` + `## Reasoning` in `PLACE_THESE.md` |
+> | **Reasoning chains** on recommend | `data/state/reasoning_chains.jsonl` + `## Reasoning` + `## Near-miss / Rejected` in `PLACE_THESE.md` (empty/blocked too) |
 >
 > Package narrative: permanent rules below. Skills invoke guide: **`docs/DESK_SKILLS.md`**. Capital hybrid: **`docs/CAPITAL_HYBRID_PROGRESSION.md`**. Taxonomy: **`docs/SETTLEMENT_LEARNING.md`**.
 
@@ -173,6 +173,7 @@ Full design: **`docs/RESEARCH_GATES.md`**. Empty slip beats betting against your
    - Only recommend lines with **strong research backing**.  
    - **Empty slip after honest deep research** (packs written, EV/grade fail) = success.  
    - **Empty / near-empty because mid-price lines were never researched** = process miss — engine raises **`force_coverage_priority`** and soft-gates recommend.  
+   - **Reasoning chains (always):** even on **empty** or **blocked** recommend, emit chains to `data/state/reasoning_chains.jsonl` and append `## Reasoning` + **`## Near-miss / Rejected`** to `PLACE_THESE.md`. Sources: light-pass without `p_model`, deep_queue high-promo, mid-band (1.80–2.20) prefilter/grade-F rejects. Cap via `reasoning.max_near_miss` (prefer mid-band + light-pass). Light LATEST is SSOT — join by `(match, selection)` with `promotion_score` + components (never notes-only when light exists). Verify: `python scripts/verify_chain_residuals.py`.  
    - **ControlSignals:**  
      - `temp_gate_raise` — min_ev raise + force confirmed lineup (process_error path).  
      - `force_coverage_priority` — research pressure (TTL **4–7d**, default 5; target band **`1.85-2.60`**; min_deep_packs 8–10). Raises next deep-queue weights; **does not invent p_model or soften EV/haircut**.  
@@ -330,7 +331,13 @@ After every settle:
 
    **Weight intent:** systematic/process misses move mults; late injury / ref / true randomness barely do (base 0.05–0.10).  
    Legacy map: `process_error` / `research_miss` → `research_process_miss`; `expected`/`skill` → `systematic_script_form`; `variance`/`luck` → `true_randomness`.  
-   Backfill: `python scripts/backfill_settlement_taxonomy.py` (last 30 + re-weight report).  
+   **Safe backfill (default proposed only):**  
+   ```bash
+   python scripts/backfill_settlement_taxonomy.py --n 30          # → data/state/settlement_reviews_backfill.jsonl (NEVER live)
+   python scripts/backfill_settlement_taxonomy.py --n 30 --apply   # merge into live settlement_reviews.jsonl after review
+   python scripts/backfill_settlement_taxonomy.py --n 30 --dry-run # classify only, no write
+   ```  
+   Operator must review proposed / re-weight report before `--apply` (or `/learning-rootcause --apply`).
 4. Learning recompute (`run_learning`) + settlement analysis — sample influence × `learning_weight`.  
 5. **ControlSignals (primary closed loop)** — store `data/state/control_signals.jsonl`:  
    - **`temp_gate_raise`** — on process_error / poor retro even at **n=1**, **only if `learning_weight` ≥ `min_learning_weight_for_gate` (default 0.5)**: raise min_ev · force confirmed availability · TTL **7–14d** (default 10). Near-zero weight one-offs **skip** temp_gate.  
@@ -425,11 +432,11 @@ User-scope skills in `%USERPROFILE%\.grok\skills\` — load **this file first**,
 
 | Slash | Skill | When |
 |-------|--------|------|
-| `/daily-run` | Full day desk | results → odds → board+light → deep queue → scaffolds → recommend + Reasoning Chains → `outbox/PLACE_THESE.md` → place-ack |
+| `/daily-run` | Full day desk | results → odds → board+light → deep queue → scaffolds → recommend + Reasoning Chains (`## Reasoning` + `## Near-miss / Rejected`) → `outbox/PLACE_THESE.md` → place-ack |
 | `/missed-audit` | Mid-band misses | 1.80–2.20 out of deep; `promotion_score` components; cheapest fix; Bodø/Glimt −1.5 & tennis/snooker patterns |
-| `/chain-explain` | Reasoning Chain | forensic justify one match/selection (or whole slip) |
+| `/chain-explain` | Reasoning Chain | forensic justify one match/selection (or whole slip) using light SSOT promo + near-miss stage/reason |
 | `/bankroll-tune` | Capital tune | secure/phase/unit/regime proposal → `scripts/mc_phase_progression.py` + `capital` CLI |
-| `/learning-rootcause` | Taxonomy | predictability + variance_class + learning_weight; `settlement_taxonomy` + `backfill_settlement_taxonomy.py` |
+| `/learning-rootcause` | Taxonomy | predictability + variance_class + learning_weight; safe backfill (proposed unless `--apply`) |
 
 ```powershell
 # Grok (CWD = tracker root)

@@ -7,12 +7,19 @@ Best-effort from existing settlement_reviews + notes:
 - poor retro + process → research_process_miss + moderately/highly
 - else unknown + weakly_predictable (weight ~0.18)
 
-Rewrites settlement_reviews.jsonl (merge by bet_id, keep other rows).
-Prints re-weight report: learning mults with vs without taxonomy weights.
+SAFE DEFAULT (CRITICAL):
+  Writes **proposed** rows to ``data/state/settlement_reviews_backfill.jsonl`` only.
+  Does **NOT** mutate live ``settlement_reviews.jsonl`` unless ``--apply`` is passed.
+
+  Operator must review the proposed file / re-weight report, then re-run with
+  ``--apply`` (or invoke ``/learning-rootcause --apply``) to merge into live reviews.
 
 Usage:
-  python scripts/backfill_settlement_taxonomy.py
-  python scripts/backfill_settlement_taxonomy.py --n 30 --report path.md
+  python scripts/backfill_settlement_taxonomy.py              # proposed path only
+  python scripts/backfill_settlement_taxonomy.py --n 30
+  python scripts/backfill_settlement_taxonomy.py --dry-run     # classify, no write
+  python scripts/backfill_settlement_taxonomy.py --apply      # write live after review
+  python scripts/backfill_settlement_taxonomy.py --report path.md
 """
 from __future__ import annotations
 
@@ -37,6 +44,18 @@ from nt.settlement_taxonomy import (
     is_process_error_class,
     merge_taxonomy_into,
 )
+
+
+def proposed_backfill_path(cfg: dict[str, Any]) -> Path:
+    """Proposed (non-live) backfill output — never the live reviews path."""
+    paths = cfg.get("paths") or {}
+    if paths.get("settlement_reviews_backfill_jsonl"):
+        return path_from_config(cfg, "settlement_reviews_backfill_jsonl")
+    try:
+        state = path_from_config(cfg, "state_dir")
+    except Exception:
+        state = Path("data/state")
+    return Path(state) / "settlement_reviews_backfill.jsonl"
 
 
 def _load_reviews(path: Path) -> list[dict[str, Any]]:
@@ -69,7 +88,16 @@ def backfill(
     *,
     n: int = 30,
     dry_run: bool = False,
+    apply: bool = False,
 ) -> dict[str, Any]:
+    """
+    Classify last N settled bets.
+
+    Write modes:
+      - default: write proposed ``settlement_reviews_backfill.jsonl`` only
+      - apply=True: merge into live ``settlement_reviews.jsonl``
+      - dry_run=True: classify only, no write
+    """
     rows = load_bets(path_from_config(cfg, "bets"))
     settled = [r for r in rows if is_performance_settled(r.get("result"))]
     settled.sort(
@@ -79,17 +107,27 @@ def backfill(
     target_ids = {str(r.get("bet_id") or "") for r in target if r.get("bet_id")}
 
     rev_path = settlement_reviews_path(cfg)
+    proposed_path = proposed_backfill_path(cfg)
     all_reviews = _load_reviews(rev_path)
     latest = _latest_review_by_bet(all_reviews)
 
     classified: list[dict[str, Any]] = []
     class_counts: dict[str, int] = defaultdict(int)
+    before_sample: list[dict[str, Any]] = []
 
     for bet in target:
         bid = str(bet.get("bet_id") or "")
         if not bid:
             continue
         prev = dict(latest.get(bid) or {})
+        before_sample.append(
+            {
+                "bet_id": bid,
+                "predictability": prev.get("predictability"),
+                "variance_class": prev.get("variance_class"),
+                "learning_weight": prev.get("learning_weight"),
+            }
+        )
         seed: dict[str, Any] = {
             "bet_id": bid,
             "notes": bet.get("notes") or prev.get("notes") or "",
@@ -156,35 +194,64 @@ def backfill(
         classified.append(review)
         latest[bid] = review
 
-    # Rebuild reviews file: non-target rows keep last occurrence; targets replaced
-    if not dry_run:
+    write_mode = "none"
+    written_path: Path | None = None
+
+    if dry_run:
+        write_mode = "dry_run"
+    elif apply:
+        # LIVE write — only with explicit --apply
+        write_mode = "live"
+        written_path = rev_path
         kept: list[dict[str, Any]] = []
-        seen_non_target: set[str] = set()
-        # Preserve chronological order of original, swap target bet_ids with new tax
         for r in all_reviews:
             bid = str(r.get("bet_id") or "")
             if bid in target_ids:
                 continue  # drop old; append updated later
             kept.append(r)
-            if bid:
-                seen_non_target.add(bid)
-        # Append updated target reviews (stable order of target list)
         for rev in classified:
             kept.append(rev)
         rev_path.parent.mkdir(parents=True, exist_ok=True)
         with open(rev_path, "w", encoding="utf-8") as f:
             for r in kept:
                 f.write(json.dumps(r, ensure_ascii=False) + "\n")
+        # Also refresh proposed mirror for audit
+        proposed_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(proposed_path, "w", encoding="utf-8") as f:
+            for rev in classified:
+                f.write(json.dumps(rev, ensure_ascii=False) + "\n")
+    else:
+        # DEFAULT: proposed path only — never touch live reviews
+        write_mode = "proposed"
+        written_path = proposed_path
+        proposed_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(proposed_path, "w", encoding="utf-8") as f:
+            for rev in classified:
+                f.write(json.dumps(rev, ensure_ascii=False) + "\n")
 
     # Re-weight report: learning with taxonomy vs without
+    # When only proposed was written, compute "with" from proposed overlay
     rows_for_learn = load_bets(path_from_config(cfg, "bets"))
 
-    # With weights (normal path — loads reviews)
-    with_tax = compute_learning(rows_for_learn, cfg)
-
-    # Without: temporarily point reviews path to empty
-    import tempfile
     from copy import deepcopy
+    import tempfile
+
+    if write_mode == "proposed" and classified:
+        # Temporary live-like reviews for with_tax: merge proposed over live in temp
+        cfg_with = deepcopy(cfg)
+        with tempfile.TemporaryDirectory() as td:
+            tmp_rev = Path(td) / "settlement_reviews.jsonl"
+            merged = [r for r in all_reviews if str(r.get("bet_id") or "") not in target_ids]
+            merged.extend(classified)
+            with open(tmp_rev, "w", encoding="utf-8") as f:
+                for r in merged:
+                    f.write(json.dumps(r, ensure_ascii=False) + "\n")
+            paths_w = dict(cfg_with.get("paths") or {})
+            paths_w["settlement_reviews_jsonl"] = str(tmp_rev)
+            cfg_with["paths"] = paths_w
+            with_tax = compute_learning(rows_for_learn, cfg_with)
+    else:
+        with_tax = compute_learning(rows_for_learn, cfg)
 
     cfg_no = deepcopy(cfg)
     paths = dict(cfg_no.get("paths") or {})
@@ -234,25 +301,39 @@ def backfill(
             )
     deltas.sort(key=lambda x: abs(float(x["delta_stake"])), reverse=True)
 
-    tax_loaded = load_settlement_taxonomy_by_bet(cfg)
-    mean_lw = None
-    weights = [
-        float(v["learning_weight"])
-        for v in tax_loaded.values()
-        if v.get("learning_weight") is not None
+    # Mean learning_weight of this batch (after)
+    weights_after = [
+        float(c["learning_weight"])
+        for c in classified
+        if c.get("learning_weight") is not None
     ]
-    if weights:
-        mean_lw = round(sum(weights) / len(weights), 4)
+    mean_lw = round(sum(weights_after) / len(weights_after), 4) if weights_after else None
+    weights_before = [
+        float(b["learning_weight"])
+        for b in before_sample
+        if b.get("learning_weight") is not None
+    ]
+    mean_lw_before = (
+        round(sum(weights_before) / len(weights_before), 4) if weights_before else None
+    )
+
+    tax_loaded = load_settlement_taxonomy_by_bet(cfg) if write_mode == "live" else {}
 
     return {
         "n_target": len(target),
         "n_classified": len(classified),
         "class_counts": dict(class_counts),
         "dry_run": dry_run,
+        "apply": apply,
+        "write_mode": write_mode,
         "reviews_path": str(rev_path),
+        "proposed_path": str(proposed_path),
+        "written_path": str(written_path) if written_path else None,
         "mean_learning_weight": mean_lw,
-        "n_taxonomy_total": len(tax_loaded),
+        "mean_learning_weight_before": mean_lw_before,
+        "n_taxonomy_total": len(tax_loaded) if write_mode == "live" else len(classified),
         "mult_deltas": deltas,
+        "before": before_sample,
         "classified": [
             {
                 "bet_id": c.get("bet_id"),
@@ -270,19 +351,44 @@ def backfill(
 
 
 def render_report(rep: dict[str, Any]) -> str:
+    mode = rep.get("write_mode") or ("dry_run" if rep.get("dry_run") else "proposed")
     lines = [
         "# Settlement taxonomy re-weight report",
         "",
         f"Generated: **{utc_now()}**",
         "",
         f"- Target settled bets classified: **{rep.get('n_classified')}** / {rep.get('n_target')}",
-        f"- Reviews path: `{rep.get('reviews_path')}`",
-        f"- Dry-run: **{rep.get('dry_run')}**",
-        f"- Taxonomy rows loaded: **{rep.get('n_taxonomy_total')}** · mean learning_weight **{rep.get('mean_learning_weight')}**",
-        "",
-        "## Class counts (this backfill batch)",
+        f"- Write mode: **{mode}**",
+        f"- Live reviews path: `{rep.get('reviews_path')}`",
+        f"- Proposed path: `{rep.get('proposed_path')}`",
+        f"- Written path: `{rep.get('written_path') or 'none'}`",
+        f"- Dry-run: **{rep.get('dry_run')}** · Apply live: **{rep.get('apply')}**",
+        f"- Mean learning_weight before → after: **{rep.get('mean_learning_weight_before')}** → **{rep.get('mean_learning_weight')}**",
+        f"- Taxonomy rows (batch / live load): **{rep.get('n_taxonomy_total')}**",
         "",
     ]
+    if mode == "proposed":
+        lines.extend(
+            [
+                "> **SAFE DEFAULT:** only the proposed file was written.",
+                "> Live `settlement_reviews.jsonl` was **not** mutated.",
+                "> After review, re-run with `--apply` (or `/learning-rootcause --apply`).",
+                "",
+            ]
+        )
+    elif mode == "live":
+        lines.extend(
+            [
+                "> **APPLIED:** live `settlement_reviews.jsonl` was rewritten for target bets.",
+                "",
+            ]
+        )
+    lines.extend(
+        [
+            "## Class counts (this backfill batch)",
+            "",
+        ]
+    )
     for k, v in sorted((rep.get("class_counts") or {}).items(), key=lambda kv: -kv[1]):
         lines.append(f"- `{k}`: **{v}**")
     lines.extend(["", "## Per-bet taxonomy (batch)", ""])
@@ -323,6 +429,15 @@ def render_report(rep: dict[str, Any]) -> str:
             "- `research_process_miss` / `systematic_script_form` (w≈0.7–1.0) still drive the loop.",
             "- `temp_gate_raise` only emits when `learning_weight ≥ 0.5` (config).",
             "",
+            "## Safe apply",
+            "",
+            "```bash",
+            "# Review proposed first (default):",
+            "python scripts/backfill_settlement_taxonomy.py --n 30",
+            "# After review — mutate live reviews:",
+            "python scripts/backfill_settlement_taxonomy.py --n 30 --apply",
+            "```",
+            "",
         ]
     )
     if deltas:
@@ -342,7 +457,16 @@ def render_report(rep: dict[str, Any]) -> str:
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--n", type=int, default=30, help="Last N settled bets (default 30)")
-    ap.add_argument("--dry-run", action="store_true", help="Classify but do not write reviews")
+    ap.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Classify only — write nothing (no proposed, no live)",
+    )
+    ap.add_argument(
+        "--apply",
+        action="store_true",
+        help="CRITICAL: merge into live settlement_reviews.jsonl (default writes proposed only)",
+    )
     ap.add_argument(
         "--report",
         type=str,
@@ -350,8 +474,11 @@ def main() -> int:
         help="Optional markdown report path",
     )
     args = ap.parse_args()
+    if args.apply and args.dry_run:
+        print("Cannot combine --apply and --dry-run", file=sys.stderr)
+        return 2
     cfg = load_config()
-    rep = backfill(cfg, n=args.n, dry_run=args.dry_run)
+    rep = backfill(cfg, n=args.n, dry_run=args.dry_run, apply=args.apply)
     md = render_report(rep)
     print(md)
     if args.report:
@@ -365,7 +492,12 @@ def main() -> int:
         "class_counts": rep["class_counts"],
         "n_mult_deltas": len(rep.get("mult_deltas") or []),
         "mean_learning_weight": rep.get("mean_learning_weight"),
+        "mean_learning_weight_before": rep.get("mean_learning_weight_before"),
         "dry_run": rep.get("dry_run"),
+        "apply": rep.get("apply"),
+        "write_mode": rep.get("write_mode"),
+        "proposed_path": rep.get("proposed_path"),
+        "written_path": rep.get("written_path"),
     }
     print(json.dumps(summary, ensure_ascii=False), file=sys.stderr)
     return 0

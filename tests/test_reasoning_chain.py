@@ -14,7 +14,9 @@ from nt.reasoning_chain import (
     append_reasoning_chains,
     build_chain_from_near_miss,
     build_chain_from_pick,
+    build_light_by_key,
     build_recommend_chains,
+    collect_near_miss_candidates,
     dump_reasoning_for_recommend,
     format_reasoning_md,
     is_near_miss_reject,
@@ -25,10 +27,14 @@ from nt.reasoning_chain import (
 
 def _cfg(tmp: Path) -> dict:
     state = tmp / "state"
+    outbox = tmp / "outbox"
+    light = outbox / "light_research"
     state.mkdir(parents=True, exist_ok=True)
+    light.mkdir(parents=True, exist_ok=True)
     return {
         "paths": {
             "state_dir": str(state),
+            "outbox": str(outbox),
             "reasoning_chains_jsonl": str(state / "reasoning_chains.jsonl"),
         },
         "selection": {"probability_haircut": 0.03},
@@ -38,8 +44,35 @@ def _cfg(tmp: Path) -> dict:
             "max_near_miss": 5,
             "near_miss_ev_slack": 0.04,
             "place_md_section": True,
+            "join_light": True,
+        },
+        "research": {
+            "tiers": {
+                "short_chalk_odds": 1.70,
+                "preferred_odds_lo": 1.85,
+                "preferred_odds_hi": 2.60,
+                "alt_preferred_odds_lo": 1.80,
+                "soft_value_min_rel": 0.03,
+                "promo_mid_band_boost": 60,
+                "promo_alt_boost": 14,
+                "promo_short_chalk_penalty": -55,
+            }
         },
     }
+
+
+def _write_light_latest(cfg: dict, records: list[dict], deep_queue: list[dict] | None = None) -> Path:
+    outbox = Path(cfg["paths"]["outbox"])
+    light_dir = outbox / "light_research"
+    light_dir.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "records": records,
+        "deep_queue": deep_queue or [],
+        "shortlist_n": len(records),
+    }
+    path = light_dir / "LATEST.json"
+    path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    return path
 
 
 def test_build_chain_from_pick_minimal():
@@ -109,7 +142,7 @@ def test_build_chain_from_pick_dict_and_controls():
 
 def test_near_miss_select_and_build():
     rejects = [
-        {"match": "A", "selection": "ML", "reason": "no p_model", "odds": 1.9},
+        {"match": "A", "selection": "ML", "reason": "no p_model", "odds": 1.5},
         {
             "match": "B",
             "selection": "Over 3.5",
@@ -128,14 +161,19 @@ def test_near_miss_select_and_build():
             "odds": 2.40,
         },
     ]
+    # short chalk no p_model alone is not a near-miss under mid-band prefer
     assert not is_near_miss_reject(rejects[0])
     assert is_near_miss_reject(rejects[1])
     assert is_near_miss_reject(rejects[2])
     selected = select_near_misses(rejects, max_n=2)
     assert len(selected) == 2
-    # Higher EV first
-    assert selected[0]["match"] == "C"
-    chain = build_chain_from_near_miss(selected[1], haircut=0.03, phase_id="1A")
+    # Mid-band + EV prefer — B is mid-band 2.10
+    assert any(s["match"] == "B" for s in selected)
+    chain = build_chain_from_near_miss(
+        next(s for s in selected if s["match"] == "B"),
+        haircut=0.03,
+        phase_id="1A",
+    )
     assert chain["kind"] == "near_miss"
     assert chain["match"] == "B"
     assert "min_ev" in chain["reject_reason"]
@@ -172,6 +210,7 @@ def test_format_reasoning_md_and_dump(tmp_path: Path):
     assert len(chains) >= 2
     md = format_reasoning_md(chains)
     assert "## Reasoning" in md
+    assert "## Near-miss / Rejected" in md
     assert "Home vs Away" in md
     assert "p_model=" in md
 
@@ -180,12 +219,241 @@ def test_format_reasoning_md_and_dump(tmp_path: Path):
         cfg, picks, rejects, place_md=place, phase_id="1A"
     )
     assert "## Reasoning" in updated
+    assert "## Near-miss / Rejected" in updated
     assert path is not None and path.exists()
     lines = [ln for ln in path.read_text(encoding="utf-8").splitlines() if ln.strip()]
     assert len(lines) == len(written)
     row = json.loads(lines[0])
-    assert row["kind"] in ("pick", "near_miss")
+    assert row["kind"] in ("pick", "near_miss", "rejected_prefilter")
     assert row.get("schema_version") == 1
+
+
+def test_empty_picks_still_has_near_miss_section(tmp_path: Path):
+    """Empty slip still emits ## Near-miss / Rejected (even if set is empty)."""
+    cfg = _cfg(tmp_path)
+    rejects = [
+        {
+            "match": "Mid vs Band",
+            "selection": "Over 2.5",
+            "reason": "EV 0.02 < min_ev 0.04",
+            "ev": 0.02,
+            "odds": 2.05,
+            "p_model": 0.51,
+            "grade": "B",
+        }
+    ]
+    chains = build_recommend_chains(cfg, [], rejects, phase_id="1A")
+    assert any(c.get("kind") != "pick" for c in chains)
+    md = format_reasoning_md(chains)
+    assert "## Reasoning" in md
+    assert "## Near-miss / Rejected" in md
+    assert "Mid vs Band" in md
+    assert "stage:" in md
+    assert "promo=" in md
+
+    place = "# Bets to place\n\n| — | **NO BETS** |\n"
+    updated, written, path = dump_reasoning_for_recommend(
+        cfg, [], rejects, place_md=place, phase_id="1A"
+    )
+    assert "## Near-miss / Rejected" in updated
+    assert any(c.get("kind") != "pick" for c in written)
+    assert path is not None
+
+
+def test_blocked_recommend_still_emits_near_miss_chains(tmp_path: Path):
+    """Blocked recommend path still dumps near-miss chains from light + rejects."""
+    cfg = _cfg(tmp_path)
+    _write_light_latest(
+        cfg,
+        records=[
+            {
+                "match": "Bodø/Glimt vs Guest",
+                "selection": "Bodø/Glimt -1.5",
+                "sport": "football",
+                "decimal_odds": 2.05,
+                "odds_band": "1.85-2.20",
+                "market_family": "handicap",
+                "verdict": "pass",
+                "promote_to_deep": True,
+                "has_p_model": False,
+                "has_deep_pack": False,
+                "reason": "engine deep queue",
+                "rough_ev_note": "promo_score=95.0",
+            },
+            {
+                "match": "Short vs Fav",
+                "selection": "Short ML",
+                "sport": "football",
+                "decimal_odds": 1.45,
+                "market_family": "ml",
+                "verdict": "pass",
+                "has_p_model": False,
+                "reason": "light-pass chalk",
+            },
+        ],
+        deep_queue=[
+            {
+                "match": "Bodø/Glimt vs Guest",
+                "selection": "Bodø/Glimt -1.5",
+                "decimal_odds": 2.05,
+                "reason": "deep queue",
+            }
+        ],
+    )
+    place = "# Bets to place\n\n## BLOCKED — research required first\n"
+    updated, chains, path = dump_reasoning_for_recommend(
+        cfg,
+        [],
+        [
+            {
+                "match": "Bodø/Glimt vs Guest",
+                "selection": "Bodø/Glimt -1.5",
+                "odds": 2.05,
+                "reason": "no p_model / blocked recommend",
+                "near_miss": True,
+                "rejected_at_stage": "blocked_no_research",
+                "source": "blocked",
+            }
+        ],
+        place_md=place,
+        phase_id="1A",
+        blocked=True,
+        block_reason="no_research",
+    )
+    assert chains, "blocked recommend must still emit near-miss chains"
+    assert all(c.get("kind") != "pick" for c in chains)
+    assert "## Near-miss / Rejected" in updated
+    assert "Bodø" in updated or "Bodø/Glimt" in updated
+    assert path is not None and path.exists()
+    # light join should attach promo components / score
+    bodo = next(
+        (c for c in chains if "Glimt" in str(c.get("match") or "") or "Bodø" in str(c.get("match") or "")),
+        chains[0],
+    )
+    light = bodo.get("light") or {}
+    assert light.get("promotion_score") is not None or bodo.get("promotion_score") is not None
+
+
+def test_light_join_puts_promotion_components_on_chain(tmp_path: Path):
+    """Light LATEST join must put promotion_score + components on chain (not notes-only)."""
+    cfg = _cfg(tmp_path)
+    _write_light_latest(
+        cfg,
+        records=[
+            {
+                "match": "Alpha vs Beta",
+                "selection": "Over 3.5",
+                "sport": "football",
+                "decimal_odds": 2.10,
+                "odds_band": "1.85-2.20",
+                "market_family": "totals_over",
+                "verdict": "pass",
+                "promote_to_deep": True,
+                "has_p_model": False,
+                "has_deep_pack": False,
+                "reason": "mid alt total",
+                "rough_ev_note": "need p",
+                "prior_available": False,
+            }
+        ],
+        deep_queue=[
+            {
+                "match": "Alpha vs Beta",
+                "selection": "Over 3.5",
+                "decimal_odds": 2.10,
+            }
+        ],
+    )
+    light_map = build_light_by_key(cfg)
+    key = "alpha vs beta||over 3.5"
+    assert key in light_map
+    assert light_map[key].get("promotion_score") is not None
+    assert light_map[key].get("promotion_score_components") or light_map[key].get(
+        "promotion_score_breakdown"
+    )
+
+    picks = [
+        Recommendation(
+            match="Alpha vs Beta",
+            selection="Over 3.5",
+            decimal_odds=2.10,
+            stake_nok=12.0,
+            ev=0.05,
+            grade="B",
+            odds_band="1.85-2.20",
+            sport="football",
+            market_type="total",
+            p_model=0.52,
+            notes="p_model=0.5200",  # notes-only would lack promo components
+        )
+    ]
+    chains = build_recommend_chains(cfg, picks, [], phase_id="1A", light_by_key=light_map)
+    assert len(chains) >= 1
+    pick_chain = chains[0]
+    assert pick_chain["kind"] == "pick"
+    light = pick_chain["light"]
+    assert light.get("promotion_score") is not None
+    comps = light.get("promotion_score_components") or (
+        (light.get("promotion_score_breakdown") or {}).get("components")
+    )
+    assert comps, "light join must attach promotion components, not notes-only"
+    assert "base" in comps or "mid_band" in comps or len(comps) >= 1
+
+
+def test_collect_prefers_mid_band_and_light_pass(tmp_path: Path):
+    cfg = _cfg(tmp_path)
+    _write_light_latest(
+        cfg,
+        records=[
+            {
+                "match": "Mid vs Line",
+                "selection": "HC -1.5",
+                "sport": "football",
+                "decimal_odds": 2.00,
+                "market_family": "handicap",
+                "verdict": "pass",
+                "has_p_model": False,
+                "promote_to_deep": True,
+                "reason": "deep queue",
+            },
+            {
+                "match": "Long vs Shot",
+                "selection": "ML",
+                "sport": "football",
+                "decimal_odds": 4.50,
+                "market_family": "ml",
+                "verdict": "pass",
+                "has_p_model": False,
+                "reason": "long dog",
+            },
+            {
+                "match": "Fail vs Pre",
+                "selection": "Over 2.5",
+                "sport": "football",
+                "decimal_odds": 1.95,
+                "market_family": "totals_over",
+                "verdict": "fail",
+                "has_p_model": False,
+                "prefilter_stage1": "fail: chalk noise",
+                "discarded": True,
+                "reason": "prefilter discard",
+            },
+        ],
+        deep_queue=[
+            {"match": "Mid vs Line", "selection": "HC -1.5", "decimal_odds": 2.00}
+        ],
+    )
+    rows = collect_near_miss_candidates(cfg, [], max_n=3)
+    assert rows
+    # Mid-band light-pass should rank first
+    assert rows[0]["match"] == "Mid vs Line"
+    kinds = {r.get("kind") for r in rows}
+    assert "near_miss" in kinds or "rejected_prefilter" in kinds
+    # Prefilter mid-band present if cap allows
+    assert any(
+        r.get("kind") == "rejected_prefilter" or "prefilter" in str(r.get("rejected_at_stage") or "")
+        for r in collect_near_miss_candidates(cfg, [], max_n=8)
+    )
 
 
 def test_reasoning_disabled_skips(tmp_path: Path):
