@@ -29,7 +29,7 @@ import nt_bootstrap  # noqa: F401,E402
 
 
 def _newest_odds(inbox: Path) -> Path | None:
-    patterns = ("odds*.txt", "odds*.csv", "odds*.md")
+    patterns = ("odds*.txt", "odds*.csv", "odds*.md", "current_odds*.txt", "current_odds*.csv", "*odds*.txt")
     cands: list[Path] = []
     for pat in patterns:
         cands.extend(inbox.glob(pat))
