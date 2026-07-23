@@ -354,6 +354,22 @@ def build_portfolio(
             }
         ]
 
+    # Mechanism B: temporary per-line EV relax (allowlist only; never global)
+    ev_relax: dict[str, Any] = {"active": False}
+    try:
+        from nt.control_signals import active_temp_ev_relax_overlay
+
+        ev_relax = active_temp_ev_relax_overlay(cfg)
+    except Exception:
+        ev_relax = {"active": False}
+    relax_keys: set[str] = set()
+    if ev_relax.get("active"):
+        relax_keys = set(ev_relax.get("line_key_set") or [])
+        if not relax_keys:
+            from nt.control_signals import normalize_line_keys
+
+            relax_keys = set(normalize_line_keys(ev_relax.get("line_keys") or []))
+
     remaining = float(risk["remaining_risk_nok"])
     max_bets = int(phase["max_bets_per_round"])
     high_odds_count = 0
@@ -503,10 +519,42 @@ def build_portfolio(
                 sport=c.sport or "",
                 market_key=str(adj.get("market_key") or ""),
             )
-            if pg_raise > 0:
-                min_ev += pg_raise
         except Exception:
             pg_raise = 0.0
+
+        # Mechanism B: per-line temp_ev_relax (allowlist only; never global).
+        # Grade F always excluded. exclude_high_odds / exclude_grade_c honor config.
+        # Fail-closed coexistence: if process_gate_raise > 0 for this candidate,
+        # skip temp_ev_relax entirely so the process_error gate cannot be cancelled
+        # by the safety-net soften (equal deltas would otherwise net to zero).
+        used_ev_relax = False
+        relax_delta = 0.0
+        relax_stake_mult = 1.0
+        if (
+            float(pg_raise or 0.0) <= 0
+            and ev_relax.get("active")
+            and relax_keys
+            and grade != "F"
+        ):
+            from nt.control_signals import line_key_match
+
+            exclude_high = bool(ev_relax.get("exclude_high_odds", True))
+            exclude_c = bool(ev_relax.get("exclude_grade_c", True))
+            if exclude_high and high:
+                pass
+            elif exclude_c and grade == "C":
+                pass
+            else:
+                lk = line_key_match(c.match or "", c.selection or "")
+                if lk in relax_keys:
+                    relax_delta = float(ev_relax.get("delta_ev") or 0.0)
+                    if relax_delta > 0:
+                        min_ev = float(min_ev) - relax_delta
+                        used_ev_relax = True
+                        relax_stake_mult = float(ev_relax.get("stake_mult") or 0.80)
+
+        if pg_raise > 0:
+            min_ev += pg_raise
 
         # Before EV reject: try Exploration regime-explore quota (after process_gate raise)
         if (
@@ -561,6 +609,8 @@ def build_portfolio(
             reason = f"EV {ev:.3f} < min {min_ev:.3f}"
             if pg_raise > 0:
                 reason += f" (process_gate:+{pg_raise:.3f})"
+            if used_ev_relax and relax_delta > 0:
+                reason += f" (temp_ev_relax:-{relax_delta:.3f})"
             if strong:
                 reason += " (strong_floor)"
             rejects.append(
@@ -573,6 +623,7 @@ def build_portfolio(
                     "high_odds": high,
                     "learning_ev_boost": adj.get("ev_boost"),
                     "process_gate_raise": pg_raise or None,
+                    "temp_ev_relax_delta": relax_delta if used_ev_relax else None,
                 }
             )
             continue
@@ -635,6 +686,9 @@ def build_portfolio(
             continue
 
         learn_mult = float(adj.get("stake_mult") or 1.0)
+        # Mechanism B: extra stake haircut while temp_ev_relax applied to this line
+        if used_ev_relax and relax_stake_mult > 0 and relax_stake_mult < 1.0:
+            learn_mult = float(learn_mult) * float(relax_stake_mult)
         high_mult = float(sel["high_odds_stake_multiplier"])
         stake_decision: dict[str, Any] | None = None
         if _capital_v2_enabled(cfg):
@@ -714,6 +768,16 @@ def build_portfolio(
             note_bits.append(f"learn_stake×{adj['stake_mult']}")
         if adj.get("ev_boost"):
             note_bits.append(f"learn_EV{float(adj['ev_boost']):+.3f}")
+        if used_ev_relax and relax_delta > 0:
+            note_bits.append(
+                f"temp_ev_relax:delta={relax_delta:.3f};stake×{relax_stake_mult:.2f}"
+            )
+            if stake_decision is not None:
+                stake_decision = dict(stake_decision)
+                stake_decision["temp_ev_relax"] = {
+                    "delta_ev": relax_delta,
+                    "stake_mult": relax_stake_mult,
+                }
         if stake_decision:
             note_bits.append(
                 f"stake_rec={stake_decision.get('final_stake_nok')};"

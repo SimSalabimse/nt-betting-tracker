@@ -48,6 +48,28 @@ Config: `research.tiers` in `config.yaml` (`light_coverage_target`, `min_light_p
 
 **SSOT export:** board/light writes engine composition + queue lines to **`data/state/deep_queue.json`** (`nt/deep_queue_state.py`) for Lumina preferred/short-main bars (D17).
 
+### Coverage floor + temp_ev_relax safety net
+
+Two permanent mechanisms keep high-volume boards from starving mid-price research **without** inventing `p_model` or casually softening EV.
+
+| | **Mechanism A — coverage floor** | **Mechanism B — `temp_ev_relax`** |
+|--|----------------------------------|-------------------------------------|
+| Role | Quality-preserving research pressure | Auditable temporary EV soften (safety net) |
+| Config | `research.coverage_floor` + `research.tiers.deep_target_*` | `learning.control_signals.temp_ev_relax` |
+| Code | `dynamic_deep_target_n`, top-promo scaffold (~20%), sport rotation | `maybe_emit_temp_ev_relax*` → portfolio allowlist |
+| Softens EV? | **No** | Yes, **only** on allowlisted lines (1–2pp) + stake ×0.80 · TTL 24h |
+| Blocked when | Composition / short-main rules | `process_gate_raise` active on candidate; high-odds / grade C by default |
+
+**Operator surface:** `python run_nt.py status` / `data/state/status.md` → **Coverage floor** section shows `deep_target_n_effective`, scaffold/rotation summary, and active `temp_ev_relax` (ΔEV, stake mult, expires, line_keys count). Soft-fails if light/signals files are missing.
+
+**Verify (no live odds required):**
+
+```bash
+python scripts/verify_coverage_floor.py --synthetic-large
+```
+
+Full agent mandate: root `AGENTS.md` → **Coverage floor + temp_ev_relax**.
+
 
 ### Market Coverage Agent (high-volume matches)
 
