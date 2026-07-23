@@ -53,6 +53,9 @@ def load_segments(cfg: dict[str, Any], *, baseline_nok: float | None = None) -> 
     data.setdefault("secure_nok", 0.0)
     data.setdefault("secure_transfers", [])
     data.setdefault("unit_hwm_reset_equity_nok", base)
+    data.setdefault("secure_lock_settled_count", 0)
+    data.setdefault("last_manual_unlock_at", None)
+    data.setdefault("secure_unlocks", [])
     return data
 
 

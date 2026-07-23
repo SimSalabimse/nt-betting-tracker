@@ -154,7 +154,7 @@ bankroll_regime:
 # Phase 2 capital_v2 — live. Env: CAPITAL_V2_ENABLED / NT_CAPITAL_V2_ENABLED
 capital_v2:
   enabled: true
-  # High-Volume v2: base unit 12 under 1500 liquid; grade stake mults; secure 27%
+  # High-Volume v2: base unit 12 under 1500 liquid; grade stake mults; secure Variant A
   unit_ladder:
     - { max_liquid_exclusive: 1500.0, unit: 12.0 }
     - { max_liquid_exclusive: 2500.0, unit: 15.0 }
@@ -166,8 +166,22 @@ capital_v2:
     A_high_conf: 2.2
   secure_bucket:
     enabled: true
-    trigger_multiple_of_ref: 1.30
-    transfer_fraction_of_profit_above_ref: 0.27   # was 0.40
+    # Variant A (live): soft 1.25×/15%, hard 1.50×/30% (hard replaces soft, not stacked)
+    variant: A
+    soft_trigger_multiple_of_ref: 1.25
+    soft_transfer_fraction: 0.15
+    hard_trigger_multiple_of_ref: 1.50
+    hard_transfer_fraction: 0.30
+    # Variant B (legacy single-tier): trigger 1.30×, transfer 0.27 of profit above ref
+    # trigger_multiple_of_ref: 1.30
+    # transfer_fraction_of_profit_above_ref: 0.27
+    # Variant C (aggressive single-tier example): trigger 1.40×, transfer 0.35
+    # trigger_multiple_of_ref: 1.40
+    # transfer_fraction_of_profit_above_ref: 0.35
+    min_working_frac_of_equity: 0.55
+    min_working_units: 8.0
+    unlock_after_settled: 25          # auto release secure→working after N settles since skim
+    manual_unlock_cooldown_days: 7    # min days between manual unlocks
 
 selection:
   # High-Volume v2: hard 3pp haircut (was 5pp). Never softened by regime/coverage.
