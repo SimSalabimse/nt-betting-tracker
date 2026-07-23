@@ -9,9 +9,14 @@ Deep: full evidence/*.json + p_model (only deep lines may be recommended).
 Coverage targets (config research.tiers):
   light_coverage_target: 0.70–1.0 of shortlist
   min_light_per_sport_when_n: if sport has ≥N shortlist lines, light at least K
+
+Coverage floor (config research.coverage_floor) — Mechanism A only:
+  dynamic deep_target_n, top-promo scaffolds, sport-rotation floor.
+  Never invents p_model; never softens min_ev.
 """
 
 import json
+import math
 import re
 from collections import Counter, defaultdict
 from dataclasses import asdict, dataclass, field
@@ -36,6 +41,10 @@ def tiers_cfg(cfg: dict[str, Any]) -> dict[str, Any]:
         "min_light_per_sport": 3,  # …light at least 3
         "deep_target_n": 8,  # High-Volume v2: focused deep queue
         "deep_max_n": 12,  # cap deep promotions
+        "deep_target_dynamic": True,  # scale target with board size
+        "deep_target_min": 8,
+        "deep_target_max": 15,
+        "deep_target_divisor": 8,  # target = clamp(min, max, board_lines // divisor)
         "auto_light_on_board": True,
         "auto_promote_to_deep": False,  # assess never promotes (P1)
         "engine_deep_queue": True,  # P0: engine fills deep_queue via anti-chalk scorer
@@ -55,6 +64,39 @@ def tiers_cfg(cfg: dict[str, Any]) -> dict[str, Any]:
         "pass_odds_hi": 2.60,
     }
     return {**defaults, **raw}
+
+
+def coverage_floor_cfg(cfg: dict[str, Any]) -> dict[str, Any]:
+    """Quality-preserving coverage floor knobs (Mechanism A)."""
+    rcfg = research_cfg(cfg)
+    raw = dict(rcfg.get("coverage_floor") or {})
+    defaults = {
+        "enabled": True,
+        "top_promo_scaffold_pct": 0.20,
+        "sport_rotation_min_lines": 5,
+        "require_real_pack": True,  # scaffolds never invent p_model
+        "coverage_pressure_boost": 40.0,
+    }
+    return {**defaults, **raw}
+
+
+def dynamic_deep_target_n(cfg: dict[str, Any], board_lines: int) -> int:
+    """
+    Deep queue target size from board width.
+
+    If deep_target_dynamic is false → static deep_target_n.
+    Else → clamp(board_lines // divisor, min, max).
+    """
+    tcfg = tiers_cfg(cfg)
+    if not bool(tcfg.get("deep_target_dynamic", False)):
+        return int(tcfg["deep_target_n"])
+    lo = int(tcfg.get("deep_target_min") or tcfg["deep_target_n"] or 8)
+    hi = int(tcfg.get("deep_target_max") or tcfg.get("deep_max_n") or 15)
+    if hi < lo:
+        hi = lo
+    div = max(1, int(tcfg.get("deep_target_divisor") or 8))
+    raw = int(board_lines) // div
+    return max(lo, min(hi, raw))
 
 
 def parse_odds_band(band: str | None) -> tuple[float, float | None]:
@@ -250,6 +292,10 @@ def promotion_score(
         in_band = odds >= band_lo and (band_hi is None or odds <= band_hi)
         if in_band:
             score += float(ov.get("weight_boost") or 30.0)
+            # Mechanism A: stronger coverage pressure (config research.coverage_floor)
+            cfc = coverage_floor_cfg(cfg)
+            if cfc.get("enabled", True):
+                score += float(cfc.get("coverage_pressure_boost") or 0.0)
         prefer = [str(x).lower() for x in (ov.get("prefer") or [])]
         if "handicaps" in prefer and (fam == "handicap" or "handikap" in sel):
             score += 10.0
@@ -281,9 +327,13 @@ def build_deep_queue(
     soft_by_key: dict[tuple[str, str], float | None] | None = None,
     board_score_by_key: dict[tuple[str, str], float] | None = None,
     coverage_overlay: dict[str, Any] | None = None,
+    board_lines: int | None = None,
 ) -> list["LightRecord"]:
     """
     Engine deep worklist with hard composition quotas (fail-closed shrink).
+
+    Coverage floor (Mechanism A): dynamic target, top-promo scaffold, sport rotation.
+    Never invents p_model; never softens min_ev / haircut.
     """
     tcfg = tiers_cfg(cfg)
     if not bool(tcfg.get("engine_deep_queue", True)):
@@ -300,16 +350,23 @@ def build_deep_queue(
         return promotable[: int(tcfg["deep_max_n"])]
 
     ov = coverage_overlay or {}
+    cfc = coverage_floor_cfg(cfg)
+    floor_on = bool(cfc.get("enabled", True))
     pref_lo = float(tcfg["preferred_odds_lo"])
     alt_lo = float(tcfg.get("alt_preferred_odds_lo") or tcfg["short_chalk_odds"])
     min_pref = float(tcfg["deep_min_preferred_share"])
     max_short = float(tcfg["deep_max_short_main_share"])
     if ov.get("active"):
         min_pref = max(min_pref, float(ov.get("coverage_preferred_share") or 0.55))
-    target = int(tcfg["deep_target_n"])
+
+    n_board = int(board_lines) if board_lines is not None else len(records)
+    target = dynamic_deep_target_n(cfg, n_board)
     if ov.get("active"):
         target = max(target, int(ov.get("min_deep_packs") or target))
     deep_max = int(tcfg["deep_max_n"])
+    # Allow dynamic max to exceed static deep_max_n when dynamic is on
+    if bool(tcfg.get("deep_target_dynamic", False)):
+        deep_max = max(deep_max, int(tcfg.get("deep_target_max") or deep_max))
     target = min(target, deep_max)
 
     soft_by_key = soft_by_key or {}
@@ -328,6 +385,12 @@ def build_deep_queue(
         return is_short_main_line(
             r.selection, r.decimal_odds, r.market_family, preferred_odds_lo=pref_lo
         )
+
+    def _annotate(r: LightRecord, tag: str) -> None:
+        if tag not in (r.rough_ev_note or ""):
+            r.rough_ev_note = (r.rough_ev_note or "") + f" | {tag}"
+        if tag not in (r.reason or ""):
+            r.reason = (r.reason or "") + f" | {tag}"
 
     candidates: list[tuple[float, LightRecord]] = []
     for r in records:
@@ -349,6 +412,16 @@ def build_deep_queue(
 
     candidates.sort(key=lambda x: (-x[0], x[1].decimal_odds))
 
+    # Top-promo scaffold keys (top pct by promotion_score among candidates)
+    scaffold_keys: set[tuple[str, str]] = set()
+    if floor_on and candidates:
+        pct = float(cfc.get("top_promo_scaffold_pct") or 0.20)
+        n_scaffold = max(1, math.ceil(pct * len(candidates))) if pct > 0 else 0
+        n_scaffold = min(n_scaffold, len(candidates))
+        for _sc, r in candidates[:n_scaffold]:
+            scaffold_keys.add(r.key())
+            _annotate(r, "coverage_floor:top_promo_scaffold")
+
     preferred_pool = [(sc, r) for sc, r in candidates if _pref(r)]
     short_pool = [(sc, r) for sc, r in candidates if _sm(r)]
     other_pool = [
@@ -360,10 +433,7 @@ def build_deep_queue(
     # Fail-closed shrink: never pad with chalk to hit target
     n_pref_avail = len(preferred_pool)
     if n_pref_avail == 0:
-        # Only non-preferred exist — allow tiny queue under short-main cap only if odds still mid
-        # Prefer empty worklist over chalk flood
-        max_n = min(deep_max, max(0, int(target * max_short)))
-        # If max_short allows some short_main only when preferred empty → still prefer empty for P0
+        # Only non-preferred exist — prefer empty worklist over chalk flood
         return []
 
     # Max queue size such that preferred can still be ≥ min_pref of final size
@@ -379,9 +449,16 @@ def build_deep_queue(
     pref_count = 0
     selected: set[tuple[str, str]] = set()
 
-    def _try_add(r: LightRecord, *, as_short: bool, as_pref: bool) -> bool:
+    def _try_add(
+        r: LightRecord,
+        *,
+        as_short: bool,
+        as_pref: bool,
+        force: bool = False,
+    ) -> bool:
         nonlocal short_count, pref_count
-        if len(deep_queue) >= n_target:
+        hard_cap = deep_max if force else n_target
+        if len(deep_queue) >= hard_cap:
             return False
         k = r.key()
         if k in selected:
@@ -397,6 +474,13 @@ def build_deep_queue(
             # also vs target
             if (short_count + 1) / max(n_target, 1) > max_short + 1e-9:
                 return False
+        # Prefer floor: do not let force scaffold of non-preferred break composition
+        # when we still have preferred room — force still attempts under soft checks
+        if force and not as_pref and deep_queue:
+            trial_n = len(deep_queue) + 1
+            trial_pref = pref_count
+            if trial_pref / max(trial_n, 1) + 1e-9 < min_pref:
+                return False
         deep_queue.append(r)
         selected.add(k)
         sp_count[sp] += 1
@@ -405,6 +489,23 @@ def build_deep_queue(
         if as_pref:
             pref_count += 1
         return True
+
+    # Phase A0: force top-promo scaffolds first (expand candidate selection, not chalk flood)
+    if floor_on and scaffold_keys:
+        for _sc, r in candidates:
+            if r.key() not in scaffold_keys:
+                continue
+            if len(deep_queue) >= deep_max:
+                break
+            is_p = _pref(r)
+            is_s = _sm(r)
+            if is_s and not is_p:
+                # Scaffolds expand preferred/mid set; do not force short-main chalk
+                continue
+            ok = _try_add(r, as_short=is_s, as_pref=is_p, force=True)
+            if not ok and r.key() not in selected:
+                # Composition blocked — still record forced intent
+                _annotate(r, "coverage_floor:top_promo_scaffold:blocked")
 
     # Phase A: preferred first (score order)
     for _sc, r in preferred_pool:
@@ -429,12 +530,11 @@ def build_deep_queue(
         trial_pref = pref_count + (1 if is_p else 0)
         if not is_p and trial_pref / max(trial_n, 1) + 1e-9 < min_pref:
             # only allow if we still have preferred capacity later — skip non-pref fill
-            if is_s:
-                continue
             continue
         _try_add(r, as_short=is_s, as_pref=is_p)
 
     # If preferred share slipped below floor, drop short_main then non-preferred from tail
+    # (do not drop scaffold-tagged preferred lines if possible — drop untagged first)
     while deep_queue and _pref_share() + 1e-9 < min_pref:
         removed = False
         for i in range(len(deep_queue) - 1, -1, -1):
@@ -444,6 +544,9 @@ def build_deep_queue(
                 short_count = max(0, short_count - 1)
                 if _pref(r):
                     pref_count = max(0, pref_count - 1)
+                sp = (r.sport or "").lower()
+                sp_count[sp] = max(0, sp_count[sp] - 1)
+                selected.discard(r.key())
                 removed = True
                 break
         if not removed:
@@ -451,10 +554,54 @@ def build_deep_queue(
                 r = deep_queue[i]
                 if not _pref(r):
                     deep_queue.pop(i)
+                    sp = (r.sport or "").lower()
+                    sp_count[sp] = max(0, sp_count[sp] - 1)
+                    selected.discard(r.key())
                     removed = True
                     break
         if not removed:
             break
+
+    # Phase C: sport-rotation floor — sports with ≥min light-pass lines and zero deep picks
+    if floor_on:
+        min_sp_lines = int(cfc.get("sport_rotation_min_lines") or 5)
+        pass_by_sport: dict[str, int] = Counter()
+        for r in records:
+            if r.verdict == "pass":
+                pass_by_sport[(r.sport or "unknown").lower()] += 1
+        sports_in_queue = {(r.sport or "unknown").lower() for r in deep_queue}
+        for sport, n_pass in pass_by_sport.items():
+            if n_pass < min_sp_lines:
+                continue
+            if sport in sports_in_queue:
+                continue
+            sport_cands = [
+                (sc, r)
+                for sc, r in candidates
+                if (r.sport or "unknown").lower() == sport and r.key() not in selected
+            ]
+            if not sport_cands:
+                # All conflicted / already selected — annotate best light-pass intent only
+                for r in records:
+                    if (
+                        (r.sport or "unknown").lower() == sport
+                        and r.verdict == "pass"
+                        and not r.has_p_model
+                    ):
+                        _annotate(r, "coverage_floor:sport_rotation:no_eligible")
+                        break
+                continue
+            sport_cands.sort(key=lambda x: (-x[0], x[1].decimal_odds))
+            _sc, best = sport_cands[0]
+            is_p = _pref(best)
+            is_s = _sm(best)
+            _annotate(best, "coverage_floor:sport_rotation")
+            ok = _try_add(best, as_short=is_s, as_pref=is_p, force=True)
+            if ok:
+                sports_in_queue.add(sport)
+            else:
+                # Composition blocked — keep forced intent annotation
+                _annotate(best, "coverage_floor:sport_rotation:blocked")
 
     return deep_queue
 
@@ -874,6 +1021,7 @@ def run_light_research(
         soft_by_key=soft_by_key,
         board_score_by_key=board_score_by_key,
         coverage_overlay=coverage_overlay,
+        board_lines=shortlist_n,
     )
     promote_keys = {r.key() for r in deep_queue}
     for r in records:
