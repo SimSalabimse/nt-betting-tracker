@@ -373,11 +373,13 @@ research:
     light_coverage_min_n: 8
     min_light_per_sport_when_n: 5    # if sport has ≥5 shortlist lines…
     min_light_per_sport: 3           # …light at least 3
-    deep_target_n: 8                 # High-Volume v2: focused deep queue
-    deep_max_n: 12
+    deep_target_n: 8                 # High-Volume v2: focused deep queue (static fallback)
+    # Hard cap for queue size. Keep ≥ deep_target_max so dynamic target can reach max.
+    # Force paths (scaffold / sport rotation) may expand up to this cap above n_target.
+    deep_max_n: 15
     deep_target_dynamic: true        # scale target with board width
     deep_target_min: 8
-    deep_target_max: 15
+    deep_target_max: 15              # effective max when dynamic (must be ≤ deep_max_n)
     deep_target_divisor: 8           # target = clamp(min, max, board_lines // divisor)
     auto_light_on_board: true        # board runs light pass automatically
     # assess never promotes; engine fills deep_queue via anti-chalk scorer
@@ -399,11 +401,12 @@ research:
     pass_odds_hi: 2.60
 
   # Coverage floor (Mechanism A) — dynamic target + scaffolds; never invents p_model
+  # 0 values are meaningful (e.g. top_promo_scaffold_pct: 0 disables scaffolds).
   coverage_floor:
     enabled: true
-    top_promo_scaffold_pct: 0.20     # force top 20% by promo_score into deep selection
-    sport_rotation_min_lines: 5      # sport with ≥5 light-pass and 0 deep → force one
-    require_real_pack: true          # scaffolds do not invent p_model
+    top_promo_scaffold_pct: 0.20     # force top 20% by promo_score; 0 = off
+    sport_rotation_min_lines: 5      # eligible light-pass (no p_model/conflict); 0 = off
+    require_real_pack: true          # enforced: queue never includes has_p_model rows
     coverage_pressure_boost: 40      # extra promo boost when force_coverage active (in-band)
 
   # Coverage Health (board/recommend + Lumina DeskStrip)

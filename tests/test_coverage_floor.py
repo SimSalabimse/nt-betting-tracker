@@ -18,6 +18,7 @@ import nt_bootstrap  # noqa: F401
 
 from nt.light_research import (
     LightRecord,
+    _sport_key,
     build_deep_queue,
     coverage_floor_cfg,
     dynamic_deep_target_n,
@@ -104,26 +105,17 @@ def _rec(
 
 
 def _multi_sport_board() -> list[LightRecord]:
-    """
-    Synthetic multi-sport light-pass board:
-    - football: many mid-band preferred HC/alt
-    - tennis: mid ML preferred
-    - basketball: ≥5 light-pass (rotation candidate)
-    - handball: few lines
-    """
     recs: list[LightRecord] = []
-    # Football mid preferred (HC / alt totals) — high promo scores
     for i in range(10):
         recs.append(
             _rec(
                 f"FBL {i} vs Opp",
-                f"Handikap -1.5: Away" if i % 2 == 0 else "Over 3.5",
+                "Handikap -1.5: Away" if i % 2 == 0 else "Over 3.5",
                 "football",
                 2.05 + (i % 4) * 0.05,
                 family="handicap" if i % 2 == 0 else "totals_over",
             )
         )
-    # Tennis mid preferred
     for i in range(6):
         recs.append(
             _rec(
@@ -134,18 +126,16 @@ def _multi_sport_board() -> list[LightRecord]:
                 family="ml",
             )
         )
-    # Basketball — ≥5 light-pass so sport rotation can fire if none selected
     for i in range(6):
         recs.append(
             _rec(
                 f"NBA H{i} vs A{i}",
-                f"Handikap -4.5: Away" if i < 4 else f"Vinner: H{i}",
+                "Handikap -4.5: Away" if i < 4 else f"Vinner: H{i}",
                 "basketball",
                 2.10 + i * 0.03 if i < 4 else 1.55,
                 family="handicap" if i < 4 else "ml",
             )
         )
-    # Handball thin
     for i in range(2):
         recs.append(
             _rec(
@@ -156,7 +146,6 @@ def _multi_sport_board() -> list[LightRecord]:
                 family="totals_over",
             )
         )
-    # A few short chalk ML (should not dominate)
     for i in range(3):
         recs.append(
             _rec(
@@ -177,19 +166,16 @@ def _multi_sport_board() -> list[LightRecord]:
 
 def test_dynamic_deep_target_clamp_board_40():
     cfg = _cfg()
-    # 40 // 8 = 5 → clamp min 8
-    assert dynamic_deep_target_n(cfg, 40) == 8
+    assert dynamic_deep_target_n(cfg, 40) == 8  # 40//8=5 → min 8
 
 
 def test_dynamic_deep_target_board_80():
     cfg = _cfg()
-    # 80 // 8 = 10
     assert dynamic_deep_target_n(cfg, 80) == 10
 
 
 def test_dynamic_deep_target_board_200_caps_at_max():
     cfg = _cfg()
-    # 200 // 8 = 25 → clamp max 15
     assert dynamic_deep_target_n(cfg, 200) == 15
 
 
@@ -199,6 +185,27 @@ def test_dynamic_deep_target_disabled_uses_static():
     assert dynamic_deep_target_n(cfg, 10) == 8
 
 
+def test_dynamic_deep_target_empty_and_bad_board_lines():
+    cfg = _cfg()
+    assert dynamic_deep_target_n(cfg, 0) == 0
+    assert dynamic_deep_target_n(cfg, -5) == 0
+    # non-numeric → static fallback
+    assert dynamic_deep_target_n(cfg, "nope") == 8  # type: ignore[arg-type]
+
+
+def test_dynamic_deep_target_hi_lt_lo_snaps():
+    cfg = _cfg(deep_target_min=12, deep_target_max=10)
+    # hi snapped to lo → always 12
+    assert dynamic_deep_target_n(cfg, 200) == 12
+
+
+def test_dynamic_deep_target_zero_min_is_valid():
+    """None-aware: deep_target_min=0 must not fall through to static 8."""
+    cfg = _cfg(deep_target_min=0, deep_target_max=15, deep_target_divisor=8)
+    # 40//8=5 → clamp(0, 15, 5)=5
+    assert dynamic_deep_target_n(cfg, 40) == 5
+
+
 def test_tiers_cfg_reads_dynamic_keys():
     cfg = _cfg()
     t = tiers_cfg(cfg)
@@ -206,6 +213,7 @@ def test_tiers_cfg_reads_dynamic_keys():
     assert int(t["deep_target_min"]) == 8
     assert int(t["deep_target_max"]) == 15
     assert int(t["deep_target_divisor"]) == 8
+    assert int(t["deep_max_n"]) == 15
     cfc = coverage_floor_cfg(cfg)
     assert cfc["enabled"] is True
     assert float(cfc["top_promo_scaffold_pct"]) == pytest.approx(0.20)
@@ -218,9 +226,8 @@ def test_tiers_cfg_reads_dynamic_keys():
 
 
 def test_top_promo_scaffold_tags_top_20pct():
-    cfg = _cfg(floor_enabled=True, sport_rotation_min_lines=99)  # isolate scaffold
+    cfg = _cfg(floor_enabled=True, sport_rotation_min_lines=0)  # isolate scaffold
     recs = _multi_sport_board()
-    # Score to know top 20%
     scored = []
     for r in recs:
         if r.verdict != "pass" or r.has_p_model:
@@ -235,22 +242,52 @@ def test_top_promo_scaffold_tags_top_20pct():
     top_keys = {r.key() for _sc, r in scored[:n_scaffold]}
 
     q = build_deep_queue(recs, cfg, board_lines=len(recs))
-    # All top-scaffold candidates must be annotated
     for r in recs:
         if r.key() in top_keys:
             assert "coverage_floor:top_promo_scaffold" in (r.rough_ev_note or "")
 
-    # Queue must include preferred scaffolds when composition allows
     q_keys = {r.key() for r in q}
     preferred_scaffolds = [
-        r
-        for _sc, r in scored[:n_scaffold]
-        if r.decimal_odds >= 1.85 or r.market_family in ("handicap", "totals_over")
+        r for _sc, r in scored[:n_scaffold] if r.decimal_odds >= 1.85
     ]
-    # At least one scaffold should land in queue on this board
     assert any(r.key() in q_keys for r in preferred_scaffolds)
-    # No invented p_model
     assert all(not r.has_p_model for r in q)
+
+
+def test_scaffold_pct_zero_disables_scaffolds():
+    """Falsy-or regression: top_promo_scaffold_pct=0 must yield zero scaffold tags."""
+    cfg = _cfg(
+        floor_enabled=True,
+        top_promo_scaffold_pct=0.0,
+        sport_rotation_min_lines=0,
+    )
+    recs = _multi_sport_board()
+    build_deep_queue(recs, cfg, board_lines=len(recs))
+    for r in recs:
+        note = r.rough_ev_note or ""
+        assert "coverage_floor:top_promo_scaffold" not in note
+
+
+def test_scaffold_skips_pure_short_main():
+    cfg = _cfg(
+        floor_enabled=True,
+        top_promo_scaffold_pct=1.0,  # all candidates scaffolded
+        sport_rotation_min_lines=0,
+        deep_target_n=10,
+        deep_max_n=15,
+    )
+    recs = [
+        _rec(f"Pref {i}", "Handikap -1.5: Away", "football", 2.10, family="handicap")
+        for i in range(6)
+    ]
+    chalk = _rec("Chalk ML", "Vinner: Fav", "football", 1.45, family="ml")
+    recs.append(chalk)
+    q = build_deep_queue(recs, cfg, board_lines=len(recs))
+    q_keys = {r.key() for r in q}
+    # Chalk may be tagged as scaffold candidate but must not be force-added via scaffold
+    assert chalk.key() not in q_keys or chalk.decimal_odds >= 1.85
+    # Stronger: chalk is pure short-main and should not enter via force
+    assert chalk.key() not in q_keys
 
 
 def test_scaffold_disabled_no_tags():
@@ -261,7 +298,6 @@ def test_scaffold_disabled_no_tags():
         note = r.rough_ev_note or ""
         assert "coverage_floor:top_promo_scaffold" not in note
         assert "coverage_floor:sport_rotation" not in note
-    # Static target path: queue size ≤ deep_target_n (composition may shrink)
     assert len(q) <= 8
 
 
@@ -270,84 +306,20 @@ def test_scaffold_disabled_no_tags():
 # ---------------------------------------------------------------------------
 
 
-def test_sport_rotation_force_promotes_underrepresented():
+def test_sport_rotation_promotes_preferred_underrepresented():
     """
-    Build a board where basketball has ≥5 light-pass preferred lines but
-    football/tennis preferred would dominate a small target — force rotation
-    still tags / promotes basketball.
-    """
-    cfg = _cfg(
-        floor_enabled=True,
-        deep_target_n=6,
-        deep_target_min=6,
-        deep_target_max=8,
-        deep_max_n=12,
-        dynamic=False,
-        sport_rotation_min_lines=5,
-        # Make scaffold not steal the signal
-        top_promo_scaffold_pct=0.0,
-    )
-    recs: list[LightRecord] = []
-    # Football: many high-scoring preferred
-    for i in range(12):
-        recs.append(
-            _rec(
-                f"FBL big {i}",
-                "Handikap -1.5: Away",
-                "football",
-                2.20,
-                family="handicap",
-            )
-        )
-    # Basketball: ≥5 light-pass mid preferred — would be squeezed by ≤3/sport cap
-    # if football fills first; rotation ensures at least one if zero selected.
-    for i in range(5):
-        recs.append(
-            _rec(
-                f"NBA rot {i}",
-                "Handikap -3.5: Home",
-                "basketball",
-                2.00 + i * 0.01,
-                family="handicap",
-            )
-        )
-
-    q = build_deep_queue(recs, cfg, board_lines=len(recs))
-    sports = {(r.sport or "").lower() for r in q}
-    # With 3/sport cap and target 6, football takes 3; rotation should add basketball
-    # if it was missing. Preferred-first may already pick basketball if scored high —
-    # either way basketball must appear OR have sport_rotation annotation attempt.
-    bball_in_q = "basketball" in sports
-    bball_annotated = any(
-        "coverage_floor:sport_rotation" in (r.rough_ev_note or "")
-        for r in recs
-        if (r.sport or "").lower() == "basketball"
-    )
-    assert bball_in_q or bball_annotated
-
-    # Stronger: craft case where football alone would fill and basketball is lower
-    # score — force zero basketball in initial selection by capping sport count
-    # already at 3 football + 3 more football-ish. Use only football high + bball lower.
-    # If basketball already in q from preferred pool (odds 2.00), that's OK for floor.
-    if not bball_in_q:
-        assert bball_annotated
-
-
-def test_sport_rotation_when_initially_absent():
-    """
-    Isolate: fill preferred pool so only football qualifies as preferred high-score
-    within small target; basketball lower odds still preferred but outranked.
-    With target=3 and min_pref, only top football enter; rotation adds basketball.
+    Football fills small target; basketball has ≥5 preferred eligible lines.
+    Rotation must put basketball into the queue (membership, not just annotation).
     """
     cfg = _cfg(
         floor_enabled=True,
         deep_target_n=3,
         deep_target_min=3,
-        deep_target_max=6,
-        deep_max_n=8,
+        deep_target_max=8,
+        deep_max_n=10,
         dynamic=False,
         sport_rotation_min_lines=5,
-        top_promo_scaffold_pct=0.0,
+        top_promo_scaffold_pct=0.0,  # must actually disable (Issue 2 regression)
     )
     recs: list[LightRecord] = []
     for i in range(6):
@@ -356,38 +328,123 @@ def test_sport_rotation_when_initially_absent():
                 f"TopFBL {i}",
                 "Handikap -1.5: Away",
                 "football",
-                2.40,  # mid band top
+                2.40,
                 family="handicap",
             )
         )
     for i in range(5):
-        # Still preferred (odds ≥ 1.85) but lower promo than 2.40 mid-boost band
         recs.append(
             _rec(
-                f"BB low {i}",
-                "Vinner: Away",
+                f"BB mid {i}",
+                "Handikap -3.5: Home",
                 "basketball",
-                1.88,
+                2.00 + i * 0.01,
+                family="handicap",
+            )
+        )
+
+    q = build_deep_queue(recs, cfg, board_lines=len(recs))
+    sports = {_sport_key(r) for r in q}
+    assert "football" in sports
+    assert "basketball" in sports, "sport rotation must force-promote preferred basketball"
+    bball = [r for r in q if _sport_key(r) == "basketball"]
+    assert len(bball) >= 1
+    assert all(r.decimal_odds >= 1.85 for r in bball)
+    # scaffold must be off
+    for r in recs:
+        assert "coverage_floor:top_promo_scaffold" not in (r.rough_ev_note or "")
+
+
+def test_sport_rotation_rejects_pure_short_main_only_sport():
+    """
+    Tennis has ≥5 light-pass lines but all pure short-main chalk.
+    Rotation must NOT enqueue any of them; annotate no_eligible instead.
+    """
+    cfg = _cfg(
+        floor_enabled=True,
+        deep_target_n=3,
+        deep_max_n=10,
+        dynamic=False,
+        sport_rotation_min_lines=5,
+        top_promo_scaffold_pct=0.0,
+    )
+    recs: list[LightRecord] = []
+    for i in range(6):
+        recs.append(
+            _rec(
+                f"FBL fill {i}",
+                "Handikap -1.5: Away",
+                "football",
+                2.20,
+                family="handicap",
+            )
+        )
+    for i in range(5):
+        recs.append(
+            _rec(
+                f"Tennis chalk {i}",
+                f"Vinner: Fav{i}",
+                "tennis",
+                1.40,
                 family="ml",
             )
         )
 
     q = build_deep_queue(recs, cfg, board_lines=len(recs))
-    sports = {(r.sport or "").lower() for r in q}
-    # Football will fill target=3 at 3/sport; basketball initially zero → rotation force
-    assert "basketball" in sports or any(
-        "coverage_floor:sport_rotation" in (r.rough_ev_note or "")
+    tennis_in_q = [r for r in q if _sport_key(r) == "tennis"]
+    assert tennis_in_q == [], "rotation must not force pure short-main chalk"
+    tennis_notes = [
+        r.rough_ev_note or ""
         for r in recs
-        if (r.sport or "").lower() == "basketball"
+        if _sport_key(r) == "tennis"
+    ]
+    assert any("coverage_floor:sport_rotation:no_eligible" in n for n in tennis_notes)
+
+
+def test_sport_rotation_counts_only_eligible_candidates():
+    """Lines with has_p_model / script_conflict do not count toward rotation threshold."""
+    cfg = _cfg(
+        floor_enabled=True,
+        deep_target_n=3,
+        dynamic=False,
+        sport_rotation_min_lines=5,
+        top_promo_scaffold_pct=0.0,
     )
-    # If force succeeded, basketball is in queue
-    if any("coverage_floor:sport_rotation" in (r.rough_ev_note or "") and not (
-        "blocked" in (r.rough_ev_note or "")
-    ) for r in recs if (r.sport or "").lower() == "basketball"):
-        # annotation without blocked means try happened; queue may include it
-        pass
-    # Prefer actual membership
-    assert "football" in sports
+    recs: list[LightRecord] = []
+    for i in range(6):
+        recs.append(
+            _rec(f"FBL {i}", "Handikap -1.5: Away", "football", 2.20, family="handicap")
+        )
+    # Only 2 eligible basketball + 4 already-deep / conflicted → below min 5
+    for i in range(2):
+        recs.append(
+            _rec(f"BB ok {i}", "Handikap -2.5: Away", "basketball", 2.05, family="handicap")
+        )
+    for i in range(4):
+        recs.append(
+            _rec(
+                f"BB deep {i}",
+                "Handikap -2.5: Home",
+                "basketball",
+                2.05,
+                family="handicap",
+                has_p_model=True,
+            )
+        )
+    q = build_deep_queue(recs, cfg, board_lines=len(recs))
+    # Rotation should not fire for basketball (only 2 eligible)
+    for r in recs:
+        if _sport_key(r) == "basketball":
+            assert "coverage_floor:sport_rotation" not in (r.rough_ev_note or "")
+
+
+def test_sport_key_blank_and_unknown_same_bucket():
+    assert _sport_key("") == "unknown"
+    assert _sport_key(None) == "unknown"
+    assert _sport_key("  ") == "unknown"
+    assert _sport_key("Tennis") == "tennis"
+    r = _rec("M", "Vinner: A", "", 2.0, family="ml")
+    assert _sport_key(r) == "unknown"
 
 
 # ---------------------------------------------------------------------------
@@ -409,7 +466,6 @@ def test_coverage_pressure_boost_when_overlay_active():
             "prefer": ["handicaps"],
         },
     )
-    # in-band: +weight_boost (30) + coverage_pressure_boost (40) + handicap prefer (10)
     assert boosted >= base + 30.0 + 40.0
 
 
@@ -427,40 +483,105 @@ def test_coverage_pressure_boost_off_when_floor_disabled():
             "prefer": [],
         },
     )
-    # floor disabled → only weight_boost, no +40 pressure
+    assert with_ov == pytest.approx(base + 30.0)
+
+
+def test_coverage_pressure_boost_zero_is_valid():
+    """0.0 pressure must not fall through to a non-zero default."""
+    cfg = _cfg(coverage_pressure_boost=0.0, floor_enabled=True)
+    rec = _rec("A vs B", "Handikap -1.5: Away", "football", 2.10, family="handicap")
+    base = promotion_score(rec, cfg, coverage_overlay=None)
+    with_ov = promotion_score(
+        rec,
+        cfg,
+        coverage_overlay={
+            "active": True,
+            "target_odds_band": "1.85-2.60",
+            "weight_boost": 30.0,
+            "prefer": [],
+        },
+    )
     assert with_ov == pytest.approx(base + 30.0)
 
 
 # ---------------------------------------------------------------------------
-# board_lines + no p_model invention
+# board_lines + caps + no p_model
 # ---------------------------------------------------------------------------
 
 
-def test_board_lines_scales_target():
-    cfg = _cfg(dynamic=True, deep_max_n=15)
-    recs = _multi_sport_board()
-    # board_lines=80 → target 10; board_lines=40 → target 8
-    q_small = build_deep_queue(recs, cfg, board_lines=40)
-    q_large = build_deep_queue(
-        # need enough preferred candidates for larger target
-        recs + [
-            _rec(f"Extra {i}", "Handikap -1.5: Home", "tennis", 2.15, family="handicap")
-            for i in range(20)
-        ],
-        cfg,
-        board_lines=80,
-    )
-    # Larger board target should allow ≥ small queue (composition-dependent)
+def test_board_lines_scales_target_and_queue():
+    cfg = _cfg(dynamic=True, deep_max_n=15, top_promo_scaffold_pct=0.0, sport_rotation_min_lines=0)
+    # Enough preferred mid lines for both targets
+    recs = [
+        _rec(f"P {i}", "Handikap -1.5: Away", "football" if i < 10 else "tennis", 2.10 + (i % 5) * 0.02, family="handicap")
+        for i in range(30)
+    ]
     assert dynamic_deep_target_n(cfg, 40) == 8
     assert dynamic_deep_target_n(cfg, 80) == 10
-    assert len(q_small) <= 8 + 3  # room for sport-rotation extras under deep_max
-    assert len(q_large) >= len(q_small) or len(q_large) <= 12
+    assert dynamic_deep_target_n(cfg, 200) == 15
+
+    q_small = build_deep_queue(recs, cfg, board_lines=40)
+    q_large = build_deep_queue(recs, cfg, board_lines=80)
+    assert len(q_small) <= 8
+    assert len(q_large) <= 10
+    # Larger board allows a larger (or equal) queue under composition
+    assert len(q_large) >= len(q_small)
+
+
+def test_dynamic_cap_board_200_queue_at_most_15():
+    cfg = _cfg(dynamic=True, deep_max_n=15, deep_target_max=15)
+    recs = [
+        _rec(
+            f"P {i}",
+            "Handikap -1.5: Away",
+            ["football", "tennis", "basketball", "handball"][i % 4],
+            2.05 + (i % 6) * 0.03,
+            family="handicap",
+        )
+        for i in range(60)
+    ]
+    q = build_deep_queue(recs, cfg, board_lines=200)
+    assert dynamic_deep_target_n(cfg, 200) == 15
+    assert len(q) <= 15
+
+
+def test_static_path_queue_at_most_deep_target_n():
+    cfg = _cfg(dynamic=False, deep_target_n=8, deep_max_n=15, floor_enabled=False)
+    recs = [
+        _rec(f"P {i}", "Handikap -1.5: Away", "football", 2.10, family="handicap")
+        for i in range(20)
+    ]
+    q = build_deep_queue(recs, cfg, board_lines=200)
+    assert len(q) <= 8
 
 
 def test_never_invents_p_model():
     cfg = _cfg()
     recs = _multi_sport_board()
+    # Inject one already-researched line — must stay out of deep queue worklist
+    recs.append(
+        _rec("Done", "Handikap -1.5: Home", "football", 2.10, family="handicap", has_p_model=True)
+    )
     q = build_deep_queue(recs, cfg, board_lines=80)
-    for r in q:
-        assert r.has_p_model is False
-        assert r.prior_p is None or True  # prior may exist; p_model field is has_p_model
+    assert all(not r.has_p_model for r in q)
+    assert all(r.key() != ("Done", "Handikap -1.5: Home") for r in q)
+
+
+def test_force_non_pref_cannot_open_empty_queue():
+    """Issue 3: preferred-share guard applies when queue empty — non-pref force blocked."""
+    cfg = _cfg(
+        floor_enabled=True,
+        top_promo_scaffold_pct=1.0,
+        sport_rotation_min_lines=0,
+        deep_target_n=5,
+        deep_max_n=10,
+    )
+    # Only non-preferred short alts (odds < alt_preferred 1.80, not short-main)
+    # Actually short alt under 1.80 that's not ML/O2.5/FG is "other"
+    # Preferred pool empty → fail-closed empty queue before force.
+    recs = [
+        _rec(f"Alt {i}", "Oddsmatcher special", "football", 1.60, family="other")
+        for i in range(8)
+    ]
+    q = build_deep_queue(recs, cfg, board_lines=len(recs))
+    assert q == []
