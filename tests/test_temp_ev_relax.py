@@ -569,9 +569,14 @@ def test_trigger_excludes_high_odds_survivors(tmp_path: Path):
 
 
 def test_process_gate_not_cancelled_by_relax(tmp_path: Path):
-    """process_gate +2pp and relax -2pp must not net to zero — gate stays on top."""
+    """When process_gate is active, temp_ev_relax is skipped entirely (fail-closed).
+
+    min_ev == standard + process_gate_raise; relax must not apply.
+    """
     cfg = _cfg(tmp_path)
     p_border = 0.54  # EV = 0.02
+    # Without gate: EV 0.02 would pass under relax (min 0.03-0.02=0.01).
+    # With gate +2pp: min must be 0.03+0.02=0.05 — reject; no relax delta.
     emit_temp_ev_relax(
         cfg,
         delta_ev=0.02,
@@ -590,7 +595,6 @@ def test_process_gate_not_cancelled_by_relax(tmp_path: Path):
         evidence=_pack(p_border, grade_sources=6),
     )
     picked, rejects = build_portfolio(cfg, [c], _phase(), _risk(), [], learning={})
-    # base min 0.03 - 0.02 relax + 0.02 process_gate = 0.03; EV 0.02 → reject
     assert not any(p.match == "Gate Match" for p in picked)
     rej = [
         r for r in rejects if isinstance(r, dict) and r.get("match") == "Gate Match"
@@ -598,11 +602,12 @@ def test_process_gate_not_cancelled_by_relax(tmp_path: Path):
     assert rej
     reason = str(rej[0].get("reason") or "")
     assert "process_gate" in reason
-    # Effective min should still be ~0.03 (not fully cancelled to absolute 0.01 alone)
-    assert rej[0].get("temp_ev_relax_delta") == 0.02
+    # Relax must not have been applied
+    assert not rej[0].get("temp_ev_relax_delta")
+    assert "temp_ev_relax" not in reason
     assert rej[0].get("process_gate_raise") and float(rej[0]["process_gate_raise"]) >= 0.02
-    # EV 0.02 should be below effective min (≈0.03)
-    assert "EV 0.020" in reason or "EV 0.02" in reason
+    # Effective min = standard 0.03 + process_gate 0.02 = 0.05
+    assert "min 0.050" in reason or "min 0.05" in reason
 
 
 def test_haircut_invariant_under_relax(tmp_path: Path):

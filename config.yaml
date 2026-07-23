@@ -290,7 +290,7 @@ learning:
       weight_boost: 30.0            # deep-queue score boost under active signal
     # Mechanism B: temporary auditable EV softening (safety net only)
     # Per-line allowlist · never softens haircut · grade F always excluded
-    # process_gate_raise always applied after relax (cannot be cancelled)
+    # Fail-closed: if process_gate_raise > 0 for a candidate, skip temp_ev_relax
     temp_ev_relax:
       enabled: true
       delta_min: 0.01

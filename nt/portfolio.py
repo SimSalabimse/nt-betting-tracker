@@ -509,14 +509,33 @@ def build_portfolio(
             if st["roi"] < float(band_cfg.get("bad_roi_below", -0.10)):
                 min_ev += float(band_cfg.get("extra_ev_required", 0.05))
 
+        # P1: process_error closed-loop temporary min_ev raise
+        pg_raise = 0.0
+        try:
+            from nt.process_gates import process_gate_raise
+
+            pg_raise = process_gate_raise(
+                cfg,
+                sport=c.sport or "",
+                market_key=str(adj.get("market_key") or ""),
+            )
+        except Exception:
+            pg_raise = 0.0
+
         # Mechanism B: per-line temp_ev_relax (allowlist only; never global).
-        # Grade F always excluded. exclude_high_odds / exclude_grade_c honor config
-        # (default true). Applied *before* process_gate so gate raise cannot be
-        # cancelled by the safety-net soften (fail-closed coexistence).
+        # Grade F always excluded. exclude_high_odds / exclude_grade_c honor config.
+        # Fail-closed coexistence: if process_gate_raise > 0 for this candidate,
+        # skip temp_ev_relax entirely so the process_error gate cannot be cancelled
+        # by the safety-net soften (equal deltas would otherwise net to zero).
         used_ev_relax = False
         relax_delta = 0.0
         relax_stake_mult = 1.0
-        if ev_relax.get("active") and relax_keys and grade != "F":
+        if (
+            float(pg_raise or 0.0) <= 0
+            and ev_relax.get("active")
+            and relax_keys
+            and grade != "F"
+        ):
             from nt.control_signals import line_key_match
 
             exclude_high = bool(ev_relax.get("exclude_high_odds", True))
@@ -534,20 +553,8 @@ def build_portfolio(
                         used_ev_relax = True
                         relax_stake_mult = float(ev_relax.get("stake_mult") or 0.80)
 
-        # P1: process_error closed-loop temporary min_ev raise (always on top of relax)
-        pg_raise = 0.0
-        try:
-            from nt.process_gates import process_gate_raise
-
-            pg_raise = process_gate_raise(
-                cfg,
-                sport=c.sport or "",
-                market_key=str(adj.get("market_key") or ""),
-            )
-            if pg_raise > 0:
-                min_ev += pg_raise
-        except Exception:
-            pg_raise = 0.0
+        if pg_raise > 0:
+            min_ev += pg_raise
 
         # Before EV reject: try Exploration regime-explore quota (after process_gate raise)
         if (
