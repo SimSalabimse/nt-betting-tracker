@@ -26,6 +26,10 @@
 		DE90BB1B9CC04018B9BC8B05 /* DeskSpacing.swift in Sources */ = {isa = PBXBuildFile; fileRef = E926D1ED8A694AB79F8F8B98 /* DeskSpacing.swift */; };
 		91F7C6B3DB424374BD0A2590 /* DeskTypography.swift in Sources */ = {isa = PBXBuildFile; fileRef = B370D56E4ED14EBCA7E78EB5 /* DeskTypography.swift */; };
 		66CC323A1C1340AEB2F2AB74 /* DeskFormatters.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E2A6EE90C0C46C3A05FCCE8 /* DeskFormatters.swift */; };
+		754812D293BB431DBCE73393 /* MetricCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3F9BD0E9C5E44339F56C699 /* MetricCard.swift */; };
+		5EC5B62D213F49F7B232777E /* DeskCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 662843DAEBD7427A95AC89B8 /* DeskCard.swift */; };
+		E84002870C2349519C0A75A6 /* StatusPill.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C956EA299234BF1BC01281C /* StatusPill.swift */; };
+		38C4C7F4264144B084C95275 /* FreshnessBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8BABF7F3046C4854B0C6B736 /* FreshnessBanner.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -47,6 +51,10 @@
 		E926D1ED8A694AB79F8F8B98 /* DeskSpacing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeskSpacing.swift; sourceTree = "<group>"; };
 		B370D56E4ED14EBCA7E78EB5 /* DeskTypography.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeskTypography.swift; sourceTree = "<group>"; };
 		9E2A6EE90C0C46C3A05FCCE8 /* DeskFormatters.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeskFormatters.swift; sourceTree = "<group>"; };
+		B3F9BD0E9C5E44339F56C699 /* MetricCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetricCard.swift; sourceTree = "<group>"; };
+		662843DAEBD7427A95AC89B8 /* DeskCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeskCard.swift; sourceTree = "<group>"; };
+		6C956EA299234BF1BC01281C /* StatusPill.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusPill.swift; sourceTree = "<group>"; };
+		8BABF7F3046C4854B0C6B736 /* FreshnessBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FreshnessBanner.swift; sourceTree = "<group>"; };
 		848437EA320F44D9A1F3E5AD /* NTDesk.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = NTDesk.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		14E671AE8ACD437DA6E95191 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		B5E4BCA51612EB4937DB848A /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -101,8 +109,20 @@
 				E926D1ED8A694AB79F8F8B98 /* DeskSpacing.swift */,
 				B370D56E4ED14EBCA7E78EB5 /* DeskTypography.swift */,
 				9E2A6EE90C0C46C3A05FCCE8 /* DeskFormatters.swift */,
+				3E32E91AE924460FA8AB19DF /* Components */,
 			);
 			path = DesignSystem;
+			sourceTree = "<group>";
+		};
+		3E32E91AE924460FA8AB19DF /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				B3F9BD0E9C5E44339F56C699 /* MetricCard.swift */,
+				662843DAEBD7427A95AC89B8 /* DeskCard.swift */,
+				6C956EA299234BF1BC01281C /* StatusPill.swift */,
+				8BABF7F3046C4854B0C6B736 /* FreshnessBanner.swift */,
+			);
+			path = Components;
 			sourceTree = "<group>";
 		};
 		5A43CDD0A1EB45ECBB96D3A7 /* Models */ = {
@@ -225,6 +245,10 @@
 				DE90BB1B9CC04018B9BC8B05 /* DeskSpacing.swift in Sources */,
 				91F7C6B3DB424374BD0A2590 /* DeskTypography.swift in Sources */,
 				66CC323A1C1340AEB2F2AB74 /* DeskFormatters.swift in Sources */,
+				754812D293BB431DBCE73393 /* MetricCard.swift in Sources */,
+				5EC5B62D213F49F7B232777E /* DeskCard.swift in Sources */,
+				E84002870C2349519C0A75A6 /* StatusPill.swift in Sources */,
+				38C4C7F4264144B084C95275 /* FreshnessBanner.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

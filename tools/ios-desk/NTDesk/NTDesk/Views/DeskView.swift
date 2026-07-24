@@ -16,19 +16,19 @@ struct DeskView: View {
                             )
                         }
                         LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
-                            kpi("Equity", nok(s.equityNok))
-                            kpi("Liquid", nok(s.liquidNok))
-                            kpi("Open risk", nok(s.pendingAtRiskNok))
-                            kpi("Remaining", nok(s.remainingRiskNok))
-                            kpi("Phase", "\(s.phaseId ?? "—") \(s.phaseLabel ?? "")")
-                            kpi("Today P/L", nok(s.todayRealizedPlNok))
+                            MetricCard(label: "Equity", value: nok(s.equityNok))
+                            MetricCard(label: "Liquid", value: nok(s.liquidNok))
+                            MetricCard(label: "Open risk", value: nok(s.pendingAtRiskNok))
+                            MetricCard(label: "Remaining", value: nok(s.remainingRiskNok))
+                            MetricCard(label: "Phase", value: "\(s.phaseId ?? "—") \(s.phaseLabel ?? "")")
+                            MetricCard(label: "Today P/L", value: nok(s.todayRealizedPlNok))
                         }
                         if let o = s.charts?.overall {
                             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
-                                kpi("ROI", pct(o.roi))
-                                kpi("Win rate", pct(o.winrate))
-                                kpi("Settled", intStr(o.nSettled))
-                                kpi("Max DD", nok(s.charts?.maxDrawdown))
+                                MetricCard(label: "ROI", value: pct(o.roi))
+                                MetricCard(label: "Win rate", value: pct(o.winrate))
+                                MetricCard(label: "Settled", value: intStr(o.nSettled))
+                                MetricCard(label: "Max DD", value: nok(s.charts?.maxDrawdown))
                             }
                         }
                         Text("Generated \(s.generatedAt ?? "—")")
@@ -55,22 +55,6 @@ struct DeskView: View {
         }
     }
 
-    private func kpi(_ title: String, _ value: String) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(title.uppercased())
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-            Text(value)
-                .font(.title3.weight(.semibold))
-                .foregroundStyle(.primary)
-                .lineLimit(2)
-                .minimumScaleFactor(0.7)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(12)
-        .background(RoundedRectangle(cornerRadius: 12).fill(Color(red: 0.10, green: 0.11, blue: 0.14)))
-    }
-
     private func banner(_ text: String, color: Color) -> some View {
         Text(text)
             .font(.footnote)
@@ -92,33 +76,5 @@ struct DeskView: View {
     private func intStr(_ v: Double?) -> String {
         guard let v else { return "—" }
         return String(Int(v))
-    }
-}
-
-struct FreshnessBanner: View {
-    @EnvironmentObject private var sync: SyncService
-
-    var body: some View {
-        switch sync.freshness {
-        case .fresh:
-            EmptyView()
-        case .stale:
-            label("Stale — last sync \(sync.lastSuccessSyncAt ?? "—")", .yellow)
-        case .staleMismatch:
-            label("Cache is from a different base URL — not live", .orange)
-        case .liveNotPersisted:
-            label("Live but not saved on device", .orange)
-        case .empty:
-            label(sync.lastError ?? "No cache yet", .secondary)
-        }
-    }
-
-    private func label(_ t: String, _ c: Color) -> some View {
-        Text(t)
-            .font(.footnote)
-            .foregroundStyle(c)
-            .padding(8)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(RoundedRectangle(cornerRadius: 8).stroke(c.opacity(0.5)))
     }
 }
