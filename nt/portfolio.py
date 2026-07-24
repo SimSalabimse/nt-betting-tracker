@@ -1501,6 +1501,15 @@ def build_portfolio(
                 rec.stake_decision["run_stake_cap_nok"] = budget
 
     def _seat_maxes() -> list[float]:
+        # FEH test stake cap injects into rebalance ceiling when active
+        try:
+            from nt.stake_test_cap import inject_seat_max, load_state, max_stake_when_active
+
+            _cap_state = load_state(cfg)
+            _test_cap = max_stake_when_active(cfg, _cap_state)
+        except Exception:
+            _cap_state = None
+            _test_cap = None
         caps: list[float] = []
         for rec in picked:
             rec_cap = float(
@@ -1508,7 +1517,16 @@ def build_portfolio(
                 or (rec.stake_decision or {}).get("final_stake_nok")
                 or max_stake
             )
-            caps.append(max(min_stake, min(max_stake, rec_cap)))
+            seat = max(min_stake, min(max_stake, rec_cap))
+            if _test_cap is not None:
+                # Allow seat max below min_stake only when test cap forces it
+                # (min_stake == 10 and cap == 10 is the normal test window)
+                seat = inject_seat_max(seat, cfg, _cap_state)
+                if seat + 1e-9 < min_stake and _test_cap + 1e-9 >= min_stake:
+                    seat = min_stake
+                elif _test_cap + 1e-9 < min_stake:
+                    seat = float(_test_cap)
+            caps.append(seat)
         return caps
 
     for _ in range(3):  # bounded retries
@@ -1629,5 +1647,15 @@ def build_portfolio(
                     "reason": f"run stake budget {budget:.0f} NOK (20% equity / remaining)",
                 }
             )
+
+    # ★ FEH test stake cap — ABSOLUTE LAST mutation of every seat stake.
+    # Nothing after this may raise stake_nok. Survives rebalance top-up and
+    # post-rebalance EXPLORE_REGIME unit clamp (which may set unit > 10).
+    try:
+        from nt.stake_test_cap import apply_test_stake_cap_to_picked
+
+        apply_test_stake_cap_to_picked(picked, cfg)
+    except Exception:
+        pass
 
     return picked, rejects

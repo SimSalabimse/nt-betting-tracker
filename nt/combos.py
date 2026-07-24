@@ -183,6 +183,13 @@ def assess_combo(
         if remaining_risk is not None:
             stake = min(stake, float(remaining_risk))
             stake = float(int(stake))
+        # FEH test stake cap: absolute ceiling on combo ticket stake when active
+        try:
+            from nt.stake_test_cap import clip_stake_nok
+
+            stake = clip_stake_nok(stake, cfg)
+        except Exception:
+            pass
 
     ok = not any(
         r.startswith("hard reject")

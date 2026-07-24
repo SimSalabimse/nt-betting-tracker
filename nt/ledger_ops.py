@@ -66,6 +66,7 @@ def place_ack(
 
     now = utc_now()
     updated: list[dict[str, str]] = []
+    test_cap_events: list[dict[str, Any]] = []
     by_id = {r.get("bet_id"): r for r in rows}
     for t in targets:
         bid = t.get("bet_id") or ""
@@ -85,6 +86,15 @@ def place_ack(
         if tag not in notes:
             row["notes"] = (notes + f" | {tag}").strip(" |")
         updated.append({"bet_id": bid, "result": "ConfirmedPlaced", "prev": prev})
+        # FEH test cap counter: only tagged ConfirmedPlaced count (pre-FEH untagged excluded)
+        try:
+            from nt.stake_test_cap import record_placed_bet
+
+            # Use notes before place-ack suffix for tag match; system tag is prefix
+            evt = record_placed_bet(cfg, bid, notes, dry_run=dry_run)
+            test_cap_events.append(evt)
+        except Exception as e:
+            test_cap_events.append({"bet_id": bid, "error": str(e)})
 
     if not dry_run and any(u.get("result") == "ConfirmedPlaced" and u.get("prev") == "Pending" for u in updated):
         write_bets(path, rows, backup=True)
@@ -96,6 +106,7 @@ def place_ack(
         "action": "place-ack",
         "updated": updated,
         "n": len(updated),
+        "test_cap_events": test_cap_events,
     }
 
 

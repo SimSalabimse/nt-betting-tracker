@@ -283,7 +283,7 @@ selection:
       anti_soft_ml_dogs:
         individual_sports: true
         team_sports: false
-  # Sliding odds-band confidence (usable 1.40–2.60). FEH H2H polarity preferred when present.
+  # Sliding odds-band confidence (usable 1.40-2.60). FEH H2H polarity preferred when present.
   # Does not change capital_v2 / phase / secure. Bands cannot bypass FEH F.
   odds_confidence:
     enabled: true
@@ -291,7 +291,7 @@ selection:
     usable_hi: 2.60
     underdog_hc_negative_h2h_reject: true
     bands:
-      A:  # Short high-confidence 1.40–1.60
+      A:  # Short high-confidence 1.40-1.60
         lo: 1.40
         hi: 1.60
         min_grade: A
@@ -300,7 +300,7 @@ selection:
         stake_mult: 0.80
         require_h2h_or_rank_form: true
         explore_allowed: false
-      B:  # Short-medium 1.60–1.85
+      B:  # Short-medium 1.60-1.85
         lo: 1.60
         hi: 1.85
         min_grade: B
@@ -309,7 +309,7 @@ selection:
         stake_mult: 0.90
         require_core_plus_support: true
         explore_allowed: false
-      C:  # Core 1.85–2.30
+      C:  # Core 1.85-2.30
         lo: 1.85
         hi: 2.30
         min_grade: B
@@ -320,7 +320,7 @@ selection:
         require_h2h_checked: true
         explore_allowed: true
         explore_ev_cap: 0.015
-      D:  # Upper 2.30–2.60
+      D:  # Upper 2.30-2.60
         lo: 2.30
         hi: 2.60
         min_grade: B
@@ -338,6 +338,16 @@ selection:
       min_ev: 0.05
       min_sources: 10
       stake_mult: 0.70
+  # Temporary FEH test stake cap: max 10 NOK for first 10 place-acked bets under system_tag.
+  # Absolute-last ceiling after rebalance + EXPLORE_REGIME clamp - does not change capital_v2 math.
+  # Counter: data/state/feh_test_cap.json; increments only on tagged Pending->ConfirmedPlaced.
+  test_stake_cap:
+    enabled: true
+    max_bets: 10
+    max_stake_nok: 10.0
+    system_tag: feh_v1
+    state_path: data/state/feh_test_cap.json
+
   # If historical band ROI is terrible with enough sample, raise the bar further
   band_penalty:
     min_sample: 15
