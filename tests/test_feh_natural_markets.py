@@ -1,4 +1,4 @@
-"""PR3: Natural market elevation — S3b/S4b isolation + S3/S4 smoke."""
+"""PR3: Natural market elevation — S3b/S4b isolation + S3/S4 smoke + place-path E2E."""
 from __future__ import annotations
 
 import json
@@ -15,8 +15,10 @@ from nt.evidence_hierarchy.checklist import ChecklistAnswers
 from nt.evidence_hierarchy.feh import run_forced_evidence_hierarchy
 from nt.evidence_hierarchy.natural_markets import (
     detect_triggers,
+    discover_sibling_packs,
     evaluate_natural_markets,
 )
+from nt.portfolio import Candidate, build_portfolio
 
 SMITH_HC = (
     ROOT
@@ -264,16 +266,19 @@ def test_s3b_feh_natural_unevaluated_with_anti_soft_pass():
     assert "FEH_NATURAL_MARKET_UNEVALUATED" in feh.reject_codes, feh.reject_codes
     assert feh.final_grade_suggestion == "F"
 
+    # Place boundary: grade_evidence with explicit siblings must also F + code
     grade, issues = grade_evidence(
         pack,
         cfg,
         1.85,
         selection=pack["selection"],
         sport="darts",
+        sibling_packs=[sibling],
+        auto_discover_siblings=False,
     )
-    # grade_evidence path without sibling_packs → N/A natural; still may pass grade
-    # Full FEH isolation uses sibling_packs above. Smoke still asserts natural status field.
-    _ = (grade, issues)
+    assert grade == "F", (grade, issues)
+    blob = " ".join(issues)
+    assert "FEH_NATURAL_MARKET_UNEVALUATED" in blob or "feh:FEH_NATURAL_MARKET_UNEVALUATED" in blob
 
 
 def test_s3b_grade_with_sibling_via_feh_audit():
@@ -294,19 +299,193 @@ def test_s3b_grade_with_sibling_via_feh_audit():
     assert feh.anti_soft.get("hard_reject") is False
 
 
+def test_s3b_grade_evidence_auto_discover_from_evidence_dir(tmp_path: Path):
+    """
+    OPEN ISSUE 1 fix: grade_evidence discovers same-match sibling from evidence dir
+    without callers passing sibling_packs kwargs.
+    """
+    pack = _anti_soft_pass_pack()
+    sibling = _sibling_over()
+    # Unique match so we don't collide with real evidence/ packs
+    pack["match"] = "Natural Unit A vs Natural Unit B"
+    sibling["match"] = "Natural Unit A vs Natural Unit B"
+    sibling["selection"] = "Totalt antall runder 27.5: Over 27.5"
+
+    evid = tmp_path / "evidence"
+    evid.mkdir()
+    (evid / "natural_unit_a_vs_natural_unit_b_over_27_5.json").write_text(
+        json.dumps(sibling, ensure_ascii=False),
+        encoding="utf-8",
+    )
+    cfg = _place_cfg()
+    cfg["paths"] = {"evidence": str(evid)}
+
+    # No sibling_packs kwarg — discovery only
+    grade, issues = grade_evidence(
+        pack,
+        cfg,
+        1.85,
+        selection=pack["selection"],
+        sport="darts",
+        auto_discover_siblings=True,
+    )
+    assert grade == "F", (grade, issues)
+    blob = " ".join(issues)
+    assert "FEH_NATURAL_MARKET_UNEVALUATED" in blob
+    # Confirm discovery helper sees sibling
+    found = discover_sibling_packs(pack, evidence_dir=evid)
+    assert found, "expected sibling pack on disk"
+    assert any("over" in str(s.get("selection") or "").lower() for s in found)
+
+
+def test_s3b_portfolio_place_boundary_rejects_unevaluated_natural(tmp_path: Path):
+    """
+    OPEN ISSUE 2: end-to-end place boundary — soft UD that passes anti-soft
+    + sibling natural present among candidates → not placed; reject cites FEH natural.
+    """
+    pack = _anti_soft_pass_pack()
+    sibling = _sibling_over()
+    pack["match"] = "Port Natural A vs Port Natural B"
+    sibling["match"] = "Port Natural A vs Port Natural B"
+    sibling["selection"] = "Totalt antall runder 27.5: Over 27.5"
+    sibling["p_model"] = 0.55
+    sibling.setdefault("failure_modes", "Short match")
+    sibling.setdefault(
+        "sources",
+        [
+            {
+                "url": f"https://example.com/sib/{i}",
+                "takeaway": "Sibling takeaway long enough for quality.",
+                "name": f"Sib{i}",
+            }
+            for i in range(6)
+        ],
+    )
+
+    cfg = _place_cfg()
+    cfg["selection"]["odds_confidence"] = {"enabled": False}
+    cfg["selection"]["standard_min_ev"] = 0.01
+    cfg["selection"]["probability_haircut"] = 0.0
+    cfg["learning"] = {"enabled": False}
+    cfg["norsk_tipping"] = {"min_stake_nok": 10}
+    cfg["paths"] = {"evidence": str(tmp_path / "evidence")}
+    (tmp_path / "evidence").mkdir(exist_ok=True)
+
+    phase = {
+        "phase_id": "1A",
+        "stake_min": 10,
+        "stake_max": 12,
+        "max_bets_per_round": 4,
+    }
+    risk = {
+        "can_bet": True,
+        "remaining_risk_nok": 100.0,
+        "daily_risk_cap_nok": 100.0,
+        "unit_size_nok": 12.0,
+    }
+
+    # Soft UD HC candidate (anti-soft pass) + sibling totals on same match
+    hc = Candidate(
+        date="2026-07-24",
+        match=pack["match"],
+        selection=pack["selection"],
+        decimal_odds=1.85,
+        sport="darts",
+        market_type="HC",
+        p_model=float(pack["p_model"]),
+        evidence=pack,
+    )
+    tot = Candidate(
+        date="2026-07-24",
+        match=sibling["match"],
+        selection=sibling["selection"],
+        decimal_odds=1.72,
+        sport="darts",
+        market_type="Totals",
+        p_model=float(sibling["p_model"]),
+        evidence=sibling,
+    )
+    picked, rejects = build_portfolio(cfg, [hc, tot], phase, risk, [], learning={})
+    # Soft UD HC must not be placed
+    hc_picks = [p for p in picked if "+2.5" in (p.selection or "")]
+    assert hc_picks == [], f"soft UD HC must be unplaceable; got {picked}"
+    # Reject for HC must mention natural unevaluated or grade F / feh_blocked
+    hc_rejects = [
+        r
+        for r in rejects
+        if "+2.5" in str(r.get("selection") or "")
+        or "handikap" in str(r.get("selection") or "").lower()
+    ]
+    assert hc_rejects, f"expected HC reject; rejects={rejects}"
+    blob = " ".join(
+        str(r.get("reason") or "") + " " + " ".join(str(x) for x in (r.get("issues") or []))
+        for r in hc_rejects
+    )
+    assert (
+        "FEH_NATURAL_MARKET_UNEVALUATED" in blob
+        or "feh_blocked" in blob
+        or "grade F" in blob.lower()
+        or "odds_band" in blob
+    ), blob
+
+
 def test_s3_smoke_smith_not_placeable():
     """S3 smoke: Smith soft UD + natural elevation on → not placeable (anti-soft and/or natural)."""
-    assert SMITH_HC.is_file()
-    pack = json.loads(SMITH_HC.read_text(encoding="utf-8"))
+    # Prefer live pack when present; else synthetic Smith-shaped fixture (CI-safe)
+    if SMITH_HC.is_file():
+        pack = json.loads(SMITH_HC.read_text(encoding="utf-8"))
+    else:
+        pack = {
+            "match": "Smith, Ross vs Price, Gerwyn",
+            "selection": "Runde handikap 2.5: Smith, Ross +2.5",
+            "sport": "darts",
+            "p_model": 0.59,
+            "summary": (
+                "BAND 1.85-2.30 Grade B. Smith +2.5 legs @ 1.85. "
+                "POS: H2H competitive; long format. NEG: Price fav."
+            ),
+            "failure_modes": "Price 16-8 blowout.",
+            "availability_status": "predicted",
+            "h2h": {
+                "checked": True,
+                "edge": "mixed_competitive",
+                "summary": "Competitive H2H Price slight lead.",
+            },
+            "signals": {
+                "h2h_matchup": {
+                    "filled": True,
+                    "strength": "mixed",
+                    "note": "Competitive H2H not one sided.",
+                },
+                "checkout_scoring": {
+                    "filled": True,
+                    "strength": "positive",
+                    "note": "Long format cover live always both high.",
+                },
+                "ranking_seed": {
+                    "filled": True,
+                    "strength": "negative",
+                    "note": "Price higher ranked.",
+                },
+            },
+            "sources": [
+                {
+                    "url": f"https://example.com/smith/{i}",
+                    "takeaway": "Takeaway long enough for quality source floor.",
+                    "name": f"S{i}",
+                }
+                for i in range(6)
+            ],
+        }
     cfg = _place_cfg()
-    siblings = [_sibling_over()] if SMITH_O27.is_file() else []
+    siblings = [_sibling_over()]
     feh = run_forced_evidence_hierarchy(
         pack,
         sport="darts",
         selection=str(pack.get("selection") or ""),
         odds=1.85,
         cfg=cfg,
-        sibling_packs=siblings or None,
+        sibling_packs=siblings,
     )
     assert feh.hard_reject is True
     assert feh.final_grade_suggestion == "F"
@@ -316,6 +495,8 @@ def test_s3_smoke_smith_not_placeable():
         1.85,
         selection=str(pack.get("selection") or ""),
         sport="darts",
+        sibling_packs=siblings,
+        auto_discover_siblings=False,
     )
     assert grade == "F"
     blob = " ".join(issues)

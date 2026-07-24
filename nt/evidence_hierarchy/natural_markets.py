@@ -1,8 +1,10 @@
 """Natural Market Elevation — card-driven triggers + N/A when absent from board."""
 from __future__ import annotations
 
+import json
 import re
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any
 
 from nt.evidence_hierarchy.anti_soft_underdog import is_plus_handicap
@@ -506,9 +508,188 @@ def evaluate_natural_markets(
     )
 
 
+def normalize_match_key(match: str) -> str:
+    """Normalize match string for sibling discovery (case/whitespace-insensitive)."""
+    s = (match or "").lower().strip()
+    s = re.sub(r"\s+", " ", s)
+    # collapse "vs." / "v." variants
+    s = re.sub(r"\s+v(?:s\.?|\.)\s+", " vs ", s)
+    return s
+
+
+def _match_filename_tokens(match: str) -> list[str]:
+    """Tokens useful for evidence filename prefilter."""
+    key = normalize_match_key(match)
+    # drop short connectors
+    stop = {"vs", "v", "and", "the", "fc", "of"}
+    toks: list[str] = []
+    for raw in re.split(r"[^a-z0-9]+", key):
+        t = raw.strip()
+        if len(t) >= 4 and t not in stop:
+            toks.append(t)
+    return toks[:8]
+
+
+def evidence_dir_from_cfg(cfg: dict[str, Any] | None) -> Path | None:
+    """Resolve evidence directory from cfg paths / selection.evidence."""
+    if not cfg:
+        return None
+    try:
+        from nt.config import path_from_config
+
+        p = path_from_config(cfg, "evidence")
+        if p is not None:
+            return Path(p)
+    except Exception:
+        pass
+    paths = dict(cfg.get("paths") or {})
+    rel = paths.get("evidence") or ""
+    if not rel:
+        sel = dict(cfg.get("selection") or {})
+        evc = dict(sel.get("evidence") or {})
+        rel = str(evc.get("evidence_dir") or "")
+    if not rel:
+        try:
+            from nt.paths import ROOT
+
+            return (ROOT / "evidence").resolve()
+        except Exception:
+            return None
+    p = Path(str(rel))
+    if p.is_absolute():
+        return p
+    try:
+        from nt.paths import ROOT
+
+        return (ROOT / p).resolve()
+    except Exception:
+        return p.resolve()
+
+
+def discover_sibling_packs(
+    pack: dict[str, Any] | None,
+    *,
+    evidence_dir: Path | None = None,
+    cfg: dict[str, Any] | None = None,
+    extra_packs: list[dict[str, Any]] | None = None,
+    exclude_selection: str = "",
+    max_scan: int = 400,
+) -> list[dict[str, Any]]:
+    """
+    Find same-match sibling evidence packs (other markets) for natural elevation.
+
+    Sources (merged, de-duplicated by selection):
+      1. extra_packs (e.g. other portfolio candidates for same match)
+      2. evidence_dir JSON files with matching `match` field
+
+    Does not include the current pack's own selection.
+    """
+    if not pack and not extra_packs:
+        return []
+    match = str((pack or {}).get("match") or "")
+    key = normalize_match_key(match)
+    cur_sel = (exclude_selection or str((pack or {}).get("selection") or "")).strip().lower()
+    out: list[dict[str, Any]] = []
+    seen_sel: set[str] = set()
+
+    def _add(sib: dict[str, Any]) -> None:
+        if not isinstance(sib, dict):
+            return
+        s_match = normalize_match_key(str(sib.get("match") or ""))
+        if key and s_match and s_match != key:
+            return
+        if not key and not s_match:
+            return
+        sel = str(sib.get("selection") or "").strip().lower()
+        if not sel or sel == cur_sel or sel in seen_sel:
+            return
+        seen_sel.add(sel)
+        out.append(sib)
+
+    for ep in extra_packs or []:
+        _add(ep)
+
+    edir = evidence_dir
+    if edir is None and cfg is not None:
+        edir = evidence_dir_from_cfg(cfg)
+    if edir is not None and Path(edir).is_dir() and key:
+        tokens = _match_filename_tokens(match)
+        scanned = 0
+        try:
+            paths = sorted(Path(edir).glob("*.json"))
+        except Exception:
+            paths = []
+        for path in paths:
+            if scanned >= max_scan:
+                break
+            # Skip sport cards / non-pack files
+            name = path.name.lower()
+            if name in ("schema.json",) or path.parent.name == "sport_cards":
+                continue
+            stem = path.stem.lower()
+            if tokens and not any(t in stem for t in tokens):
+                continue
+            scanned += 1
+            try:
+                data = json.loads(path.read_text(encoding="utf-8"))
+            except Exception:
+                continue
+            if isinstance(data, dict):
+                _add(data)
+    return out
+
+
+def resolve_natural_context(
+    pack: dict[str, Any] | None,
+    *,
+    cfg: dict[str, Any] | None = None,
+    odds_rows: list[dict[str, Any]] | None = None,
+    sibling_packs: list[dict[str, Any]] | None = None,
+    extra_packs: list[dict[str, Any]] | None = None,
+    auto_discover: bool = True,
+) -> tuple[list[dict[str, Any]] | None, list[dict[str, Any]] | None]:
+    """
+    Resolve odds_rows + sibling_packs for FEH natural elevation.
+
+    When auto_discover is True (default), merges explicit sibling_packs / extra_packs
+    with same-match packs from the evidence directory so the live grade path is not
+    N/A solely because callers omitted kwargs.
+
+    Returns (odds_rows, sibling_packs). sibling_packs is always a list when discovery
+    ran (possibly empty); None only when auto_discover is False and no siblings given.
+    """
+    rows = odds_rows
+    explicit = list(sibling_packs or []) if sibling_packs is not None else []
+    extras = list(extra_packs or [])
+    if not auto_discover:
+        if sibling_packs is None and not extras:
+            return rows, None
+        merged = discover_sibling_packs(
+            pack,
+            evidence_dir=None,
+            cfg=None,
+            extra_packs=explicit + extras,
+            exclude_selection=str((pack or {}).get("selection") or ""),
+        )
+        return rows, merged
+
+    # Live place path: always attempt discovery so presence can be proven
+    merged = discover_sibling_packs(
+        pack,
+        cfg=cfg,
+        extra_packs=explicit + extras,
+        exclude_selection=str((pack or {}).get("selection") or ""),
+    )
+    return rows, merged
+
+
 __all__ = [
     "NaturalMarketEval",
     "REJECT_UNEVALUATED",
     "detect_triggers",
     "evaluate_natural_markets",
+    "normalize_match_key",
+    "discover_sibling_packs",
+    "resolve_natural_context",
+    "evidence_dir_from_cfg",
 ]

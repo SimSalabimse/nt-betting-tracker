@@ -391,6 +391,18 @@ def build_portfolio(
         if cur.get("type") == "Loss" and int(cur.get("length") or 0) >= streak_lim:
             grade_a_only = True
 
+    # PR3: same-match sibling packs among this round's candidates for natural elevation
+    from nt.evidence_hierarchy.natural_markets import normalize_match_key
+
+    siblings_by_match: dict[str, list[dict[str, Any]]] = {}
+    for _c in candidates:
+        if not isinstance(_c.evidence, dict):
+            continue
+        mk = normalize_match_key(str(_c.match or _c.evidence.get("match") or ""))
+        if not mk:
+            continue
+        siblings_by_match.setdefault(mk, []).append(_c.evidence)
+
     for c in candidates:
         odds = float(c.decimal_odds)
         band = odds_band(odds)
@@ -398,6 +410,16 @@ def build_portfolio(
         # FEH recomputed every grade via grade_evidence (place-owning fail-closed).
         # Explore / temp_ev_relax / promo never bypass FEH hard rejects (grade F).
         # return_scorecard so odds_confidence can prefer FEH H2H polarity.
+        # Natural elevation: pass same-match candidate packs; grade_evidence also
+        # auto-discovers sibling packs from the evidence directory.
+        mk = normalize_match_key(str(c.match or (c.evidence or {}).get("match") or ""))
+        extra_sibs = [
+            e
+            for e in siblings_by_match.get(mk, [])
+            if e is not c.evidence
+            and str(e.get("selection") or "").strip().lower()
+            != str(c.selection or "").strip().lower()
+        ]
         _ge = grade_evidence(
             c.evidence,
             cfg,
@@ -405,6 +427,8 @@ def build_portfolio(
             selection=c.selection or "",
             sport=c.sport or "",
             return_scorecard=True,
+            extra_sibling_packs=extra_sibs or None,
+            auto_discover_siblings=True,
         )
         grade, issues = _ge[0], _ge[1]
         feh_audit = _ge[2] if len(_ge) > 2 else None

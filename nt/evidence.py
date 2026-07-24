@@ -75,6 +75,10 @@ def grade_evidence(
     selection: str | None = None,
     sport: str | None = None,
     return_scorecard: bool = False,
+    odds_rows: list[dict[str, Any]] | None = None,
+    sibling_packs: list[dict[str, Any]] | None = None,
+    extra_sibling_packs: list[dict[str, Any]] | None = None,
+    auto_discover_siblings: bool = True,
 ) -> tuple[str, list[str]] | tuple[str, list[str], dict[str, Any] | None]:
     """
     Return (grade, issues). Grades: A, B, C, F.
@@ -85,6 +89,9 @@ def grade_evidence(
     PR2 place-owning: when place_uses_saef (enabled + not shadow + forced_hierarchy),
     FEH recomputes every grade (checklist, side, anti-soft, SAEF). Fail-closed on
     FEH hard rejects and exceptions. Explore / temp_ev_relax cannot bypass F.
+
+    PR3 natural elevation: pass odds_rows / sibling_packs for board presence, or rely
+    on auto_discover_siblings (default True) to load same-match packs from evidence dir.
     """
     if not ev:
         out: tuple = ("F", ["missing evidence pack"])
@@ -161,6 +168,19 @@ def grade_evidence(
         if place_owning:
             # Single place-owning path: FEH owns grade (includes SAEF inside)
             from nt.evidence_hierarchy.feh import run_forced_evidence_hierarchy
+            from nt.evidence_hierarchy.natural_markets import resolve_natural_context
+
+            # PR3: resolve board/sibling presence so natural elevation is live
+            # on grade_evidence / portfolio — not only when tests pass kwargs.
+            nat_enabled = bool(_fh_raw.get("natural_market_elevation", True))
+            resolved_rows, resolved_siblings = resolve_natural_context(
+                ev,
+                cfg=cfg,
+                odds_rows=odds_rows,
+                sibling_packs=sibling_packs,
+                extra_packs=extra_sibling_packs,
+                auto_discover=bool(auto_discover_siblings and nat_enabled),
+            )
 
             feh_result = run_forced_evidence_hierarchy(
                 ev,
@@ -169,6 +189,8 @@ def grade_evidence(
                 odds=float(odds),
                 cfg=cfg,
                 run_saef=True,
+                odds_rows=resolved_rows,
+                sibling_packs=resolved_siblings,
             )
             scorecard_audit = feh_result.to_audit()
             saef_grade = feh_result.saef_grade
