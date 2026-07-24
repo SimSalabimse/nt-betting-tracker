@@ -38,8 +38,15 @@ def evidence_cfg(cfg: dict[str, Any] | None) -> dict[str, Any]:
         "quarantine_unknown": bool(raw.get("quarantine_unknown", True)),
         "allow_quarantine_place": bool(raw.get("allow_quarantine_place", False)),
         "card_schema_version": int(raw.get("card_schema_version") or 1),
-        # FEH place ownership — PR1 keeps disabled (shadow audit only)
+        "fail_closed": bool(raw.get("fail_closed", True)),
+        # FEH place ownership — triple gate with enabled + not shadow + fh.enabled
         "forced_hierarchy_enabled": bool(fh.get("enabled", False)),
+        "require_checklist": bool(fh.get("require_checklist", True)),
+        "anti_soft_underdog": bool(fh.get("anti_soft_underdog", True)),
+        "allow_soft_ud_grade_c": bool(fh.get("allow_soft_ud_grade_c", False)),
+        "soft_ud_odds_lo": float(fh.get("soft_ud_odds_lo") or 1.70),
+        "soft_ud_odds_hi_hard": float(fh.get("soft_ud_odds_hi_hard") or 2.20),
+        "soft_ud_odds_hi_soft": float(fh.get("soft_ud_odds_hi_soft") or 2.60),
     }
 
 

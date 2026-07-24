@@ -82,9 +82,9 @@ def grade_evidence(
 
     Multi-sport research gates can force F (availability, script, base rate).
 
-    PR1: When selection.evidence.enabled (or shadow_mode), SAEF computes an audit
-    scorecard. Place grade still uses the **legacy** path while shadow_mode is
-    true / forced_hierarchy.enabled is false. Soft dogs remain placeable.
+    PR2 place-owning: when place_uses_saef (enabled + not shadow + forced_hierarchy),
+    FEH recomputes every grade (checklist, side, anti-soft, SAEF). Fail-closed on
+    FEH hard rejects and exceptions. Explore / temp_ev_relax cannot bypass F.
     """
     if not ev:
         out: tuple = ("F", ["missing evidence pack"])
@@ -129,9 +129,11 @@ def grade_evidence(
     )
     soft.extend(gate_soft)
 
-    # SAEF sport-card scorecard (shadow audit; place ownership only if not shadow)
+    # FEH / SAEF (recompute every grade; place-owning is fail-closed)
     scorecard_audit: dict[str, Any] | None = None
     saef_grade: str | None = None
+    feh_result = None
+    place_owning = False
     try:
         from nt.evidence_hierarchy.score import (
             compute_saef,
@@ -139,7 +141,43 @@ def grade_evidence(
             score_evidence,
         )
 
-        if compute_saef(cfg):
+        place_owning = place_uses_saef(cfg)
+
+        if place_owning:
+            # Single place-owning path: FEH owns grade (includes SAEF inside)
+            from nt.evidence_hierarchy.feh import run_forced_evidence_hierarchy
+
+            feh_result = run_forced_evidence_hierarchy(
+                ev,
+                sport=sport_text,
+                selection=sel_text,
+                odds=float(odds),
+                cfg=cfg,
+                run_saef=True,
+            )
+            scorecard_audit = feh_result.to_audit()
+            saef_grade = feh_result.saef_grade
+            for code in feh_result.reject_codes:
+                soft.append(f"feh:{code}")
+            for note in (feh_result.notes or [])[:8]:
+                if note and note not in soft:
+                    soft.append(note)
+            if feh_result.saef_audit:
+                sa = feh_result.saef_audit
+                soft.append(
+                    f"saef_card={sa.get('card_id')};E={sa.get('E')};"
+                    f"r={sa.get('r')};q={sa.get('quality_source_count')};"
+                    f"conf={sa.get('confidence')}"
+                )
+                for hr in sa.get("hard_rejects") or []:
+                    soft.append(f"saef:{hr}")
+            soft.append(
+                f"feh_v={feh_result.feh_version};place_owning=1;"
+                f"checklist_ok={int(feh_result.checklist_complete)};"
+                f"anti_soft={int(bool((feh_result.anti_soft or {}).get('applies')))}"
+            )
+        elif compute_saef(cfg):
+            # Shadow / audit-only: SAEF soft notes; legacy place path below
             card = score_evidence(
                 ev,
                 sport=sport_text,
@@ -157,7 +195,18 @@ def grade_evidence(
                 f"saef_card={card.card_id};E={card.E:.2f};r={card.r:.2f};"
                 f"q={card.quality_source_count};conf={card.confidence}"
             )
-    except Exception as exc:  # fail open to legacy grade if SAEF broken (PR1)
+    except Exception as exc:
+        # Place-owning / fail_closed → F (delete fail-open)
+        if place_owning:
+            soft.append(f"FEH_ERROR:{exc}")
+            out_err = ("F", issues + soft + [f"FEH_ERROR:{exc}"])
+            return (*out_err, scorecard_audit) if return_scorecard else out_err
+        ev_cfg = (cfg.get("selection") or {}).get("evidence") or {}
+        if bool(ev_cfg.get("fail_closed", False)):
+            soft.append(f"FEH_ERROR:{exc}")
+            out_err2 = ("F", issues + soft + [f"FEH_ERROR:{exc}"])
+            return (*out_err2, scorecard_audit) if return_scorecard else out_err2
+        # Shadow-only path may append soft note
         soft.append(f"saef_error:{exc}")
 
     # Hard research gates → F always (cannot place)
@@ -165,18 +214,24 @@ def grade_evidence(
         out_f = ("F", hard_gates + issues + soft)
         return (*out_f, scorecard_audit) if return_scorecard else out_f
 
-    # Place grade: SAEF only when enabled and not shadow-only (PR2+ production)
-    if saef_grade is not None and place_uses_saef(cfg):
+    # Place-owning FEH: hard rejects → F; else min(SAEF, FEH grade_cap)
+    if place_owning and feh_result is not None:
         if p is None:
             out_f2 = ("F", issues + soft + ["missing p_model"])
             return (*out_f2, scorecard_audit) if return_scorecard else out_f2
-        if issues and any("missing summary" in i or "missing failure" in i for i in issues):
-            if saef_grade in ("A", "B"):
-                saef_grade = "C"
-        out_s = (saef_grade, issues + soft)
+        if feh_result.hard_reject or feh_result.final_grade_suggestion == "F":
+            out_feh_f = ("F", issues + soft)
+            return (*out_feh_f, scorecard_audit) if return_scorecard else out_feh_f
+        grade = feh_result.final_grade_suggestion or saef_grade or "C"
+        if issues and any(
+            "missing summary" in i or "missing failure" in i for i in issues
+        ):
+            if grade in ("A", "B"):
+                grade = "C"
+        out_s = (grade, issues + soft)
         return (*out_s, scorecard_audit) if return_scorecard else out_s
 
-    # --- Legacy grade path (default / PR1 shadow place) ---
+    # --- Legacy grade path (shadow / forced_hierarchy disabled) ---
     if issues:
         if n_sources >= need and p is not None and not any("p_model" in i for i in issues):
             out_c = ("C", issues + soft)

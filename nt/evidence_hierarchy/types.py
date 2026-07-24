@@ -4,14 +4,17 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Literal
 
-# Reserved for PR2 FEH orchestrator reject codes (declared early for shared imports).
+# FEH orchestrator reject codes (design §12).
 FEHRejectCode = Literal[
-    "FEH_ANTI_SOFT_UNDERDOG",
+    "FEH_CHECKLIST_INCOMPLETE",
     "FEH_SIDE_CONFLICT",
     "FEH_SIDE_UNCLEAR_UD",
     "FEH_PRICE_LED_SIDE",
-    "FEH_CHECKLIST_INCOMPLETE",
+    "FEH_ANTI_SOFT_UNDERDOG",
     "FEH_NATURAL_MARKET_UNEVALUATED",
+    "FEH_QUARANTINE_SPORT",
+    "FEH_SAEF_HARD",
+    "FEH_ERROR",
 ]
 
 

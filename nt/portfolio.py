@@ -392,6 +392,8 @@ def build_portfolio(
         odds = float(c.decimal_odds)
         band = odds_band(odds)
         high = odds >= thr
+        # FEH recomputed every grade via grade_evidence (place-owning fail-closed).
+        # Explore / temp_ev_relax / promo never bypass FEH hard rejects (grade F).
         grade, issues = grade_evidence(
             c.evidence,
             cfg,

@@ -28,6 +28,10 @@ _REQUIRED_HIERARCHY_PY = (
     "h2h_normalize.py",
     "cards.py",
     "score.py",
+    "checklist.py",
+    "side_select.py",
+    "anti_soft_underdog.py",
+    "feh.py",
 )
 
 
@@ -313,7 +317,17 @@ def test_negative_h2h_underdog_hard_reject():
 
 
 def test_quality_mid_band_can_reach_grade_b():
-    cfg = _cfg(shadow_mode=False, forced_hierarchy={"enabled": True})
+    cfg = _cfg(
+        shadow_mode=False,
+        forced_hierarchy={
+            "enabled": True,
+            "require_checklist": True,
+            "anti_soft_underdog": True,
+            "allow_soft_ud_grade_c": False,
+            "side_first": True,
+        },
+    )
+    # Favourite ML (short) — anti-soft N/A; complete FEH checklist for place-owning
     pack = {
         "sport": "darts",
         "selection": "Vinner: Strong Player",
@@ -363,9 +377,36 @@ def test_quality_mid_band_can_reach_grade_b():
         "context_risk": "low",
         "availability_status": "stable_guess",
         "availability_notes": "No injury flags; full field expected on PDC ranking event.",
+        "feh_checklist": {
+            "schema_version": 1,
+            "higher_ranked_side": "favourite",
+            "ranking_confidence": 0.8,
+            "better_form_side": "favourite",
+            "form_confidence": 0.7,
+            "h2h_verdict": "positive",
+            "h2h_summary": "Leads H2H 4-1 in last meetings with higher averages.",
+            "natural_markets": ["none"],
+            "natural_market_hint": "none",
+            "underdog_supported_by_evidence": False,
+            "underdog_support_reason": (
+                "Not an underdog pick; favourite ML supported by rank and H2H."
+            ),
+            "why_this_side_not_opposite": (
+                "Ranking, form and positive H2H all support Strong Player favourite "
+                "ML rather than the underdog opposite side."
+            ),
+            "strongest_positive": "H2H 4-1 and 98+ average form edge clear.",
+            "strongest_negative": "TV stage nerves can compress averages briefly.",
+            "primary_factors_used": [
+                "h2h_matchup",
+                "checkout_scoring",
+                "recent_form",
+            ],
+        },
     }
+    # Odds < soft_ud_lo → anti-soft ML dog gate does not apply
     grade, issues = grade_evidence(
-        pack, cfg, 1.95, selection=pack["selection"], sport="darts"
+        pack, cfg, 1.55, selection=pack["selection"], sport="darts"
     )
     assert grade in ("A", "B"), (grade, issues[:8])
 
