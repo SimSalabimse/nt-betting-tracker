@@ -68,4 +68,10 @@ edges:
   realistic: "Form spikes on averages, underdog HC with positive H2H, totals when styles clash"
   efficient_markets: "MVG/Littler short ML"
   inefficient_markets: "Wide leg HCs on early rounds, totals on mismatched averages"
+# Natural market elevation (PR3) — dual high scoring / long format → legs totals
+natural_markets:
+  - id: over_legs_high
+    trigger_when: [dual_high_scoring, high_checkout_both, dual_high_180, long_format]
+    selection_patterns: ["totalt antall runder", "over 27.5", "over 27", "runder 27"]
+    require_eval_on: [underdog_hc, handicap]
 notes: "Stable ids: checkout_scoring, ranking_seed. Never place soft underdog leg HC without H2H + averages."

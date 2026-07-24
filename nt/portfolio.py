@@ -58,6 +58,9 @@ class Recommendation:
     # P1 soft correlation keys
     league_key: str = "unknown"
     script_family: str = "other"
+    # Sliding odds-band confidence (1.40–2.60); FEH-aware in PR3
+    odds_confidence_band: str = ""
+    odds_confidence: dict[str, Any] | None = None
 
 
 def _stake_for(
@@ -394,13 +397,19 @@ def build_portfolio(
         high = odds >= thr
         # FEH recomputed every grade via grade_evidence (place-owning fail-closed).
         # Explore / temp_ev_relax / promo never bypass FEH hard rejects (grade F).
-        grade, issues = grade_evidence(
+        # return_scorecard so odds_confidence can prefer FEH H2H polarity.
+        _ge = grade_evidence(
             c.evidence,
             cfg,
             odds,
             selection=c.selection or "",
             sport=c.sport or "",
+            return_scorecard=True,
         )
+        grade, issues = _ge[0], _ge[1]
+        feh_audit = _ge[2] if len(_ge) > 2 else None
+        if not isinstance(feh_audit, dict):
+            feh_audit = None
 
         p_model = c.p_model
         if p_model is None and c.evidence and c.evidence.get("p_model") is not None:
@@ -450,9 +459,74 @@ def build_portfolio(
         strong_n = int(sel.get("strong_min_sources", 8))
         strong = is_strong_confidence(c.evidence, grade, min_sources=strong_n)
         min_ev = strong_floor if strong else standard_floor
-        # Thin sport/market explore path: lower EV bar so non-football can build sample
-        if adj.get("explored"):
-            min_ev = min(min_ev, float(div_lim.get("explore_min_ev", 0.012)))
+
+        # Sliding odds-band confidence gates (1.40–2.60) — after grade, FEH-aware
+        from nt.odds_confidence import (
+            BAND_HIGH,
+            evaluate_odds_band_gates,
+        )
+
+        band_gate = evaluate_odds_band_gates(
+            odds=odds,
+            grade=grade,
+            evidence=c.evidence,
+            selection=c.selection or "",
+            cfg=cfg,
+            feh=feh_audit,
+        )
+        band_audit = band_gate.to_audit()
+        if not band_gate.ok:
+            rejects.append(
+                {
+                    "match": c.match,
+                    "selection": c.selection,
+                    "odds": odds,
+                    "reason": f"odds_band:{band_gate.reason}",
+                    "grade": grade,
+                    "issues": issues,
+                    "ev": round(ev, 4),
+                    "odds_confidence_band": band_gate.band_id,
+                    "odds_confidence": band_audit,
+                    "near_miss": True,
+                }
+            )
+            continue
+
+        # Explore / virgin boosts off in Bands A/B — recompute adj without explore
+        if not band_gate.explore_allowed and adj.get("explored"):
+            learn_cfg_no_exp = dict(learn_cfg or {})
+            div_no = dict(learn_cfg_no_exp.get("diversification") or {})
+            div_no["explore_max_n"] = -1
+            div_no["explore_min_n"] = 999
+            learn_cfg_no_exp["diversification"] = div_no
+            old_boost = float(adj.get("ev_boost") or 0.0)
+            adj = learning_adjustments(
+                learn,
+                sport=c.sport or "",
+                market=c.market_type or "",
+                selection=c.selection or "",
+                band=band,
+                enabled=learn_on,
+                learn_cfg=learn_cfg_no_exp,
+            )
+            new_boost = float(adj.get("ev_boost") or 0.0)
+            ev = float(ev) - old_boost + new_boost
+            adj = {**adj, "explored": False}
+
+        # Band-specific EV floor (stricter for short prices / core)
+        if (
+            band_gate.min_ev is not None
+            and band_gate.band_id != BAND_HIGH
+            and band_gate.band_id != "disabled"
+        ):
+            min_ev = max(float(min_ev), float(band_gate.min_ev))
+
+        # Thin sport/market explore path — capped by band policy
+        if adj.get("explored") and band_gate.explore_allowed:
+            explore_floor = float(div_lim.get("explore_min_ev", 0.012))
+            if band_gate.explore_ev_cap is not None:
+                explore_floor = max(explore_floor, float(band_gate.explore_ev_cap))
+            min_ev = min(min_ev, explore_floor)
         # Early-bankroll regime floor (Exploration 2% / Survival 3% under High-Volume v2)
         regime_floor = risk.get("regime_min_ev")
         if regime_floor is not None:
@@ -554,13 +628,22 @@ def build_portfolio(
                         min_ev = float(min_ev) - relax_delta
                         used_ev_relax = True
                         relax_stake_mult = float(ev_relax.get("stake_mult") or 0.80)
+                        # Never undercut sliding band min_ev via relax
+                        if (
+                            band_gate.min_ev is not None
+                            and band_gate.band_id != BAND_HIGH
+                            and band_gate.band_id != "disabled"
+                        ):
+                            min_ev = max(float(min_ev), float(band_gate.min_ev))
 
         if pg_raise > 0:
             min_ev += pg_raise
 
         # Before EV reject: try Exploration regime-explore quota (after process_gate raise)
+        # Sliding bands A/B: explore_allowed=False — do not soft-pass short prices on thin EV
         if (
             not high
+            and band_gate.explore_allowed
             and regime_floor is not None
             and float(ev) + 1e-12 < float(min_ev)
             and str(risk.get("bankroll_regime") or "") == "exploration"
@@ -593,7 +676,13 @@ def build_portfolio(
                         or risk.get("regime_explore_min_ev")
                         or 0.02
                     )
+                    if band_gate.explore_ev_cap is not None:
+                        explore_floor = max(
+                            explore_floor, float(band_gate.explore_ev_cap)
+                        )
                     eff = explore_floor + float(pg_raise or 0.0)
+                    if band_gate.min_ev is not None:
+                        eff = max(eff, float(band_gate.min_ev) * 0.85)
                     if float(ev) + 1e-12 >= eff:
                         regime_explore = True
                         min_ev = eff
@@ -626,6 +715,9 @@ def build_portfolio(
                     "learning_ev_boost": adj.get("ev_boost"),
                     "process_gate_raise": pg_raise or None,
                     "temp_ev_relax_delta": relax_delta if used_ev_relax else None,
+                    "odds_confidence_band": band_gate.band_id,
+                    "odds_confidence": band_audit,
+                    "near_miss": True,
                 }
             )
             continue
@@ -688,6 +780,9 @@ def build_portfolio(
             continue
 
         learn_mult = float(adj.get("stake_mult") or 1.0)
+        # Sliding band stake haircut (short prices more conservative)
+        if band_gate.stake_mult > 0 and abs(float(band_gate.stake_mult) - 1.0) > 1e-9:
+            learn_mult = float(learn_mult) * float(band_gate.stake_mult)
         # Mechanism B: extra stake haircut while temp_ev_relax applied to this line
         if used_ev_relax and relax_stake_mult > 0 and relax_stake_mult < 1.0:
             learn_mult = float(learn_mult) * float(relax_stake_mult)
@@ -791,6 +886,10 @@ def build_portfolio(
             note_bits.append(n)
         if c.notes:
             note_bits.append(c.notes[:120])
+        if band_gate.band_id and band_gate.band_id not in ("disabled",):
+            note_bits.append(f"odds_conf={band_gate.band_id}")
+            if band_gate.passes:
+                note_bits.append("band_ok:" + ",".join(band_gate.passes[:3]))
 
         mk = adj.get("market_key") or infer_market(c.selection or "", c.market_type or "")
         from nt.portfolio_correlation import league_key as _league_key
@@ -823,7 +922,9 @@ def build_portfolio(
             p_model=p_model,
             notes="; ".join(note_bits)[:400],
             high_odds=high,
-            explore=bool(adj.get("explored") or regime_explore),
+            explore=bool(adj.get("explored") or regime_explore)
+            if band_gate.explore_allowed
+            else False,
             learning_stake_mult=learn_mult,
             learning_ev_boost=float(adj.get("ev_boost") or 0.0),
             market_key=mk,
@@ -834,6 +935,8 @@ def build_portfolio(
             stake_decision=stake_decision,
             league_key=lg,
             script_family=sf,
+            odds_confidence_band=band_gate.band_id,
+            odds_confidence=band_audit,
         )
         scored.append(rec)
 

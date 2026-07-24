@@ -61,8 +61,24 @@ def test_learning_adjustments_apply():
     assert adj["stake_mult"] > 0
 
 
-def test_portfolio_uses_learning_without_crash():
+def _portfolio_unit_cfg():
+    """Production config with FEH place-owning off — portfolio unit tests only."""
     cfg = load_config()
+    cfg = dict(cfg)
+    sel = dict(cfg.get("selection") or {})
+    ev = dict(sel.get("evidence") or {})
+    fh = dict(ev.get("forced_hierarchy") or {})
+    fh["enabled"] = False
+    ev["forced_hierarchy"] = fh
+    ev["shadow_mode"] = True
+    sel["evidence"] = ev
+    sel["odds_confidence"] = {"enabled": False}
+    cfg["selection"] = sel
+    return cfg
+
+
+def test_portfolio_uses_learning_without_crash():
+    cfg = _portfolio_unit_cfg()
     bankroll, phase, risk = refresh_state(cfg)
     rows = load_bets(ROOT / "data/bets.csv")
     learn = load_learning(cfg)
@@ -77,9 +93,13 @@ def test_portfolio_uses_learning_without_crash():
         p_model=0.70,
         evidence={
             "p_model": 0.70,
-            "summary": "unit test",
+            "summary": "Clear core: form and H2H edge for unit test portfolio path.",
+            "h2h": "H2H 2-0 last meetings",
+            "form": "Won last 3",
             "failure_modes": "test",
-            "sources": [{"url": f"https://example.com/{i}", "takeaway": "t"} for i in range(6)],
+            "sources": [
+                {"url": f"https://example.com/{i}", "takeaway": "t"} for i in range(7)
+            ],
         },
     )
     picked, rejects = build_portfolio(cfg, [c], phase, risk, rows, learning=learn)
@@ -90,7 +110,7 @@ def test_portfolio_uses_learning_without_crash():
 
 def test_diversify_counts_open_pending_sport():
     """max_per_sport includes already-open Pending, not only this slip."""
-    cfg = load_config()
+    cfg = _portfolio_unit_cfg()
     bankroll, phase, risk = refresh_state(cfg)
     # Force can_bet path with plenty of room
     risk = dict(risk)
@@ -128,14 +148,22 @@ def test_diversify_counts_open_pending_sport():
         p_model=0.72,
         evidence={
             "p_model": 0.72,
-            "summary": "unit test diversify",
+            "summary": "Clear core: form and H2H edge for diversify unit test.",
+            "h2h": "H2H 2-1 last meetings",
+            "form": "Won last 4",
             "failure_modes": "test",
-            "sources": [{"url": f"https://example.com/{i}", "takeaway": "t"} for i in range(6)],
+            "sources": [
+                {"url": f"https://example.com/{i}", "takeaway": "t"} for i in range(7)
+            ],
         },
     )
     picked, rejects = build_portfolio(cfg, [cand], phase, risk, pending, learning={})
     assert picked == []
-    assert any("diversify" in str(r.get("reason", "")).lower() and "football" in str(r.get("reason", "")).lower() for r in rejects)
+    assert any(
+        "diversify" in str(r.get("reason", "")).lower()
+        and "football" in str(r.get("reason", "")).lower()
+        for r in rejects
+    )
 
 
 def _ev_cand(
@@ -156,7 +184,12 @@ def _ev_cand(
         p_model=p,
         evidence={
             "p_model": p,
-            "summary": "unit test pack with gates for portfolio fill",
+            "summary": (
+                "Clear core: form edge and matchup history support this selection; "
+                "H2H checked and recent form favours the line."
+            ),
+            "h2h": "H2H 3-1 last meetings; matchup assessed",
+            "form": "Won last 4; ranking/seed gap supports edge",
             "failure_modes": "test",
             "context_risk": "low",
             "availability_status": "predicted",
@@ -180,7 +213,7 @@ def test_soft_football_fillup_takes_second_football_when_slots_remain():
     BTTS Nei) must still be selected up to max_per_sport — never leave empty
     seats just because one football bet was already taken.
     """
-    cfg = load_config()
+    cfg = _portfolio_unit_cfg()
     _, phase, risk = refresh_state(cfg)
     risk = dict(risk)
     risk["can_bet"] = True
@@ -228,7 +261,7 @@ def test_soft_football_fillup_takes_second_football_when_slots_remain():
 
 def test_soft_football_prefers_non_football_first_then_fills():
     """Non-football is preferred first; empty seats still take football."""
-    cfg = load_config()
+    cfg = _portfolio_unit_cfg()
     _, phase, risk = refresh_state(cfg)
     risk = dict(risk)
     risk["can_bet"] = True

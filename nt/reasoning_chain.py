@@ -353,6 +353,13 @@ def build_chain_from_pick(
 
         ev_h = round(ev_after_haircut(p_model, odds, hair), 4)
 
+    oc = _pick_attr(pick, "odds_confidence")
+    if not isinstance(oc, dict):
+        oc = None
+    oc_band = str(_pick_attr(pick, "odds_confidence_band") or "")
+    if not oc_band and isinstance(oc, dict):
+        oc_band = str(oc.get("band_id") or "")
+
     chain: dict[str, Any] = {
         "schema_version": SCHEMA_VERSION,
         "ts": utc_now(),
@@ -365,6 +372,8 @@ def build_chain_from_pick(
         "market_key": str(_pick_attr(pick, "market_key") or ""),
         "grade": str(_pick_attr(pick, "grade") or ""),
         "odds_band": str(_pick_attr(pick, "odds_band") or ""),
+        "odds_confidence_band": oc_band,
+        "odds_confidence": oc,
         "p_model": p_model,
         "haircut": hair,
         "ev": ev,
@@ -429,6 +438,20 @@ def build_chain_from_near_miss(
     if row.get("promotion_score_components") and "promotion_score_components" not in light_blob:
         light_blob["promotion_score_components"] = row.get("promotion_score_components")
 
+    oc = row.get("odds_confidence")
+    if not isinstance(oc, dict):
+        oc = None
+    oc_band = str(row.get("odds_confidence_band") or "")
+    if not oc_band and isinstance(oc, dict):
+        oc_band = str(oc.get("band_id") or "")
+    if not oc_band and odds is not None:
+        try:
+            from nt.odds_confidence import classify_odds_confidence_band
+
+            oc_band = classify_odds_confidence_band(float(odds), None)
+        except Exception:
+            oc_band = ""
+
     chain: dict[str, Any] = {
         "schema_version": SCHEMA_VERSION,
         "ts": utc_now(),
@@ -441,6 +464,8 @@ def build_chain_from_near_miss(
         "sport": str(row.get("sport") or ""),
         "market_type": str(row.get("market_type") or ""),
         "grade": str(row.get("grade") or ""),
+        "odds_confidence_band": oc_band,
+        "odds_confidence": oc,
         "p_model": p_model,
         "haircut": hair,
         "ev": ev if ev is not None else ev_h,
@@ -823,11 +848,32 @@ def _format_one_md(i: int, c: dict[str, Any]) -> list[str]:
         bits.append(f"grade={c['grade']}")
     if c.get("phase"):
         bits.append(f"phase={c['phase']}")
+    if c.get("odds_confidence_band"):
+        bits.append(f"odds_conf_band={c['odds_confidence_band']}")
     controls = c.get("controls") or {}
     light = c.get("light") or {}
     out = [f"### {i}. {title}", ""]
     if bits:
         out.append("- " + " · ".join(bits))
+    oc = c.get("odds_confidence")
+    if isinstance(oc, dict) and oc:
+        oc_bits = []
+        if oc.get("band_label"):
+            oc_bits.append(str(oc["band_label"]))
+        if oc.get("ok") is not None:
+            oc_bits.append("pass" if oc.get("ok") else "FAIL")
+        fails = oc.get("failures") or []
+        if fails:
+            oc_bits.append("fail:" + "; ".join(str(f) for f in fails[:3]))
+        passes = oc.get("passes") or []
+        if passes and not fails:
+            oc_bits.append("ok:" + ",".join(str(p) for p in passes[:3]))
+        if oc.get("min_ev") is not None:
+            oc_bits.append(f"band_min_ev={float(oc['min_ev']):.3f}")
+        if oc.get("stake_mult") is not None and abs(float(oc["stake_mult"]) - 1.0) > 1e-9:
+            oc_bits.append(f"stake×{float(oc['stake_mult']):.2f}")
+        if oc_bits:
+            out.append(f"- odds_confidence: {' · '.join(oc_bits)}")
     if controls:
         ctrl = ", ".join(f"{k}={v}" for k, v in controls.items())
         out.append(f"- controls: {ctrl}")

@@ -77,7 +77,12 @@ def _pack(p: float = 0.70) -> dict:
         "match": "X",
         "selection": "Y",
         "p_model": p,
-        "summary": "test pack with enough text for grade B",
+        "summary": (
+            "Clear core: form edge and matchup history support this selection; "
+            "H2H checked and recent form favours the line."
+        ),
+        "h2h": "H2H 3-1 last meetings; matchup assessed",
+        "form": "Won last 4; ranking/seed gap supports edge",
         "failure_modes": "test failure",
         "context_risk": "low",
         "availability_status": "predicted",

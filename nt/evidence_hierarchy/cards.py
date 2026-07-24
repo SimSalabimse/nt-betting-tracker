@@ -60,6 +60,8 @@ class SportCard:
     schema_version: int = 1
     # alias_id → stable factor id (e.g. avg_checkout → checkout_scoring)
     signal_id_aliases: dict[str, str] = field(default_factory=dict)
+    # Card-driven natural market elevation (PR3)
+    natural_markets: list[dict[str, Any]] = field(default_factory=list)
 
     @property
     def card_id(self) -> str:
@@ -182,6 +184,7 @@ class SportCard:
             "required_groups": self.required_groups,
             "notes": self.notes,
             "signal_id_aliases": dict(self.signal_id_aliases or {}),
+            "natural_markets": list(self.natural_markets or []),
         }
 
 
@@ -238,6 +241,9 @@ def _card_from_dict(data: dict[str, Any], *, sport_key: str) -> SportCard:
         version=int(data.get("version") or 1),
         schema_version=int(data.get("schema_version") or 1),
         signal_id_aliases=aliases,
+        natural_markets=[
+            dict(x) for x in (data.get("natural_markets") or []) if isinstance(x, dict)
+        ],
     )
 
 

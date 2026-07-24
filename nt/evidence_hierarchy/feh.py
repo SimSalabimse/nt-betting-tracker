@@ -13,6 +13,10 @@ from nt.evidence_hierarchy.anti_soft_underdog import (
 from nt.evidence_hierarchy.cards import SportCard, default_quarantine_card, load_sport_card
 from nt.evidence_hierarchy.checklist import ChecklistAnswers, load_checklist_from_pack
 from nt.evidence_hierarchy.h2h_normalize import normalize_h2h
+from nt.evidence_hierarchy.natural_markets import (
+    detect_triggers,
+    evaluate_natural_markets,
+)
 from nt.evidence_hierarchy.normalize import normalize_sport_for_research
 from nt.evidence_hierarchy.score import (
     evidence_cfg,
@@ -69,7 +73,7 @@ def forced_hierarchy_cfg(cfg: dict[str, Any] | None) -> dict[str, Any]:
         "require_checklist": bool(fh.get("require_checklist", True)),
         "anti_soft_underdog": bool(fh.get("anti_soft_underdog", True)),
         "allow_soft_ud_grade_c": bool(fh.get("allow_soft_ud_grade_c", False)),
-        "natural_market_elevation": bool(fh.get("natural_market_elevation", False)),
+        "natural_market_elevation": bool(fh.get("natural_market_elevation", True)),
         "side_first": bool(fh.get("side_first", True)),
         "soft_ud_odds_lo": float(fh.get("soft_ud_odds_lo") or 1.70),
         "soft_ud_odds_hi_hard": float(fh.get("soft_ud_odds_hi_hard") or 2.20),
@@ -119,25 +123,6 @@ class FEHResult:
         }
 
 
-def _natural_markets_stub(
-    *,
-    enabled: bool,
-) -> dict[str, Any]:
-    """PR2: natural markets optional stub — always N/A (full gate in PR3)."""
-    return {
-        "required": False,
-        "candidates": [],
-        "evaluated": [],
-        "missing_on_board": [],
-        "comparison_vs_hc": "",
-        "preferred_market": None,
-        "hard_reject": False,
-        "reject_code": None,
-        "status": "n_a" if not enabled else "stub_n_a",
-        "note": "PR2 natural market elevation stub — always N/A",
-    }
-
-
 def _min_grade(a: str, b: str) -> str:
     order = {"F": 0, "C": 1, "B": 2, "A": 3}
     return a if order.get(a, 0) <= order.get(b, 0) else b
@@ -152,11 +137,13 @@ def run_forced_evidence_hierarchy(
     cfg: dict[str, Any] | None = None,
     card: SportCard | None = None,
     run_saef: bool = True,
+    odds_rows: list[dict[str, Any]] | None = None,
+    sibling_packs: list[dict[str, Any]] | None = None,
 ) -> FEHResult:
     """
     Pure FEH recompute (design pipeline):
 
-      normalize_h2h → checklist → decide_side → anti-soft → natural (stub)
+      normalize_h2h → checklist → decide_side → anti-soft → natural markets
       → score_evidence (optional) → grade_cap
 
     Never mutates pack. Ignore stored grade_cap on pack.
@@ -257,11 +244,52 @@ def run_forced_evidence_hierarchy(
             notes.extend(anti.notes)
             grade_cap = "F"
 
-        # 4) Natural markets stub (PR2 always N/A — no hard reject here)
-        natural = _natural_markets_stub(
-            enabled=bool(fh.get("natural_market_elevation"))
+        # 4) Natural market elevation (PR3) — N/A if missing on board; F if present unevaluated
+        soft_ud_hc = bool(
+            underdog_hc
+            and float(fh["soft_ud_odds_lo"])
+            <= float(odds)
+            <= float(fh["soft_ud_odds_hi_soft"])
         )
-        notes.append(str(natural.get("note") or "natural N/A"))
+        nat_enabled = bool(fh.get("natural_market_elevation"))
+        if nat_enabled:
+            triggers = detect_triggers(ev, card, checklist)
+            nat_res = evaluate_natural_markets(
+                triggers=triggers,
+                pack=ev,
+                selection=sel,
+                family=family,
+                card=card,
+                checklist=checklist,
+                odds_rows=odds_rows,
+                sibling_packs=sibling_packs,
+                enabled=True,
+                soft_ud_hc=soft_ud_hc,
+            )
+            natural = nat_res.to_dict()
+            if place_owning and nat_res.hard_reject and nat_res.reject_code:
+                hard = True
+                if nat_res.reject_code not in codes:
+                    codes.append(nat_res.reject_code)
+                notes.extend(nat_res.notes)
+                grade_cap = "F"
+            else:
+                notes.extend(nat_res.notes[:2] or ["natural N/A"])
+        else:
+            natural = {
+                "required": False,
+                "candidates": [],
+                "evaluated": [],
+                "missing_on_board": [],
+                "comparison_vs_hc": "",
+                "preferred_market": None,
+                "hard_reject": False,
+                "reject_code": None,
+                "status": "disabled",
+                "triggers": [],
+                "notes": ["natural_market_elevation disabled"],
+            }
+            notes.append("natural N/A (disabled)")
 
         # 5) SAEF scorecard
         saef_audit: dict[str, Any] | None = None

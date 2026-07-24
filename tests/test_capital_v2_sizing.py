@@ -87,7 +87,12 @@ def _pack(p: float = 0.75) -> dict:
         "match": "X",
         "selection": "Y",
         "p_model": p,
-        "summary": "test pack with enough text for grade B sizing",
+        "summary": (
+            "Clear core: form and matchup support this line; H2H checked "
+            "with ranking/seed edge for unit sizing."
+        ),
+        "h2h": "H2H 3-1 last meetings; matchup assessed",
+        "form": "Won last 4; ranking gap",
         "failure_modes": "test failure mode text",
         "context_risk": "low",
         "availability_status": "confirmed",

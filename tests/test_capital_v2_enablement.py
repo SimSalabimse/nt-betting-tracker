@@ -122,7 +122,12 @@ def test_flag_on_sizing_unit_not_phase_band(tmp_path):
     }
     pack = {
         "p_model": 0.75,
-        "summary": "test pack long enough for grade",
+        "summary": (
+            "Clear core: form and matchup support this line; H2H checked "
+            "with ranking/seed edge for unit sizing."
+        ),
+        "h2h": "H2H 3-1 last meetings; matchup assessed",
+        "form": "Won last 4; ranking gap",
         "failure_modes": "fail mode text here",
         "context_risk": "low",
         "availability_status": "confirmed",

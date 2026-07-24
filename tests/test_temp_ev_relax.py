@@ -70,6 +70,8 @@ def _cfg(tmp: Path, **ter_over) -> dict:
             },
             "band_prior_boost": {},
             "min_research_sources": {"default": 6, "grade_A": 10, "high_odds": 12},
+            # Isolate Mechanism B: sliding odds_confidence tested in test_odds_confidence.py
+            "odds_confidence": {"enabled": False},
         },
         "learning": {
             "enabled": False,

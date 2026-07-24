@@ -171,11 +171,18 @@ def test_portfolio_notes_include_p_model():
     from nt.config import load_config
 
     cfg = load_config()
-    # Lower haircut noise for unit certainty
+    # Lower haircut noise for unit certainty; isolate from FEH place-owning
     cfg = dict(cfg)
     cfg["selection"] = dict(cfg["selection"])
     cfg["selection"]["probability_haircut"] = 0.0
     cfg["selection"]["standard_min_ev"] = 0.01
+    cfg["selection"]["odds_confidence"] = {"enabled": False}
+    ev = dict((cfg["selection"].get("evidence") or {}))
+    fh = dict(ev.get("forced_hierarchy") or {})
+    fh["enabled"] = False
+    ev["forced_hierarchy"] = fh
+    ev["shadow_mode"] = True
+    cfg["selection"]["evidence"] = ev
     cfg["learning"] = dict(cfg.get("learning") or {})
     cfg["learning"]["enabled"] = False
     phase = {
@@ -195,7 +202,12 @@ def test_portfolio_notes_include_p_model():
         p_model=0.62,
         evidence={
             "p_model": 0.62,
-            "summary": "unit pack for forensic p_model notes",
+            "summary": (
+                "Clear core: both teams attack; H2H and form support BTTS; "
+                "matchup history checked for forensic notes test."
+            ),
+            "h2h": "H2H both scored in 4 of last 5",
+            "form": "Both avg 1.5+ goals recent form",
             "failure_modes": "x",
             "context_risk": "low",
             "availability_status": "predicted",

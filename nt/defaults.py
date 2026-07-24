@@ -127,9 +127,9 @@ def research_cfg(cfg: dict[str, Any]) -> dict[str, Any]:
             "promo_mid_band_boost": 60.0,
             "promo_alt_boost": 14.0,
             "promo_short_chalk_penalty": -55.0,
-            "fail_odds_below": 1.35,
+            "fail_odds_below": 1.40,
             "fail_odds_above": 4.0,
-            "pass_odds_lo": 1.45,
+            "pass_odds_lo": 1.40,
             "pass_odds_hi": 2.60,
         },
         "coverage_floor": {

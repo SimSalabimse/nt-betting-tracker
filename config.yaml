@@ -275,7 +275,7 @@ selection:
       require_checklist: true
       anti_soft_underdog: true
       allow_soft_ud_grade_c: false
-      natural_market_elevation: false   # PR3
+      natural_market_elevation: true   # PR3
       side_first: true
       soft_ud_odds_lo: 1.70
       soft_ud_odds_hi_hard: 2.20
@@ -283,6 +283,61 @@ selection:
       anti_soft_ml_dogs:
         individual_sports: true
         team_sports: false
+  # Sliding odds-band confidence (usable 1.40–2.60). FEH H2H polarity preferred when present.
+  # Does not change capital_v2 / phase / secure. Bands cannot bypass FEH F.
+  odds_confidence:
+    enabled: true
+    usable_lo: 1.40
+    usable_hi: 2.60
+    underdog_hc_negative_h2h_reject: true
+    bands:
+      A:  # Short high-confidence 1.40–1.60
+        lo: 1.40
+        hi: 1.60
+        min_grade: A
+        min_ev: 0.035
+        min_sources: 8
+        stake_mult: 0.80
+        require_h2h_or_rank_form: true
+        explore_allowed: false
+      B:  # Short-medium 1.60–1.85
+        lo: 1.60
+        hi: 1.85
+        min_grade: B
+        min_ev: 0.025
+        min_sources: 7
+        stake_mult: 0.90
+        require_core_plus_support: true
+        explore_allowed: false
+      C:  # Core 1.85–2.30
+        lo: 1.85
+        hi: 2.30
+        min_grade: B
+        min_ev: 0.022
+        min_sources: 6
+        stake_mult: 1.0
+        require_core_plus_support: true
+        require_h2h_checked: true
+        explore_allowed: true
+        explore_ev_cap: 0.015
+      D:  # Upper 2.30–2.60
+        lo: 2.30
+        hi: 2.60
+        min_grade: B
+        min_ev: 0.025
+        min_sources: 7
+        stake_mult: 0.95
+        require_core_plus_support: true
+        require_h2h_checked: true
+        underdog_hc_require_matchup: true
+        explore_allowed: true
+        explore_ev_cap: 0.015
+    below_floor:  # < 1.40 exceptional Grade A only
+      allow_exceptional: true
+      min_grade: A
+      min_ev: 0.05
+      min_sources: 10
+      stake_mult: 0.70
   # If historical band ROI is terrible with enough sample, raise the bar further
   band_penalty:
     min_sample: 15
@@ -518,9 +573,9 @@ research:
     promo_alt_boost: 14              # HC / alt totals (was ~8)
     promo_short_chalk_penalty: -55   # was -45
     soft_value_min_rel: 0.08         # soft ≥ NT × 1.08 when ref present
-    fail_odds_below: 1.35
+    fail_odds_below: 1.40      # align with odds_confidence usable floor
     fail_odds_above: 4.0
-    pass_odds_lo: 1.45
+    pass_odds_lo: 1.40         # Band A short prices may light-pass with high bar
     pass_odds_hi: 2.60
 
   # Coverage floor (Mechanism A) — dynamic target + scaffolds; never invents p_model
