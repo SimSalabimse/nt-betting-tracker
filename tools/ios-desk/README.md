@@ -137,6 +137,7 @@ NT Desk targets personal sideload quality (HIG), not App Store review. Use this 
 - [ ] KPI `MetricCard`s announce as **one** element: `label, value` (optional subtitle)
 - [ ] Pending rows combine match / stake / odds / status into a single label
 - [ ] Charts expose a short summary (point counts / latest), not raw mark-by-mark noise
+- [ ] Charts: drag/scrub with a finger shows day (or sport) detail callout + rule mark
 - [ ] Risk gauge, status pill, freshness banners, and empty states have explicit labels
 - [ ] Section titles use header traits where useful; decorative rails/icons are `accessibilityHidden`
 - [ ] Empty-state primary control remains activatable (children `.contain`, not over-combined)
