@@ -3,6 +3,7 @@ import SwiftUI
 struct DeskView: View {
     @EnvironmentObject private var sync: SyncService
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Binding var selectedTab: DeskTab
 
     private var gridColumns: [GridItem] {
         if dynamicTypeSize.isAccessibilitySize {
@@ -79,7 +80,11 @@ struct DeskView: View {
                             .foregroundStyle(DeskTheme.textDim)
                             .padding(.top, DeskSpacing.s1)
                     } else {
-                        emptyState
+                        EmptyDeskView {
+                            selectedTab = .settings
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.top, DeskSpacing.s6)
                     }
                 }
                 .padding(DeskSpacing.contentPad)
@@ -147,35 +152,5 @@ struct DeskView: View {
                 )
             }
         }
-    }
-
-    // MARK: - Empty
-
-    private var emptyState: some View {
-        VStack(spacing: DeskSpacing.s4) {
-            Image(systemName: "wifi.slash")
-                .font(.system(size: 40))
-                .foregroundStyle(DeskTheme.textDim)
-            Text("No desk data")
-                .font(DeskTypography.sectionTitle)
-                .foregroundStyle(DeskTheme.text)
-            Text("Set base URL in Settings and pull to refresh while the PC is reachable.")
-                .font(DeskTypography.caption)
-                .foregroundStyle(DeskTheme.textMuted)
-                .multilineTextAlignment(.center)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, DeskSpacing.s7)
-        .padding(.horizontal, DeskSpacing.s4)
-        .background(
-            RoundedRectangle(cornerRadius: DeskSpacing.radius)
-                .fill(DeskTheme.surfaceElev)
-                .overlay(
-                    RoundedRectangle(cornerRadius: DeskSpacing.radius)
-                        .stroke(DeskTheme.borderSoft, lineWidth: 1)
-                )
-        )
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("No desk data. Set base URL in Settings and pull to refresh while the PC is reachable.")
     }
 }
