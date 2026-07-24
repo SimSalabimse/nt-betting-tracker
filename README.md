@@ -12,7 +12,11 @@ You supply **odds** and **results**. The system owns stakes, phase, daily risk, 
 | **Human final approval** | Recommend proposes; you place. Agent never auto-bets |
 | **Backward compatible** | v5 is additive — your ledger and LuminaNT desktop keep working |
 
-Deep docs: [`docs/VISION.md`](docs/VISION.md) · [`docs/BANKROLL_PLAN.md`](docs/BANKROLL_PLAN.md) · [`docs/RESEARCH_WORKFLOW.md`](docs/RESEARCH_WORKFLOW.md) · [`docs/CAPITAL_HYBRID_PROGRESSION.md`](docs/CAPITAL_HYBRID_PROGRESSION.md) · [`docs/DESK_SKILLS.md`](docs/DESK_SKILLS.md) · [`docs/SETTLEMENT_LEARNING.md`](docs/SETTLEMENT_LEARNING.md) · [`docs/SOURCES.md`](docs/SOURCES.md) · [`docs/AGENT.md`](docs/AGENT.md) · [`docs/PHASE_PLAN.md`](docs/PHASE_PLAN.md)
+Deep docs: [`docs/COMMANDS.md`](docs/COMMANDS.md) · [`docs/VISION.md`](docs/VISION.md) · [`docs/BANKROLL_PLAN.md`](docs/BANKROLL_PLAN.md) · [`docs/RESEARCH_WORKFLOW.md`](docs/RESEARCH_WORKFLOW.md) · [`docs/CAPITAL_HYBRID_PROGRESSION.md`](docs/CAPITAL_HYBRID_PROGRESSION.md) · [`docs/DESK_SKILLS.md`](docs/DESK_SKILLS.md) · [`docs/SETTLEMENT_LEARNING.md`](docs/SETTLEMENT_LEARNING.md) · [`docs/SOURCES.md`](docs/SOURCES.md) · [`docs/AGENT.md`](docs/AGENT.md) · [`docs/PHASE_PLAN.md`](docs/PHASE_PLAN.md) · mobile/iOS: [`tools/mobile-view/README.md`](tools/mobile-view/README.md) · [`tools/ios-desk/README.md`](tools/ios-desk/README.md)
+
+### Command cheatsheet
+
+Copy-paste server, iOS IPA, and CLI commands: **[`docs/COMMANDS.md`](docs/COMMANDS.md)**.
 
 ---
 
