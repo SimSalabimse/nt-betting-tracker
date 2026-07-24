@@ -2,6 +2,7 @@ import SwiftUI
 
 struct DeskView: View {
     @EnvironmentObject private var sync: SyncService
+    @Binding var selectedTab: DeskTab
 
     var body: some View {
         NavigationStack {
@@ -35,11 +36,11 @@ struct DeskView: View {
                             .font(.caption2)
                             .foregroundStyle(.secondary)
                     } else {
-                        ContentUnavailableView(
-                            "No desk data",
-                            systemImage: "wifi.slash",
-                            description: Text("Set base URL in Settings and pull to refresh while the PC is reachable.")
-                        )
+                        EmptyDeskView {
+                            selectedTab = .settings
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.top, DeskSpacing.s6)
                     }
                 }
                 .padding()
