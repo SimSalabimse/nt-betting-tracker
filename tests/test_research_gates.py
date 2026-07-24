@@ -214,18 +214,118 @@ def test_basketball_star_rest_blocks_prop_over():
 
 
 def test_darts_ml_not_blocked_without_lineup():
+    """ML is not avail-sensitive on darts profile — gates must not hard-fail missing status."""
     cfg = load_config()
-    ev = {
-        "match": "Aspinall vs Cullen",
-        "selection": "Vinner: Aspinall, Nathan",
-        "sport": "darts",
-        "p_model": 0.58,
-        "summary": "Seed should cover",
-        "failure_modes": "upset",
-        "sources": _sources(6),
-    }
-    grade, _ = grade_evidence(ev, cfg, 1.50, selection=ev["selection"], sport="darts")
-    assert grade in ("A", "B")
+    hard, soft = evaluate_research_gates(
+        {
+            "match": "Aspinall vs Cullen",
+            "sport": "darts",
+            "script_lean": "neutral",
+            "sources": _sources(6),
+        },
+        cfg,
+        selection="Vinner: Aspinall, Nathan",
+        sport="darts",
+        odds=1.50,
+    )
+    assert hard == []
+    assert isinstance(soft, list)
+
+
+def test_darts_high_scoring_blocks_leg_under():
+    """High/open darts script must hard-fail leg totals under (script conflict)."""
+    cfg = load_config()
+    hard, _ = evaluate_research_gates(
+        {
+            "match": "Smith, Ross vs Price, Gerwyn",
+            "sport": "darts",
+            "league": "PDC World Matchplay",
+            "script_lean": "high_scoring",
+            "availability_status": "predicted",
+            "availability_notes": "Both players active; dual high averages expected on long BO.",
+            "sources": _sources(
+                5,
+                [{"url": "https://ex.com/avg", "takeaway": "Both 98+ avg form", "kind": "stats"}],
+            ),
+        },
+        cfg,
+        selection="Totalt antall runder 27.5: Under 27.5",
+        sport="darts",
+        odds=1.90,
+    )
+    assert hard
+    assert any("script" in h.lower() or "high_scoring" in h for h in hard)
+
+
+def test_darts_totals_missing_availability_blocked():
+    """Leg totals are avail-sensitive; missing status without research → hard fail."""
+    cfg = load_config()
+    hard, _ = evaluate_research_gates(
+        {
+            "match": "A vs B",
+            "sport": "darts",
+            "script_lean": "neutral",
+            "sources": _sources(4),
+        },
+        cfg,
+        selection="Totalt antall runder 27.5: Over 27.5",
+        sport="darts",
+        odds=1.90,
+    )
+    assert hard
+    assert any("availability" in h.lower() for h in hard)
+
+
+def test_snooker_ml_not_blocked_without_lineup():
+    """ML is not avail-sensitive on snooker profile."""
+    cfg = load_config()
+    hard, soft = evaluate_research_gates(
+        {
+            "match": "Maguire vs Highfield",
+            "sport": "snooker",
+            "script_lean": "neutral",
+            "sources": _sources(6),
+        },
+        cfg,
+        selection="Vinner: Maguire, Stephen",
+        sport="snooker",
+        odds=1.55,
+    )
+    assert hard == []
+    assert isinstance(soft, list)
+
+
+def test_snooker_grind_blocks_frame_over():
+    cfg = load_config()
+    hard, _ = evaluate_research_gates(
+        {
+            "match": "A vs B",
+            "sport": "snooker",
+            "script_lean": "grind",
+            "availability_status": "predicted",
+            "availability_notes": "Both fit; cagey frame-trading expected from H2H.",
+            "sources": _sources(
+                4,
+                [{"url": "https://ex.com/h2h", "takeaway": "Low century rate H2H", "kind": "h2h"}],
+            ),
+        },
+        cfg,
+        selection="Totalt antall frames 17.5: Over 17.5",
+        sport="snooker",
+        odds=1.90,
+    )
+    assert hard
+    assert any("grind" in h or "script" in h.lower() for h in hard)
+
+
+def test_darts_snooker_profiles_registered():
+    from nt.research_gates.profiles import PROFILES, get_profile
+    from nt.research_gates.profiles import darts as da
+    from nt.research_gates.profiles import snooker as sn
+
+    assert get_profile("darts") is da.apply
+    assert get_profile("snooker") is sn.apply
+    assert "darts" in PROFILES and "snooker" in PROFILES
 
 
 def test_base_rate_conflict():

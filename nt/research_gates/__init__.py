@@ -24,8 +24,10 @@ from nt.research_gates.infer import (
 )
 from nt.research_gates.profiles import get_profile
 from nt.research_gates.profiles import basketball as bb_prof
+from nt.research_gates.profiles import darts as da_prof
 from nt.research_gates.profiles import default as def_prof
 from nt.research_gates.profiles import football as fb_prof
+from nt.research_gates.profiles import snooker as sn_prof
 from nt.research_gates.profiles import tennis as tn_prof
 from nt.research_gates.types import GateContext, GateResult
 
@@ -73,6 +75,8 @@ def _gates_cfg(cfg: dict[str, Any]) -> dict[str, Any]:
             "football": {"enabled": True},
             "tennis": {"enabled": True},
             "basketball": {"enabled": True},
+            "darts": {"enabled": True},
+            "snooker": {"enabled": True},
             "default": {"enabled": True},
         },
     }
@@ -110,6 +114,10 @@ def _is_sensitive(sport: str, family: str, gcfg: dict[str, Any]) -> bool:
         return tn_prof.is_avail_sensitive(family, gcfg)
     if sport == "basketball":
         return bb_prof.is_avail_sensitive(family, gcfg)
+    if sport == "darts":
+        return da_prof.is_avail_sensitive(family, gcfg)
+    if sport == "snooker":
+        return sn_prof.is_avail_sensitive(family, gcfg)
     return def_prof.is_avail_sensitive(family, gcfg)
 
 

@@ -1,6 +1,9 @@
 from __future__ import annotations
 
-"""Generic profile for hockey, handball, darts, esports, etc."""
+"""Generic profile for hockey, handball, esports, baseball, etc.
+
+Darts/snooker have dedicated profiles (profiles/darts.py, profiles/snooker.py).
+"""
 
 from nt.research_gates.types import GateContext, GateResult
 from nt.research_gates.universal import (

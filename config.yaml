@@ -659,6 +659,8 @@ research:
       football: { enabled: true }
       tennis: { enabled: true }
       basketball: { enabled: true }
+      darts: { enabled: true }
+      snooker: { enabled: true }
       default: { enabled: true }
 
 # Football simulation + calibration (optional; never places bets)
