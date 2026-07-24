@@ -21,7 +21,7 @@ from nt.bets_io import utc_now
 from nt.config import path_from_config
 from nt.paths import resolve
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 # Missed-audit mid band (prefer for near-miss volume cap)
 _MID_BAND_LO = 1.80
@@ -29,6 +29,9 @@ _MID_BAND_HI = 2.20
 # Survivable research band (secondary preference)
 _SURV_BAND_LO = 1.85
 _SURV_BAND_HI = 2.60
+
+# Compact FEH reject codes sometimes appear as feh:CODE in issues/notes
+_FEH_CODE_RE = re.compile(r"\b(FEH_[A-Z0-9_]+)\b")
 
 
 def reasoning_cfg(cfg: dict[str, Any]) -> dict[str, Any]:
@@ -40,6 +43,7 @@ def reasoning_cfg(cfg: dict[str, Any]) -> dict[str, Any]:
         "near_miss_ev_slack": 0.04,  # include rejects within this of clearing EV
         "place_md_section": True,
         "join_light": True,
+        "feh_fields": True,  # schema v2 FEH / test-cap enrichment
     }
     return {**defaults, **raw}
 
@@ -140,6 +144,312 @@ def _parse_promo_from_notes(notes: str) -> float | None:
         return float(n.split("promo_score=")[-1].split()[0].split("|")[0].rstrip(";,"))
     except (TypeError, ValueError, IndexError):
         return None
+
+
+def _feh_codes_from_text(*blobs: Any) -> list[str]:
+    """Extract FEH_* reject codes from free text / issues lists."""
+    out: list[str] = []
+    seen: set[str] = set()
+    for blob in blobs:
+        if blob is None:
+            continue
+        if isinstance(blob, (list, tuple)):
+            texts = [str(x) for x in blob]
+        else:
+            texts = [str(blob)]
+        for t in texts:
+            for m in _FEH_CODE_RE.finditer(t):
+                code = m.group(1)
+                if code not in seen:
+                    seen.add(code)
+                    out.append(code)
+    return out
+
+
+def _as_feh_audit(raw: Any) -> dict[str, Any] | None:
+    if not isinstance(raw, dict) or not raw:
+        return None
+    # Accept FEHResult.to_audit() shape or thin wrappers
+    if any(
+        k in raw
+        for k in (
+            "reject_codes",
+            "anti_soft_underdog",
+            "checklist",
+            "h2h",
+            "natural_market_eval",
+            "feh_version",
+            "final_grade_suggestion",
+        )
+    ):
+        return raw
+    nested = raw.get("feh") or raw.get("feh_audit") or raw.get("audit")
+    if isinstance(nested, dict) and nested:
+        return nested
+    return None
+
+
+def test_cap_snapshot(cfg: dict[str, Any] | None = None) -> dict[str, Any]:
+    """Compact test_cap_10nok field for schema v2 chains (never invents stakes)."""
+    out: dict[str, Any] = {"active": False}
+    if not cfg:
+        return out
+    try:
+        from nt.stake_test_cap import (
+            is_test_cap_active,
+            load_state,
+            stake_test_cap_cfg,
+        )
+
+        tsc = stake_test_cap_cfg(cfg)
+        if not tsc.get("enabled"):
+            return out
+        st = load_state(cfg)
+        active = is_test_cap_active(cfg, st)
+        out = {
+            "active": bool(active),
+            "enabled": True,
+            "max_stake_nok": float(tsc.get("max_stake_nok") or 10.0),
+            "max_bets": int(tsc.get("max_bets") or 10),
+            "n_placed": int(st.get("n_placed") or 0),
+            "system_tag": str(tsc.get("system_tag") or "feh_v1"),
+            "applied": False,
+        }
+    except Exception:
+        # Soft-fail: chain still valid without cap block
+        pass
+    return out
+
+
+def _test_cap_applied_from_obj(obj: Any) -> bool:
+    """True when stake was clipped / tagged for FEH test cap."""
+    notes = str(_pick_attr(obj, "notes") or "")
+    if "FEH_TEST_CAP:10NOK" in notes or "feh_test_cap_10nok" in notes:
+        return True
+    sd = _pick_attr(obj, "stake_decision")
+    if isinstance(sd, dict):
+        constraints = sd.get("constraints_applied") or []
+        if isinstance(constraints, (list, tuple)) and any(
+            "feh_test_cap" in str(c) for c in constraints
+        ):
+            return True
+        if sd.get("feh_test_cap_applied") or sd.get("test_cap_applied"):
+            return True
+    return bool(_pick_attr(obj, "test_cap_applied") or False)
+
+
+def extract_feh_chain_fields(
+    source: Any,
+    *,
+    cfg: dict[str, Any] | None = None,
+    feh_audit: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """
+    Build schema-v2 FEH transparency fields from pick/reject/audit.
+
+    Never invents p_model. Soft-fails to empty/defaults when audit absent.
+    """
+    fields: dict[str, Any] = {}
+    audit = feh_audit
+    if audit is None:
+        audit = _as_feh_audit(_pick_attr(source, "feh"))
+    if audit is None:
+        audit = _as_feh_audit(_pick_attr(source, "feh_audit"))
+    if audit is None and isinstance(source, dict):
+        audit = _as_feh_audit(source.get("feh") or source.get("feh_audit"))
+    extra = _pick_attr(source, "extra")
+    if audit is None and isinstance(extra, dict):
+        audit = _as_feh_audit(extra.get("feh") or extra.get("feh_audit"))
+
+    checklist = None
+    if isinstance(audit, dict):
+        checklist = audit.get("checklist")
+        if not isinstance(checklist, dict):
+            checklist = None
+
+    # strongest +/− and why-side from checklist / SAEF audit / source
+    for key_src, key_dst in (
+        ("strongest_positive", "strongest_positive"),
+        ("strongest_negative", "strongest_negative"),
+        ("why_this_side_not_opposite", "why_this_side_not_opposite"),
+    ):
+        val = None
+        if checklist:
+            val = checklist.get(key_src)
+        if not val and isinstance(audit, dict):
+            saef = audit.get("saef") if isinstance(audit.get("saef"), dict) else None
+            if saef:
+                val = saef.get(key_src)
+        if not val:
+            val = _pick_attr(source, key_src)
+        if val:
+            fields[key_dst] = str(val)[:200]
+
+    primary: list[str] = []
+    if checklist and isinstance(checklist.get("primary_factors_used"), list):
+        primary = [str(x) for x in checklist["primary_factors_used"] if str(x).strip()]
+    if not primary:
+        raw_pf = _pick_attr(source, "primary_factors") or _pick_attr(
+            source, "primary_factors_used"
+        )
+        if isinstance(raw_pf, list):
+            primary = [str(x) for x in raw_pf if str(x).strip()]
+    if primary:
+        fields["primary_factors"] = primary[:12]
+
+    # FEH reject codes
+    codes: list[str] = []
+    if isinstance(audit, dict) and isinstance(audit.get("reject_codes"), list):
+        codes = [str(c) for c in audit["reject_codes"] if str(c).strip()]
+    if not codes:
+        codes = _feh_codes_from_text(
+            _pick_attr(source, "issues"),
+            _pick_attr(source, "notes"),
+            _pick_attr(source, "reason") or _pick_attr(source, "reject_reason"),
+            _pick_attr(source, "feh_reject_codes"),
+        )
+    if codes:
+        fields["feh_reject_codes"] = codes
+
+    # Anti-soft block
+    anti = None
+    if isinstance(audit, dict):
+        anti = audit.get("anti_soft_underdog")
+    if not isinstance(anti, dict):
+        anti = _pick_attr(source, "anti_soft_underdog")
+    if isinstance(anti, dict) and anti:
+        fields["anti_soft_underdog"] = {
+            "applies": bool(anti.get("applies")),
+            "triggered": bool(
+                anti.get("triggered")
+                if anti.get("triggered") is not None
+                else (anti.get("applies") and anti.get("hard_reject"))
+            ),
+            "hard_reject": bool(anti.get("hard_reject")),
+            "failures": list(anti.get("failures") or []),
+            "band": anti.get("band") or "",
+            "mode": anti.get("mode") or "",
+        }
+
+    if isinstance(audit, dict) and "checklist_complete" in audit:
+        fields["feh_checklist_complete"] = bool(audit.get("checklist_complete"))
+    elif checklist is not None and "complete" in checklist:
+        fields["feh_checklist_complete"] = bool(checklist.get("complete"))
+
+    nat = None
+    if isinstance(audit, dict):
+        nat = audit.get("natural_market_eval")
+    if isinstance(nat, dict) and nat:
+        fields["natural_market_eval"] = {
+            "required": bool(nat.get("required")),
+            "evaluated": list(nat.get("evaluated") or []),
+            "status": nat.get("status"),
+            "hard_reject": bool(nat.get("hard_reject")),
+            "reject_code": nat.get("reject_code"),
+        }
+
+    h2h_pol = None
+    if isinstance(audit, dict):
+        h2h = audit.get("h2h")
+        if isinstance(h2h, dict):
+            h2h_pol = (
+                h2h.get("polarity")
+                or h2h.get("edge_polarity")
+                or ("positive" if h2h.get("positive") else None)
+            )
+            if h2h_pol is None and h2h.get("negative"):
+                h2h_pol = "negative"
+            if h2h_pol is None and h2h.get("mixed"):
+                h2h_pol = "mixed"
+    if not h2h_pol:
+        h2h_pol = _pick_attr(source, "h2h_polarity")
+    if h2h_pol:
+        fields["h2h_polarity"] = str(h2h_pol)
+
+    if isinstance(audit, dict) and isinstance(audit.get("saef"), dict):
+        sa = audit["saef"]
+        fields["saef"] = {
+            "E": sa.get("E"),
+            "hard_rejects": list(sa.get("hard_rejects") or []),
+            "grade_suggestion": sa.get("grade_suggestion") or sa.get("grade"),
+            "card_id": sa.get("card_id"),
+        }
+        if sa.get("strongest_positive") and "strongest_positive" not in fields:
+            fields["strongest_positive"] = str(sa["strongest_positive"])[:200]
+        if sa.get("strongest_negative") and "strongest_negative" not in fields:
+            fields["strongest_negative"] = str(sa["strongest_negative"])[:200]
+
+    if isinstance(audit, dict) and audit.get("final_grade_suggestion"):
+        fields["final_grade"] = str(audit["final_grade_suggestion"])
+
+    return fields
+
+
+def apply_schema_v2_fields(
+    chain: dict[str, Any],
+    source: Any = None,
+    *,
+    cfg: dict[str, Any] | None = None,
+    feh_audit: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """
+    Mutate chain in place with schema v2 FEH / band / test-cap fields.
+    Additive and backward-compatible for mobile readers.
+    """
+    chain["schema_version"] = SCHEMA_VERSION
+    src = source if source is not None else chain
+
+    # Odds band + confidence band + final grade
+    odds_band = _pick_attr(src, "odds_band") or chain.get("odds_band") or ""
+    if odds_band:
+        chain["odds_band"] = str(odds_band)
+    ocb = (
+        _pick_attr(src, "odds_confidence_band")
+        or chain.get("odds_confidence_band")
+        or ""
+    )
+    if ocb:
+        chain["odds_confidence_band"] = str(ocb)
+    grade = chain.get("grade") or _pick_attr(src, "grade") or ""
+    if grade:
+        chain["final_grade"] = str(grade)
+    elif chain.get("final_grade"):
+        pass
+    else:
+        chain.setdefault("final_grade", "")
+
+    # FEH transparency
+    feh_fields = extract_feh_chain_fields(src, cfg=cfg, feh_audit=feh_audit)
+    for k, v in feh_fields.items():
+        if v is not None and v != "" and v != []:
+            chain[k] = v
+    if "final_grade" in feh_fields and feh_fields["final_grade"] and not chain.get("grade"):
+        chain["grade"] = feh_fields["final_grade"]
+
+    # Test cap snapshot (research/place audit only — not a stake invent)
+    cap = test_cap_snapshot(cfg)
+    if _test_cap_applied_from_obj(src):
+        cap["applied"] = True
+        cap["active"] = True
+    # Also detect from stake_decision constraints after clip
+    sd = _pick_attr(src, "stake_decision")
+    if isinstance(sd, dict):
+        constraints = sd.get("constraints_applied") or []
+        if any("feh_test_cap" in str(c) for c in (constraints or [])):
+            cap["applied"] = True
+    chain["test_cap_10nok"] = cap
+
+    # Ensure anti_soft key present when FEH codes mention it (even thin)
+    if "anti_soft_underdog" not in chain and any(
+        "ANTI_SOFT" in str(c) for c in (chain.get("feh_reject_codes") or [])
+    ):
+        chain["anti_soft_underdog"] = {
+            "applies": True,
+            "triggered": True,
+            "hard_reject": True,
+            "failures": [],
+        }
+    return chain
 
 
 def load_light_payload(cfg: dict[str, Any]) -> dict[str, Any] | None:
@@ -332,10 +642,12 @@ def build_chain_from_pick(
     bet_id: str | None = None,
     light: dict[str, Any] | None = None,
     extra: dict[str, Any] | None = None,
+    cfg: dict[str, Any] | None = None,
+    feh_audit: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """
     Build a minimal reasoning chain dict from a recommend pick
-    (Recommendation dataclass or dict).
+    (Recommendation dataclass or dict). Schema v2 adds FEH transparency.
     """
     notes = str(_pick_attr(pick, "notes") or "")
     stake_decision = _pick_attr(pick, "stake_decision")
@@ -372,8 +684,11 @@ def build_chain_from_pick(
         "market_key": str(_pick_attr(pick, "market_key") or ""),
         "grade": str(_pick_attr(pick, "grade") or ""),
         "odds_band": str(_pick_attr(pick, "odds_band") or ""),
-        "odds_confidence_band": oc_band,
+        "odds_confidence_band": oc_band or str(
+            _pick_attr(pick, "odds_confidence_band") or ""
+        ),
         "odds_confidence": oc,
+
         "p_model": p_model,
         "haircut": hair,
         "ev": ev,
@@ -396,6 +711,14 @@ def build_chain_from_pick(
     }
     if extra:
         chain["extra"] = dict(extra)
+    audit = feh_audit
+    if audit is None:
+        audit = _as_feh_audit(_pick_attr(pick, "feh")) or _as_feh_audit(
+            _pick_attr(pick, "feh_audit")
+        )
+    if audit is None and isinstance(extra, dict):
+        audit = _as_feh_audit(extra.get("feh") or extra.get("feh_audit"))
+    apply_schema_v2_fields(chain, pick, cfg=cfg, feh_audit=audit)
     return chain
 
 
@@ -406,9 +729,12 @@ def build_chain_from_near_miss(
     phase_id: str | None = None,
     light: dict[str, Any] | None = None,
     source: str = "reject",
+    cfg: dict[str, Any] | None = None,
+    feh_audit: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """
     Build a chain for a light near-miss, portfolio reject, or prefilter discard.
+    Schema v2 includes FEH reject codes when present on the reject row.
     """
     notes = str(row.get("notes") or row.get("rough_ev_note") or "")
     reason = str(row.get("reason") or row.get("reject_reason") or "")
@@ -464,8 +790,10 @@ def build_chain_from_near_miss(
         "sport": str(row.get("sport") or ""),
         "market_type": str(row.get("market_type") or ""),
         "grade": str(row.get("grade") or ""),
-        "odds_confidence_band": oc_band,
+        "odds_band": str(row.get("odds_band") or ""),
+        "odds_confidence_band": oc_band or str(row.get("odds_confidence_band") or ""),
         "odds_confidence": oc,
+
         "p_model": p_model,
         "haircut": hair,
         "ev": ev if ev is not None else ev_h,
@@ -488,6 +816,11 @@ def build_chain_from_near_miss(
         chain["promotion_score"] = row.get("promotion_score")
     elif light_blob.get("promotion_score") is not None:
         chain["promotion_score"] = light_blob.get("promotion_score")
+    # Preserve issues for FEH code extraction
+    if row.get("issues") is not None:
+        chain["issues"] = list(row.get("issues") or [])[:16]
+    audit = feh_audit or _as_feh_audit(row.get("feh") or row.get("feh_audit"))
+    apply_schema_v2_fields(chain, row, cfg=cfg, feh_audit=audit)
     return chain
 
 
@@ -844,8 +1177,10 @@ def _format_one_md(i: int, c: dict[str, Any]) -> list[str]:
         bits.append(f"EV={float(ev):+.3f}")
     if c.get("stake_nok") is not None:
         bits.append(f"stake={float(c['stake_nok']):.0f}")
-    if c.get("grade"):
-        bits.append(f"grade={c['grade']}")
+    if c.get("grade") or c.get("final_grade"):
+        bits.append(f"grade={c.get('final_grade') or c.get('grade')}")
+    if c.get("odds_confidence_band"):
+        bits.append(f"odds_conf={c['odds_confidence_band']}")
     if c.get("phase"):
         bits.append(f"phase={c['phase']}")
     if c.get("odds_confidence_band"):
@@ -871,9 +1206,36 @@ def _format_one_md(i: int, c: dict[str, Any]) -> list[str]:
         if oc.get("min_ev") is not None:
             oc_bits.append(f"band_min_ev={float(oc['min_ev']):.3f}")
         if oc.get("stake_mult") is not None and abs(float(oc["stake_mult"]) - 1.0) > 1e-9:
-            oc_bits.append(f"stake×{float(oc['stake_mult']):.2f}")
+            oc_bits.append(f"stake_x{float(oc['stake_mult']):.2f}")
         if oc_bits:
             out.append(f"- odds_confidence: {' · '.join(oc_bits)}")
+    # Schema v2 FEH transparency (compact)
+    feh_bits = []
+    if c.get("strongest_positive"):
+        feh_bits.append(f"+={(str(c['strongest_positive'])[:60])}")
+    if c.get("strongest_negative"):
+        feh_bits.append(f"-={(str(c['strongest_negative'])[:60])}")
+    if c.get("why_this_side_not_opposite"):
+        feh_bits.append(f"why={(str(c['why_this_side_not_opposite'])[:80])}")
+    if c.get("feh_reject_codes"):
+        feh_bits.append("codes=" + ",".join(str(x) for x in c["feh_reject_codes"][:4]))
+    anti = c.get("anti_soft_underdog") or {}
+    if isinstance(anti, dict) and anti.get("applies"):
+        trig = "triggered" if anti.get("triggered") or anti.get("hard_reject") else "ok"
+        fails = ",".join(str(x) for x in (anti.get("failures") or [])[:4])
+        feh_bits.append(f"anti_soft={trig}" + (f"[{fails}]" if fails else ""))
+    if c.get("h2h_polarity"):
+        feh_bits.append(f"h2h={c['h2h_polarity']}")
+    cap = c.get("test_cap_10nok") or {}
+    if isinstance(cap, dict) and (cap.get("active") or cap.get("applied")):
+        feh_bits.append(
+            "test_cap="
+            + ("applied" if cap.get("applied") else "active")
+            + f"({cap.get('n_placed', '?')}/{cap.get('max_bets', 10)})"
+        )
+    if feh_bits:
+        out.append("- feh: " + " · ".join(feh_bits))
+
     if controls:
         ctrl = ", ".join(f"{k}={v}" for k, v in controls.items())
         out.append(f"- controls: {ctrl}")
@@ -983,6 +1345,7 @@ def build_recommend_chains(
                 bet_id=bid,
                 light=light_map.get(key),
                 extra=extra,
+                cfg=cfg,
             )
         )
 
@@ -1012,6 +1375,7 @@ def build_recommend_chains(
                 phase_id=phase_id,
                 light=light_map.get(key) or row.get("light"),
                 source=str(row.get("source") or "reject"),
+                cfg=cfg,
             )
         )
     return chains

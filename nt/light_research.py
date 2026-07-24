@@ -57,6 +57,9 @@ def tiers_cfg(cfg: dict[str, Any]) -> dict[str, Any]:
         "promo_mid_band_boost": 60.0,
         "promo_alt_boost": 14.0,
         "promo_short_chalk_penalty": -55.0,
+        # Research-rank only (never place): elevate fav HC + natural totals vs soft dog HC
+        "promo_fav_hc_boost": 12.0,
+        "promo_natural_total_boost": 10.0,
         "soft_value_min_rel": 0.08,
         "fail_odds_below": 1.35,  # light-fail ultra-short unless exceptional
         "fail_odds_above": 4.0,  # light-fail longshots without deep plan
@@ -170,6 +173,22 @@ def _is_first_goal(selection: str) -> bool:
     )
 
 
+def _is_favourite_hc_selection(selection: str) -> bool:
+    """True for minus-handicap (favourite) lines — research promo only."""
+    try:
+        from nt.evidence_hierarchy.anti_soft_underdog import (
+            is_minus_handicap,
+            is_plus_handicap,
+        )
+
+        return bool(is_minus_handicap(selection) and not is_plus_handicap(selection))
+    except Exception:
+        s = selection or ""
+        if re.search(r"\+\s*\d", s):
+            return False
+        return bool(re.search(r"-\s*\d", s) or re.search(r"-\d+(?:\.\d+)?", s))
+
+
 def _is_ml_family(family: str, selection: str) -> bool:
     fam = (family or "").lower()
     if fam == "ml" or fam.startswith("ml_"):
@@ -278,6 +297,8 @@ def promotion_score_components(
     mid_boost = float(tcfg.get("promo_mid_band_boost") or 60.0)
     alt_boost = float(tcfg.get("promo_alt_boost") or 14.0)
     short_pen = float(tcfg.get("promo_short_chalk_penalty") or -55.0)
+    fav_hc_boost = float(tcfg.get("promo_fav_hc_boost") or 0.0)
+    natural_total_boost = float(tcfg.get("promo_natural_total_boost") or 0.0)
 
     components: dict[str, float] = {"base": 50.0}
     # Odds band — primary research band is preferred_lo–preferred_hi (High-Volume v2)
@@ -310,8 +331,22 @@ def promotion_score_components(
     sel = (rec.selection or "").lower()
     if fam == "handicap" or "handikap" in sel:
         components["handicap"] = alt_boost
+        # Favourite HC (minus line) research boost — counter soft +HC attraction
+        if fav_hc_boost and _is_favourite_hc_selection(rec.selection):
+            components["fav_hc"] = fav_hc_boost
     if "3.5" in sel or "4.5" in sel or fam in ("totals_over", "totals_under") and "2.5" not in sel:
         components["alt_total"] = alt_boost
+    # Natural totals (O/U family including main 2.5) — research rank only
+    if natural_total_boost and (
+        fam in ("totals_over", "totals_under")
+        or (
+            ("over" in sel or "under" in sel)
+            and re.search(r"\d+\.?\d*", sel)
+            and "handikap" not in sel
+            and "handicap" not in sel
+        )
+    ):
+        components["natural_total"] = natural_total_boost
     if fam == "period" or "1. omgang" in sel or "1. sett" in sel:
         components["period"] = 6.0
 

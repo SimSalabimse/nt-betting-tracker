@@ -58,9 +58,12 @@ class Recommendation:
     # P1 soft correlation keys
     league_key: str = "unknown"
     script_family: str = "other"
-    # Sliding odds-band confidence (1.40–2.60); FEH-aware in PR3
+    # Sliding odds-band confidence (1.40-2.60); FEH-aware in PR3
     odds_confidence_band: str = ""
     odds_confidence: dict[str, Any] | None = None
+    # FEH audit snapshot for reasoning-chain schema v2 (PR5)
+    feh: dict[str, Any] | None = None
+
 
 
 def _stake_for(
@@ -409,7 +412,7 @@ def build_portfolio(
         high = odds >= thr
         # FEH recomputed every grade via grade_evidence (place-owning fail-closed).
         # Explore / temp_ev_relax / promo never bypass FEH hard rejects (grade F).
-        # return_scorecard so odds_confidence can prefer FEH H2H polarity.
+        # return_scorecard: odds_confidence FEH H2H polarity + schema-v2 FEH audit (PR5).
         # Natural elevation: pass same-match candidate packs; grade_evidence also
         # auto-discovers sibling packs from the evidence directory.
         mk = normalize_match_key(str(c.match or (c.evidence or {}).get("match") or ""))
@@ -446,6 +449,10 @@ def build_portfolio(
                     "reason": "no p_model",
                     "grade": grade,
                     "issues": issues,
+                    "feh": feh_audit,
+                    "odds": odds,
+                    "sport": c.sport,
+                    "odds_band": band,
                 }
             )
             continue
@@ -752,8 +759,14 @@ def build_portfolio(
                 {
                     "match": c.match,
                     "selection": c.selection,
+                    "odds": odds,
                     "reason": "evidence grade F",
                     "issues": issues,
+                    "grade": grade,
+                    "feh": feh_audit,
+                    "sport": c.sport,
+                    "odds_band": band,
+                    "near_miss": True,
                 }
             )
             continue
@@ -961,6 +974,8 @@ def build_portfolio(
             script_family=sf,
             odds_confidence_band=band_gate.band_id,
             odds_confidence=band_audit,
+            feh=feh_audit,
+
         )
         scored.append(rec)
 

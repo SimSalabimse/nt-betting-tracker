@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """
-Verify reasoning-chain residuals (near-miss SSOT, light join, blocked emit).
+Verify reasoning-chain residuals (near-miss SSOT, light join, blocked emit, schema v2).
 
 Default path is fully synthetic (no live odds required):
 
   python scripts/verify_chain_residuals.py
 
 Prints chain counts for picks / near_misses / rejected_prefilter and asserts
-promo fields present when light is joined.
+promo fields present when light is joined. Schema v2 checks FEH / test_cap keys.
 """
 from __future__ import annotations
 
@@ -24,6 +24,7 @@ import nt_bootstrap  # noqa: F401
 
 from nt.portfolio import Recommendation
 from nt.reasoning_chain import (
+    SCHEMA_VERSION,
     build_recommend_chains,
     dump_reasoning_for_recommend,
     format_reasoning_md,
@@ -40,7 +41,16 @@ def _cfg(state: Path) -> dict[str, Any]:
             "outbox": str(outbox),
             "reasoning_chains_jsonl": str(state / "reasoning_chains.jsonl"),
         },
-        "selection": {"probability_haircut": 0.03},
+        "selection": {
+            "probability_haircut": 0.03,
+            "test_stake_cap": {
+                "enabled": True,
+                "max_bets": 10,
+                "max_stake_nok": 10.0,
+                "system_tag": "feh_v1",
+                "state_path": str(state / "feh_test_cap.json"),
+            },
+        },
         "reasoning": {
             "enabled": True,
             "jsonl": str(state / "reasoning_chains.jsonl"),
@@ -48,6 +58,7 @@ def _cfg(state: Path) -> dict[str, Any]:
             "near_miss_ev_slack": 0.04,
             "place_md_section": True,
             "join_light": True,
+            "feh_fields": True,
         },
         "research": {
             "tiers": {
@@ -59,6 +70,8 @@ def _cfg(state: Path) -> dict[str, Any]:
                 "promo_mid_band_boost": 60,
                 "promo_alt_boost": 14,
                 "promo_short_chalk_penalty": -55,
+                "promo_fav_hc_boost": 12,
+                "promo_natural_total_boost": 10,
             }
         },
     }
@@ -176,19 +189,47 @@ def run_verify(*, verbose: bool = True) -> dict[str, Any]:
     if "## Near-miss / Rejected" not in updated:
         errors.append("blocked PLACE_THESE missing Near-miss section")
 
-    # 3) Light join promo on pick
+    # 3) Light join promo on pick + schema v2 fields
     pick = Recommendation(
         match="Verify vs Light",
         selection="Over 3.5",
         decimal_odds=2.05,
-        stake_nok=12.0,
+        stake_nok=10.0,
         ev=0.05,
         grade="B",
         odds_band="1.85-2.20",
         sport="football",
         market_type="total",
         p_model=0.53,
-        notes="p_model=0.5300 only",
+        notes="p_model=0.5300 only; FEH_TEST_CAP:feh_v1; FEH_TEST_CAP:10NOK (1/10)",
+        stake_decision={
+            "final_stake_nok": 10.0,
+            "constraints_applied": ["feh_test_cap_10nok"],
+        },
+        feh={
+            "feh_version": 1,
+            "hard_reject": False,
+            "reject_codes": [],
+            "checklist_complete": True,
+            "checklist": {
+                "strongest_positive": "form edge on home side over last five",
+                "strongest_negative": "injury risk on away midfield unit",
+                "why_this_side_not_opposite": (
+                    "Home form and ranking support over total not under"
+                ),
+                "primary_factors_used": ["recent_form", "script_consistency"],
+                "complete": True,
+            },
+            "anti_soft_underdog": {
+                "applies": False,
+                "triggered": False,
+                "hard_reject": False,
+                "failures": [],
+            },
+            "h2h": {"polarity": "mixed"},
+            "final_grade_suggestion": "B",
+            "saef": {"E": 0.62, "hard_rejects": []},
+        },
     )
     chains_pick = build_recommend_chains(cfg, [pick], [], phase_id="1A")
     counts_pick = _count_kinds(chains_pick)
@@ -196,6 +237,10 @@ def run_verify(*, verbose: bool = True) -> dict[str, Any]:
     if pick_chain is None:
         errors.append("pick chain missing")
     else:
+        if int(pick_chain.get("schema_version") or 0) != int(SCHEMA_VERSION):
+            errors.append(
+                f"schema_version expected {SCHEMA_VERSION}, got {pick_chain.get('schema_version')}"
+            )
         light = pick_chain.get("light") or {}
         if light.get("promotion_score") is None:
             errors.append("light join missing promotion_score on pick chain")
@@ -204,10 +249,77 @@ def run_verify(*, verbose: bool = True) -> dict[str, Any]:
         )
         if not comps:
             errors.append("light join missing promotion_score_components on pick chain")
+        # Schema v2 required FEH transparency fields
+        for key in (
+            "strongest_positive",
+            "strongest_negative",
+            "why_this_side_not_opposite",
+            "primary_factors",
+            "final_grade",
+            "test_cap_10nok",
+            "h2h_polarity",
+        ):
+            if key not in pick_chain:
+                errors.append(f"schema v2 missing field: {key}")
+        cap = pick_chain.get("test_cap_10nok") or {}
+        if not isinstance(cap, dict):
+            errors.append("test_cap_10nok not a dict")
+        elif not cap.get("applied"):
+            errors.append("test_cap_10nok.applied expected True for clipped pick")
+
+    # 4) Near-miss FEH reject codes on grade-F soft UD
+    chains_feh = build_recommend_chains(
+        cfg,
+        [],
+        [
+            {
+                "match": "Smith vs Price",
+                "selection": "Smith +2.5",
+                "odds": 1.85,
+                "grade": "F",
+                "reason": "evidence grade F",
+                "issues": ["feh:FEH_ANTI_SOFT_UNDERDOG"],
+                "feh": {
+                    "hard_reject": True,
+                    "reject_codes": ["FEH_ANTI_SOFT_UNDERDOG"],
+                    "checklist_complete": True,
+                    "anti_soft_underdog": {
+                        "applies": True,
+                        "triggered": True,
+                        "hard_reject": True,
+                        "failures": ["A"],
+                    },
+                    "h2h": {"polarity": "mixed"},
+                    "final_grade_suggestion": "F",
+                },
+                "near_miss": True,
+            }
+        ],
+        phase_id="1A",
+    )
+    feh_chain = next(
+        (
+            c
+            for c in chains_feh
+            if "Smith" in str(c.get("match") or "")
+            or "ANTI_SOFT" in str(c.get("feh_reject_codes") or [])
+        ),
+        None,
+    )
+    if feh_chain is None:
+        errors.append("FEH soft-UD near-miss chain missing")
+    else:
+        codes = feh_chain.get("feh_reject_codes") or []
+        if "FEH_ANTI_SOFT_UNDERDOG" not in codes:
+            errors.append(f"expected FEH_ANTI_SOFT_UNDERDOG in codes, got {codes}")
+        anti = feh_chain.get("anti_soft_underdog") or {}
+        if not anti.get("triggered") and not anti.get("hard_reject"):
+            errors.append("anti_soft_underdog.triggered/hard_reject expected")
 
     report = {
         "ok": not errors,
         "errors": errors,
+        "schema_version": SCHEMA_VERSION,
         "counts_empty_picks": counts_empty,
         "counts_blocked": counts_blocked,
         "counts_with_pick": counts_pick,
@@ -224,6 +336,13 @@ def run_verify(*, verbose: bool = True) -> dict[str, Any]:
         )
         if pick_chain
         else False,
+        "pick_schema_v2": bool(
+            pick_chain
+            and pick_chain.get("schema_version") == SCHEMA_VERSION
+            and pick_chain.get("strongest_positive")
+            and isinstance(pick_chain.get("test_cap_10nok"), dict)
+        ),
+        "feh_near_miss_codes": (feh_chain or {}).get("feh_reject_codes"),
     }
     if verbose:
         print("=== verify_chain_residuals ===")
@@ -231,7 +350,9 @@ def run_verify(*, verbose: bool = True) -> dict[str, Any]:
         if errors:
             print("\nFAIL:", "; ".join(errors), file=sys.stderr)
         else:
-            print("\nOK: picks/near_misses/rejected counts + light promo join")
+            print(
+                "\nOK: picks/near_misses/rejected + light promo join + schema v2 FEH"
+            )
     return report
 
 

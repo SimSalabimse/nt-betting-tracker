@@ -225,7 +225,7 @@ def test_format_reasoning_md_and_dump(tmp_path: Path):
     assert len(lines) == len(written)
     row = json.loads(lines[0])
     assert row["kind"] in ("pick", "near_miss", "rejected_prefilter")
-    assert row.get("schema_version") == 1
+    assert row.get("schema_version") == 2
 
 
 def test_empty_picks_still_has_near_miss_section(tmp_path: Path):

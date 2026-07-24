@@ -369,6 +369,20 @@ def run_settle(cfg: dict[str, Any], results_path: Path) -> dict[str, Any]:
         bet["payout_nok"] = f"{payout:.2f}".rstrip("0").rstrip(".")
         bet["updated_at"] = now
 
+        # PR5: soft-UD loss pattern tag + safe FEH-proven variance lean
+        feh_feedback_meta: dict = {}
+        try:
+            from nt.feh_feedback import process_settlement_feh_feedback
+
+            feh_feedback_meta = process_settlement_feh_feedback(
+                cfg,
+                bet,
+                result=result,
+                packet=packet if isinstance(packet, dict) else None,
+            ) or {}
+        except Exception as ex:  # noqa: BLE001
+            feh_feedback_meta = {"ok": False, "error": str(ex)}
+
         # Rich settlement metadata (encoded into notes for ledger portability)
         rich_bits: list[str] = []
         score = (
@@ -435,6 +449,7 @@ def run_settle(cfg: dict[str, Any], results_path: Path) -> dict[str, Any]:
                 "classification_notes": (packet or {}).get("classification_notes"),
                 "classified_by": (packet or {}).get("classified_by"),
                 "classified_at": (packet or {}).get("classified_at"),
+                "feh_feedback": feh_feedback_meta or None,
             }
         )
 
