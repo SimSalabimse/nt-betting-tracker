@@ -206,6 +206,21 @@ def should_tag_soft_ud_loss(
     }
 
 
+# FEH-owned reject classes that justify research_process_miss lean (not SAEF-only F)
+_FEH_OWNED_CODES = frozenset(
+    {
+        "FEH_CHECKLIST_INCOMPLETE",
+        "FEH_SIDE_CONFLICT",
+        "FEH_SIDE_UNCLEAR_UD",
+        "FEH_PRICE_LED_SIDE",
+        "FEH_ANTI_SOFT_UNDERDOG",
+        "FEH_NATURAL_MARKET_UNEVALUATED",
+        "FEH_QUARANTINE_SPORT",
+        "FEH_ERROR",
+    }
+)
+
+
 def feh_proves_process_miss(
     feh_audit: dict[str, Any] | None,
     *,
@@ -218,8 +233,14 @@ def feh_proves_process_miss(
     """
     True only when FEH audit proves gate should have blocked place.
 
-    - hard_reject / anti_soft triggered / checklist incomplete, OR
-    - live recompute on pack yields hard reject (when evidence provided)
+    Proof requires at least one of:
+    - FEH-owned reject codes (FEH_ANTI_SOFT_UNDERDOG, checklist, side, natural, …)
+    - anti_soft_underdog.triggered / hard_reject
+    - checklist_complete is False
+
+    Bare ``final_grade_suggestion == "F"`` or generic hard_reject **without**
+    FEH-owned codes is **not** proof (avoids SAEF-only / EV noise lean).
+    Live recompute that yields FEH-owned codes still counts.
 
     Never true from free-text guess alone.
     """
@@ -245,14 +266,14 @@ def feh_proves_process_miss(
     if not isinstance(audit, dict) or not audit:
         return False, []
 
-    if audit.get("hard_reject") or audit.get("final_grade_suggestion") == "F":
-        codes = [str(c) for c in (audit.get("reject_codes") or [])]
-        if codes:
-            proofs.append("hard_reject:" + ",".join(codes[:6]))
-        else:
-            proofs.append("hard_reject")
+    codes = {str(c) for c in (audit.get("reject_codes") or []) if str(c).strip()}
+    owned = codes & _FEH_OWNED_CODES
+    if owned:
+        proofs.append("feh_codes:" + ",".join(sorted(owned)[:6]))
+
     if audit.get("checklist_complete") is False:
         proofs.append("checklist_incomplete")
+
     anti = audit.get("anti_soft_underdog")
     if isinstance(anti, dict) and (
         anti.get("hard_reject") or anti.get("triggered")
@@ -260,18 +281,8 @@ def feh_proves_process_miss(
         fails = ",".join(str(x) for x in (anti.get("failures") or [])[:4])
         proofs.append("anti_soft_triggered" + (f":{fails}" if fails else ""))
 
-    # Only lean process_miss on FEH-owned reject classes (not pure SAEF EV noise)
-    feh_codes = {
-        "FEH_CHECKLIST_INCOMPLETE",
-        "FEH_SIDE_CONFLICT",
-        "FEH_SIDE_UNCLEAR_UD",
-        "FEH_PRICE_LED_SIDE",
-        "FEH_ANTI_SOFT_UNDERDOG",
-        "FEH_NATURAL_MARKET_UNEVALUATED",
-    }
-    codes = {str(c) for c in (audit.get("reject_codes") or [])}
-    if codes & feh_codes and not proofs:
-        proofs.append("feh_codes:" + ",".join(sorted(codes & feh_codes)[:4]))
+    # Explicit: bare grade F / hard_reject without FEH-owned signal is NOT proof
+    # (SAEF-only reject_codes or empty codes + final_grade_suggestion F → no lean)
 
     return (len(proofs) > 0, proofs)
 

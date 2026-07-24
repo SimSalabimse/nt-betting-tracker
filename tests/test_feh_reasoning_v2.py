@@ -23,6 +23,8 @@ from nt.reasoning_chain import (
     build_chain_from_near_miss,
     build_chain_from_pick,
     build_recommend_chains,
+    format_near_miss_md,
+    format_reasoning_md,
 )
 
 
@@ -224,6 +226,75 @@ def test_feh_proves_requires_audit_not_guess():
     )
     assert ok2 is True
     assert proofs2
+
+
+def test_feh_proves_not_bare_grade_f_without_feh_codes():
+    """OPEN-2: SAEF-only / bare final_grade F is not process-miss proof."""
+    ok, proofs = feh_proves_process_miss(
+        {
+            "hard_reject": True,
+            "final_grade_suggestion": "F",
+            "reject_codes": ["SAEF_SOMETHING"],
+        }
+    )
+    assert ok is False
+    assert proofs == []
+
+    ok_bare, proofs_bare = feh_proves_process_miss(
+        {"final_grade_suggestion": "F", "hard_reject": True, "reject_codes": []}
+    )
+    assert ok_bare is False
+    assert proofs_bare == []
+
+    # Checklist incomplete alone still proves (FEH-owned signal)
+    ok_cl, proofs_cl = feh_proves_process_miss(
+        {
+            "final_grade_suggestion": "F",
+            "checklist_complete": False,
+            "reject_codes": [],
+        }
+    )
+    assert ok_cl is True
+    assert any("checklist" in p for p in proofs_cl)
+
+
+def test_near_miss_md_includes_feh_compact_line():
+    """OPEN-1: PLACE_THESE near-miss section mirrors pick feh: transparency."""
+    chain = build_chain_from_near_miss(
+        {
+            "match": "Smith vs Price",
+            "selection": "Smith +2.5",
+            "odds": 1.85,
+            "grade": "F",
+            "reason": "evidence grade F",
+            "issues": ["feh:FEH_ANTI_SOFT_UNDERDOG"],
+            "feh": {
+                "hard_reject": True,
+                "reject_codes": ["FEH_ANTI_SOFT_UNDERDOG"],
+                "checklist_complete": True,
+                "anti_soft_underdog": {
+                    "applies": True,
+                    "triggered": True,
+                    "hard_reject": True,
+                    "failures": ["A"],
+                },
+                "h2h": {"polarity": "mixed"},
+                "final_grade_suggestion": "F",
+            },
+            "near_miss": True,
+        },
+        haircut=0.03,
+    )
+    md = format_near_miss_md([chain])
+    assert "feh:" in md
+    assert "FEH_ANTI_SOFT_UNDERDOG" in md
+    assert "anti_soft=triggered" in md
+    assert "h2h=mixed" in md
+    # Full PLACE_THESE section path
+    full = format_reasoning_md([chain])
+    assert "## Near-miss / Rejected" in full
+    assert "feh:" in full
+    assert "FEH_ANTI_SOFT_UNDERDOG" in full
 
 
 def test_should_tag_requires_soft_ud_and_fav_signal():

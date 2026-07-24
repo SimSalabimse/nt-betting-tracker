@@ -1108,6 +1108,42 @@ def collect_near_miss_candidates(
     return select_near_misses(candidates, max_n=max_n, slack=slack)
 
 
+def _feh_compact_bits(c: dict[str, Any]) -> list[str]:
+    """
+    Compact FEH transparency tokens for PLACE_THESE pick + near-miss MD.
+    Shared so near-miss rejects surface the same codes/anti_soft as picks.
+    """
+    feh_bits: list[str] = []
+    if c.get("strongest_positive"):
+        feh_bits.append(f"+={(str(c['strongest_positive'])[:60])}")
+    if c.get("strongest_negative"):
+        feh_bits.append(f"-={(str(c['strongest_negative'])[:60])}")
+    if c.get("why_this_side_not_opposite"):
+        feh_bits.append(f"why={(str(c['why_this_side_not_opposite'])[:80])}")
+    if c.get("feh_reject_codes"):
+        feh_bits.append("codes=" + ",".join(str(x) for x in c["feh_reject_codes"][:4]))
+    anti = c.get("anti_soft_underdog") or {}
+    if isinstance(anti, dict) and anti.get("applies"):
+        trig = "triggered" if anti.get("triggered") or anti.get("hard_reject") else "ok"
+        fails = ",".join(str(x) for x in (anti.get("failures") or [])[:4])
+        feh_bits.append(f"anti_soft={trig}" + (f"[{fails}]" if fails else ""))
+    if c.get("h2h_polarity"):
+        feh_bits.append(f"h2h={c['h2h_polarity']}")
+    if c.get("final_grade") or c.get("grade"):
+        g = c.get("final_grade") or c.get("grade")
+        # Avoid duplicating grade on pick lines that already print grade=; near-miss uses it
+        if g and str(g).upper() == "F":
+            feh_bits.append(f"grade={g}")
+    cap = c.get("test_cap_10nok") or {}
+    if isinstance(cap, dict) and (cap.get("active") or cap.get("applied")):
+        feh_bits.append(
+            "test_cap="
+            + ("applied" if cap.get("applied") else "active")
+            + f"({cap.get('n_placed', '?')}/{cap.get('max_bets', 10)})"
+        )
+    return feh_bits
+
+
 def format_near_miss_md(chains: list[dict[str, Any]]) -> str:
     """Collapsible-style ## Near-miss / Rejected section for PLACE_THESE.md."""
     lines = ["## Near-miss / Rejected", ""]
@@ -1134,6 +1170,10 @@ def format_near_miss_md(chains: list[dict[str, Any]]) -> str:
             top = sorted(comps.items(), key=lambda kv: abs(float(kv[1])), reverse=True)[:4]
             if top:
                 bit += " [" + ", ".join(f"{k}:{v:+.0f}" for k, v in top) + "]"
+        # Schema v2: same compact feh: line as picks (OPEN-1)
+        feh_bits = _feh_compact_bits(c)
+        if feh_bits:
+            bit += " · feh: " + " · ".join(feh_bits)
         lines.append(bit)
     lines.append("")
     return "\n".join(lines)
@@ -1209,32 +1249,13 @@ def _format_one_md(i: int, c: dict[str, Any]) -> list[str]:
             oc_bits.append(f"stake_x{float(oc['stake_mult']):.2f}")
         if oc_bits:
             out.append(f"- odds_confidence: {' · '.join(oc_bits)}")
-    # Schema v2 FEH transparency (compact)
-    feh_bits = []
-    if c.get("strongest_positive"):
-        feh_bits.append(f"+={(str(c['strongest_positive'])[:60])}")
-    if c.get("strongest_negative"):
-        feh_bits.append(f"-={(str(c['strongest_negative'])[:60])}")
-    if c.get("why_this_side_not_opposite"):
-        feh_bits.append(f"why={(str(c['why_this_side_not_opposite'])[:80])}")
-    if c.get("feh_reject_codes"):
-        feh_bits.append("codes=" + ",".join(str(x) for x in c["feh_reject_codes"][:4]))
-    anti = c.get("anti_soft_underdog") or {}
-    if isinstance(anti, dict) and anti.get("applies"):
-        trig = "triggered" if anti.get("triggered") or anti.get("hard_reject") else "ok"
-        fails = ",".join(str(x) for x in (anti.get("failures") or [])[:4])
-        feh_bits.append(f"anti_soft={trig}" + (f"[{fails}]" if fails else ""))
-    if c.get("h2h_polarity"):
-        feh_bits.append(f"h2h={c['h2h_polarity']}")
-    cap = c.get("test_cap_10nok") or {}
-    if isinstance(cap, dict) and (cap.get("active") or cap.get("applied")):
-        feh_bits.append(
-            "test_cap="
-            + ("applied" if cap.get("applied") else "active")
-            + f"({cap.get('n_placed', '?')}/{cap.get('max_bets', 10)})"
-        )
+    # Schema v2 FEH transparency (compact) - shared with format_near_miss_md
+    feh_bits = _feh_compact_bits(c)
+    # Pick lines already show grade= in bits; drop redundant grade= from feh compact
+    feh_bits = [b for b in feh_bits if not b.startswith("grade=")]
     if feh_bits:
         out.append("- feh: " + " · ".join(feh_bits))
+
 
     if controls:
         ctrl = ", ".join(f"{k}={v}" for k, v in controls.items())
