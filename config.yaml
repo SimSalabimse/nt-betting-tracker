@@ -249,7 +249,9 @@ selection:
   high_odds_stake_multiplier: 0.6
   high_odds_max_per_round: 2
   # Sport-Aware Evidence Framework (SAEF) — sport research cards + scoring
-  # PR1: shadow_mode true → SAEF audit only; legacy place path still active.
+  # PR1: shadow_mode true + forced_hierarchy.enabled false → audit only.
+  # place_uses_saef requires ALL of: enabled, not shadow_mode, forced_hierarchy.enabled
+  # (fail-safe: flipping shadow alone never hands place ownership to SAEF).
   # Place ownership flips in PR2 with forced_hierarchy.enabled + anti-soft.
   evidence:
     enabled: true
@@ -269,7 +271,7 @@ selection:
     min_E_grade_c: 0.30
     infer_min_confidence: 0.65
     forced_hierarchy:
-      enabled: false   # PR1 shadow only — do not own place yet
+      enabled: false   # PR1: required for place ownership; keep false until PR2
       require_checklist: false
       anti_soft_underdog: false
       allow_soft_ud_grade_c: false

@@ -67,9 +67,9 @@ GOLDEN: list[dict[str, str]] = [
     },
     {
         "path": "nt/evidence_hierarchy",
-        "snippet": "pyc without .py under evidence_hierarchy",
-        "classification": "ship_blocker",
-        "note": "import guard: sources required",
+        "snippet": "package sources required (no pyc-only ship)",
+        "classification": "research_ok",
+        "note": "golden reminder; live ship_blocker only from _hierarchy_status when broken",
     },
 ]
 

@@ -1,6 +1,7 @@
 """Shared qualitative/numeric H2H + strength normalization (FEH PR1)."""
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from typing import Any, Literal
 
@@ -74,6 +75,12 @@ class H2HNorm:
         }
 
 
+def _looks_like_winless_scoreline(text: str) -> bool:
+    """True for 0-N records (never beaten), not mid-scorelines like 10-5."""
+    # (?<!\d) avoids matching the '0-5' substring inside '10-5'
+    return bool(re.search(r"(?<!\d)0\s*[-–—]\s*\d+", text))
+
+
 def _polarity_from_string(raw: str) -> H2HPolarity:
     s = raw.strip().lower().replace("-", "_").replace(" ", "_")
     s_space = raw.strip().lower()
@@ -88,7 +95,10 @@ def _polarity_from_string(raw: str) -> H2HPolarity:
     # partial contains (mixed_competitive etc.)
     if "mixed" in s or "competitive" in s or s in ("even", "neutral", "close"):
         return "mixed"
-    if any(p in s_space for p in ("never beaten", "winless", "0-")):
+    if any(p in s_space for p in ("never beaten", "winless")):
+        return "negative"
+    # Winless scoreline only: bare "0-N", not "10-5" / "won 10-5"
+    if _looks_like_winless_scoreline(s_space):
         return "negative"
     if any(p in s for p in ("positive", "dominat", "leads")):
         return "positive"
@@ -239,11 +249,8 @@ def normalize_h2h(ev: Any) -> H2HNorm:
                     "negative h2h",
                     "winless vs",
                     "lost all",
-                    "0-5",
-                    "0-4",
-                    "0-3",
                 )
-            ):
+            ) or _looks_like_winless_scoreline(blob):
                 return H2HNorm(
                     checked=True,
                     polarity="negative",

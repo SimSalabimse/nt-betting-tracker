@@ -65,3 +65,14 @@ def test_normalize_strength_strings():
     num, pol = normalize_strength(-0.5)
     assert pol == "negative"
     assert num == -0.5
+
+
+def test_scoreline_10_5_is_not_negative_h2h():
+    """Regression: bare '0-' substring must not fire inside '10-5' / 'won 10-5'."""
+    for raw in ("10-5", "won 10-5", "H2H 10-5 last meetings", "leads 4-2"):
+        n = normalize_h2h(raw)
+        assert n.negative is False, raw
+    # True winless record still negative
+    assert normalize_h2h("0-5").negative is True
+    assert normalize_h2h("never beaten").negative is True
+    assert normalize_h2h("0-3 career").negative is True

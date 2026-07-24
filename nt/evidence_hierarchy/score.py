@@ -6,7 +6,11 @@ from typing import Any
 from urllib.parse import urlparse
 
 from nt.evidence import has_core_reason, normalize_sources
-from nt.evidence_hierarchy.cards import SportCard, ensure_sport_card, load_sport_card
+from nt.evidence_hierarchy.cards import (
+    SportCard,
+    default_quarantine_card,
+    load_sport_card,
+)
 from nt.evidence_hierarchy.h2h_normalize import normalize_h2h, normalize_strength
 from nt.evidence_hierarchy.normalize import normalize_sport_for_research
 from nt.evidence_hierarchy.types import EvidenceScorecard, SignalSlot
@@ -46,13 +50,22 @@ def compute_saef(cfg: dict[str, Any] | None) -> bool:
 
 def place_uses_saef(cfg: dict[str, Any] | None) -> bool:
     """
-    True only when SAEF owns place grade (enabled and not shadow-only).
+    True only when SAEF / FEH owns place grade.
 
-    PR1: production config keeps shadow_mode=true so this is False —
-    soft dogs remain placeable via the legacy path. FEH place ownership is PR2.
+    Fail-safe triple gate (PR1):
+      selection.evidence.enabled
+      AND not shadow_mode
+      AND forced_hierarchy.enabled
+
+    Flipping shadow_mode alone must NOT hand place ownership to SAEF without
+    the FEH place stack (anti-soft, checklist, …) that ships in PR2.
     """
     ec = evidence_cfg(cfg)
-    return bool(ec["enabled"] and not ec["shadow_mode"])
+    return bool(
+        ec["enabled"]
+        and not ec["shadow_mode"]
+        and ec["forced_hierarchy_enabled"]
+    )
 
 
 def is_quality_source(s: dict[str, Any], *, min_chars: int = 24) -> bool:
@@ -310,14 +323,21 @@ def score_evidence(
     cfg: dict[str, Any] | None = None,
     card: SportCard | None = None,
 ) -> EvidenceScorecard:
-    """Pure scorecard. Never mutates pack."""
+    """
+    Pure scorecard relative to the pack: never mutates pack fields.
+
+    Does **not** write sport-card YAML to disk. Missing cards use an in-memory
+    quarantine template (or the committed default card). Explicit disk onboard
+    stays on scaffold / ensure_sport_card / migrate tools.
+    """
     ec = evidence_cfg(cfg)
     min_chars = int(ec["min_takeaway_chars"])
     sport_key = normalize_sport_for_research(sport or (ev or {}).get("sport") or "")
     if card is None:
         card = load_sport_card(sport_key, cfg)
         if card is None and ec.get("auto_onboard_cards", True):
-            card, _ = ensure_sport_card(sport_key, cfg, auto_create=True)
+            # In-memory quarantine only — grade/recommend must not write cards
+            card = default_quarantine_card(sport_key)
         if card is None:
             card = load_sport_card("default", cfg)
 
@@ -374,16 +394,6 @@ def score_evidence(
             for s in sources
             if any(d in (source_domain(s) + str(s.get("url") or "")).lower() for d in football_doms)
         )
-        allow = [a.lower() for a in (card.domain_allowlist or [])]
-        n_correct_q = sum(
-            1
-            for s in sources
-            if is_quality_source(s, min_chars=min_chars)
-            and (
-                any(a in source_domain(s) for a in allow)
-                or not any(d in source_domain(s) for d in football_doms)
-            )
-        )
         # quality sport-correct: quality source whose domain is not pure football for non-football sports
         n_sport_q = sum(
             1
@@ -396,10 +406,9 @@ def score_evidence(
 
     if underdog and h2h.get("negative"):
         hard.append("HR_NEG_H2H_UD")
-    if underdog and mid and not h2h.get("checked") and card.individual_sport:
-        hard.append("HR_NO_MATCHUP_UD")
-    if underdog and mid and not h2h.get("checked") and not card.individual_sport:
-        # team sports: still require matchup check for underdog HC mid-band
+    # Individual and team both require matchup check for underdog HC mid-band today;
+    # keep single condition (team vs individual may diverge in PR2 FEH).
+    if underdog and mid and not h2h.get("checked"):
         hard.append("HR_NO_MATCHUP_UD")
 
     if str((ev or {}).get("selection_vs_script") or "").lower() == "conflict":
@@ -548,7 +557,7 @@ def score_evidence(
     if grade == "A":
         conf = "High"
     elif grade == "B":
-        conf = "Medium" if E >= 0.62 else "Medium"
+        conf = "High" if E >= 0.72 else "Medium"
     elif grade == "C":
         conf = "Low"
     else:

@@ -32,16 +32,17 @@ _REQUIRED_HIERARCHY_PY = (
 
 
 def _cfg(**ev_over):
+    # SAEF place unit tests: enabled + not shadow + forced_hierarchy (triple gate)
     evidence = {
         "enabled": True,
-        "shadow_mode": False,  # unit tests of SAEF place path force non-shadow
+        "shadow_mode": False,
         "auto_onboard_cards": True,
         "strict_band_cd": True,
         "min_takeaway_chars": 24,
         "min_quality_sources_floor": 3,
         "min_quality_sources_b": 4,
         "min_E_grade_b": 0.55,
-        "forced_hierarchy": {"enabled": False},
+        "forced_hierarchy": {"enabled": True},
     }
     evidence.update(ev_over)
     return {
@@ -55,6 +56,44 @@ def _cfg(**ev_over):
         },
         "research": {"gates": {"enabled": True}},
         "paths": {"evidence": str(ROOT / "evidence")},
+    }
+
+
+def _soft_ud_pack() -> dict:
+    """Soft underdog HC mid-band pack that passes research gates (legacy placeable)."""
+    sources = _quality_sources(6, "flashscore.com")
+    sources.append(
+        {
+            "name": "PDC",
+            "url": "https://www.pdc.tv/event/soft-ud-fixture",
+            "takeaway": (
+                "No withdrawals; both players listed active for the session "
+                "with no injury or fitness flags on the board."
+            ),
+            "kind": "injury",
+        }
+    )
+    return {
+        "sport": "darts",
+        "selection": "Legs handikap +2.5: Underdog Player +2.5",
+        "summary": (
+            "Mid-odds underdog explore look at attractive price with enough "
+            "text for a transparent core reason."
+        ),
+        "failure_modes": "favourite whitewash in a one-sided thrashing.",
+        "p_model": 0.55,
+        "sources": sources,
+        "script_lean": "competitive",
+        "selection_vs_script": "agree",
+        "base_rate_conflict": False,
+        "h2h": {"checked": False, "edge": None, "summary": ""},
+        "signals": {},
+        "availability_status": "stable_guess",
+        "availability_notes": (
+            "Both players listed active on PDC board; no WD or injury flags; "
+            "fitness assumed full for ranking event."
+        ),
+        "context_risk": "low",
     }
 
 
@@ -172,29 +211,38 @@ def test_smith_pack_signals_map_to_card_slots():
 
 
 def test_shadow_mode_does_not_own_place():
-    """PR1: production-like shadow config keeps legacy place path."""
-    cfg = _cfg(shadow_mode=True, enabled=True)
-    assert place_uses_saef(cfg) is False
-    pack = {
-        "sport": "darts",
-        "selection": "Legs handikap +2.5: Underdog Player +2.5",
-        "summary": "Mid-odds underdog explore look at attractive price.",
-        "failure_modes": "favourite whitewash",
-        "p_model": 0.55,
-        "sources": _quality_sources(6, "flashscore.com"),
-        "script_lean": "competitive",
-        "selection_vs_script": "agree",
-        "base_rate_conflict": False,
-        "h2h": {"checked": False, "edge": None, "summary": ""},
-        "signals": {},
-    }
-    grade, issues = grade_evidence(
-        pack, cfg, 1.90, selection=pack["selection"], sport="darts"
+    """PR1: production-like shadow keeps legacy place; soft dogs still placeable."""
+    # Production-like: shadow on, forced_hierarchy off
+    cfg_shadow = _cfg(
+        shadow_mode=True,
+        enabled=True,
+        forced_hierarchy={"enabled": False},
     )
-    # Legacy path can still grade B/C with enough sources — soft dog placeable
-    assert grade in ("A", "B", "C", "F")
-    # SAEF audit notes present even in shadow
-    assert any("saef" in i.lower() for i in issues)
+    assert place_uses_saef(cfg_shadow) is False
+    # Flipping shadow alone still must not own place without forced_hierarchy
+    cfg_shadow_off_only = _cfg(
+        shadow_mode=False,
+        enabled=True,
+        forced_hierarchy={"enabled": False},
+    )
+    assert place_uses_saef(cfg_shadow_off_only) is False
+
+    pack = _soft_ud_pack()
+    grade_shadow, issues_shadow = grade_evidence(
+        pack, cfg_shadow, 1.90, selection=pack["selection"], sport="darts"
+    )
+    # Legacy path grades B/C (soft dog still placeable) while SAEF audits
+    assert grade_shadow in ("A", "B", "C"), (grade_shadow, issues_shadow)
+    assert any("saef" in i.lower() for i in issues_shadow)
+
+    # Same pack under place-owning triple gate → SAEF F (no matchup)
+    cfg_own = _cfg(shadow_mode=False, forced_hierarchy={"enabled": True})
+    assert place_uses_saef(cfg_own) is True
+    grade_own, issues_own = grade_evidence(
+        pack, cfg_own, 1.90, selection=pack["selection"], sport="darts"
+    )
+    assert grade_own == "F", (grade_own, issues_own)
+    assert any("saef:HR_NO_MATCHUP_UD" in i or "HR_NO_MATCHUP" in i for i in issues_own)
 
 
 def test_list_sources_esports_not_football():
@@ -212,21 +260,9 @@ def test_list_sources_darts_not_football():
 
 
 def test_weak_underdog_hc_rejected_mid_band():
-    """Soft underdog HC @1.90 without H2H → Grade F under SAEF (non-shadow)."""
-    cfg = _cfg(shadow_mode=False)
-    pack = {
-        "sport": "darts",
-        "selection": "Legs handikap +2.5: Underdog Player +2.5",
-        "summary": "Mid-odds underdog explore look at attractive price.",
-        "failure_modes": "favourite whitewash",
-        "p_model": 0.55,
-        "sources": _quality_sources(6, "flashscore.com"),
-        "script_lean": "competitive",
-        "selection_vs_script": "agree",
-        "base_rate_conflict": False,
-        "h2h": {"checked": False, "edge": None, "summary": ""},
-        "signals": {},
-    }
+    """Soft underdog HC @1.90 without H2H → Grade F under SAEF place ownership."""
+    cfg = _cfg(shadow_mode=False, forced_hierarchy={"enabled": True})
+    pack = _soft_ud_pack()
     grade, issues = grade_evidence(
         pack,
         cfg,
@@ -234,12 +270,12 @@ def test_weak_underdog_hc_rejected_mid_band():
         selection=pack["selection"],
         sport="darts",
     )
-    assert grade in ("F", "C"), (grade, issues)
-    assert any("saef:" in i or "HR_" in i or "matchup" in i.lower() for i in issues) or grade == "F"
+    assert grade == "F", (grade, issues)
+    assert any("saef:HR_NO_MATCHUP" in i or "HR_NO_MATCHUP" in i for i in issues)
 
 
 def test_negative_h2h_underdog_hard_reject():
-    cfg = _cfg(shadow_mode=False)
+    cfg = _cfg(shadow_mode=False, forced_hierarchy={"enabled": True})
     pack = {
         "sport": "tennis",
         "selection": "Game handikap +3.5: Dog Player +3.5",
@@ -277,7 +313,7 @@ def test_negative_h2h_underdog_hard_reject():
 
 
 def test_quality_mid_band_can_reach_grade_b():
-    cfg = _cfg(shadow_mode=False)
+    cfg = _cfg(shadow_mode=False, forced_hierarchy={"enabled": True})
     pack = {
         "sport": "darts",
         "selection": "Vinner: Strong Player",
@@ -372,17 +408,39 @@ def test_saef_alias_signals_fill_stable_slots():
 
 
 def test_new_sport_auto_card(tmp_path: Path):
-    """Unknown sport gets quarantine card before recommend path."""
-    cfg = _cfg(shadow_mode=False)
+    """Unknown sport: scaffold/ensure may write; grade uses in-memory quarantine only."""
+    cfg = _cfg(shadow_mode=False, forced_hierarchy={"enabled": True})
     cfg["selection"]["evidence"]["sport_cards_dir"] = str(tmp_path / "cards")
     from nt.evidence_hierarchy.cards import ensure_sport_card, sport_card_path
+    from nt.evidence_hierarchy.score import score_evidence
 
+    # Explicit onboard write (scaffold path) still works
     card, created = ensure_sport_card("curling", cfg, auto_create=True)
     assert created is True
     assert card is not None
     assert card.onboarded is False
     path = sport_card_path("curling", cfg)
     assert path.is_file()
+
+    # score_evidence must not write for a different unknown sport
+    other_dir = tmp_path / "cards"
+    before = {p.name for p in other_dir.glob("*.yaml")}
+    sc = score_evidence(
+        {
+            "summary": "In-memory quarantine score for unmapped sport only.",
+            "sources": _quality_sources(4, "flashscore.com"),
+            "h2h": {"checked": True, "edge": 0.1, "summary": "H2H leads 2-1 recently."},
+        },
+        sport="kabaddi",
+        selection="Team A to Win",
+        odds=1.95,
+        cfg=cfg,
+    )
+    after = {p.name for p in other_dir.glob("*.yaml")}
+    assert after == before, "score_evidence must not write sport cards"
+    assert sc.onboarded is False
+    assert "HR_SPORT_UNKNOWN" in sc.hard_rejects
+
     pack = {
         "sport": "curling",
         "summary": "Some summary text that is long enough for core reason check.",
