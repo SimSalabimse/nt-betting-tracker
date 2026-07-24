@@ -183,13 +183,18 @@ def assess_combo(
         if remaining_risk is not None:
             stake = min(stake, float(remaining_risk))
             stake = float(int(stake))
-        # FEH test stake cap: absolute ceiling on combo ticket stake when active
+        # FEH test stake cap: absolute ceiling on combo ticket stake when active.
+        # Fail-closed when enabled — never silently skip the 10 NOK ceiling.
         try:
-            from nt.stake_test_cap import clip_stake_nok
+            from nt.stake_test_cap import clip_stake_nok_fail_closed
 
-            stake = clip_stake_nok(stake, cfg)
-        except Exception:
-            pass
+            stake = clip_stake_nok_fail_closed(stake, cfg)
+        except RuntimeError:
+            raise
+        except Exception as e:
+            from nt.stake_test_cap import fail_closed_hook_error
+
+            fail_closed_hook_error(cfg, e, where="combos.clip")
 
     ok = not any(
         r.startswith("hard reject")

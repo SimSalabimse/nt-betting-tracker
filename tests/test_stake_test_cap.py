@@ -18,13 +18,16 @@ from nt.stake_test_cap import (
     apply_test_stake_cap_to_picked,
     assert_stakes_within_cap,
     clip_stake_nok,
+    fail_closed_hook_error,
     inject_seat_max,
     is_test_cap_active,
     load_state,
     max_stake_when_active,
     notes_have_system_tag,
     record_placed_bet,
+    run_absolute_last_stake_cap,
     save_state,
+    should_tag_pending,
     stake_test_cap_cfg,
     system_tag_note,
 )
@@ -331,3 +334,52 @@ def test_nothing_raises_stake_after_clip(tmp_path: Path):
     for p in picks:
         assert p.stake_nok <= 10.0 + 1e-9
     assert_stakes_within_cap(picks, cfg)
+
+
+def test_tag_and_clip_when_enabled_without_place_owning(tmp_path: Path):
+    """O2: tag + clip share enabled gate — no place-owning required."""
+    cfg = _cfg(tmp_path)
+    # FEH place-owning OFF (shadow / hierarchy disabled)
+    cfg["selection"]["evidence"] = {
+        "enabled": True,
+        "shadow_mode": True,
+        "forced_hierarchy": {"enabled": False},
+    }
+    assert should_tag_pending(cfg) is True
+    rec = _rec(stake=16.0, notes="p_model=0.55")
+    n = apply_test_stake_cap_to_picked([rec], cfg)
+    assert n == 1
+    assert rec.stake_nok == 10.0
+    assert notes_have_system_tag(rec.notes, "feh_v1")
+    # Counter can advance on tagged place-ack even without place-owning
+    evt = record_placed_bet(cfg, "no_feh_own_1", rec.notes)
+    assert evt["counted"] is True
+    assert load_state(cfg)["n_placed"] == 1
+
+
+def test_run_absolute_last_fail_closed_on_apply_error(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    """O1: when enabled, apply failure must re-raise (never silent drop of ceiling)."""
+    cfg = _cfg(tmp_path)
+
+    def _boom(*_a, **_k):
+        raise OSError("state disk full")
+
+    monkeypatch.setattr(
+        "nt.stake_test_cap.apply_test_stake_cap_to_picked",
+        _boom,
+    )
+    rec = _rec(stake=12.0)
+    with pytest.raises(RuntimeError, match="failed closed"):
+        run_absolute_last_stake_cap([rec], cfg)
+
+
+def test_fail_closed_hook_when_enabled(tmp_path: Path):
+    cfg = _cfg(tmp_path, enabled=True)
+    with pytest.raises(RuntimeError, match="failed closed"):
+        fail_closed_hook_error(cfg, RuntimeError("import boom"), where="test")
+
+
+def test_fail_closed_hook_swallows_when_disabled(tmp_path: Path):
+    cfg = _cfg(tmp_path, enabled=False)
+    # Must not raise when cap disabled
+    fail_closed_hook_error(cfg, RuntimeError("import boom"), where="test")

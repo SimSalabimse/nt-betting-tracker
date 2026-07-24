@@ -201,22 +201,25 @@ def run_recommend(
     picked, rejects = build_portfolio(cfg, candidates, phase, risk, rows, learning=learning)
 
     # FEH test stake cap: ensure notes tags + hard assert stake ≤ max when active
-    # (portfolio already clips absolute-last; this is the Pending/PLACE_THESE guard)
+    # (portfolio already clips absolute-last; this is the Pending/PLACE_THESE guard).
+    # Fail-closed when enabled — never bare-pass a missing ceiling.
     try:
         from nt.stake_test_cap import (
             annotate_notes_for_cap,
-            apply_test_stake_cap_to_picked,
             assert_stakes_within_cap,
+            run_absolute_last_stake_cap,
         )
 
-        apply_test_stake_cap_to_picked(picked, cfg)
+        run_absolute_last_stake_cap(picked, cfg)
         for r in picked:
             r.notes = annotate_notes_for_cap(r.notes, cfg)
         assert_stakes_within_cap(picked, cfg)
     except RuntimeError:
         raise
-    except Exception:
-        pass
+    except Exception as e:
+        from nt.stake_test_cap import fail_closed_hook_error
+
+        fail_closed_hook_error(cfg, e, where="recommend.absolute_last")
 
     lines = [
         f"# Bets to place — {ts}",

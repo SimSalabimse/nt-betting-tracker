@@ -139,8 +139,31 @@ def save_state(cfg: dict[str, Any] | None, state: dict[str, Any]) -> Path:
     return path
 
 
+def cap_enabled_from_cfg(cfg: dict[str, Any] | None) -> bool:
+    """
+    Best-effort read of selection.test_stake_cap.enabled. Never raises.
+
+    Used for fail-closed decisions when the full module path may be broken.
+    """
+    try:
+        return bool(stake_test_cap_cfg(cfg).get("enabled"))
+    except Exception:
+        try:
+            raw = ((cfg or {}).get("selection") or {}).get("test_stake_cap")
+            if isinstance(raw, dict):
+                return bool(raw.get("enabled", False))
+        except Exception:
+            pass
+        return False
+
+
 def is_test_cap_active(cfg: dict[str, Any] | None, state: dict[str, Any] | None = None) -> bool:
-    """True when config enables cap and n_placed < max_bets."""
+    """
+    True when config enables cap and n_placed < max_bets.
+
+    Clip gate shares ``enabled`` with tagging (should_tag_pending) so the
+    temporary window always advances via place-ack tags and can expire.
+    """
     tsc = stake_test_cap_cfg(cfg)
     if not tsc["enabled"]:
         return False
@@ -161,7 +184,7 @@ def max_stake_when_active(
 
 
 def feh_place_owning(cfg: dict[str, Any] | None) -> bool:
-    """True when FEH owns place grade (triple gate)."""
+    """True when FEH owns place grade (triple gate). Informational only for cap."""
     try:
         from nt.evidence_hierarchy.score import place_uses_saef
 
@@ -171,9 +194,16 @@ def feh_place_owning(cfg: dict[str, Any] | None) -> bool:
 
 
 def should_tag_pending(cfg: dict[str, Any] | None) -> bool:
-    """Tag Pending when test_stake_cap.enabled and place-owning FEH."""
-    tsc = stake_test_cap_cfg(cfg)
-    return bool(tsc["enabled"]) and feh_place_owning(cfg)
+    """
+    Tag Pending when test_stake_cap.enabled (system_tag path active).
+
+    Aligned with clip: both use ``enabled`` so notes always carry
+    FEH_TEST_CAP:<system_tag> whenever stakes may be clipped, the place-ack
+    counter advances, and the 10-bet window can expire. Does **not** require
+    FEH place-owning (avoids permanent 10 NOK era if shadow_mode flips while
+    cap remains enabled). Tagging always applies when clip is applied.
+    """
+    return cap_enabled_from_cfg(cfg)
 
 
 def system_tag_note(system_tag: str) -> str:
@@ -200,8 +230,8 @@ def annotate_notes_for_cap(
 ) -> str:
     """
     Prepend FEH_TEST_CAP tags so they survive notes truncation.
-    - Always (when should_tag): FEH_TEST_CAP:<system_tag>
-    - When cap active: FEH_TEST_CAP:10NOK (k/10)
+    - Always when enabled: FEH_TEST_CAP:<system_tag>
+    - When cap active (n_placed < max): FEH_TEST_CAP:10NOK (k/10)
     """
     base = (notes or "").strip()
     if not should_tag_pending(cfg):
@@ -242,33 +272,31 @@ def apply_test_stake_cap_to_picked(
     constraints_applied feh_test_cap_10nok. Leaves unit_size_nok / grade_mult
     / recommended_stake_nok inputs unchanged.
 
-    Also tags notes with FEH_TEST_CAP when place-owning + enabled.
+    Tags notes with FEH_TEST_CAP whenever enabled (same gate as clip path so
+    tagging always occurs when clip is applied).
 
     Returns number of seats whose stake was reduced.
     """
-    if not picked:
-        # Still may want nothing
-        pass
     st = state if state is not None else load_state(cfg)
     tsc = stake_test_cap_cfg(cfg)
     active = is_test_cap_active(cfg, st)
+    # Tag whenever enabled; clip only while active window (n < max)
+    do_tag = should_tag_pending(cfg)
     cap = float(tsc["max_stake_nok"]) if active else None
     n_clipped = 0
 
     for rec in picked:
-        # Tag notes regardless of whether we clip (eligibility for counter)
-        notes = getattr(rec, "notes", None) or ""
-        new_notes = annotate_notes_for_cap(notes, cfg, state=st)
-        if new_notes != notes:
-            try:
+        # Tag notes whenever enabled (eligibility for counter) — always when clipping
+        if do_tag:
+            notes = getattr(rec, "notes", None) or ""
+            new_notes = annotate_notes_for_cap(notes, cfg, state=st)
+            if new_notes != notes:
                 rec.notes = new_notes
-            except Exception:
-                pass
 
         if cap is None:
-            # Tag-only path may still record system_tag on stake_decision
+            # Tag-only path (enabled but window full) still records system_tag sidecar
             sd = getattr(rec, "stake_decision", None)
-            if isinstance(sd, dict) and should_tag_pending(cfg):
+            if isinstance(sd, dict) and do_tag:
                 sd = dict(sd)
                 inputs = dict(sd.get("inputs") or {})
                 inputs["feh_system_tag"] = tsc["system_tag"]
@@ -289,9 +317,10 @@ def apply_test_stake_cap_to_picked(
         if isinstance(sd, dict):
             sd = dict(sd)
             final = min(float(getattr(rec, "stake_nok", 0) or 0), cap)
-            rec.stake_nok = final if final == int(final) else final
             if abs(final - int(final)) < 1e-9:
                 rec.stake_nok = float(int(final))
+            else:
+                rec.stake_nok = final
             sd["final_stake_nok"] = rec.stake_nok
             caps = list(sd.get("constraints_applied") or [])
             if CONSTRAINT_TAG not in caps:
@@ -306,6 +335,34 @@ def apply_test_stake_cap_to_picked(
             rec.stake_decision = sd
 
     return n_clipped
+
+
+def run_absolute_last_stake_cap(
+    picked: list[Any],
+    cfg: dict[str, Any] | None,
+    *,
+    state: dict[str, Any] | None = None,
+) -> int:
+    """
+    Portfolio/recommend entry for absolute-last clip + tags.
+
+    Fail-closed when selection.test_stake_cap.enabled: any failure re-raises
+    RuntimeError so the 10 NOK ceiling cannot silently disappear. When disabled,
+    errors are logged and the call is a no-op.
+    """
+    try:
+        n = apply_test_stake_cap_to_picked(picked, cfg, state=state)
+        # Post-condition: active window must leave no seat above max
+        if is_test_cap_active(cfg, state):
+            assert_stakes_within_cap(picked, cfg)
+        return n
+    except RuntimeError:
+        raise
+    except Exception as e:
+        logger.exception("FEH test stake cap absolute-last failed")
+        if cap_enabled_from_cfg(cfg):
+            raise RuntimeError(f"test stake cap failed closed: {e}") from e
+        return 0
 
 
 def inject_seat_max(seat_cap: float, cfg: dict[str, Any] | None, state: dict[str, Any] | None = None) -> float:
@@ -329,6 +386,22 @@ def clip_stake_nok(stake: float, cfg: dict[str, Any] | None, state: dict[str, An
     return s
 
 
+def clip_stake_nok_fail_closed(
+    stake: float, cfg: dict[str, Any] | None, state: dict[str, Any] | None = None
+) -> float:
+    """
+    Combo/ticket clip entry. Fail-closed when cap enabled — never silently
+    skip the ceiling on error.
+    """
+    try:
+        return clip_stake_nok(stake, cfg, state)
+    except Exception as e:
+        logger.exception("FEH test stake cap clip failed")
+        if cap_enabled_from_cfg(cfg):
+            raise RuntimeError(f"test stake cap failed closed: {e}") from e
+        return float(stake)
+
+
 def assert_stakes_within_cap(picked: list[Any], cfg: dict[str, Any] | None) -> None:
     """Raise if any seat exceeds max when cap is active (recommend hard check)."""
     cap = max_stake_when_active(cfg)
@@ -341,6 +414,28 @@ def assert_stakes_within_cap(picked: list[Any], cfg: dict[str, Any] | None) -> N
                 f"FEH test stake cap active: stake {stake} NOK exceeds max {cap} NOK "
                 f"for {getattr(rec, 'match', '?')} / {getattr(rec, 'selection', '?')}"
             )
+
+
+def fail_closed_hook_error(cfg: dict[str, Any] | None, err: BaseException, *, where: str) -> None:
+    """
+    Call-site helper after import/apply failure.
+
+    Re-raises RuntimeError when cap is enabled (or enabled cannot be read →
+    treat as enabled). When disabled, logs and returns so callers may continue.
+    """
+    logger.exception("FEH test stake cap hook failed at %s", where)
+    enabled = cap_enabled_from_cfg(cfg)
+    if not enabled:
+        # Double-check raw cfg if helper path was the failure
+        try:
+            raw = ((cfg or {}).get("selection") or {}).get("test_stake_cap")
+            if isinstance(raw, dict) and raw.get("enabled"):
+                enabled = True
+        except Exception:
+            # Cannot determine — fail closed for real-money ceiling safety
+            enabled = True
+    if enabled:
+        raise RuntimeError(f"test stake cap failed closed ({where}): {err}") from err
 
 
 def record_placed_bet(
@@ -432,8 +527,11 @@ __all__ = [
     "annotate_notes_for_cap",
     "apply_test_stake_cap_to_picked",
     "assert_stakes_within_cap",
+    "cap_enabled_from_cfg",
     "clip_stake_nok",
+    "clip_stake_nok_fail_closed",
     "display_cap_note",
+    "fail_closed_hook_error",
     "feh_place_owning",
     "inject_seat_max",
     "is_test_cap_active",
@@ -441,6 +539,7 @@ __all__ = [
     "max_stake_when_active",
     "notes_have_system_tag",
     "record_placed_bet",
+    "run_absolute_last_stake_cap",
     "save_state",
     "should_tag_pending",
     "state_path",

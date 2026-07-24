@@ -1501,13 +1501,22 @@ def build_portfolio(
                 rec.stake_decision["run_stake_cap_nok"] = budget
 
     def _seat_maxes() -> list[float]:
-        # FEH test stake cap injects into rebalance ceiling when active
+        # FEH test stake cap injects into rebalance ceiling when active.
+        # Absolute-last apply remains the load-bearing ceiling if inject fails.
+        _cap_state = None
+        _test_cap = None
         try:
             from nt.stake_test_cap import inject_seat_max, load_state, max_stake_when_active
 
             _cap_state = load_state(cfg)
             _test_cap = max_stake_when_active(cfg, _cap_state)
-        except Exception:
+        except Exception as e:
+            # Soft: absolute-last enforces 10 NOK; log only (do not fail rebalance)
+            import logging
+
+            logging.getLogger(__name__).warning(
+                "FEH test stake cap seat-max inject failed (absolute-last still applies): %s", e
+            )
             _cap_state = None
             _test_cap = None
         caps: list[float] = []
@@ -1651,11 +1660,16 @@ def build_portfolio(
     # ★ FEH test stake cap — ABSOLUTE LAST mutation of every seat stake.
     # Nothing after this may raise stake_nok. Survives rebalance top-up and
     # post-rebalance EXPLORE_REGIME unit clamp (which may set unit > 10).
+    # Fail-closed when selection.test_stake_cap.enabled — never bare-pass.
     try:
-        from nt.stake_test_cap import apply_test_stake_cap_to_picked
+        from nt.stake_test_cap import run_absolute_last_stake_cap
 
-        apply_test_stake_cap_to_picked(picked, cfg)
-    except Exception:
-        pass
+        run_absolute_last_stake_cap(picked, cfg)
+    except RuntimeError:
+        raise
+    except Exception as e:
+        from nt.stake_test_cap import fail_closed_hook_error
+
+        fail_closed_hook_error(cfg, e, where="portfolio.absolute_last")
 
     return picked, rejects
