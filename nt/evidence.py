@@ -74,15 +74,21 @@ def grade_evidence(
     *,
     selection: str | None = None,
     sport: str | None = None,
-) -> tuple[str, list[str]]:
+    return_scorecard: bool = False,
+) -> tuple[str, list[str]] | tuple[str, list[str], dict[str, Any] | None]:
     """
     Return (grade, issues). Grades: A, B, C, F.
     High odds (> threshold) require grade A to be placeable.
 
     Multi-sport research gates can force F (availability, script, base rate).
+
+    PR1: When selection.evidence.enabled (or shadow_mode), SAEF computes an audit
+    scorecard. Place grade still uses the **legacy** path while shadow_mode is
+    true / forced_hierarchy.enabled is false. Soft dogs remain placeable.
     """
     if not ev:
-        return "F", ["missing evidence pack"]
+        out: tuple = ("F", ["missing evidence pack"])
+        return (*out, None) if return_scorecard else out
 
     issues: list[str] = []
     sources = normalize_sources(ev.get("sources"))
@@ -123,16 +129,63 @@ def grade_evidence(
     )
     soft.extend(gate_soft)
 
+    # SAEF sport-card scorecard (shadow audit; place ownership only if not shadow)
+    scorecard_audit: dict[str, Any] | None = None
+    saef_grade: str | None = None
+    try:
+        from nt.evidence_hierarchy.score import (
+            compute_saef,
+            place_uses_saef,
+            score_evidence,
+        )
+
+        if compute_saef(cfg):
+            card = score_evidence(
+                ev,
+                sport=sport_text,
+                selection=sel_text,
+                odds=float(odds),
+                cfg=cfg,
+            )
+            scorecard_audit = card.to_audit()
+            saef_grade = card.grade_suggestion
+            for hr in card.hard_rejects:
+                soft.append(f"saef:{hr}")
+            if card.missing_required:
+                soft.append("saef_missing:" + ",".join(card.missing_required[:6]))
+            soft.append(
+                f"saef_card={card.card_id};E={card.E:.2f};r={card.r:.2f};"
+                f"q={card.quality_source_count};conf={card.confidence}"
+            )
+    except Exception as exc:  # fail open to legacy grade if SAEF broken (PR1)
+        soft.append(f"saef_error:{exc}")
+
     # Hard research gates → F always (cannot place)
     if hard_gates:
-        return "F", hard_gates + issues + soft
+        out_f = ("F", hard_gates + issues + soft)
+        return (*out_f, scorecard_audit) if return_scorecard else out_f
 
+    # Place grade: SAEF only when enabled and not shadow-only (PR2+ production)
+    if saef_grade is not None and place_uses_saef(cfg):
+        if p is None:
+            out_f2 = ("F", issues + soft + ["missing p_model"])
+            return (*out_f2, scorecard_audit) if return_scorecard else out_f2
+        if issues and any("missing summary" in i or "missing failure" in i for i in issues):
+            if saef_grade in ("A", "B"):
+                saef_grade = "C"
+        out_s = (saef_grade, issues + soft)
+        return (*out_s, scorecard_audit) if return_scorecard else out_s
+
+    # --- Legacy grade path (default / PR1 shadow place) ---
     if issues:
         if n_sources >= need and p is not None and not any("p_model" in i for i in issues):
-            return "C", issues + soft
+            out_c = ("C", issues + soft)
+            return (*out_c, scorecard_audit) if return_scorecard else out_c
         if n_sources >= max(3, need // 2):
-            return "C", issues + soft
-        return "F", issues + soft
+            out_c2 = ("C", issues + soft)
+            return (*out_c2, scorecard_audit) if return_scorecard else out_c2
+        out_f3 = ("F", issues + soft)
+        return (*out_f3, scorecard_audit) if return_scorecard else out_f3
 
     want_a = n_sources >= int(sel["min_research_sources"]["grade_A"]) or odds >= thr
     if want_a:
@@ -142,9 +195,12 @@ def grade_evidence(
             soft = list(soft) + [
                 "grade_A requires p_model_sd, edge CI, or multi-model — demoted to B"
             ]
-            return "B", soft
-        return "A", soft
-    return "B", soft
+            out_b = ("B", soft)
+            return (*out_b, scorecard_audit) if return_scorecard else out_b
+        out_a = ("A", soft)
+        return (*out_a, scorecard_audit) if return_scorecard else out_a
+    out_b2 = ("B", soft)
+    return (*out_b2, scorecard_audit) if return_scorecard else out_b2
 
 
 def _has_grade_a_uncertainty(

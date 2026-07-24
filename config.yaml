@@ -248,6 +248,33 @@ selection:
   high_odds_min_ev: 0.05         # was 0.08 — still elevated vs standard
   high_odds_stake_multiplier: 0.6
   high_odds_max_per_round: 2
+  # Sport-Aware Evidence Framework (SAEF) — sport research cards + scoring
+  # PR1: shadow_mode true → SAEF audit only; legacy place path still active.
+  # Place ownership flips in PR2 with forced_hierarchy.enabled + anti-soft.
+  evidence:
+    enabled: true
+    shadow_mode: true
+    auto_onboard_cards: true
+    strict_band_cd: true
+    quarantine_unknown: true
+    allow_quarantine_place: false
+    sport_cards_dir: evidence/sport_cards
+    card_schema_version: 1
+    min_takeaway_chars: 24
+    min_quality_sources_floor: 3
+    min_quality_sources_b: 4
+    min_quality_sources_a: 6
+    min_E_grade_b: 0.55
+    min_E_grade_a: 0.72
+    min_E_grade_c: 0.30
+    infer_min_confidence: 0.65
+    forced_hierarchy:
+      enabled: false   # PR1 shadow only — do not own place yet
+      require_checklist: false
+      anti_soft_underdog: false
+      allow_soft_ud_grade_c: false
+      natural_market_elevation: false
+      side_first: false
   # If historical band ROI is terrible with enough sample, raise the bar further
   band_penalty:
     min_sample: 15

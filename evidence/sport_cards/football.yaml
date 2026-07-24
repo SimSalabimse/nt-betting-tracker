@@ -1,0 +1,83 @@
+schema_version: 1
+sport: football
+display_name: Football
+version: 1
+onboarded: true
+individual_sport: false
+domain_allowlist:
+  - fbref.com
+  - transfermarkt.com
+  - sofascore.com
+  - flashscore.com
+  - understat.com
+  - whoscored.com
+  - soccerstats.com
+  - oddsportal.com
+primary:
+  - id: xg_form
+    name: xG / underlying form
+    weight: 1.4
+    markets: [ml, handicap, totals, btts]
+    require_when: ["*"]
+    sources: [FBref, Understat]
+  - id: availability
+    name: Injuries / lineup availability
+    weight: 1.5
+    markets: ["*"]
+    require_when: [avail_sensitive]
+    sources: [Transfermarkt, Sofascore]
+  - id: h2h_matchup
+    name: H2H / matchup
+    weight: 1.0
+    markets: [ml, handicap]
+    require_when: [handicap, underdog_hc]
+    sources: [Flashscore, FBref]
+    allows_negative: true
+secondary:
+  - id: venue_split
+    name: Home / away split
+    weight: 0.7
+    markets: ["*"]
+    require_when: []
+    sources: [FBref, SoccerSTATS]
+  - id: motivation
+    name: Table / cup motivation
+    weight: 0.8
+    markets: ["*"]
+    require_when: [high_context]
+    sources: [official, news]
+  - id: script_consistency
+    name: Script vs selection
+    weight: 1.2
+    markets: [totals, btts, ml, handicap]
+    require_when: []
+    sources: [pack]
+tertiary:
+  - id: line_movement
+    name: Line movement (soft)
+    weight: 0.3
+    markets: ["*"]
+    require_when: []
+    sources: [OddsPortal]
+  - id: news_color
+    name: News / weather
+    weight: 0.4
+    markets: ["*"]
+    require_when: []
+    sources: [media]
+grade_floors:
+  A: {min_E: 0.72, min_quality_sources: 6, require_uncertainty: true}
+  B: {min_E: 0.55, min_quality_sources: 4, require_r: 1.0}
+  C: {min_E: 0.30, min_quality_sources: 3}
+  F_quality_floor: 3
+hard_rejects:
+  - {id: HR_SCRIPT, when: selection_vs_script conflict}
+  - {id: HR_BASE_RATE, when: base_rate_conflict}
+  - {id: HR_NEG_H2H_UD, when: underdog_hc and negative_h2h}
+  - {id: HR_NO_MATCHUP_UD, when: underdog_hc mid_band and not h2h_checked}
+  - {id: HR_EMPTY_TAKEAWAYS, when: quality_sources < 3}
+edges:
+  realistic: "Script edges (totals/BTTS), availability-driven props, mispriced HCs when xG + H2H align"
+  efficient_markets: "Top-5 league 1X2 main, short favourites"
+  inefficient_markets: "Lower-league totals/BTTS, cup rotation games, obscure HCs with clear script"
+notes: "Primary for mid-band 1.85ÔÇô2.60: clear script + form/xG + availability when sensitive."

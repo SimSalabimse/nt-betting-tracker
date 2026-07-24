@@ -1,0 +1,58 @@
+schema_version: 1
+sport: default
+display_name: Default / unknown
+version: 1
+onboarded: false
+individual_sport: true
+signal_id_aliases:
+  ranking_strength: ranking_seed
+domain_allowlist:
+  - flashscore.com
+  - sofascore.com
+primary:
+  - id: h2h_matchup
+    name: H2H / matchup
+    weight: 1.4
+    markets: ["*"]
+    require_when: ["*", underdog_hc]
+    sources: [Flashscore]
+    allows_negative: true
+    individual_h2h: true
+  - id: recent_form
+    name: Recent form
+    weight: 1.3
+    markets: ["*"]
+    require_when: ["*"]
+    sources: [Flashscore, Sofascore]
+  - id: ranking_seed
+    name: Ranking / strength
+    weight: 1.0
+    markets: [ml, handicap]
+    require_when: [ml]
+    sources: [official]
+secondary:
+  - id: motivation_context
+    name: Motivation / context
+    weight: 0.7
+    markets: ["*"]
+    require_when: [high_context]
+    sources: [news]
+tertiary:
+  - id: line_movement
+    name: Line movement
+    weight: 0.3
+    markets: ["*"]
+    require_when: []
+    sources: [OddsPortal]
+grade_floors:
+  A: {min_E: 0.72, min_quality_sources: 6, require_uncertainty: true}
+  B: {min_E: 0.55, min_quality_sources: 4, require_r: 1.0}
+  C: {min_E: 0.30, min_quality_sources: 3}
+hard_rejects:
+  - {id: HR_SPORT_UNKNOWN, when: not onboarded}
+  - {id: HR_EMPTY_TAKEAWAYS, when: quality_sources < 3}
+edges:
+  realistic: "None until sport card onboarded"
+  efficient_markets: "Assume efficient"
+  inefficient_markets: "None claimed"
+notes: "Quarantine template. Set onboarded true only after full hierarchy review."

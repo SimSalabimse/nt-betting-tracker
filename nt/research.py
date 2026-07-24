@@ -43,6 +43,12 @@ SPORT_SOURCES: dict[str, list[dict[str, str]]] = {
         {"name": "HLTV", "url": "https://www.hltv.org", "use": "form, maps, H2H"},
         {"name": "Liquipedia", "url": "https://liquipedia.net", "use": "rosters, events"},
     ],
+    "esports": [
+        {"name": "HLTV", "url": "https://www.hltv.org", "use": "form, maps, H2H"},
+        {"name": "Liquipedia", "url": "https://liquipedia.net", "use": "rosters, events"},
+        {"name": "OpenDota", "url": "https://www.opendota.com", "use": "Dota form"},
+        {"name": "Flashscore", "url": "https://www.flashscore.com", "use": "schedules"},
+    ],
     "snooker": [
         {"name": "CueTracker", "url": "https://cuetracker.net", "use": "H2H history"},
         {"name": "Snooker.org", "url": "https://www.snooker.org", "use": "rankings, results"},
@@ -52,6 +58,28 @@ SPORT_SOURCES: dict[str, list[dict[str, str]]] = {
         {"name": "Basketball-Reference", "url": "https://www.basketball-reference.com", "use": "stats history"},
         {"name": "NBA.com", "url": "https://www.nba.com", "use": "official"},
         {"name": "Sofascore", "url": "https://www.sofascore.com", "use": "form lineups"},
+    ],
+    "darts": [
+        {"name": "PDC", "url": "https://www.pdc.tv", "use": "rankings, results"},
+        {"name": "Darts Orakel", "url": "https://www.dartsorakel.com", "use": "averages, H2H, form"},
+        {"name": "Flashscore", "url": "https://www.flashscore.com", "use": "schedules, H2H"},
+        {"name": "Sofascore", "url": "https://www.sofascore.com", "use": "form"},
+    ],
+    "baseball": [
+        {"name": "FanGraphs", "url": "https://www.fangraphs.com", "use": "pitcher, park, projection"},
+        {"name": "Baseball-Reference", "url": "https://www.baseball-reference.com", "use": "history, H2H"},
+        {"name": "MLB.com", "url": "https://www.mlb.com", "use": "official lineups"},
+        {"name": "Sofascore", "url": "https://www.sofascore.com", "use": "form"},
+    ],
+    "ice_hockey": [
+        {"name": "Hockey-Reference", "url": "https://www.hockey-reference.com", "use": "history, form"},
+        {"name": "Eliteprospects", "url": "https://www.eliteprospects.com", "use": "lineups, injuries"},
+        {"name": "Sofascore", "url": "https://www.sofascore.com", "use": "form"},
+    ],
+    "handball": [
+        {"name": "Flashscore", "url": "https://www.flashscore.com", "use": "H2H, form"},
+        {"name": "Sofascore", "url": "https://www.sofascore.com", "use": "form"},
+        {"name": "EHF", "url": "https://www.eurohandball.com", "use": "official"},
     ],
 }
 
@@ -110,26 +138,47 @@ CHECKLISTS: dict[str, list[str]] = {
 
 
 def list_sources(sport: str = "football") -> list[dict[str, str]]:
-    key = (sport or "football").strip().lower()
+    """Return tier-1 public sources for sport. Never falls through to football for mapped sports."""
+    try:
+        from nt.evidence_hierarchy.normalize import normalize_sport_for_research
+
+        key = normalize_sport_for_research(sport, default="")
+    except Exception:
+        key = (sport or "").strip().lower()
     aliases = {
         "fotball": "football",
         "soccer": "football",
         "eliteserien": "football",
-        "cs": "esports_cs",
-        "csgo": "esports_cs",
-        "cs2": "esports_cs",
-        "ice_hockey": "hockey",
-        "ishockey": "hockey",
+        "cs": "esports",
+        "csgo": "esports",
+        "cs2": "esports",
+        "esports_cs": "esports",
+        "ice_hockey": "ice_hockey",
+        "ishockey": "ice_hockey",
+        "hockey": "ice_hockey",
         "nba": "basketball",
     }
     key = aliases.get(key, key)
-    return list(SPORT_SOURCES.get(key) or SPORT_SOURCES["football"])
+    if key in SPORT_SOURCES:
+        return list(SPORT_SOURCES[key])
+    # Unknown: Flashscore-only stub — NOT football FBref (wrong-sport pollution)
+    return [
+        {"name": "Flashscore", "url": "https://www.flashscore.com", "use": "H2H, form, schedules"},
+        {"name": "Sofascore", "url": "https://www.sofascore.com", "use": "form"},
+    ]
 
 
 def checklist_for(sport: str = "football") -> list[str]:
-    key = (sport or "football").strip().lower()
+    try:
+        from nt.evidence_hierarchy.normalize import normalize_sport_for_research
+
+        key = normalize_sport_for_research(sport, default="default")
+    except Exception:
+        key = (sport or "football").strip().lower()
     if key in ("fotball", "soccer", "eliteserien"):
         key = "football"
+    if key in ("cs", "cs2", "csgo", "esports_cs", "esports"):
+        key = "default"
     return list(CHECKLISTS.get(key) or CHECKLISTS["default"])
 
 
@@ -155,8 +204,43 @@ def scaffold_evidence(
     """Build a research pack dict; optionally write under evidence/."""
     from nt.sport_taxonomy import normalize_sport
 
-    sport_c = normalize_sport(sport, default="football") if sport else "football"
+    try:
+        from nt.evidence_hierarchy.normalize import normalize_sport_for_research
+
+        sport_c = normalize_sport_for_research(sport, default="football") if sport else "football"
+    except Exception:
+        sport_c = normalize_sport(sport, default="football") if sport else "football"
+
+    # Ensure sport research card exists (auto-onboard quarantine template)
+    sport_card_meta: dict[str, Any] = {}
+    card = None
+    try:
+        from nt.evidence_hierarchy.cards import ensure_sport_card
+
+        card, created = ensure_sport_card(sport_c, cfg, auto_create=True)
+        if card:
+            sport_card_meta = {
+                "sport_card_id": card.card_id,
+                "sport_card_onboarded": card.onboarded,
+                "sport_card_created": created,
+            }
+    except Exception:
+        card = None
+
     sources_meta = list_sources(sport_c)
+    # Signal stubs from sport card hierarchy (stable factor ids)
+    signals: dict[str, Any] = {}
+    if card is not None:
+        for fac in card.all_factors():
+            sid = str(fac.get("id") or "")
+            if sid:
+                signals[sid] = {
+                    "filled": False,
+                    "strength": None,
+                    "note": "",
+                    "tier": fac.get("tier"),
+                    "weight": fac.get("weight"),
+                }
     pack: dict[str, Any] = {
         "match": match,
         "selection": selection,
@@ -178,6 +262,8 @@ def scaffold_evidence(
         "script_lean": "neutral",
         "selection_vs_script": "unknown",
         "base_rate_conflict": False,
+        "h2h": {"checked": False, "edge": None, "summary": "", "sample_n": None},
+        "signals": signals,
         "research_gates": {
             "context_risk": "unknown",
             "availability_status": "missing",
@@ -201,12 +287,12 @@ def scaffold_evidence(
             for s in sources_meta[:8]
         ],
         "notes": (
-            "Fill takeaways, summary, failure_modes, p_model. "
-            "Sensitive markets (totals/BTTS/props): set availability_status=predicted|confirmed "
-            "+ injury/load/fitness research. Domestic 12h boards: predicted OK. "
-            "High context (WC/intl/B2B): deeper availability_notes. "
+            "Fill takeaways (≥24 chars each quality source), summary, failure_modes, p_model. "
+            "Fill signals{} from sport card + h2h.checked. "
+            "Sport Research Card: evidence/sport_cards/<sport>.yaml. "
             "Never set selection_vs_script=conflict. See docs/RESEARCH_GATES.md."
         ),
+        **sport_card_meta,
     }
     if odds is not None:
         pack["decimal_odds_ref"] = odds

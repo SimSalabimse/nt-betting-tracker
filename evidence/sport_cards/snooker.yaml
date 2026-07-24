@@ -1,0 +1,65 @@
+schema_version: 1
+sport: snooker
+display_name: Snooker
+version: 1
+onboarded: true
+individual_sport: true
+domain_allowlist:
+  - cuetracker.net
+  - snooker.org
+  - flashscore.com
+  - sofascore.com
+primary:
+  - id: frame_form
+    name: Frame form / century rate
+    weight: 1.4
+    markets: [ml, handicap, totals]
+    require_when: ["*"]
+    sources: [CueTracker, Snooker.org]
+  - id: h2h_matchup
+    name: H2H
+    weight: 1.4
+    markets: [ml, handicap]
+    require_when: [handicap, underdog_hc, ml]
+    sources: [CueTracker, Flashscore]
+    allows_negative: true
+    individual_h2h: true
+  - id: ranking_strength
+    name: Ranking / seed
+    weight: 1.0
+    markets: [ml, handicap]
+    require_when: [ml]
+    sources: [Snooker.org]
+secondary:
+  - id: recent_form
+    name: Recent tournament form
+    weight: 1.1
+    markets: ["*"]
+    require_when: []
+    sources: [Flashscore, CueTracker]
+  - id: format_stage
+    name: Best-of format / stage
+    weight: 0.8
+    markets: [totals, handicap]
+    require_when: []
+    sources: [Snooker.org]
+tertiary:
+  - id: motivation_context
+    name: Ranking points / motivation
+    weight: 0.4
+    markets: [ml]
+    require_when: []
+    sources: [news]
+grade_floors:
+  A: {min_E: 0.72, min_quality_sources: 6, require_uncertainty: true}
+  B: {min_E: 0.55, min_quality_sources: 4, require_r: 1.0}
+  C: {min_E: 0.30, min_quality_sources: 3}
+hard_rejects:
+  - {id: HR_NEG_H2H_UD, when: underdog_hc and negative_h2h}
+  - {id: HR_NO_MATCHUP_UD, when: underdog_hc mid_band and not h2h_checked}
+  - {id: HR_EMPTY_TAKEAWAYS, when: quality_sources < 3}
+edges:
+  realistic: "H2H-driven frame HC, form mismatches on ranking events"
+  efficient_markets: "Top-16 short ML"
+  inefficient_markets: "Frame HC mid-band with clear H2H, early-round totals"
+notes: "CueTracker H2H is mandatory for mid-band underdog HC."

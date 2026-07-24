@@ -1,0 +1,71 @@
+schema_version: 1
+sport: darts
+display_name: Darts
+version: 1
+onboarded: true
+individual_sport: true
+domain_allowlist:
+  - pdc.tv
+  - dartsorakel.com
+  - flashscore.com
+  - sofascore.com
+  - dartswdf.com
+# SAEF-branch ids → worktree stable ids (migration window)
+signal_id_aliases:
+  avg_checkout: checkout_scoring
+  ranking_strength: ranking_seed
+primary:
+  - id: checkout_scoring
+    name: 3-dart average / checkout form
+    weight: 1.5
+    markets: [ml, handicap, totals]
+    require_when: ["*"]
+    sources: [Darts Orakel, PDC, Flashscore]
+  - id: h2h_matchup
+    name: H2H record
+    weight: 1.3
+    markets: [ml, handicap]
+    require_when: [handicap, underdog_hc, ml]
+    sources: [Flashscore, Darts Orakel]
+    allows_negative: true
+    individual_h2h: true
+  - id: recent_form
+    name: Recent form (last 5–10)
+    weight: 1.2
+    markets: ["*"]
+    require_when: ["*"]
+    sources: [Flashscore, PDC]
+secondary:
+  - id: format_stage
+    name: Format / stage (BO11/BO13/TV)
+    weight: 0.9
+    markets: [totals, handicap]
+    require_when: []
+    sources: [PDC]
+  - id: ranking_seed
+    name: Ranking / seed
+    weight: 0.8
+    markets: [ml]
+    require_when: [ml]
+    sources: [PDC]
+tertiary:
+  - id: motivation_context
+    name: Motivation / TV stage nerves
+    weight: 0.4
+    markets: ["*"]
+    require_when: []
+    sources: [news]
+grade_floors:
+  A: {min_E: 0.72, min_quality_sources: 6, require_uncertainty: true}
+  B: {min_E: 0.55, min_quality_sources: 4, require_r: 1.0}
+  C: {min_E: 0.30, min_quality_sources: 3}
+hard_rejects:
+  - {id: HR_NEG_H2H_UD, when: underdog_hc and negative_h2h}
+  - {id: HR_NO_MATCHUP_UD, when: underdog_hc mid_band and not h2h_checked}
+  - {id: HR_EMPTY_TAKEAWAYS, when: quality_sources < 3}
+  - {id: HR_WRONG_SPORT_SOURCES, when: football scaffold only}
+edges:
+  realistic: "Form spikes on averages, underdog HC with positive H2H, totals when styles clash"
+  efficient_markets: "MVG/Littler short ML"
+  inefficient_markets: "Wide leg HCs on early rounds, totals on mismatched averages"
+notes: "Stable ids: checkout_scoring, ranking_seed. Never place soft underdog leg HC without H2H + averages."

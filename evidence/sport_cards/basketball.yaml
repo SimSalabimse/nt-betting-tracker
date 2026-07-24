@@ -1,0 +1,63 @@
+schema_version: 1
+sport: basketball
+display_name: Basketball
+version: 1
+onboarded: true
+individual_sport: false
+domain_allowlist:
+  - basketball-reference.com
+  - nba.com
+  - sofascore.com
+  - flashscore.com
+primary:
+  - id: pace_efficiency
+    name: Pace / efficiency / net rating
+    weight: 1.4
+    markets: [ml, handicap, totals]
+    require_when: ["*"]
+    sources: [Basketball-Reference, NBA.com]
+  - id: availability
+    name: Injuries / minutes / load
+    weight: 1.5
+    markets: ["*"]
+    require_when: [avail_sensitive, prop]
+    sources: [NBA.com, Sofascore]
+  - id: rest_schedule
+    name: B2B / rest / travel
+    weight: 1.2
+    markets: [ml, handicap, totals]
+    require_when: [schedule_load]
+    sources: [NBA.com]
+secondary:
+  - id: h2h_matchup
+    name: Recent H2H
+    weight: 0.7
+    markets: [ml, handicap]
+    require_when: [underdog_hc]
+    sources: [Basketball-Reference]
+    allows_negative: true
+  - id: recent_form
+    name: Last 10 form
+    weight: 0.9
+    markets: ["*"]
+    require_when: []
+    sources: [Sofascore]
+tertiary:
+  - id: motivation_context
+    name: Playoff / tank motivation
+    weight: 0.5
+    markets: [ml]
+    require_when: [high_context]
+    sources: [news]
+grade_floors:
+  A: {min_E: 0.72, min_quality_sources: 6, require_uncertainty: true}
+  B: {min_E: 0.55, min_quality_sources: 4, require_r: 1.0}
+  C: {min_E: 0.30, min_quality_sources: 3}
+hard_rejects:
+  - {id: HR_EMPTY_TAKEAWAYS, when: quality_sources < 3}
+  - {id: HR_NO_MATCHUP_UD, when: underdog_hc mid_band and not h2h_checked}
+edges:
+  realistic: "B2B dog HC, star-out totals, pace mismatches"
+  efficient_markets: "National-TV chalk ML"
+  inefficient_markets: "Rest/B2B spreads, injury-driven totals/props"
+notes: "Availability is king for props/totals."

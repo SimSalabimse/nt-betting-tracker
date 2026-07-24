@@ -1,0 +1,76 @@
+schema_version: 1
+sport: baseball
+display_name: Baseball
+version: 1
+onboarded: true
+individual_sport: false
+domain_allowlist:
+  - fangraphs.com
+  - baseball-reference.com
+  - mlb.com
+  - sofascore.com
+  - flashscore.com
+primary:
+  - id: pitcher_matchup
+    name: Starting pitcher matchup
+    weight: 1.6
+    markets: [ml, handicap, totals]
+    require_when: ["*"]
+    sources: [FanGraphs, Baseball-Reference, MLB]
+  - id: recent_form
+    name: Team run form / offense
+    weight: 1.1
+    markets: [ml, handicap, totals]
+    require_when: []
+    sources: [FanGraphs, Baseball-Reference]
+  - id: bullpen
+    name: Bullpen / late innings
+    weight: 1.0
+    markets: [ml, handicap]
+    require_when: [handicap]
+    sources: [FanGraphs]
+secondary:
+  - id: park_factors
+    name: Park factors
+    weight: 0.9
+    markets: [totals]
+    require_when: [totals_over, totals_under]
+    sources: [FanGraphs]
+  - id: rest_schedule
+    name: Rest / travel / B2B
+    weight: 0.7
+    markets: ["*"]
+    require_when: [schedule_load]
+    sources: [MLB]
+  - id: h2h_matchup
+    name: Season series / H2H
+    weight: 0.6
+    markets: [ml, handicap]
+    require_when: [underdog_hc]
+    sources: [Baseball-Reference]
+    allows_negative: true
+tertiary:
+  - id: line_movement
+    name: Line movement
+    weight: 0.3
+    markets: ["*"]
+    require_when: []
+    sources: [OddsPortal]
+required_groups:
+  - id: baseball_support
+    slot_ids: [bullpen, park_factors, rest_schedule, recent_form]
+    min_filled: 1
+    apply_when: ["*"]
+grade_floors:
+  A: {min_E: 0.72, min_quality_sources: 6, require_uncertainty: true}
+  B: {min_E: 0.55, min_quality_sources: 4, require_r: 1.0}
+  C: {min_E: 0.30, min_quality_sources: 3}
+hard_rejects:
+  - {id: HR_EMPTY_TAKEAWAYS, when: quality_sources < 3}
+  - {id: HR_NO_MATCHUP_UD, when: underdog_hc mid_band and not h2h_checked}
+  - {id: HR_WRONG_SPORT_SOURCES, when: football scaffold only}
+edges:
+  realistic: "Pitcher edges on ML/run line, totals with park + SP"
+  efficient_markets: "Prime-time Yankees/Dodgers short ML"
+  inefficient_markets: "Day games SP mismatch, park totals, underdog RL with SP edge"
+notes: "Pitcher is always primary. Soft explore ML without SP notes ÔåÆ reject."
