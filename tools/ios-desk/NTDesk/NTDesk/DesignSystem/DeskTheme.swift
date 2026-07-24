@@ -44,7 +44,8 @@ enum DeskTheme {
         switch (result ?? "").trimmingCharacters(in: .whitespaces) {
         case "Win": return profit
         case "Loss": return loss
-        case "Pending": return pending
+        // Open risk from /api/desk pending_bets: Pending + ConfirmedPlaced (place-ack).
+        case "Pending", "ConfirmedPlaced": return pending
         default: return textMuted
         }
     }

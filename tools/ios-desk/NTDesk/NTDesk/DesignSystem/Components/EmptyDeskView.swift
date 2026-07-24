@@ -33,12 +33,13 @@ struct EmptyDeskView: View {
                     .tint(DeskTheme.accent)
                     .controlSize(.large)
                     .padding(.top, DeskSpacing.s2)
+                    .accessibilityLabel("Open Settings")
                     .accessibilityHint("Opens the Settings tab to set the PC base URL")
             }
         }
         .padding(DeskSpacing.s6)
         .frame(maxWidth: .infinity)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(title). \(message)")
+        // Keep children separate so "Open Settings" remains an activatable VoiceOver control.
+        .accessibilityElement(children: .contain)
     }
 }
