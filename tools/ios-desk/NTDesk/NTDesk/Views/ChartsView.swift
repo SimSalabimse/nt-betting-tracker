@@ -238,7 +238,8 @@ struct ChartsView: View {
     }
 
     private func drawdownChartSummary(_ pts: [DrawdownPoint]) -> String {
-        let worst = pts.compactMap(\.drawdown).min()
+        // Engine drawdown is non-negative peak−equity; worst = max magnitude.
+        let worst = pts.compactMap(\.drawdown).max()
         let worstStr = worst.map { DeskFormatters.nok($0) } ?? "—"
         return "Drawdown series, \(pts.count) points, worst \(worstStr)"
     }

@@ -76,9 +76,14 @@ private struct PendingBetRow: View {
 
     private var match: String { bet.match ?? "—" }
     private var selection: String { bet.selection ?? "—" }
+    /// Visual odds (`@ 1.87`); a11y uses bare decimal to avoid “odds @ …”.
     private var oddsLabel: String {
         guard let o = bet.decimalOdds else { return "—" }
         return String(format: "@ %.2f", o)
+    }
+    private var oddsAccessibility: String {
+        guard let o = bet.decimalOdds else { return "—" }
+        return String(format: "%.2f", o)
     }
     private var stakeLabel: String {
         DeskFormatters.nok(bet.stakeNok)
@@ -130,7 +135,7 @@ private struct PendingBetRow: View {
     }
 
     private var rowAccessibilityLabel: String {
-        var parts = [match, selection, "odds \(oddsLabel)", "stake \(stakeLabel)"]
+        var parts = [match, selection, "odds \(oddsAccessibility)", "stake \(stakeLabel)"]
         if let date = bet.date, !date.isEmpty {
             parts.insert(date, at: 0)
         }
