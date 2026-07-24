@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		A1B2C3D4E5F60718293A4B5C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B2C3D4E5F60718293A4B5C6D /* Assets.xcassets */; };
+		CB91B236D5F7C7144AA1B55E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B5E4BCA51612EB4937DB848A /* Assets.xcassets */; };
 		4BA9D7AA6D714D6F910BED51 /* CacheEnvelope.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89153251FF794878B656A195 /* CacheEnvelope.swift */; };
 		5733BE05234D4B469B6F6357 /* DeskSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AEB1BFA4F9E49408518F2F1 /* DeskSnapshot.swift */; };
 		E3B44F72446B4435A6F92B8C /* NTDeskApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27EE6A4556014ACB90E60C91 /* NTDeskApp.swift */; };
@@ -39,7 +39,7 @@
 		BE027349E12B4BDFB67B3DBA /* SlipView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SlipView.swift; sourceTree = "<group>"; };
 		848437EA320F44D9A1F3E5AD /* NTDesk.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = NTDesk.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		14E671AE8ACD437DA6E95191 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		B2C3D4E5F60718293A4B5C6D /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		B5E4BCA51612EB4937DB848A /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -76,7 +76,7 @@
 				5A43CDD0A1EB45ECBB96D3A7 /* Models */,
 				2D1A3137E6B74250BCCE8A09 /* Services */,
 				231DA40782AF4C789E9F251F /* Views */,
-				B2C3D4E5F60718293A4B5C6D /* Assets.xcassets */,
+				B5E4BCA51612EB4937DB848A /* Assets.xcassets */,
 				14E671AE8ACD437DA6E95191 /* Info.plist */,
 			);
 			path = NTDesk;
@@ -173,7 +173,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A1B2C3D4E5F60718293A4B5C /* Assets.xcassets in Resources */,
+				CB91B236D5F7C7144AA1B55E /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -238,6 +238,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGNING_ALLOWED = NO;
 				CODE_SIGNING_REQUIRED = NO;
 				CODE_SIGN_IDENTITY = "";
@@ -267,6 +268,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGNING_ALLOWED = NO;
 				CODE_SIGNING_REQUIRED = NO;
 				CODE_SIGN_IDENTITY = "";
