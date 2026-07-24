@@ -52,3 +52,9 @@ data/odds/
 .idea/
 .vscode/
 *.swp
+
+# Xcode / iOS desk (unsigned IPA build artifacts)
+**/xcuserdata/
+**/*.xcuserstate
+tools/ios-desk/build_unsigned/
+tools/ios-desk/**/DerivedData/
