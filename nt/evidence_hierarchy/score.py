@@ -123,11 +123,12 @@ def _family(selection: str) -> str:
     return "other"
 
 
-def _is_underdog_hc(selection: str, odds: float) -> bool:
+def _is_underdog_hc(selection: str, odds: float = 0.0) -> bool:
+    """Underdog HC = plus handicap only. Odds never substitute for sign."""
+    _ = odds
     s = selection or ""
-    if re.search(r"\+\s*\d|\+\d", s):
-        return True
-    if re.search(r"handikap|handicap", s, re.I) and float(odds) >= 1.85:
+    # Explicit plus line only (not minus HC at long odds)
+    if re.search(r"\+\s*\d", s) or re.search(r"\+\d+(?:\.\d+)?", s):
         return True
     return False
 

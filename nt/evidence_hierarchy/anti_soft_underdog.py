@@ -31,14 +31,9 @@ _EXCLUDED_FROM_A = frozenset(
     }
 )
 
-# Default allowlist without flags: h2h_matchup only (+ pure H2H aliases)
-_DEFAULT_MATCHUP_IDS = frozenset(
-    {
-        "h2h_matchup",
-        "surface_h2h",
-        "underdog_matchup_edge",
-    }
-)
+# Default allowlist without card flags: h2h_matchup only (design §5 rev 3).
+# surface_h2h / underdog_matchup_edge require individual_h2h or counts_for_anti_soft_a.
+_DEFAULT_MATCHUP_IDS = frozenset({"h2h_matchup"})
 
 
 @dataclass
@@ -189,13 +184,13 @@ def anti_soft_condition_b(checklist: ChecklistAnswers) -> bool:
     return True
 
 
-def anti_soft_condition_c(checklist: ChecklistAnswers) -> bool:
-    """Why-side text ≥40 chars and mentions opposite side."""
-    why = (checklist.why_this_side_not_opposite or "").strip()
-    if len(why) < 40:
-        return False
-    lower = why.lower()
-    opposite_markers = (
+def _opposite_side_markers(
+    *,
+    selection: str = "",
+    match: str = "",
+) -> tuple[str, ...]:
+    """Generic opposite-side markers; optional opponent tokens from match string."""
+    base = (
         "favourite",
         "favorite",
         "fav ",
@@ -204,14 +199,53 @@ def anti_soft_condition_c(checklist: ChecklistAnswers) -> bool:
         "instead of",
         "rather than",
         "not the",
-        "price",  # common fav name in smith/price
         "chalk",
-        "shorter",
-        "minus",
-        "-2",
-        "against",
+        "shorter price",
+        "shorter odds",
+        "minus line",
+        "minus hc",
+        "against the",
+        "over the fav",
+        "than the fav",
+        "-1.5",
+        "-2.5",
+        "-3.5",
+        "-4.5",
+        "-5.5",
     )
-    return any(m in lower for m in opposite_markers)
+    extra: list[str] = []
+    # If match is "A vs B" and selection names one side, the other name is opposite
+    m = (match or "").strip()
+    sel_l = (selection or "").lower()
+    if " vs " in m.lower() or " v " in m.lower():
+        parts = re.split(r"\s+vs\.?\s+|\s+v\.?\s+", m, maxsplit=1, flags=re.I)
+        if len(parts) == 2:
+            for side in parts:
+                # strip ranking commas "Smith, Ross" → tokens
+                tokens = [
+                    t.strip().lower()
+                    for t in re.split(r"[,/]", side)
+                    if len(t.strip()) >= 4
+                ]
+                for tok in tokens:
+                    if tok and tok not in sel_l:
+                        extra.append(tok)
+    return base + tuple(extra)
+
+
+def anti_soft_condition_c(
+    checklist: ChecklistAnswers,
+    *,
+    selection: str = "",
+    match: str = "",
+) -> bool:
+    """Why-side text ≥40 chars and mentions opposite side (not odds 'price' alone)."""
+    why = (checklist.why_this_side_not_opposite or "").strip()
+    if len(why) < 40:
+        return False
+    lower = why.lower()
+    markers = _opposite_side_markers(selection=selection, match=match)
+    return any(m in lower for m in markers)
 
 
 def anti_soft_condition_d(
@@ -359,7 +393,11 @@ def evaluate_anti_soft_underdog(
 
     a, a_sources = anti_soft_condition_a(ev, card, checklist, h2h)
     b = anti_soft_condition_b(checklist)
-    c = anti_soft_condition_c(checklist)
+    c = anti_soft_condition_c(
+        checklist,
+        selection=sel,
+        match=str(ev.get("match") or ""),
+    )
     d = anti_soft_condition_d(checklist, condition_a=a)
 
     failures: list[str] = []
@@ -372,9 +410,9 @@ def evaluate_anti_soft_underdog(
     if not d:
         failures.append("D")
 
-    hard = bool(failures) and not allow_soft_ud_grade_c
-    # allow_soft_ud_grade_c still fails place for grade B+ but design default is false
-    # Prefer hard F for Smith — always hard reject when failures
+    # Design: fail any of A–D → hard F. allow_soft_ud_grade_c is intentionally
+    # ignored (no Grade-C escape for soft UD mid-band); kept for config compat.
+    _ = allow_soft_ud_grade_c
     hard = bool(failures)
 
     notes = [f"anti_soft band={band} mode={mode}"]

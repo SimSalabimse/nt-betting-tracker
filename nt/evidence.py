@@ -129,11 +129,25 @@ def grade_evidence(
     )
     soft.extend(gate_soft)
 
-    # FEH / SAEF (recompute every grade; place-owning is fail-closed)
+    # FEH / SAEF (recompute every grade; place-owning is fail-closed).
+    # Compute place ownership from raw config BEFORE importing FEH stack so an
+    # import failure cannot fail-open to legacy grade under place-owning flags.
     scorecard_audit: dict[str, Any] | None = None
     saef_grade: str | None = None
     feh_result = None
-    place_owning = False
+    _ev_cfg_raw = dict((cfg.get("selection") or {}).get("evidence") or {})
+    _fh_raw = dict(_ev_cfg_raw.get("forced_hierarchy") or {})
+    place_owning = bool(
+        _ev_cfg_raw.get("enabled")
+        and (not bool(_ev_cfg_raw.get("shadow_mode", True)))
+        and bool(_fh_raw.get("enabled", False))
+    )
+    # fail_closed: design default True when place-owning / forced_hierarchy on
+    _fail_closed_default = True if (
+        place_owning or bool(_fh_raw.get("enabled", False))
+    ) else bool(_ev_cfg_raw.get("fail_closed", True))
+    fail_closed = bool(_ev_cfg_raw.get("fail_closed", _fail_closed_default))
+
     try:
         from nt.evidence_hierarchy.score import (
             compute_saef,
@@ -141,6 +155,7 @@ def grade_evidence(
             score_evidence,
         )
 
+        # Prefer package helper once import succeeds (same triple gate)
         place_owning = place_uses_saef(cfg)
 
         if place_owning:
@@ -196,16 +211,11 @@ def grade_evidence(
                 f"q={card.quality_source_count};conf={card.confidence}"
             )
     except Exception as exc:
-        # Place-owning / fail_closed → F (delete fail-open)
-        if place_owning:
+        # Place-owning / fail_closed → F (delete fail-open residual)
+        if place_owning or fail_closed:
             soft.append(f"FEH_ERROR:{exc}")
             out_err = ("F", issues + soft + [f"FEH_ERROR:{exc}"])
             return (*out_err, scorecard_audit) if return_scorecard else out_err
-        ev_cfg = (cfg.get("selection") or {}).get("evidence") or {}
-        if bool(ev_cfg.get("fail_closed", False)):
-            soft.append(f"FEH_ERROR:{exc}")
-            out_err2 = ("F", issues + soft + [f"FEH_ERROR:{exc}"])
-            return (*out_err2, scorecard_audit) if return_scorecard else out_err2
         # Shadow-only path may append soft note
         soft.append(f"saef_error:{exc}")
 

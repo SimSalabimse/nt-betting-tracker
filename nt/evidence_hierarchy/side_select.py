@@ -62,13 +62,32 @@ def _lean_to_vote(lean: SideLean, conf: float, *, min_conf: float = 0.5) -> Vote
     return "abstain"
 
 
-def _h2h_vote(h2h: dict[str, Any]) -> Vote:
-    if h2h.get("positive"):
-        return "underdog"  # positive H2H on dog pack = supports underdog selection
-    if h2h.get("negative"):
-        return "favourite"
+def _h2h_vote(
+    h2h: dict[str, Any],
+    *,
+    selection_side: SelectionSide = "other",
+) -> Vote:
+    """
+    Map H2H polarity relative to selection_side.
+
+    Positive edge supports the pack's selection side (dog pack → underdog vote;
+    fav pack → favourite vote). Negative flips.
+    """
     if h2h.get("mixed"):
         return "even"
+    if h2h.get("positive"):
+        if selection_side == "underdog":
+            return "underdog"
+        if selection_side == "favourite":
+            return "favourite"
+        # Unknown selection framing — abstain rather than assume dog
+        return "abstain"
+    if h2h.get("negative"):
+        if selection_side == "underdog":
+            return "favourite"
+        if selection_side == "favourite":
+            return "underdog"
+        return "abstain"
     return "abstain"
 
 
@@ -127,11 +146,17 @@ def decide_side(
     family: str,
     soft_ud_odds_lo: float = 1.70,
     soft_ud_odds_hi_hard: float = 2.20,
-    soft_ud_band: bool = False,
+    soft_ud_odds_hi_soft: float = 2.60,
+    soft_ud_band: bool | None = None,
 ) -> SideDecision:
     """
     Votes from Q1 ranking, Q2 form, Q3/h2h polarity.
     Normative truth table for soft UD HC (design §4).
+
+    soft_ud_band:
+      None  → derive from is_underdog_hc + odds band
+      True  → force soft-UD side rules on
+      False → force soft-UD side rules off
     """
     notes: list[str] = []
     sel_side = _selection_side(
@@ -162,7 +187,11 @@ def decide_side(
         checklist.higher_ranked_side, checklist.ranking_confidence
     )
     f_vote = _lean_to_vote(checklist.better_form_side, checklist.form_confidence)
-    h_vote = _h2h_vote(h2h if isinstance(h2h, dict) else {})
+    # H2H polarity relative to selection side (not always dog-centric)
+    h_vote = _h2h_vote(
+        h2h if isinstance(h2h, dict) else {},
+        selection_side=sel_side,
+    )
 
     # Weighted scores
     scores = {"favourite": 0.0, "underdog": 0.0, "even": 0.0}
@@ -178,10 +207,12 @@ def decide_side(
             continue
 
     # Truth table (design §4) — explicit soft-UD cases first
+    # "h2h supports selection" when h_vote == sel_side for fav/ud
+    h2h_supports_dog = h_vote == "underdog"
     evidence_side: EvidenceSide
     method = "vote_aggregate"
 
-    if r_vote == "favourite" and f_vote == "favourite" and h_vote != "underdog":
+    if r_vote == "favourite" and f_vote == "favourite" and not h2h_supports_dog:
         evidence_side = "favourite"
         method = "rank_form_fav"
     elif r_vote == "favourite" and f_vote in ("even", "abstain") and h_vote in (
@@ -190,17 +221,16 @@ def decide_side(
     ):
         evidence_side = "favourite"
         method = "rank_fav_form_neutral"
-    elif r_vote == "favourite" and f_vote == "underdog" and h_vote == "underdog":
-        # positive h2h vote = underdog
+    elif r_vote == "favourite" and f_vote == "underdog" and h2h_supports_dog:
         evidence_side = "unclear"
         method = "split_rank_form_pos_h2h"
-    elif r_vote == "favourite" and f_vote == "underdog" and h_vote != "underdog":
+    elif r_vote == "favourite" and f_vote == "underdog" and not h2h_supports_dog:
         evidence_side = "favourite"
         method = "rank_fav_form_split_no_pos_h2h"
-    elif r_vote == "underdog" and f_vote == "underdog" and h_vote == "underdog":
+    elif r_vote == "underdog" and f_vote == "underdog" and h2h_supports_dog:
         evidence_side = "underdog"
         method = "all_dog"
-    elif r_vote == "underdog" and f_vote == "underdog" and h_vote != "underdog":
+    elif r_vote == "underdog" and f_vote == "underdog" and not h2h_supports_dog:
         evidence_side = "unclear"
         method = "dog_rank_form_mixed_h2h"
     elif r_vote == "even" and f_vote == "even" and h_vote in ("even", "abstain"):
@@ -230,16 +260,16 @@ def decide_side(
             evidence_side = "unclear"
             method = "score_unclear"
 
-    soft_ud = bool(
-        soft_ud_band
-        or (
-            is_underdog_hc
-            and soft_ud_odds_lo <= float(odds) <= soft_ud_odds_hi_hard
-        )
-    )
-    # Outer soft band also treated for side hard rejects on UD HC
-    if is_underdog_hc and soft_ud_odds_lo <= float(odds) <= 2.60:
+    # Soft-UD band: optional override, else plus-HC + odds only
+    if soft_ud_band is True:
         soft_ud = True
+    elif soft_ud_band is False:
+        soft_ud = False
+    else:
+        soft_ud = bool(
+            is_underdog_hc
+            and soft_ud_odds_lo <= float(odds) <= float(soft_ud_odds_hi_soft)
+        )
 
     agrees = (
         (evidence_side == "underdog" and sel_side == "underdog")

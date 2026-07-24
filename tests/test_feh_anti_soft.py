@@ -11,11 +11,15 @@ import nt_bootstrap  # noqa: F401
 
 from nt.evidence_hierarchy.anti_soft_underdog import (
     anti_soft_condition_a,
+    anti_soft_condition_c,
     evaluate_anti_soft_underdog,
+    matchup_eligible_factor_ids,
 )
 from nt.evidence_hierarchy.cards import load_sport_card
 from nt.evidence_hierarchy.checklist import ChecklistAnswers, load_checklist_from_pack
+from nt.evidence_hierarchy.feh import _is_underdog_hc, _is_favourite_hc
 from nt.evidence_hierarchy.h2h_normalize import normalize_h2h
+from nt.evidence_hierarchy.side_select import decide_side
 
 SMITH_PATH = (
     ROOT
@@ -234,3 +238,65 @@ def test_fav_hc_anti_soft_does_not_apply():
         family="handicap",
     )
     assert res.applies is False
+
+
+def test_minus_hc_not_underdog_even_at_long_odds():
+    """Minus HC at odds>=1.85 is favourite HC, never soft underdog."""
+    sel = "Runde handikap 5.5: Price, Gerwyn -5.5"
+    assert _is_underdog_hc(sel, 1.95) is False
+    assert _is_favourite_hc(sel) is True
+    assert _is_underdog_hc("Smith, Ross +2.5", 1.85) is True
+
+    cl = ChecklistAnswers(
+        higher_ranked_side="favourite",
+        ranking_confidence=0.8,
+        better_form_side="favourite",
+        form_confidence=0.7,
+        h2h_verdict="positive",
+    )
+    h2h = {"checked": True, "positive": True, "negative": False, "mixed": False}
+    side = decide_side(
+        cl,
+        h2h,
+        selection=sel,
+        odds=1.95,
+        is_underdog_hc=_is_underdog_hc(sel, 1.95),
+        is_favourite_hc=_is_favourite_hc(sel),
+        family="handicap",
+    )
+    assert side.selection_side == "favourite"
+    assert side.hard_reject is False
+    assert side.reject_code != "FEH_SIDE_CONFLICT"
+
+
+def test_default_matchup_allowlist_h2h_only():
+    """Without card flags, only h2h_matchup is matchup-eligible."""
+    ids = matchup_eligible_factor_ids(None)
+    assert ids == {"h2h_matchup"}
+    assert "surface_h2h" not in ids
+    assert "underdog_matchup_edge" not in ids
+    # Tennis card flags surface_h2h with individual_h2h
+    tennis = load_sport_card("tennis")
+    if tennis is not None:
+        tids = matchup_eligible_factor_ids(tennis)
+        assert "h2h_matchup" in tids or "surface_h2h" in tids
+        # surface only if card declares individual_h2h
+        for f in tennis.all_factors():
+            if f.get("id") == "surface_h2h" and f.get("individual_h2h"):
+                assert "surface_h2h" in tids
+
+
+def test_condition_c_does_not_pass_on_odds_price_alone():
+    """Bare 'price' / odds language must not satisfy opposite-side C."""
+    cl = ChecklistAnswers(
+        why_this_side_not_opposite=(
+            "This is a good price at mid band with value on the number line."
+        )
+    )
+    assert anti_soft_condition_c(cl) is False
+    cl2 = ChecklistAnswers(
+        why_this_side_not_opposite=(
+            "Form and H2H favour the underdog rather than the favourite chalk."
+        )
+    )
+    assert anti_soft_condition_c(cl2) is True

@@ -46,12 +46,10 @@ def _family(selection: str) -> str:
     return "other"
 
 
-def _is_underdog_hc(selection: str, odds: float) -> bool:
-    if is_plus_handicap(selection):
-        return True
-    if re.search(r"handikap|handicap", selection or "", re.I) and float(odds) >= 1.85:
-        return True
-    return False
+def _is_underdog_hc(selection: str, odds: float = 0.0) -> bool:
+    """Underdog HC = plus handicap only. Odds never substitute for sign."""
+    _ = odds  # odds used only for soft-band gates, not UD classification
+    return is_plus_handicap(selection)
 
 
 def _is_favourite_hc(selection: str) -> bool:
@@ -224,7 +222,9 @@ def run_forced_evidence_hierarchy(
             family=family,
             soft_ud_odds_lo=float(fh["soft_ud_odds_lo"]),
             soft_ud_odds_hi_hard=float(fh["soft_ud_odds_hi_hard"]),
-            soft_ud_band=False,
+            soft_ud_odds_hi_soft=float(fh["soft_ud_odds_hi_soft"]),
+            # None → derive from plus-HC + odds band (no force)
+            soft_ud_band=None,
         )
         if place_owning and side.hard_reject and side.reject_code:
             hard = True

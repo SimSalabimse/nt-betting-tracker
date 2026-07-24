@@ -256,3 +256,198 @@ def test_feh_error_fail_closed_not_legacy():
         pack, cfg, 1.90, selection="Dog +2.5", sport="darts"
     )
     assert grade == "F"
+
+
+def test_place_owning_fail_closed_without_explicit_fail_closed_key():
+    """Place-owning flags alone must not fail-open if fail_closed key omitted."""
+    cfg = _place_cfg()
+    # Drop fail_closed key — raw-config place_owning must still default fail-closed
+    evidence = dict(cfg["selection"]["evidence"])
+    evidence.pop("fail_closed", None)
+    cfg["selection"]["evidence"] = evidence
+    assert place_uses_saef(cfg) is True
+    pack = _load_smith()
+    grade, issues = grade_evidence(
+        pack, cfg, 1.85, selection=pack["selection"], sport="darts"
+    )
+    assert grade == "F"
+    assert any("FEH_ANTI_SOFT_UNDERDOG" in i for i in issues)
+
+
+def test_fav_minus_hc_no_side_conflict_at_mid_odds():
+    """Favourite −HC @ ≥1.85 must not be treated as soft UD (review #1)."""
+    cfg = _place_cfg()
+    pack = {
+        "sport": "darts",
+        "match": "Smith, Ross vs Price, Gerwyn",
+        "selection": "Runde handikap 5.5: Price, Gerwyn -5.5",
+        "summary": "Favourite HC with rank form and positive H2H for Price.",
+        "failure_modes": "Smith cover miracle.",
+        "p_model": 0.55,
+        "p_model_sd": 0.06,
+        "h2h": {
+            "checked": True,
+            "edge": "positive",
+            "summary": "Price leads H2H clearly.",
+        },
+        "signals": {
+            "h2h_matchup": {
+                "filled": True,
+                "strength": "positive",
+                "note": "Price H2H edge supports favourite HC.",
+            },
+            "ranking_seed": {
+                "filled": True,
+                "strength": "positive",
+                "note": "Price higher ranked seed.",
+            },
+            "recent_form": {
+                "filled": True,
+                "strength": "positive",
+                "note": "Price form strong into Matchplay event.",
+            },
+        },
+        "sources": [
+            {
+                "name": f"s{i}",
+                "url": f"https://flashscore.com/p/{i}",
+                "takeaway": f"Quality takeaway number {i} with enough characters.",
+            }
+            for i in range(6)
+        ],
+        "availability_status": "stable_guess",
+        "availability_notes": "Both active listed no WD on board confirmed.",
+        "script_lean": "fav_control",
+        "selection_vs_script": "agree",
+        "base_rate_conflict": False,
+        "context_risk": "low",
+        "feh_checklist": {
+            "schema_version": 1,
+            "higher_ranked_side": "favourite",
+            "ranking_confidence": 0.8,
+            "better_form_side": "favourite",
+            "form_confidence": 0.7,
+            "h2h_verdict": "positive",
+            "h2h_summary": "Price leads H2H series clearly over Smith.",
+            "natural_markets": ["none"],
+            "natural_market_hint": "none",
+            "underdog_supported_by_evidence": False,
+            "underdog_support_reason": (
+                "Not an underdog pick; Price favourite HC is the selection."
+            ),
+            "why_this_side_not_opposite": (
+                "Ranking, form and positive H2H all support Price favourite "
+                "minus line over the Smith underdog cover."
+            ),
+            "strongest_positive": "Price ranking and H2H edge vs Smith clear.",
+            "strongest_negative": "Smith can still cover a large plus handicap.",
+            "primary_factors_used": ["h2h_matchup", "ranking_seed", "recent_form"],
+        },
+    }
+    feh = run_forced_evidence_hierarchy(
+        pack,
+        sport="darts",
+        selection=pack["selection"],
+        odds=1.95,
+        cfg=cfg,
+    )
+    assert feh.anti_soft.get("applies") is False
+    assert feh.side is not None
+    assert feh.side.selection_side == "favourite"
+    assert "FEH_SIDE_CONFLICT" not in feh.reject_codes
+    assert "FEH_ANTI_SOFT_UNDERDOG" not in feh.reject_codes
+
+
+def test_s5_portfolio_temp_ev_relax_cannot_place_smith():
+    """S5 portfolio-level: temp_ev_relax + Smith still empty picks / FEH reject."""
+    from nt.portfolio import Candidate, build_portfolio
+
+    pack = _load_smith()
+    pack = dict(pack)
+    pack["notes"] = "EXPLORE virgin temp_ev_relax"
+    place_ev = _place_cfg()["selection"]["evidence"]
+    cfg = {
+        "norsk_tipping": {"min_stake_nok": 10},
+        "paths": {"evidence": str(ROOT / "evidence")},
+        "selection": {
+            "probability_haircut": 0.03,
+            "standard_min_ev": 0.03,
+            "strong_min_ev": 0.015,
+            "absolute_min_ev": 0.01,
+            "strong_min_sources": 8,
+            "grade_c_placeable": True,
+            "grade_c_require_core_reason": True,
+            "grade_c_min_sources": 4,
+            "high_odds_threshold": 2.5,
+            "high_odds_min_ev": 0.08,
+            "high_odds_min_grade": "A",
+            "high_odds_stake_multiplier": 0.6,
+            "high_odds_max_per_round": 2,
+            "band_penalty": {
+                "min_sample": 15,
+                "bad_roi_below": -0.10,
+                "extra_ev_required": 0.05,
+            },
+            "band_prior_boost": {},
+            "min_research_sources": {
+                "default": 6,
+                "grade_A": 10,
+                "high_odds": 12,
+            },
+            "grade_a_require_uncertainty": False,
+            "empty_slip_ok": True,
+            "evidence": place_ev,
+            "diversification": {
+                "max_per_sport": 9,
+                "max_per_market": 9,
+                "max_per_band": 9,
+                "max_per_match": 3,
+                "max_football_per_round": 9,
+                "min_non_football_per_round": 0,
+                "prefer_explore_first": False,
+                "explore_min_ev": 0.012,
+            },
+        },
+        "learning": {
+            "enabled": False,
+            "diversification": {
+                "max_per_sport": 9,
+                "max_per_market": 9,
+                "max_per_band": 9,
+                "max_per_match": 3,
+                "max_football_per_round": 9,
+                "min_non_football_per_round": 0,
+                "prefer_explore_first": False,
+                "explore_min_ev": 0.012,
+            },
+        },
+        "risk": {"loss_streak_grade_a_only": 99},
+        "capital_v2": {"enabled": False},
+        "research": {"gates": {"enabled": True}},
+    }
+    c = Candidate(
+        date="2026-07-24",
+        match=str(pack.get("match") or "Smith vs Price"),
+        selection=str(pack.get("selection") or ""),
+        decimal_odds=1.85,
+        sport="darts",
+        market_type="handicap",
+        p_model=float(pack.get("p_model") or 0.59),
+        evidence=pack,
+        notes="EXPLORE temp_ev_relax",
+    )
+    phase = {
+        "phase_id": "1A",
+        "stake_min": 10,
+        "stake_max": 12,
+        "max_bets_per_round": 4,
+        "max_doubles_per_round": 0,
+        "daily_risk_pct": 0.08,
+        "daily_risk_floor": 30,
+        "daily_risk_ceil": 42,
+    }
+    risk = {"can_bet": True, "remaining_risk_nok": 100.0, "reasons": []}
+    picked, rejects = build_portfolio(cfg, [c], phase, risk, [], learning={})
+    assert picked == []
+    blob = " ".join(str(r) for r in rejects)
+    assert "FEH_ANTI_SOFT_UNDERDOG" in blob or "grade F" in blob.lower() or "F" in blob
