@@ -2,79 +2,180 @@ import SwiftUI
 
 struct DeskView: View {
     @EnvironmentObject private var sync: SyncService
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
+    private var gridColumns: [GridItem] {
+        if dynamicTypeSize.isAccessibilitySize {
+            return [GridItem(.flexible())]
+        }
+        return [GridItem(.flexible()), GridItem(.flexible())]
+    }
 
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: 12) {
+                VStack(alignment: .leading, spacing: DeskSpacing.s3) {
                     FreshnessBanner()
                     if let s = sync.snapshot {
-                        if s.freeze == true || s.stopped == true || s.canBet == false {
-                            banner(
-                                "Risk gate — can_bet=\(s.canBet.map(String.init) ?? "?") · mode=\(s.sizeMode ?? "—")",
-                                color: .orange
+                        riskGateSection(s)
+
+                        LazyVGrid(columns: gridColumns, spacing: DeskSpacing.s2) {
+                            MetricCard(
+                                label: "Equity",
+                                value: DeskFormatters.nok(s.equityNok)
+                            )
+                            MetricCard(
+                                label: "Liquid",
+                                value: DeskFormatters.nok(s.liquidNok)
+                            )
+                            MetricCard(
+                                label: "Open risk",
+                                value: DeskFormatters.nok(s.pendingAtRiskNok)
+                            )
+                            MetricCard(
+                                label: "Remaining",
+                                value: DeskFormatters.nok(s.remainingRiskNok)
+                            )
+                            MetricCard(
+                                label: "Phase",
+                                value: s.phaseId ?? "—",
+                                subtitle: s.phaseLabel ?? ""
+                            )
+                            MetricCard(
+                                label: "Today P/L",
+                                value: DeskFormatters.nok(s.todayRealizedPlNok, signed: true),
+                                valueColor: DeskTheme.pl(s.todayRealizedPlNok),
+                                railColor: DeskTheme.pl(s.todayRealizedPlNok)
                             )
                         }
-                        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
-                            MetricCard(label: "Equity", value: nok(s.equityNok))
-                            MetricCard(label: "Liquid", value: nok(s.liquidNok))
-                            MetricCard(label: "Open risk", value: nok(s.pendingAtRiskNok))
-                            MetricCard(label: "Remaining", value: nok(s.remainingRiskNok))
-                            MetricCard(label: "Phase", value: "\(s.phaseId ?? "—") \(s.phaseLabel ?? "")")
-                            MetricCard(label: "Today P/L", value: nok(s.todayRealizedPlNok))
-                        }
+
                         if let o = s.charts?.overall {
-                            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
-                                MetricCard(label: "ROI", value: pct(o.roi))
-                                MetricCard(label: "Win rate", value: pct(o.winrate))
-                                MetricCard(label: "Settled", value: intStr(o.nSettled))
-                                MetricCard(label: "Max DD", value: nok(s.charts?.maxDrawdown))
+                            LazyVGrid(columns: gridColumns, spacing: DeskSpacing.s2) {
+                                MetricCard(
+                                    label: "ROI",
+                                    value: DeskFormatters.pct(o.roi, signed: true),
+                                    valueColor: DeskTheme.pl(o.roi),
+                                    railColor: DeskTheme.pl(o.roi)
+                                )
+                                MetricCard(
+                                    label: "Win rate",
+                                    value: DeskFormatters.pct(o.winrate)
+                                )
+                                MetricCard(
+                                    label: "Settled",
+                                    value: DeskFormatters.int(o.nSettled)
+                                )
+                                MetricCard(
+                                    label: "Max DD",
+                                    value: DeskFormatters.nok(s.charts?.maxDrawdown),
+                                    valueColor: DeskTheme.loss,
+                                    railColor: DeskTheme.loss
+                                )
                             }
                         }
+
                         Text("Generated \(s.generatedAt ?? "—")")
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
+                            .font(DeskTypography.caption)
+                            .foregroundStyle(DeskTheme.textDim)
+                            .padding(.top, DeskSpacing.s1)
                     } else {
-                        ContentUnavailableView(
-                            "No desk data",
-                            systemImage: "wifi.slash",
-                            description: Text("Set base URL in Settings and pull to refresh while the PC is reachable.")
-                        )
+                        emptyState
                     }
                 }
-                .padding()
+                .padding(DeskSpacing.contentPad)
             }
-            .background(Color(red: 0.06, green: 0.07, blue: 0.08))
+            .background(DeskTheme.bg.ignoresSafeArea())
             .navigationTitle("NT Desk")
+            .toolbarBackground(DeskTheme.surface, for: .navigationBar)
             .refreshable { await sync.sync() }
             .toolbar {
                 if sync.isSyncing {
                     ProgressView()
+                        .tint(DeskTheme.accent)
                 }
             }
         }
     }
 
-    private func banner(_ text: String, color: Color) -> some View {
-        Text(text)
-            .font(.footnote)
-            .padding(10)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(RoundedRectangle(cornerRadius: 10).fill(color.opacity(0.2)))
+    // MARK: - Risk gate
+
+    @ViewBuilder
+    private func riskGateSection(_ s: DeskSnapshot) -> some View {
+        let status = RiskGateStatus.resolve(
+            stopped: s.stopped,
+            freeze: s.freeze,
+            canBet: s.canBet
+        )
+        DeskCard(accent: status.color) {
+            VStack(alignment: .leading, spacing: DeskSpacing.s3) {
+                HStack(alignment: .center, spacing: DeskSpacing.s2) {
+                    Text("RISK GATE")
+                        .font(DeskTypography.sectionLabel)
+                        .foregroundStyle(DeskTheme.textDim)
+                        .tracking(0.6)
+                        .accessibilityAddTraits(.isHeader)
+                    Spacer(minLength: DeskSpacing.s2)
+                    StatusPill(status: status)
+                }
+
+                if let mode = s.sizeMode, !mode.isEmpty {
+                    Text(mode)
+                        .font(DeskTypography.caption)
+                        .foregroundStyle(DeskTheme.textMuted)
+                }
+
+                if let reasons = s.riskReasons, !reasons.isEmpty {
+                    VStack(alignment: .leading, spacing: DeskSpacing.s1) {
+                        ForEach(reasons, id: \.self) { reason in
+                            HStack(alignment: .top, spacing: DeskSpacing.s2) {
+                                Text("·")
+                                    .foregroundStyle(DeskTheme.textDim)
+                                Text(reason)
+                                    .font(DeskTypography.caption)
+                                    .foregroundStyle(DeskTheme.textMuted)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                        }
+                    }
+                }
+
+                RiskGaugeCard(
+                    dailyRiskCapNok: s.dailyRiskCapNok,
+                    remainingRiskNok: s.remainingRiskNok,
+                    canBet: s.canBet,
+                    todayRealizedPlNok: s.todayRealizedPlNok
+                )
+            }
+        }
     }
 
-    private func nok(_ v: Double?) -> String {
-        guard let v else { return "—" }
-        return String(format: "%.2f NOK", v)
-    }
+    // MARK: - Empty
 
-    private func pct(_ v: Double?) -> String {
-        guard let v else { return "—" }
-        return String(format: "%.1f%%", v * 100)
-    }
-
-    private func intStr(_ v: Double?) -> String {
-        guard let v else { return "—" }
-        return String(Int(v))
+    private var emptyState: some View {
+        VStack(spacing: DeskSpacing.s4) {
+            Image(systemName: "wifi.slash")
+                .font(.system(size: 40))
+                .foregroundStyle(DeskTheme.textDim)
+            Text("No desk data")
+                .font(DeskTypography.sectionTitle)
+                .foregroundStyle(DeskTheme.text)
+            Text("Set base URL in Settings and pull to refresh while the PC is reachable.")
+                .font(DeskTypography.caption)
+                .foregroundStyle(DeskTheme.textMuted)
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, DeskSpacing.s7)
+        .padding(.horizontal, DeskSpacing.s4)
+        .background(
+            RoundedRectangle(cornerRadius: DeskSpacing.radius)
+                .fill(DeskTheme.surfaceElev)
+                .overlay(
+                    RoundedRectangle(cornerRadius: DeskSpacing.radius)
+                        .stroke(DeskTheme.borderSoft, lineWidth: 1)
+                )
+        )
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("No desk data. Set base URL in Settings and pull to refresh while the PC is reachable.")
     }
 }

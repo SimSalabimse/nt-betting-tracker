@@ -30,6 +30,7 @@
 		5EC5B62D213F49F7B232777E /* DeskCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 662843DAEBD7427A95AC89B8 /* DeskCard.swift */; };
 		E84002870C2349519C0A75A6 /* StatusPill.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C956EA299234BF1BC01281C /* StatusPill.swift */; };
 		38C4C7F4264144B084C95275 /* FreshnessBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8BABF7F3046C4854B0C6B736 /* FreshnessBanner.swift */; };
+		A1B2C3D4E5F6471890ABCDEF /* RiskGaugeCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1E2D3C4B5A6978800112233 /* RiskGaugeCard.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -55,6 +56,7 @@
 		662843DAEBD7427A95AC89B8 /* DeskCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeskCard.swift; sourceTree = "<group>"; };
 		6C956EA299234BF1BC01281C /* StatusPill.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusPill.swift; sourceTree = "<group>"; };
 		8BABF7F3046C4854B0C6B736 /* FreshnessBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FreshnessBanner.swift; sourceTree = "<group>"; };
+		F1E2D3C4B5A6978800112233 /* RiskGaugeCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RiskGaugeCard.swift; sourceTree = "<group>"; };
 		848437EA320F44D9A1F3E5AD /* NTDesk.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = NTDesk.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		14E671AE8ACD437DA6E95191 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		B5E4BCA51612EB4937DB848A /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -121,6 +123,7 @@
 				662843DAEBD7427A95AC89B8 /* DeskCard.swift */,
 				6C956EA299234BF1BC01281C /* StatusPill.swift */,
 				8BABF7F3046C4854B0C6B736 /* FreshnessBanner.swift */,
+				F1E2D3C4B5A6978800112233 /* RiskGaugeCard.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -249,6 +252,7 @@
 				5EC5B62D213F49F7B232777E /* DeskCard.swift in Sources */,
 				E84002870C2349519C0A75A6 /* StatusPill.swift in Sources */,
 				38C4C7F4264144B084C95275 /* FreshnessBanner.swift in Sources */,
+				A1B2C3D4E5F6471890ABCDEF /* RiskGaugeCard.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
