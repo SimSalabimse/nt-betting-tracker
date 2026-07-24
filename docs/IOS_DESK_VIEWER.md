@@ -9,6 +9,8 @@
 
 Full design: `docs/IOS_DESK_APP_DESIGN.md`.
 
+**Visual identity / theme ops:** desk night token map (`desktop/theme.py` ↔ `DeskTheme.swift`), App Icon regen (Concept A, opaque 1024), accessibility checklist, and unsigned IPA smoke notes live in [`tools/ios-desk/README.md`](../tools/ios-desk/README.md). Design brief: [`docs/IOS_DESK_VISUAL_HIG_DESIGN.md`](IOS_DESK_VISUAL_HIG_DESIGN.md).
+
 ## Daily ops
 
 ### PC (Windows)
