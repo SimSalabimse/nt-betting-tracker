@@ -23,6 +23,7 @@ struct RootView: View {
                 .tabItem { Label("Settings", systemImage: "gear") }
                 .tag(4)
         }
+        .background(DeskTheme.bg)
         .task {
             await sync.sync()
             sync.startPolling()

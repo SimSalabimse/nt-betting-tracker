@@ -21,6 +21,11 @@
 		86A1EAEF46144C9EA4903E56 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49318D0CC6E143AAA1555618 /* RootView.swift */; };
 		D2EB199DB8424737B2E17533 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E6AC46BE5914858AA4431A5 /* SettingsView.swift */; };
 		43074185315343D497370947 /* SlipView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE027349E12B4BDFB67B3DBA /* SlipView.swift */; };
+		433FAE3AD3044C65A3768EA6 /* Color+Hex.swift in Sources */ = {isa = PBXBuildFile; fileRef = 459296BA0024409386108622 /* Color+Hex.swift */; };
+		3C9087B488054EE288DC4DAC /* DeskTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9016FB0E7E8A4929A2708216 /* DeskTheme.swift */; };
+		DE90BB1B9CC04018B9BC8B05 /* DeskSpacing.swift in Sources */ = {isa = PBXBuildFile; fileRef = E926D1ED8A694AB79F8F8B98 /* DeskSpacing.swift */; };
+		91F7C6B3DB424374BD0A2590 /* DeskTypography.swift in Sources */ = {isa = PBXBuildFile; fileRef = B370D56E4ED14EBCA7E78EB5 /* DeskTypography.swift */; };
+		66CC323A1C1340AEB2F2AB74 /* DeskFormatters.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E2A6EE90C0C46C3A05FCCE8 /* DeskFormatters.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -37,6 +42,11 @@
 		49318D0CC6E143AAA1555618 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		9E6AC46BE5914858AA4431A5 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		BE027349E12B4BDFB67B3DBA /* SlipView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SlipView.swift; sourceTree = "<group>"; };
+		459296BA0024409386108622 /* Color+Hex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Color+Hex.swift"; sourceTree = "<group>"; };
+		9016FB0E7E8A4929A2708216 /* DeskTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeskTheme.swift; sourceTree = "<group>"; };
+		E926D1ED8A694AB79F8F8B98 /* DeskSpacing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeskSpacing.swift; sourceTree = "<group>"; };
+		B370D56E4ED14EBCA7E78EB5 /* DeskTypography.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeskTypography.swift; sourceTree = "<group>"; };
+		9E2A6EE90C0C46C3A05FCCE8 /* DeskFormatters.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeskFormatters.swift; sourceTree = "<group>"; };
 		848437EA320F44D9A1F3E5AD /* NTDesk.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = NTDesk.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		14E671AE8ACD437DA6E95191 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		B5E4BCA51612EB4937DB848A /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -73,6 +83,7 @@
 			isa = PBXGroup;
 			children = (
 				27EE6A4556014ACB90E60C91 /* NTDeskApp.swift */,
+				D3378FDD6A4C4B45B645117A /* DesignSystem */,
 				5A43CDD0A1EB45ECBB96D3A7 /* Models */,
 				2D1A3137E6B74250BCCE8A09 /* Services */,
 				231DA40782AF4C789E9F251F /* Views */,
@@ -80,6 +91,18 @@
 				14E671AE8ACD437DA6E95191 /* Info.plist */,
 			);
 			path = NTDesk;
+			sourceTree = "<group>";
+		};
+		D3378FDD6A4C4B45B645117A /* DesignSystem */ = {
+			isa = PBXGroup;
+			children = (
+				459296BA0024409386108622 /* Color+Hex.swift */,
+				9016FB0E7E8A4929A2708216 /* DeskTheme.swift */,
+				E926D1ED8A694AB79F8F8B98 /* DeskSpacing.swift */,
+				B370D56E4ED14EBCA7E78EB5 /* DeskTypography.swift */,
+				9E2A6EE90C0C46C3A05FCCE8 /* DeskFormatters.swift */,
+			);
+			path = DesignSystem;
 			sourceTree = "<group>";
 		};
 		5A43CDD0A1EB45ECBB96D3A7 /* Models */ = {
@@ -197,6 +220,11 @@
 				86A1EAEF46144C9EA4903E56 /* RootView.swift in Sources */,
 				D2EB199DB8424737B2E17533 /* SettingsView.swift in Sources */,
 				43074185315343D497370947 /* SlipView.swift in Sources */,
+				433FAE3AD3044C65A3768EA6 /* Color+Hex.swift in Sources */,
+				3C9087B488054EE288DC4DAC /* DeskTheme.swift in Sources */,
+				DE90BB1B9CC04018B9BC8B05 /* DeskSpacing.swift in Sources */,
+				91F7C6B3DB424374BD0A2590 /* DeskTypography.swift in Sources */,
+				66CC323A1C1340AEB2F2AB74 /* DeskFormatters.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
