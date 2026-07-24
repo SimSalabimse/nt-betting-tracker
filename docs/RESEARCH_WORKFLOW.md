@@ -4,6 +4,8 @@
 
 When the user provides a **new or updated odds file** in `inbox/`, the agent **must** run the full research → recommend path (see root `AGENTS.md`). Defaults: **live recommend** (logs Pending when picks exist); **dry-run only if the user asks**; **do not re-advise already Pending tickets**; honest evidence only (no mechanical p_model unless explicitly ordered).
 
+**Forced Evidence Hierarchy (FEH)** is **NON-BYPASSABLE** place law: side first, then price; anti-soft underdog; prefer empty slip over weak soft dogs. Deep-queue **preferred band (1.85–2.60)** is **research-rank only** — not place quality or inherent soft-dog attractiveness. Temporary **10 NOK** stake cap applies to the first 10 FEH-tagged placed bets. Design: [`FORCED_EVIDENCE_HIERARCHY_FULL_CLEANUP_AND_10NOK_TEST_2026-07-24.md`](./FORCED_EVIDENCE_HIERARCHY_FULL_CLEANUP_AND_10NOK_TEST_2026-07-24.md).
+
 ## End-to-end stages (mandatory order)
 
 ```
@@ -16,12 +18,12 @@ When the user provides a **new or updated odds file** in `inbox/`, the agent **m
 3. LIGHT RESEARCH      ≥70–85% shortlist · sport minimums
         ↓              outbox/light_research/*.md
 4. DEEP RESEARCH       only light-pass deep queue
-        ↓              evidence/*.json + honest p_model
+        ↓              evidence/*.json + honest p_model (side-first)
 5. READY CHECK         nt research ready --odds …
         ↓
-6. VALIDATION          grade_evidence + portfolio + risk/phase
-        ↓
-7. DECISION            recommend → PLACE_THESE.md  (Deep only)
+6. VALIDATION          FEH + grade_evidence + portfolio + risk/phase
+        ↓              (FEH F cannot be bypassed by promo/explore/temp_ev_relax)
+7. DECISION            recommend → PLACE_THESE.md  (Deep only; empty slip OK)
         ↓
 8. SETTLEMENT          results → settle → learning
         ↓
@@ -48,6 +50,8 @@ Config: `research.tiers` in `config.yaml` (`light_coverage_target`, `min_light_p
 
 **SSOT export:** board/light writes engine composition + queue lines to **`data/state/deep_queue.json`** (`nt/deep_queue_state.py`) for Lumina preferred/short-main bars (D17).
 
+**Preferred / mid band = research-rank only.** Composition targets (≥55% preferred, promo boosts for 1.85–2.60, handicaps, longer ML) decide *what gets deep packs* — they do **not** seal place quality. Soft underdog at 1.85–2.20 is **not** inherently attractive; FEH anti-soft + structured H2H own place.
+
 ### Coverage floor + temp_ev_relax safety net
 
 Two permanent mechanisms keep high-volume boards from starving mid-price research **without** inventing `p_model` or casually softening EV.
@@ -59,6 +63,7 @@ Two permanent mechanisms keep high-volume boards from starving mid-price researc
 | Code | `dynamic_deep_target_n`, top-promo scaffold (~20%), sport rotation | `maybe_emit_temp_ev_relax*` → portfolio allowlist |
 | Softens EV? | **No** | Yes, **only** on allowlisted lines (1–2pp) + stake ×0.80 · TTL 24h |
 | Blocked when | Composition / short-main rules | `process_gate_raise` active on candidate; high-odds / grade C by default |
+| vs FEH | Never invents place pass | **Never** overrides FEH F / anti-soft |
 
 **Operator surface:** `python run_nt.py status` / `data/state/status.md` → **Coverage floor** section shows `deep_target_n_effective`, scaffold/rotation summary, and active `temp_ev_relax` (ΔEV, stake mult, expires, line_keys count). Soft-fails if light/signals files are missing.
 
@@ -217,11 +222,11 @@ Haircut (default 5%) absorbs NT margin + optimism bias.
 
 | Odds band | Typical p_model discipline |
 |-----------|----------------------------|
-| <1.50 | Need strong structural edge; small EV still needs volume control |
-| 1.50–2.20 | Sweet spot for most singles if research is real |
-| 2.50+ | Grade **A**, higher min EV, reduced stake mult |
+| <1.50 | Need strong structural edge; small EV still needs volume control; FEH / short-odds bar high |
+| 1.50–2.60 | **Research-rank** mid band — honest packs when queued; place only if **FEH + EV** clear (underdog HC ~1.70–2.20 is anti-soft territory, not a default long) |
+| 2.50+ | Grade **A**, higher min EV, reduced stake mult (existing high-odds rules) |
 
-**Do not** invent p_model = 1/odds + 0.05 to force EV. The learning loop and your P/L will punish you.
+**Do not** invent p_model = 1/odds + 0.05 to force EV. **Do not** treat mid-band underdog price alone as edge. The learning loop and your P/L will punish you.
 
 Optional: import model probs via odds CSV column `p_model` or evidence JSON.
 

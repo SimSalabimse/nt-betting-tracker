@@ -80,6 +80,7 @@ Subtype `nba`/`wnba` is UI-only via `basketball_subtype()`; diversify never spli
 - Not free money: EV still must clear haircut + min EV (explore bar is lower, not zero).
 - High-odds props still need **grade A**.
 - Deep-red soft-blocked sports stay blocked (`block_roi_below`).
+- **Not a soft-underdog place path.** Explore / virgin / diversity boosts are **research and sort** pressure so thin sports and mid-price lines get packs. They **never** bypass **Forced Evidence Hierarchy (FEH)** — side-first, anti-soft underdog, empty slip OK. Underdog @ 1.85–2.20 is **not** inherently attractive; preferred/mid band is **research-rank only**. See root `AGENTS.md` and [`FORCED_EVIDENCE_HIERARCHY_FULL_CLEANUP_AND_10NOK_TEST_2026-07-24.md`](./FORCED_EVIDENCE_HIERARCHY_FULL_CLEANUP_AND_10NOK_TEST_2026-07-24.md).
 
 ## Agent / human research checklist
 
@@ -88,8 +89,8 @@ When analyzing an odds file:
 1. Run `python run_nt.py research board --odds …`
 2. Check shortlist **sport mix** and **macro mix** in the report.
 3. Research **every** shortlisted sport — not only football.
-4. For each fixture, compare **all** viable markets (including player / 1H) before locking p_models.
-5. `recommend` will prefer non-football explore when EV is comparable.
+4. For each fixture, compare **all** viable markets (including player / 1H) **side-first** before locking p_models (favourite HC / natural totals before soft dog price).
+5. `recommend` will prefer non-football explore when EV is comparable **and FEH allows** — explore never places anti-soft rejects.
 
 ## Config keys
 

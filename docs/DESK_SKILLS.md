@@ -4,11 +4,13 @@ User-scope Grok skills for the NT capital desk. Skills live under **`%USERPROFIL
 
 Engines in `nt/` remain law. Skills encode **workflows**; they never invent `p_model`, bankroll equity, or hand-softened min_EV.
 
+**Forced Evidence Hierarchy (FEH) is NON-BYPASSABLE place law** on every `/daily-run` and recommend path. Side first, then price. Anti-soft underdog rejects soft mid-band dogs without structured matchup support. Prefer **empty slip** over weak soft Grade B. Preferred / mid band (**1.85–2.60**) is **research-rank only** — not place quality or soft-dog attractiveness. Temporary **10 NOK** max stake on the first **10** FEH-tagged placed bets (does not change capital_v2 math). Full design: [`FORCED_EVIDENCE_HIERARCHY_FULL_CLEANUP_AND_10NOK_TEST_2026-07-24.md`](./FORCED_EVIDENCE_HIERARCHY_FULL_CLEANUP_AND_10NOK_TEST_2026-07-24.md). Repo mirror of daily-run skill text: [`skills_mirror_daily-run.md`](./skills_mirror_daily-run.md).
+
 ## Installed skills
 
 | Slash | Directory | Role |
 |-------|-----------|------|
-| `/daily-run` | `~/.grok/skills/daily-run/` | Full day: results → odds → board+light → deep queue → scaffolds → recommend + Reasoning Chains (`## Reasoning` + `## Near-miss / Rejected`, empty/blocked too) → `PLACE_THESE.md` → place-ack |
+| `/daily-run` | `~/.grok/skills/daily-run/` | Full day: results → odds → board+light → deep queue → **FEH** packs → recommend + Reasoning Chains (`## Reasoning` + `## Near-miss / Rejected`, empty/blocked too) → `PLACE_THESE.md` → place-ack (10 NOK cap when active) |
 | `/missed-audit` | `~/.grok/skills/missed-audit/` | Mid-band 1.80–2.20 out of deep; `promotion_score` components; cheapest fix; AH/tennis/snooker patterns |
 | `/chain-explain` | `~/.grok/skills/chain-explain/` | Full Reasoning Chain for match/selection — light SSOT promo components + near-miss stage/reason |
 | `/bankroll-tune` | `~/.grok/skills/bankroll-tune/` | Secure/phase/unit/regime proposal → MC (`mc_phase_progression.py`) + capital tools |
@@ -99,13 +101,25 @@ python scripts/backfill_settlement_taxonomy.py --n 30 --apply   # after review
 python scripts/backfill_settlement_taxonomy.py --n 30 --dry-run # classify only
 ```
 
+### `/daily-run` FEH + quality bar
+
+| Rule | Detail |
+|------|--------|
+| FEH NON-BYPASSABLE | Checklist · side-first · anti-soft underdog · natural markets when required — fail-closed Grade F |
+| Preferred band | **Research-rank only** (deep-queue composition 1.85–2.60) — **not** automatic Grade B or soft-dog attractiveness |
+| Soft underdog HC ~1.70–2.20 | Needs structured positive H2H + form/rank support; mixed/missing → reject |
+| Empty slip | Success after honest deep research; prefer over weak soft dogs |
+| Coverage / `temp_ev_relax` / explore | Expand research or soften allowlisted EV only — **never** place FEH F |
+| 10 NOK test cap | First 10 place-acked FEH-tagged seats ≤ 10 NOK absolute-last; status.md **Forced Evidence Hierarchy** section |
+
 ### `/daily-run` richer chain output
 
 After `recommend`, always check:
 
 - `outbox/PLACE_THESE.md` → `## Reasoning` (picks) **and** `## Near-miss / Rejected` (even empty slip / blocked)
-- `data/state/reasoning_chains.jsonl` — kinds: `pick` · `near_miss` · `rejected_prefilter`
+- `data/state/reasoning_chains.jsonl` — kinds: `pick` · `near_miss` · `rejected_prefilter` (FEH codes when present)
 - Light join: each chain should carry `light.promotion_score` + components when light LATEST exists (not notes-only)
+- `data/state/status.md` → **Forced Evidence Hierarchy** + **Coverage floor** sections
 
 ### `/chain-explain` richer output
 
@@ -145,8 +159,10 @@ When explaining a line / slip:
 
 | Doc | Role |
 |-----|------|
-| `AGENTS.md` | Desk law + skills section |
-| `docs/RESEARCH_WORKFLOW.md` | Prefilter → deep → recommend |
+| `AGENTS.md` | Desk law + FEH + skills section |
+| `docs/RESEARCH_WORKFLOW.md` | Prefilter → deep → FEH place → recommend |
+| `docs/FORCED_EVIDENCE_HIERARCHY_FULL_CLEANUP_AND_10NOK_TEST_2026-07-24.md` | FEH design · anti-soft · 10 NOK |
+| `docs/skills_mirror_daily-run.md` | Committed daily-run skill text |
 | `docs/RESEARCH_GATES.md` | Gate fields |
 | `docs/CAPITAL_HYBRID_PROGRESSION.md` | Half-steps + continuous unit + Variant A |
 | `docs/SETTLEMENT_LEARNING.md` | Settle + learn loop |

@@ -61,15 +61,39 @@ GOLDEN: list[dict[str, str]] = [
     },
     {
         "path": "AGENTS.md",
-        "snippet": "preferred band as place quality",
+        "snippet": "preferred band = research-rank only (not place quality)",
         "classification": "docs",
-        "note": "docs rewrite PR6",
+        "note": "PR6 closeout — FEH non-bypassable language landed",
+    },
+    {
+        "path": "docs/DESK_SKILLS.md",
+        "snippet": "FEH NON-BYPASSABLE + preferred band research-rank",
+        "classification": "docs",
+        "note": "PR6 desk skills + daily-run pointer",
+    },
+    {
+        "path": "docs/skills_mirror_daily-run.md",
+        "snippet": "daily-run skill mirror (FEH + 10 NOK)",
+        "classification": "docs",
+        "note": "PR6 repo mirror of ~/.grok/skills/daily-run/SKILL.md",
     },
     {
         "path": "nt/evidence_hierarchy",
         "snippet": "package sources required (no pyc-only ship)",
         "classification": "research_ok",
         "note": "golden reminder; live ship_blocker only from _hierarchy_status when broken",
+    },
+    {
+        "path": "ALLOWLIST",
+        "snippet": (
+            "research_ok knobs (queue/sort only, never place): "
+            "promo_mid_band_boost, promo_alt_boost, promo_fav_hc_boost, "
+            "promo_natural_total_boost, deep_min_preferred_share, "
+            "coverage_pressure_boost, cov_prefer_dogs, mid_odds prefer sort, "
+            "explore_ev_boost, explore_virgin_ev_boost"
+        ),
+        "classification": "research_ok",
+        "note": "PR6 final allowlist — preferred band research-rank only; FEH owns place",
     },
 ]
 
@@ -206,6 +230,12 @@ def main() -> int:
     print(f"  rows: {len(rows)}")
     for k, v in sorted(by_cls.items()):
         print(f"  {k}: {v}")
+    print(
+        "  allowlist (research_ok / queue-only): promo_mid_band_boost, promo_alt_boost, "
+        "promo_fav_hc_boost, promo_natural_total_boost, deep_min_preferred_share, "
+        "coverage_pressure_boost, cov_prefer_dogs, mid_odds sort, explore_*_ev_boost "
+        "— never place quality; FEH owns place"
+    )
 
     if args.json:
         args.json.parent.mkdir(parents=True, exist_ok=True)

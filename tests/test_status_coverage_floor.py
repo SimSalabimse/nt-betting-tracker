@@ -14,7 +14,9 @@ import nt_bootstrap  # noqa: F401
 from nt.control_signals import emit_temp_ev_relax
 from nt.status import (
     collect_coverage_floor_status,
+    collect_feh_status,
     format_coverage_floor_section,
+    format_feh_section,
     generate_status,
     write_status,
 )
@@ -153,21 +155,23 @@ def test_coverage_floor_section_when_temp_ev_relax_active(tmp_path: Path):
 
     md = generate_status(cfg, _bankroll(), _phase(), _risk())
     assert "## Coverage floor" in md
+    # Scope to Coverage floor section (FEH block may mention relax generically)
+    cov_block = md.split("## Coverage floor", 1)[1].split("## ", 1)[0]
     # Exact active token — must not match substring of "inactive"
-    assert "temp_ev_relax**: active" in md
-    ter_lines = [l for l in md.splitlines() if "temp_ev_relax" in l]
+    assert "temp_ev_relax**: active" in cov_block
+    ter_lines = [l for l in cov_block.splitlines() if "temp_ev_relax" in l]
     assert ter_lines, "expected temp_ev_relax line in Coverage floor section"
     assert "inactive" not in ter_lines[0]
     assert "ΔEV" in ter_lines[0]
     assert "0.020" in ter_lines[0] or "−0.020" in ter_lines[0] or "-0.020" in ter_lines[0]
-    assert "line_keys=2" in md
+    assert "line_keys=2" in cov_block
     # Board-sized effective target (80//8=10) — full field, not bare "10" (stake band also has 10)
-    assert "deep_target_n_effective**: 10" in md
-    assert "board/shortlist n=80" in md
-    assert "static fallback" not in md
-    assert "scaffold tags=1" in md
-    assert "sport_rotation tags=1" in md
-    assert "coverage_floor**: enabled" in md
+    assert "deep_target_n_effective**: 10" in cov_block
+    assert "board/shortlist n=80" in cov_block
+    assert "static fallback" not in cov_block
+    assert "scaffold tags=1" in cov_block
+    assert "sport_rotation tags=1" in cov_block
+    assert "coverage_floor**: enabled" in cov_block
 
 
 def test_coverage_floor_section_inactive_relax(tmp_path: Path):
@@ -217,3 +221,47 @@ def test_write_status_includes_coverage_floor(tmp_path: Path):
     assert "line_keys=1" in text
     # No light LATEST → static fallback label, not fake effective
     assert "static fallback=8" in text
+
+
+def test_status_includes_feh_section_template(tmp_path: Path):
+    """PR6: status.md FEH block — config flags + test_cap only (no secrets)."""
+    cfg = _minimal_cfg(tmp_path)
+    cfg["selection"]["evidence"] = {
+        "enabled": True,
+        "shadow_mode": False,
+        "fail_closed": True,
+        "forced_hierarchy": {
+            "enabled": True,
+            "require_checklist": True,
+            "anti_soft_underdog": True,
+            "side_first": True,
+            "soft_ud_odds_lo": 1.70,
+            "soft_ud_odds_hi_hard": 2.20,
+            "soft_ud_odds_hi_soft": 2.60,
+        },
+    }
+    cfg["selection"]["test_stake_cap"] = {
+        "enabled": True,
+        "max_bets": 10,
+        "max_stake_nok": 10.0,
+        "system_tag": "feh_v1",
+        "state_path": str(tmp_path / "state" / "feh_test_cap.json"),
+    }
+    info = collect_feh_status(cfg)
+    assert info["place_owning"] is True
+    assert info["anti_soft_underdog"] is True
+    section = format_feh_section(info)
+    assert "## Forced Evidence Hierarchy" in section
+    assert "place_owning: true" in section
+    assert "anti_soft_underdog: true" in section
+    assert "1.7–2.2" in section or "1.70–2.20" in section
+    assert "research-rank only" in section
+
+    md = generate_status(cfg, _bankroll(), _phase(), _risk())
+    assert "## Forced Evidence Hierarchy" in md
+    assert "place_owning: true" in md
+    assert "test_cap:" in md
+    # No live bankroll secrets in FEH block itself
+    feh_block = md.split("## Forced Evidence Hierarchy", 1)[1].split("## ", 1)[0]
+    assert "Equity" not in feh_block
+    assert "baseline" not in feh_block

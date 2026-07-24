@@ -8,16 +8,17 @@ Real-money capital desk. Engines in `nt/` are law. UI (LuminaNT, Flet desktop) p
 > | **500 NOK** clean-restart era · capital_v2 ON | Equity = baseline + Σ terminal P/L on `data/bets.csv` only |
 > | **Hybrid phases** `1A/1A+/1B/1B+` + continuous unit | [`docs/CAPITAL_HYBRID_PROGRESSION.md`](docs/CAPITAL_HYBRID_PROGRESSION.md) |
 > | **Secure Variant A** soft 1.25×/15% · hard 1.50×/30% | Hard replaces soft — never stacked |
-> | **Coverage floor (A)** + **`temp_ev_relax` (B)** | Floor never invents `p_model`; relax is allowlisted safety net only |
+> | **Forced Evidence Hierarchy (FEH)** | **NON-BYPASSABLE** place law · side-first · anti-soft underdog · empty slip OK · **10 NOK** test cap first 10 placed |
+> | **Coverage floor (A)** + **`temp_ev_relax` (B)** | Floor never invents `p_model`; relax is allowlisted safety net only — **never** bypasses FEH F |
 > | **Settlement taxonomy** `learning_weight` · CS gate ≥**0.5** | [`docs/SETTLEMENT_LEARNING.md`](docs/SETTLEMENT_LEARNING.md) |
 > | **Desk skills** `/daily-run` · `/missed-audit` · `/chain-explain` · `/bankroll-tune` · `/learning-rootcause` | [`docs/DESK_SKILLS.md`](docs/DESK_SKILLS.md) |
 > | **Reasoning chains** on recommend | `data/state/reasoning_chains.jsonl` + `## Reasoning` + `## Near-miss / Rejected` in `PLACE_THESE.md` (empty/blocked too) |
 >
-> Package narrative: permanent rules below. Skills invoke guide: **`docs/DESK_SKILLS.md`**. Capital hybrid: **`docs/CAPITAL_HYBRID_PROGRESSION.md`**. Taxonomy: **`docs/SETTLEMENT_LEARNING.md`**.
+> Package narrative: permanent rules below. Skills invoke guide: **`docs/DESK_SKILLS.md`**. Capital hybrid: **`docs/CAPITAL_HYBRID_PROGRESSION.md`**. Taxonomy: **`docs/SETTLEMENT_LEARNING.md`**. FEH design: **`docs/FORCED_EVIDENCE_HIERARCHY_FULL_CLEANUP_AND_10NOK_TEST_2026-07-24.md`**.
 
-**Status (permanent package):** clean-restart **500 NOK** era · capital_v2 live · **hybrid half-steps (1A+/1B+) + continuous unit** · **secure bucket Variant A** (soft/hard skim) · **Exploration→Survival→Normal** bankroll regimes · multi-stage quant prefilter · engine deep queue (composition ≥**55%** preferred / ≤**25%** short-main · band **1.85–2.60**) · Coverage Health + soft gate · `force_coverage_priority` · totalgrense residual buffer · closed-loop ControlSignals · PhaseState v5 · **neutral sport start at zero data**.  
+**Status (permanent package):** clean-restart **500 NOK** era · capital_v2 live · **hybrid half-steps (1A+/1B+) + continuous unit** · **secure bucket Variant A** (soft/hard skim) · **Exploration→Survival→Normal** bankroll regimes · multi-stage quant prefilter · engine deep queue (composition ≥**55%** preferred / ≤**25%** short-main · band **1.85–2.60** = **research-rank only**, not place quality) · **FEH place-owning (NON-BYPASSABLE)** · Coverage Health + soft gate · `force_coverage_priority` · totalgrense residual buffer · closed-loop ControlSignals · PhaseState v5 · **neutral sport start at zero data** · **quality over volume** (empty slip beats weak soft underdog).  
 
-Docs: `docs/PACKAGE_IMPLEMENTATION_SUMMARY.md` · `docs/RESEARCH_COVERAGE_FIX_SUMMARY.md` · `docs/RESEARCH_WORKFLOW.md` · `docs/BANKROLL_PLAN.md` · `docs/CAPITAL_HYBRID_PROGRESSION.md` · `docs/DESK_SKILLS.md` · `docs/SETTLEMENT_LEARNING.md` · `docs/RESIDUAL_RISKS.md` · `docs/LUMINA_INTEGRATION.md` · `artifacts/PACKAGE_VALIDATION_REPORT.md`.
+Docs: `docs/PACKAGE_IMPLEMENTATION_SUMMARY.md` · `docs/RESEARCH_COVERAGE_FIX_SUMMARY.md` · `docs/RESEARCH_WORKFLOW.md` · `docs/BANKROLL_PLAN.md` · `docs/CAPITAL_HYBRID_PROGRESSION.md` · `docs/DESK_SKILLS.md` · `docs/SETTLEMENT_LEARNING.md` · `docs/RESIDUAL_RISKS.md` · `docs/LUMINA_INTEGRATION.md` · `docs/FORCED_EVIDENCE_HIERARCHY_FULL_CLEANUP_AND_10NOK_TEST_2026-07-24.md` · `artifacts/PACKAGE_VALIDATION_REPORT.md`.
 
 ---
 
@@ -68,8 +69,8 @@ Docs: `docs/PACKAGE_IMPLEMENTATION_SUMMARY.md` · `docs/RESEARCH_COVERAGE_FIX_SU
 | Rule | Live default |
 |------|----------------|
 | Short chalk (odds &lt; **1.70** / `short_chalk_odds`) | Heavy score penalty unless rare structural note |
-| Boost band **1.85–2.60** | Strong promotion weight (Calibration-survivable) |
-| Boost | Alt totals (O3.5+), handicaps, dogs (ML ≥1.85), period as preferred |
+| Research-rank band **1.85–2.60** | Strong **promotion** weight so mid-price lines get researched — **not** a place-quality seal |
+| Research boosts | Alt totals (O3.5+), handicaps, longer ML (≥1.85), period — **queue diversity only** |
 | Soft-book longer than NT | Optional boost only if `soft_decimal_odds` / `soft_odds=` present — **never invent** |
 | Preferred share of queue | ≥ **55%** (odds ≥1.85 **or** non short-main with odds ≥1.80) |
 | Short-main cap | ≤ **25%** pure short-fav **ML / O2.5 / first-goal** |
@@ -77,7 +78,9 @@ Docs: `docs/PACKAGE_IMPLEMENTATION_SUMMARY.md` · `docs/RESEARCH_COVERAGE_FIX_SU
 | Target size | Dynamic via `deep_target_dynamic` (~**8–15**; `deep_target_min`/`max`/`divisor`) — never pad chalk to hit n |
 
 **Short-main** = odds &lt; 1.85 **and** (ML / O2.5 / first-goal).  
-**Preferred (survivable)** = odds ≥ **1.85** **or** (non short-main **and** odds ≥ **1.80**). Short alts &lt;1.80 do **not** pad the preferred floor.
+**Preferred (research-rank / survivable queue)** = odds ≥ **1.85** **or** (non short-main **and** odds ≥ **1.80**). Short alts &lt;1.80 do **not** pad the preferred floor.  
+
+> **Preferred band ≠ place quality.** Odds in **1.85–2.60** (or soft underdog HC at **1.70–2.20**) are **research-rank identity** for deep-queue composition — they are **not** inherently attractive, not automatic Grade B, and not a reason to place. **Place law is FEH** (below): side-first evidence, anti-soft underdog, natural markets, EV. Queue promotion + explore + coverage **cannot** bypass FEH F.
 
 ### Coverage floor + temp_ev_relax (permanent)
 
@@ -119,7 +122,28 @@ Two orthogonal mechanisms. Operators see both on **`data/state/status.md`** → 
 
 5. **Deep research (engine deep queue first — not only O2.5/ML)**  
    Work the **Deep queue** from light report / board. Use web search / page open aggressively (Sofascore, FBref, HLTV, ATP/WTA, Flashscore, official sites, etc.).  
-   Quality over quantity. Multi-sport shortlist **and** market-scan interesting lines.
+   **Side first, then price** — decide who is stronger (form, ranking, H2H, natural totals) before treating mid-odds or underdog HC as the pick.  
+   Quality over quantity. Multi-sport shortlist **and** market-scan interesting lines. Soft mid-band underdog HC without matchup edge → **no bet**.
+
+### Forced Evidence Hierarchy (NON-BYPASSABLE place law)
+
+**Code:** `nt/evidence_hierarchy/` · `nt/evidence.py::grade_evidence` · config `selection.evidence.forced_hierarchy`  
+**Design:** [`docs/FORCED_EVIDENCE_HIERARCHY_FULL_CLEANUP_AND_10NOK_TEST_2026-07-24.md`](docs/FORCED_EVIDENCE_HIERARCHY_FULL_CLEANUP_AND_10NOK_TEST_2026-07-24.md)
+
+FEH is the **single source of truth** for side selection and place eligibility on **every** candidate, every sport, every `/daily-run`. Fail-closed. **Non-bypassable** by odds band, coverage pressure, explore boosts, deep-queue composition, or `temp_ev_relax`.
+
+| Rule | Detail |
+|------|--------|
+| **Side first, price second** | Hierarchy answers *who is stronger* before mid-odds / HC price attractiveness |
+| **Checklist** | Fail-closed pre-filter; incomplete → Grade F |
+| **Anti-soft underdog** | Soft UD HC in ~**1.70–2.20** (outer to 2.60) needs **structured** positive H2H + form not-fav + why-side + rank OK — mixed/negative/unknown H2H → **F** (`FEH_ANTI_SOFT_UNDERDOG`). Free-text claim alone is **not** enough |
+| **Natural markets** | When card triggers (e.g. dual-high HC) and sibling total exists on board, natural eval required or **F** |
+| **Promo / explore / coverage** | Research pressure only — **max promo + explore + temp_ev_relax cannot place** an anti-soft-trigger pack |
+| **Empty slip** | Prefer **empty slip** over weak soft Grade B dogs — quality overrides volume |
+| **10 NOK test cap** | First **10 placed** (place-ack, tagged `FEH_TEST_CAP:feh_v1`) max **10 NOK** per seat — absolute-last clip after rebalance + EXPLORE clamp; **does not** change capital_v2 unit math |
+| **Operator surface** | `data/state/status.md` → **Forced Evidence Hierarchy** section (flags + test_cap progress; no secrets) |
+
+**Do not** treat underdog @ **1.85–2.20** as inherently attractive. Mid-band is a **research** target so those lines get honest packs — place still requires FEH + EV.
 
 ### Multi-sport research gates (engine-enforced)
 
@@ -170,14 +194,15 @@ Full design: **`docs/RESEARCH_GATES.md`**. Empty slip beats betting against your
    - **Pending = intent, not NT confirmation.** It still counts as open risk until `place-ack`, settle, or `abandon`.  
    - **Dry-run only when the user asks** (`--dry-run` / “dry-run” / “preview only”).  
    - **Do not include already-open bets** (Pending or ConfirmedPlaced) in the “new place” advice.  
-   - Only recommend lines with **strong research backing**.  
-   - **Empty slip after honest deep research** (packs written, EV/grade fail) = success.  
-   - **Empty / near-empty because mid-price lines were never researched** = process miss — engine raises **`force_coverage_priority`** and soft-gates recommend.  
-   - **Reasoning chains (always):** even on **empty** or **blocked** recommend, emit chains to `data/state/reasoning_chains.jsonl` and append `## Reasoning` + **`## Near-miss / Rejected`** to `PLACE_THESE.md`. Sources: light-pass without `p_model`, deep_queue high-promo, mid-band (1.80–2.20) prefilter/grade-F rejects. Cap via `reasoning.max_near_miss` (prefer mid-band + light-pass). Light LATEST is SSOT — join by `(match, selection)` with `promotion_score` + components (never notes-only when light exists). Verify: `python scripts/verify_chain_residuals.py`.  
+   - Only recommend lines that clear **FEH + EV** — **not** “odds in 1.85–2.60 alone” and **not** soft underdog HC without structured matchup support.  
+   - **Empty slip after honest deep research** (packs written, FEH/EV/grade fail) = **success**. Prefer empty over weak soft dogs.  
+   - **Empty / near-empty because mid-price lines were never researched** = process miss — engine raises **`force_coverage_priority`** and soft-gates recommend (then research; still **no weak soft Grade B**).  
+   - **10 NOK test cap (when active):** seats clipped to **10 NOK** after all stake mutations; notes carry `FEH_TEST_CAP:<tag>`; place-ack counts tagged only.  
+   - **Reasoning chains (always):** even on **empty** or **blocked** recommend, emit chains to `data/state/reasoning_chains.jsonl` and append `## Reasoning` + **`## Near-miss / Rejected`** to `PLACE_THESE.md`. Sources: light-pass without `p_model`, deep_queue high-promo, mid-band (1.80–2.20) prefilter/grade-F / FEH rejects. Cap via `reasoning.max_near_miss` (prefer mid-band + light-pass). Light LATEST is SSOT — join by `(match, selection)` with `promotion_score` + components (never notes-only when light exists). Verify: `python scripts/verify_chain_residuals.py`.  
    - **ControlSignals:**  
      - `temp_gate_raise` — min_ev raise + force confirmed lineup (process_error path).  
-     - `force_coverage_priority` — research pressure (TTL **4–7d**, default 5; target band **`1.85-2.60`**; min_deep_packs 8–10). Raises next deep-queue weights; **does not invent p_model or soften EV/haircut**.  
-     - `temp_ev_relax` — **safety net only** (Mechanism B): per-line min_EV soften ≤2pp + stake ×0.80 · TTL 24h · never high-odds/grade-C · blocked when process_gate active. See **Coverage floor + temp_ev_relax** above.
+     - `force_coverage_priority` — **research** pressure (TTL **4–7d**, default 5; target band **`1.85-2.60`** for *queue identity only*; min_deep_packs 8–10). Raises next deep-queue weights; **does not invent p_model, soften EV/haircut, or bypass FEH**.  
+     - `temp_ev_relax` — **safety net only** (Mechanism B): per-line min_EV soften ≤2pp + stake ×0.80 · TTL 24h · never high-odds/grade-C · blocked when process_gate active · **never overrides FEH F**. See **Coverage floor + temp_ev_relax** above.
 
 8. **Place confirmation / abandon (real-money control)**  
    ```bash
@@ -226,7 +251,7 @@ Full design: **`docs/RESEARCH_GATES.md`**. Empty slip beats betting against your
 - Counts **Pending + ConfirmedPlaced** only (`day_pending_risk`).  
 - **Frees immediately** on Win / Loss / Refunded (and Abandon).  
 - `remaining_risk = min(phase, portfolio_room, regime_cap − open_pending, totalgrense_usable)`.  
-- Soft mid-odds prefer (1.85–2.50) under Exploration/Survival — **sort only**, not hard ban.
+- Soft mid-odds prefer (1.85–2.50) under Exploration/Survival — **research/sort only**, not hard ban and **not** a place-quality claim (FEH still owns place).
 
 ---
 
@@ -341,7 +366,7 @@ After every settle:
 4. Learning recompute (`run_learning`) + settlement analysis — sample influence × `learning_weight`.  
 5. **ControlSignals (primary closed loop)** — store `data/state/control_signals.jsonl`:  
    - **`temp_gate_raise`** — on process_error / poor retro even at **n=1**, **only if `learning_weight` ≥ `min_learning_weight_for_gate` (default 0.5)**: raise min_ev · force confirmed availability · TTL **7–14d** (default 10). Near-zero weight one-offs **skip** temp_gate.  
-   - **`force_coverage_priority`** — on empty/near-empty recommend from **research starvation** (high `no p_model` share + mid unresearched): band **1.85–2.60** / alt totals / dogs / HC / period · TTL **4–7d** · does **not** change haircut or EV bar.  
+   - **`force_coverage_priority`** — on empty/near-empty recommend from **research starvation** (high `no p_model` share + mid unresearched): research-rank band **1.85–2.60** / alt totals / longer ML / HC / period · TTL **4–7d** · does **not** change haircut, EV bar, or FEH place law.  
    - **`temp_ev_relax`** — empty deep-queue safety net on large boards (Mechanism B): allowlisted lines only · ΔEV 1–2pp · stake ×0.80 · TTL **24h** · clear_on_settle · never invents p_model · **never** stack with process_gate raise on the same candidate.  
 6. **Learning proposals** auto-resolve (`auto_apply_proposals: true`):  
    - Full permanent mult delta only if **n_hist ≥ 8** and **conf ≥ 0.40**  
@@ -389,8 +414,11 @@ python run_nt.py simulate --sport basketball --home H --away A ...
 | Treat Pending as intent | Treat Pending as “already placed on NT” |
 | `abandon` missed tickets promptly | Leave phantom Pending blocking risk seats |
 | Exclude open risk from “new bets” list | Duplicate place advice for open tickets |
-| Prefer quality over volume | Flood slip with weak EV lines |
+| Prefer quality over volume | Flood slip with weak EV lines or soft underdogs |
 | Engines in `nt/` are law | Bypass risk/phase/diversify without user consent |
+| **FEH NON-BYPASSABLE** — side first, then price | Treat mid-band / underdog @ 1.85–2.20 as inherently attractive |
+| Anti-soft underdog + structured H2H for soft UD HC | Soft Grade B dog on mixed/missing H2H or price-led narrative |
+| Prefer **empty slip** over weak soft dogs | Force seats to “use budget” or fill preferred band |
 | **Auto-apply learning proposals** after settle | Ask the user to accept/reject learnings |
 | Empty slip after **honest deep research** = success | Force seats to “use budget” |
 | Deep-research engine **deep_queue** (anti-chalk) | Deep-dive only short ML/O2.5 favourites |
@@ -398,9 +426,11 @@ python run_nt.py simulate --sport basketball --home H --away A ...
 | Respect recommend soft gate / use `--allow-low-coverage` only explicitly | Bypass coverage with `--force-mechanical` casually |
 | Light assess never promotes; engine builds deep_queue | Expect assess-time auto-promote or empty queue forever |
 | Prefilter discards majority noise/chalk; prior is rank-only | Use classical prior as recommend `p_model` |
+| Preferred band = **research-rank only** (not place quality) | Equate queue “preferred” / 1.85–2.60 with place pass |
 | Composition ≥55% preferred / ≤25% short-main | Pad deep queue with short ML/O2.5 chalk or short alts &lt;1.80 |
 | Trust Mechanism A floor (dynamic target / scaffold / sport rotation) for research pressure | Soften min_EV by hand or invent p_model to “fill” the floor |
-| Let engine emit `temp_ev_relax` only under safety-net conditions | Manually lower min_EV outside ControlSignals or stack relax over process_gate |
+| Let engine emit `temp_ev_relax` only under safety-net conditions | Manually lower min_EV outside ControlSignals, stack relax over process_gate, or use relax to bypass FEH |
+| Respect **10 NOK** test cap on first 10 FEH-tagged placed bets | Raise stakes above cap while test window active; change capital_v2 formulas for the test |
 | Respect Exploration/Survival min-EV + open cap + weekly EXPLORE_REGIME quota | Soften 5pp haircut or invent thin EV beyond 2 slots/week |
 | Sports equal at zero data (symmetric virgin explore) | Hardcode sport edges from thin history |
 | Totalgrense residual ≥ buffer when limits set | place-ack when residual headroom already &lt; buffer |
@@ -432,7 +462,7 @@ User-scope skills in `%USERPROFILE%\.grok\skills\` — load **this file first**,
 
 | Slash | Skill | When |
 |-------|--------|------|
-| `/daily-run` | Full day desk | results → odds → board+light → deep queue → scaffolds → recommend + Reasoning Chains (`## Reasoning` + `## Near-miss / Rejected`) → `outbox/PLACE_THESE.md` → place-ack |
+| `/daily-run` | Full day desk | results → odds → board+light → deep queue → FEH packs → recommend + Reasoning Chains (`## Reasoning` + `## Near-miss / Rejected`) → `outbox/PLACE_THESE.md` → place-ack (10 NOK cap when active) |
 | `/missed-audit` | Mid-band misses | 1.80–2.20 out of deep; `promotion_score` components; cheapest fix; Bodø/Glimt −1.5 & tennis/snooker patterns |
 | `/chain-explain` | Reasoning Chain | forensic justify one match/selection (or whole slip) using light SSOT promo + near-miss stage/reason |
 | `/bankroll-tune` | Capital tune | secure/phase/unit/regime proposal → `scripts/mc_phase_progression.py` + `capital` CLI |
@@ -460,8 +490,10 @@ User-scope skills in `%USERPROFILE%\.grok\skills\` — load **this file first**,
 |-----|------|
 | `docs/PACKAGE_IMPLEMENTATION_SUMMARY.md` | **This package** file map + confirmations |
 | `docs/RESEARCH_COVERAGE_FIX_SUMMARY.md` | Coverage Health + deep queue + force_coverage |
-| `docs/RESEARCH_WORKFLOW.md` | Full stage map (prefilter → deep) |
+| `docs/RESEARCH_WORKFLOW.md` | Full stage map (prefilter → deep → FEH place) |
+| `docs/FORCED_EVIDENCE_HIERARCHY_FULL_CLEANUP_AND_10NOK_TEST_2026-07-24.md` | FEH design · anti-soft · 10 NOK · cleanup |
 | `docs/DESK_SKILLS.md` | Grok desk skills install + PowerShell invoke |
+| `docs/skills_mirror_daily-run.md` | Repo mirror of `~/.grok/skills/daily-run/SKILL.md` |
 | `docs/BANKROLL_PLAN.md` | Clean 500 + Calibration/Survival + multi-year |
 | `docs/PHASE_PLAN.md` | Phase ladder 1A–5 + v5 multi-factor |
 | `docs/CAPITAL_HYBRID_PROGRESSION.md` | Half-steps + continuous unit + Variant A skim; before/after 500→550; MC |
