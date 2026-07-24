@@ -48,6 +48,7 @@ struct PendingListView: View {
                     .foregroundStyle(DeskTheme.textMuted)
                     .listRowBackground(Color.clear)
                     .listRowSeparator(.hidden)
+                    .accessibilityLabel("No open pending or confirmed bets")
             } else {
                 ForEach(bets) { bet in
                     PendingBetRow(bet: bet)
@@ -125,6 +126,17 @@ private struct PendingBetRow: View {
                 )
         )
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(match), \(selection), odds \(oddsLabel), stake \(stakeLabel)")
+        .accessibilityLabel(rowAccessibilityLabel)
+    }
+
+    private var rowAccessibilityLabel: String {
+        var parts = [match, selection, "odds \(oddsLabel)", "stake \(stakeLabel)"]
+        if let date = bet.date, !date.isEmpty {
+            parts.insert(date, at: 0)
+        }
+        if let result = bet.result, !result.isEmpty {
+            parts.append("result \(result)")
+        }
+        return parts.joined(separator: ", ")
     }
 }

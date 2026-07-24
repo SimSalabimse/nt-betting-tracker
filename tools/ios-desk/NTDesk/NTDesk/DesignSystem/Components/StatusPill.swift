@@ -75,7 +75,7 @@ struct StatusPill: View {
                 )
         )
         .accessibilityElement(children: .combine)
-        .accessibilityLabel(text)
+        .accessibilityLabel("Risk status \(text)")
         .accessibilityAddTraits(.isStaticText)
     }
 }

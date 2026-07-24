@@ -23,7 +23,7 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSLocalNetworkUsageDescription</key>
-	<string>NT Desk loads your home PC desk snapshot on the local network or Tailscale.</string>
+	<string>NT Desk connects to your PC on the local network or Tailscale to load a read-only desk snapshot. No data is sent to third parties.</string>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsLocalNetworking</key>

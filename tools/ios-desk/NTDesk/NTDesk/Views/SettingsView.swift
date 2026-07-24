@@ -23,12 +23,15 @@ struct SettingsView: View {
                         .textContentType(.URL)
                         .focused($urlFieldFocused)
                         .foregroundStyle(DeskTheme.text)
+                        .accessibilityLabel("PC base URL")
+                        .accessibilityHint("LAN IP or Tailscale 100.x address for the desk mobile-view server")
 
                     Button("Save & sync") {
                         sync.baseURLString = draftURL
                         Task { await sync.sync() }
                     }
                     .foregroundStyle(DeskTheme.accent)
+                    .accessibilityHint("Saves the base URL and syncs a read-only desk snapshot")
 
                     Text(
                         "Use LAN IP or Tailscale 100.x — e.g. http://192.168.1.10:8787 or http://100.x.y.z:8787. Prefer numeric IP over MagicDNS for cleartext. Start mobile-view with -Lan on the PC."
@@ -63,10 +66,12 @@ struct SettingsView: View {
                         Task { await sync.sync() }
                     }
                     .foregroundStyle(DeskTheme.accent)
+                    .accessibilityHint("Fetches the latest desk snapshot from the configured PC")
 
                     Button("Clear cache", role: .destructive) {
                         confirmClearCache = true
                     }
+                    .accessibilityHint("Removes the on-device cached desk snapshot after confirmation")
                 } header: {
                     Text("Cache")
                 }

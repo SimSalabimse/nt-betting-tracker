@@ -93,3 +93,19 @@ iOS targets need **macOS**. Windows runners skip this tree.
 - Phone never mutates desk state.
 - Never invent equity offline.
 - Cache stores **raw** desk JSON inside an envelope (not Codable re-encode of the desk object).
+
+---
+
+## Accessibility
+
+NT Desk targets personal sideload quality (HIG), not App Store review.
+
+| Area | Behavior |
+|------|----------|
+| **VoiceOver** | KPI `MetricCard`s and pending rows are combined elements (`label, value`). Charts announce a short summary (point counts / latest). Risk gauge, status pill, freshness banners, and empty states have explicit labels. Section titles use header traits where useful. |
+| **Dynamic Type** | Semantic / system fonts via `DeskTypography`. Desk KPI grid collapses to **1 column** at accessibility sizes (`dynamicTypeSize.isAccessibilitySize`). |
+| **Reduce Motion** | No decorative animations in v1; charts are static. |
+| **Contrast** | Fixed dark ink theme; KPI value colors use profit / loss / accent tokens on elevated surfaces. |
+| **Touch** | System tab bar + standard controls; empty-state primary button uses large control size. |
+
+Local Network permission string (`NSLocalNetworkUsageDescription`) explains LAN / Tailscale read-only desk access and that nothing is sent to third parties. Optional `PrivacyInfo.xcprivacy` ships with tracking off and empty collected-data / API-reason arrays (hygiene for sideload; expand if Xcode warns).

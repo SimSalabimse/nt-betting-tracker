@@ -16,6 +16,7 @@ struct SlipView: View {
                                 Text(place?.title ?? "PLACE_THESE")
                                     .font(DeskTypography.sectionTitle)
                                     .foregroundStyle(DeskTheme.text)
+                                    .accessibilityAddTraits(.isHeader)
 
                                 if let summary = place?.summaryLine, !summary.isEmpty {
                                     Text(summary)
@@ -46,6 +47,8 @@ struct SlipView: View {
                                     .font(.system(.caption, design: .monospaced))
                                     .foregroundStyle(DeskTheme.textMuted)
                                     .textSelection(.enabled)
+                                    .accessibilityLabel("Status excerpt")
+                                    .accessibilityValue(status)
                             }
                         }
                     }
@@ -69,5 +72,9 @@ struct SlipView: View {
                     .foregroundStyle(DeskTheme.textMuted)
             }
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(
+            "No PLACE_THESE file. View-only — place bets on the PC desk. Sync when the PC is reachable."
+        )
     }
 }

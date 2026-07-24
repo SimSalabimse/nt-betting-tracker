@@ -18,11 +18,11 @@ struct MetricCard: View {
             RoundedRectangle(cornerRadius: 2)
                 .fill(effectiveRail)
                 .frame(width: 3)
+                .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: DeskSpacing.s1) {
                 Text(label.uppercased())
                     .font(DeskTypography.kpiLabel)
                     .foregroundStyle(DeskTheme.textDim)
-                    .accessibilityAddTraits(.isHeader)
                 Text(value)
                     .font(DeskTypography.kpiValue)
                     .foregroundStyle(valueColor)
@@ -50,6 +50,7 @@ struct MetricCard: View {
                         .stroke(DeskTheme.borderSoft, lineWidth: 1)
                 )
         )
+        // Combined element so VoiceOver announces label + value as one KPI (not disconnected nodes).
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(label), \(value)\(subtitle.isEmpty ? "" : ", \(subtitle)")")
     }

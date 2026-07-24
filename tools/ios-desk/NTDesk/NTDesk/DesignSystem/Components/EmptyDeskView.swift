@@ -20,6 +20,7 @@ struct EmptyDeskView: View {
                 .font(DeskTypography.sectionTitle)
                 .foregroundStyle(DeskTheme.text)
                 .multilineTextAlignment(.center)
+                .accessibilityAddTraits(.isHeader)
 
             Text(message)
                 .font(.subheadline)

@@ -36,7 +36,8 @@ struct ChartsView: View {
                                 .chartXAxis {
                                     AxisMarks(values: .automatic(desiredCount: 4))
                                 }
-                                .accessibilityLabel("Equity curve, \(pts.count) points")
+                                .accessibilityElement(children: .ignore)
+                                .accessibilityLabel(equityChartSummary(pts))
                             }
                         }
 
@@ -56,7 +57,8 @@ struct ChartsView: View {
                                 .chartXAxis {
                                     AxisMarks(values: .automatic(desiredCount: 4))
                                 }
-                                .accessibilityLabel("Daily P/L, \(pts.count) days")
+                                .accessibilityElement(children: .ignore)
+                                .accessibilityLabel(dailyPLChartSummary(pts))
                             }
                         }
 
@@ -73,7 +75,8 @@ struct ChartsView: View {
                                     .foregroundStyle(DeskTheme.loss)
                                 }
                                 .frame(height: 140)
-                                .accessibilityLabel("Drawdown series, \(pts.count) points")
+                                .accessibilityElement(children: .ignore)
+                                .accessibilityLabel(drawdownChartSummary(pts))
                             }
                         }
 
@@ -92,6 +95,8 @@ struct ChartsView: View {
                                     .foregroundStyle(s.pl >= 0 ? DeskTheme.profit : DeskTheme.loss)
                                 }
                                 .frame(height: CGFloat(max(120, sports.count * 28)))
+                                .accessibilityElement(children: .ignore)
+                                .accessibilityLabel(sportChartSummary(sports))
                                 ForEach(sports, id: \.name) { s in
                                     HStack {
                                         Text(s.name)
@@ -104,6 +109,10 @@ struct ChartsView: View {
                                     }
                                     .font(DeskTypography.caption)
                                     .fontDesign(.monospaced)
+                                    .accessibilityElement(children: .combine)
+                                    .accessibilityLabel(
+                                        "\(s.name), P/L \(DeskFormatters.nok(s.pl, signed: true)), ROI \(DeskFormatters.pct(s.roi)), \(DeskFormatters.int(s.n)) settled"
+                                    )
                                 }
                             }
                         }
@@ -183,6 +192,7 @@ struct ChartsView: View {
             .foregroundStyle(DeskTheme.textMuted)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.vertical, DeskSpacing.s2)
+            .accessibilityLabel(message)
     }
 
     private var emptyState: some View {
@@ -190,6 +200,7 @@ struct ChartsView: View {
             Image(systemName: "chart.xyaxis.line")
                 .font(.system(size: 40))
                 .foregroundStyle(DeskTheme.textDim)
+                .accessibilityHidden(true)
             Text("No chart data")
                 .font(DeskTypography.sectionTitle)
                 .foregroundStyle(DeskTheme.text)
@@ -211,5 +222,30 @@ struct ChartsView: View {
         )
         .accessibilityElement(children: .combine)
         .accessibilityLabel("No chart data. Pull to refresh after syncing settled history from the PC.")
+    }
+
+    // MARK: - Chart VoiceOver summaries
+
+    private func equityChartSummary(_ pts: [EquityPoint]) -> String {
+        let last = pts.last?.equity
+        let lastStr = last.map { DeskFormatters.nok($0) } ?? "—"
+        return "Equity curve, \(pts.count) points, latest \(lastStr)"
+    }
+
+    private func dailyPLChartSummary(_ pts: [DailyPoint]) -> String {
+        let total = pts.compactMap(\.pl).reduce(0, +)
+        return "Daily P/L, \(pts.count) days, total \(DeskFormatters.nok(total, signed: true))"
+    }
+
+    private func drawdownChartSummary(_ pts: [DrawdownPoint]) -> String {
+        let worst = pts.compactMap(\.drawdown).min()
+        let worstStr = worst.map { DeskFormatters.nok($0) } ?? "—"
+        return "Drawdown series, \(pts.count) points, worst \(worstStr)"
+    }
+
+    private func sportChartSummary(
+        _ sports: [(name: String, pl: Double, roi: Double, n: Double)]
+    ) -> String {
+        "By sport P/L, \(sports.count) sports"
     }
 }

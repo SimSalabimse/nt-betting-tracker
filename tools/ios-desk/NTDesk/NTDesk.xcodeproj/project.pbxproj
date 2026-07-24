@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		CB91B236D5F7C7144AA1B55E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B5E4BCA51612EB4937DB848A /* Assets.xcassets */; };
+		D4E5F6A7B8C94D0E1F2A3B4C /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = C1D2E3F4A5B60718293A4B5C /* PrivacyInfo.xcprivacy */; };
 		4BA9D7AA6D714D6F910BED51 /* CacheEnvelope.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89153251FF794878B656A195 /* CacheEnvelope.swift */; };
 		5733BE05234D4B469B6F6357 /* DeskSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AEB1BFA4F9E49408518F2F1 /* DeskSnapshot.swift */; };
 		E3B44F72446B4435A6F92B8C /* NTDeskApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27EE6A4556014ACB90E60C91 /* NTDeskApp.swift */; };
@@ -62,6 +63,7 @@
 		848437EA320F44D9A1F3E5AD /* NTDesk.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = NTDesk.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		14E671AE8ACD437DA6E95191 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		B5E4BCA51612EB4937DB848A /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		C1D2E3F4A5B60718293A4B5C /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -101,6 +103,7 @@
 				231DA40782AF4C789E9F251F /* Views */,
 				B5E4BCA51612EB4937DB848A /* Assets.xcassets */,
 				14E671AE8ACD437DA6E95191 /* Info.plist */,
+				C1D2E3F4A5B60718293A4B5C /* PrivacyInfo.xcprivacy */,
 			);
 			path = NTDesk;
 			sourceTree = "<group>";
@@ -223,6 +226,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				CB91B236D5F7C7144AA1B55E /* Assets.xcassets in Resources */,
+				D4E5F6A7B8C94D0E1F2A3B4C /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

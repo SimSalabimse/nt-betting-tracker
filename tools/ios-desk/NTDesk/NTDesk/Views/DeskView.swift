@@ -79,6 +79,7 @@ struct DeskView: View {
                             .font(DeskTypography.caption)
                             .foregroundStyle(DeskTheme.textDim)
                             .padding(.top, DeskSpacing.s1)
+                            .accessibilityLabel("Snapshot generated \(s.generatedAt ?? "unknown")")
                     } else {
                         EmptyDeskView {
                             selectedTab = .settings
@@ -97,6 +98,7 @@ struct DeskView: View {
                 if sync.isSyncing {
                     ProgressView()
                         .tint(DeskTheme.accent)
+                        .accessibilityLabel("Syncing desk snapshot")
                 }
             }
         }
@@ -135,13 +137,17 @@ struct DeskView: View {
                             HStack(alignment: .top, spacing: DeskSpacing.s2) {
                                 Text("·")
                                     .foregroundStyle(DeskTheme.textDim)
+                                    .accessibilityHidden(true)
                                 Text(reason)
                                     .font(DeskTypography.caption)
                                     .foregroundStyle(DeskTheme.textMuted)
                                     .fixedSize(horizontal: false, vertical: true)
                             }
+                            .accessibilityElement(children: .combine)
+                            .accessibilityLabel(reason)
                         }
                     }
+                    .accessibilityElement(children: .contain)
                 }
 
                 RiskGaugeCard(

@@ -59,7 +59,7 @@ struct RiskGaugeCard: View {
                 .font(DeskTypography.caption)
                 .foregroundStyle(DeskTheme.textMuted)
 
-            // Used/cap progress bar
+            // Used/cap progress bar (visual only; summary is on the card)
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
                     RoundedRectangle(cornerRadius: 4)
@@ -70,9 +70,7 @@ struct RiskGaugeCard: View {
                 }
             }
             .frame(height: 8)
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel("Risk used \(Int(frac * 100)) percent")
-            .accessibilityValue(DeskFormatters.nok(used) + " of " + DeskFormatters.nok(cap))
+            .accessibilityHidden(true)
 
             Text("Used \(DeskFormatters.nok(used)) of \(DeskFormatters.nok(cap))")
                 .font(DeskTypography.caption)
@@ -86,8 +84,18 @@ struct RiskGaugeCard: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel(
-            "Daily risk remaining \(DeskFormatters.nok(remaining)), used \(DeskFormatters.nok(used)) of \(DeskFormatters.nok(cap))"
-        )
+        .accessibilityLabel(gaugeAccessibilityLabel)
+    }
+
+    private var gaugeAccessibilityLabel: String {
+        var parts = [
+            "Daily risk remaining \(DeskFormatters.nok(remaining))",
+            "used \(DeskFormatters.nok(used)) of \(DeskFormatters.nok(cap))",
+            "\(Int(frac * 100)) percent used",
+        ]
+        if let pl = todayRealizedPlNok {
+            parts.append("Today P/L \(DeskFormatters.nok(pl, signed: true))")
+        }
+        return parts.joined(separator: ", ")
     }
 }
