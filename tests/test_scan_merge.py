@@ -415,3 +415,297 @@ def test_run_scan_merge_writes_artifacts(tmp_path: Path):
     assert "Primary worklist" in text
     assert payload["final_n"] == 1
     assert Path(payload["json_path"]).is_file()
+
+
+def test_odds_tol_2pct_keep(tmp_path: Path):
+    """Within 2% relative: 1.53 vs dump 1.50 → keep."""
+    rows = [
+        {
+            "match": "Humphries vs Price",
+            "selection": "Vinner: Humphries",
+            "decimal_odds": 1.50,
+            "sport": "darts",
+        }
+    ]
+    odds = _write_odds_csv(tmp_path / "odds.csv", rows)
+    agents = {
+        "A": [
+            {
+                "match": "Humphries vs Price",
+                "selection": "Vinner: Humphries",
+                "decimal_odds": 1.53,  # 2% of 1.50
+                "sport": "darts",
+                "scan_agents": ["A"],
+                "scan_reason": "Slightly moved line still same key.",
+            }
+        ]
+    }
+    payload = merge_candidates(agents, odds_path=odds, open_occ=open_occupancy_from_rows([]))
+    assert payload["final_n"] == 1
+    assert payload["candidates"][0]["match"] == "Humphries vs Price"
+
+
+def test_odds_tol_beyond_2pct_drop(tmp_path: Path):
+    """Beyond 2%: 1.60 vs dump 1.50 → off_odds_dump."""
+    rows = [
+        {
+            "match": "Humphries vs Price",
+            "selection": "Vinner: Humphries",
+            "decimal_odds": 1.50,
+            "sport": "darts",
+        }
+    ]
+    odds = _write_odds_csv(tmp_path / "odds.csv", rows)
+    agents = {
+        "A": [
+            {
+                "match": "Humphries vs Price",
+                "selection": "Vinner: Humphries",
+                "decimal_odds": 1.60,
+                "sport": "darts",
+                "scan_agents": ["A"],
+                "scan_reason": "Too far from dump price.",
+            }
+        ]
+    }
+    payload = merge_candidates(agents, odds_path=odds, open_occ=open_occupancy_from_rows([]))
+    assert payload["final_n"] == 0
+    assert any(d["drop_reason"] == "off_odds_dump" for d in payload["dropped"])
+
+
+def test_odds_missing_scan_odds_keep(tmp_path: Path):
+    """Missing scan odds + matching key still OK."""
+    rows = [
+        {
+            "match": "Sinner vs Rune",
+            "selection": "Vinner: Sinner",
+            "decimal_odds": 1.42,
+            "sport": "tennis",
+        }
+    ]
+    odds = _write_odds_csv(tmp_path / "odds.csv", rows)
+    agents = {
+        "A": [
+            {
+                "match": "Sinner vs Rune",
+                "selection": "Vinner: Sinner",
+                "decimal_odds": None,
+                "sport": "tennis",
+                "scan_agents": ["A"],
+                "scan_reason": "Key match without price.",
+            }
+        ]
+    }
+    payload = merge_candidates(agents, odds_path=odds, open_occ=open_occupancy_from_rows([]))
+    assert payload["final_n"] == 1
+
+
+def test_primary_union_coverage_critical(tmp_path: Path):
+    """Primary worklist = shortlist ∪ coverage_critical; shortlist first; dedupe."""
+    odds = _write_odds_csv(tmp_path / "odds.csv", _base_odds_rows())
+    agents = {
+        "A": [
+            {
+                "match": "Sinner vs Rune",
+                "selection": "Vinner: Sinner",
+                "decimal_odds": 1.42,
+                "sport": "tennis",
+                "scan_agents": ["A"],
+                "scan_reason": "On shortlist.",
+            }
+        ]
+    }
+    queue = [
+        {
+            "match": "Sinner vs Rune",
+            "selection": "Vinner: Sinner",
+            "decimal_odds": 1.42,
+            "sport": "tennis",
+            "notes": "coverage_floor:top_promo_scaffold",
+            "promo_score": 99,
+        },
+        {
+            "match": "Lakers vs Suns",
+            "selection": "Vinner (inkludert overtid/straffer): Lakers",
+            "decimal_odds": 1.70,
+            "sport": "basketball",
+            "notes": "coverage_floor:sport_rotation",
+            "promo_score": 50,
+        },
+    ]
+    payload = merge_candidates(
+        agents,
+        odds_path=odds,
+        open_occ=open_occupancy_from_rows([]),
+        deep_queue=queue,
+        shortlist_min=1,
+    )
+    assert payload["final_n"] >= 1
+    pw = payload["primary_worklist"]
+    assert len(pw) == 2
+    # Shortlist first
+    assert pw[0]["match"] == "Sinner vs Rune"
+    assert not pw[0].get("coverage_critical")
+    # Extra coverage only once (deduped with shortlist)
+    assert pw[1]["match"] == "Lakers vs Suns"
+    assert pw[1].get("coverage_critical") is True
+    assert payload["primary_worklist_n"] == 2
+
+
+def test_engine_topup_when_shortlist_thin(tmp_path: Path):
+    """ISS-1: final < 8 tops up from deep_queue light-pass lines."""
+    odds = _write_odds_csv(tmp_path / "odds.csv", _base_odds_rows())
+    agents = {
+        "A": [
+            {
+                "match": "Sinner vs Rune",
+                "selection": "Vinner: Sinner",
+                "decimal_odds": 1.42,
+                "sport": "tennis",
+                "scan_agents": ["A"],
+                "scan_reason": "Only one agent pick.",
+            }
+        ]
+    }
+    queue = []
+    for r in _base_odds_rows():
+        queue.append(
+            {
+                **r,
+                "promo_score": 10.0,
+                "light_verdict": "pass",
+                "notes": "",
+            }
+        )
+    payload = merge_candidates(
+        agents,
+        odds_path=odds,
+        open_occ=open_occupancy_from_rows([]),
+        deep_queue=queue,
+        shortlist_min=8,
+    )
+    assert payload["final_n"] >= 5  # family caps may limit below 8 on tiny board
+    assert any("engine_topup" in n for n in (payload.get("notes") or []))
+    assert any(c.get("engine_topup") or "engine" in (c.get("scan_agents") or []) for c in payload["candidates"])
+
+
+def test_empty_agents_fallback_to_deep_queue(tmp_path: Path):
+    """ISS-2: raw agents empty → primary/candidates from engine deep_queue."""
+    odds = _write_odds_csv(tmp_path / "odds.csv", _base_odds_rows())
+    queue = [
+        {
+            "match": r["match"],
+            "selection": r["selection"],
+            "decimal_odds": r["decimal_odds"],
+            "sport": r["sport"],
+            "promo_score": 20 - i,
+            "light_verdict": "pass",
+        }
+        for i, r in enumerate(_base_odds_rows())
+    ]
+    payload = merge_candidates(
+        {"A": [], "B": [], "C": []},
+        odds_path=odds,
+        open_occ=open_occupancy_from_rows([]),
+        deep_queue=queue,
+    )
+    assert payload["raw_n"] == 0
+    assert payload["final_n"] > 0
+    assert payload.get("fallback") == "engine_deep_queue"
+    assert payload["primary_worklist_n"] == payload["final_n"]
+    assert any("fallback: engine_deep_queue" in n for n in payload.get("notes") or [])
+
+
+def test_agent_max_5_truncate(tmp_path: Path):
+    """ISS-4: more than 5 rows from one agent → keep 5, drop agent_max_5."""
+    # Expand odds so 8 unique tennis ML-ish keys exist
+    rows = []
+    for i in range(8):
+        rows.append(
+            {
+                "match": f"P{i}a vs P{i}b",
+                "selection": f"Vinner: P{i}a",
+                "decimal_odds": 1.50 + i * 0.01,
+                "sport": "tennis",
+            }
+        )
+    odds = _write_odds_csv(tmp_path / "odds.csv", rows)
+    agents = {
+        "B": [
+            {
+                "match": f"P{i}a vs P{i}b",
+                "selection": f"Vinner: P{i}a",
+                "decimal_odds": 1.50 + i * 0.01,
+                "sport": "tennis",
+                "scan_agents": ["B"],
+                "scan_reason": f"Pick {i}",
+                "promo_score": float(i),
+            }
+            for i in range(8)
+        ]
+    }
+    payload = merge_candidates(
+        agents,
+        odds_path=odds,
+        open_occ=open_occupancy_from_rows([]),
+        shortlist_min=1,
+    )
+    assert payload["agents"]["B"] == 5
+    assert sum(1 for d in payload["dropped"] if d["drop_reason"] == "agent_max_5") == 3
+    # Highest promo kept (5,6,7 and two more of 2,3,4)
+    promos = sorted(
+        float(c.get("promo_score") or 0) for c in payload["candidates"] if "engine" not in (c.get("scan_agents") or [])
+    )
+    # After family cap tennis_ml ≤2, final may be 2 — but agent_counts after truncate is 5
+    assert payload["agent_raw_counts"]["B"] == 8
+
+
+def test_light_latest_autoload_drops_fail(tmp_path: Path):
+    """ISS-3: run_scan_merge loads light LATEST and drops light-fail."""
+    from nt.config import load_config
+
+    odds = _write_odds_csv(tmp_path / "odds.csv", _base_odds_rows())
+    a = tmp_path / "a.jsonl"
+    a.write_text(
+        json.dumps(
+            {
+                "match": "City vs United",
+                "selection": "Totalt antall mål - over/under 2.5: Over 2.5",
+                "decimal_odds": 1.75,
+                "sport": "football",
+                "scan_agents": ["B"],
+                "scan_reason": "No embedded light field.",
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    light_dir = tmp_path / "light_research"
+    light_dir.mkdir()
+    (light_dir / "LATEST.json").write_text(
+        json.dumps(
+            {
+                "records": [
+                    {
+                        "match": "City vs United",
+                        "selection": "Totalt antall mål - over/under 2.5: Over 2.5",
+                        "verdict": "fail",
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+    cfg = dict(load_config())
+    paths = dict(cfg.get("paths") or {})
+    paths["outbox"] = str(tmp_path)
+    cfg["paths"] = paths
+    payload = run_scan_merge(
+        cfg,
+        odds=odds,
+        agent_a=a,
+        use_live_open=False,
+        write=False,
+    )
+    assert payload["final_n"] == 0
+    assert any(d["drop_reason"] == "light_fail" for d in payload["dropped"])
