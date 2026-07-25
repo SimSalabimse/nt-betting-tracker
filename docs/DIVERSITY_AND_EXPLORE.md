@@ -36,7 +36,8 @@ You cannot get more data for other sports without **trying** researched bets the
 | `max_per_market_family` | **2** hard cap on coarse `market_family` (open + slip). Line is never in the key: tennis O/U 21.5–23.5 all → `tennis_totals`. See `nt/market_family.py`. |
 | `similar_recent` | Soft demotion on last 10–15 live settled+pending (`nt/similar_recent.py`). Same sport + `market_family` + line within tolerance. `include_ml: false`. Penalties on `sort_ev` / notes only — true EV honest. |
 | Composite `sort_ev` | Annotate once → sort once → retain `_fill_passes` Pass 1/2/3 (soft football skip-then-fill). Non-football ranks above football on equal `sort_ev`. |
-| Live ledger only | Diversify seeds + similar window use `filter_live_rows` (`nt/live_ledger.py`) — drop `source==era_archive`. `load_bets` refuses `history/archives` and `history/rounds` via `assert_not_archive_path`. |
+| Mid-odds reorder | **Intentionally dropped** under ESR composite sort. Pre-PR2 `regime_prefer_mid_odds` primary reorder is not re-applied; explore is sort_ev tiebreak only. Re-enable only via a future composite-key fold if operators need it. |
+| Live ledger only | Diversify seeds + similar window use `filter_live_rows` (`nt/live_ledger.py`) — drop `source==era_archive`. `load_bets` refuses `history/archives` and `history/rounds` via `assert_not_archive_path`. `similar_recent.live_ledger_only` (default true) controls the window filter. |
 | Stake packing | min-stake seats first; reserve leftover for extra eligible seats; then EV top-up |
 | Rejects | Full machine-readable `outbox/REJECTS_*.jsonl` (+ MD summary) |
 

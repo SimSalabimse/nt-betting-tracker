@@ -37,6 +37,16 @@ def test_parse_line_ml_none():
     assert parse_line("Vinner: Darderi, Luciano") is None
 
 
+def test_parse_line_1x2_market_type_not_phantom_line():
+    """Digits inside 1X2 / Kampresultat must never become a phantom line."""
+    assert parse_line("Hjemmeseier", "Kampresultat - 1X2") is None
+    assert parse_line("Uavgjort", "1X2") is None
+    assert parse_line("Borte", "Kampresultat - 1X2") is None
+    assert parse_line("1", "Kampresultat - 1X2") is None
+    assert parse_line("2", "1X2") is None
+    assert parse_line("X", "1X2") is None
+
+
 def test_include_ml_false_skips_ml():
     recent = [
         {
@@ -58,6 +68,34 @@ def test_include_ml_false_skips_ml():
         include_ml=False,
     )
     assert hits == []
+
+
+def test_include_ml_false_skips_football_1x2_kampresultat():
+    """Realistic NT football 1X2 must not demote under include_ml=false (Issue 1)."""
+    recent = [
+        {
+            "match": "Old FC vs Rival",
+            "selection": "Hjemmeseier",
+            "sport": "football",
+            "result": "Loss",
+            "market_type": "Kampresultat - 1X2",
+            "date": "2026-07-24",
+        }
+    ]
+    hits = similar_recent_hits(
+        sport="football",
+        selection="Borte",
+        market_type="Kampresultat - 1X2",
+        market_family_key="football_1x2",
+        match="New FC vs Other",
+        recent_rows=recent,
+        include_ml=False,
+    )
+    assert hits == []
+    # parse_line alone must not invent 2.0 from 1X2
+    from nt.similar_recent import parse_line as pl
+
+    assert pl("Hjemmeseier", "Kampresultat - 1X2") is None
 
 
 def test_line_tolerance_tennis_21_5_vs_22_5():
@@ -169,12 +207,65 @@ def test_penalty_reason_string_style():
         },
     )
     assert len(hits) == 2
-    assert pen == 0.022  # 0.012 + 0.010
+    # Scaled soft pen: soft*min(n,3) + loss_extra*min(n_loss,3) = 0.012*2 + 0.010*2
+    assert pen == 0.044
     assert reason.startswith(
         "similar_recent: similar to recent tennis_totals – demoted"
     )
     assert "2 in last 12" in reason
     assert "Loss" in reason
+
+
+def test_reason_window_uses_clamped_value():
+    """Reason string must report the same clamped window as the search (Issue 2)."""
+    recent = [
+        {
+            "match": f"M{i} vs Z",
+            "selection": "Totalt antall games 22.5: Over 22.5",
+            "sport": "tennis",
+            "result": "Loss",
+            "date": f"2026-07-{10 + i:02d}",
+            "market_type": "Totalt antall games",
+        }
+        for i in range(5)
+    ]
+    # Config asks for 20 → clamp to 15 in reason
+    pen, reason, hits = similar_recent_penalty(
+        sport="tennis",
+        selection="Totalt antall games 22.5: Over 22.5",
+        market_type="Totalt antall games",
+        market_family_key="tennis_totals",
+        recent_rows=recent,
+        cfg={
+            "enabled": True,
+            "window": 20,
+            "include_ml": False,
+            "line_tolerance": 1.0,
+            "soft_ev_penalty": 0.012,
+            "loss_pattern_extra_penalty": 0.010,
+        },
+    )
+    assert hits
+    assert "in last 15" in reason
+    assert "in last 20" not in reason
+    # Config asks for 5 → clamp to 10
+    _, reason5, _ = similar_recent_penalty(
+        sport="tennis",
+        selection="Totalt antall games 22.5: Over 22.5",
+        market_type="Totalt antall games",
+        market_family_key="tennis_totals",
+        recent_rows=recent,
+        cfg={
+            "enabled": True,
+            "window": 5,
+            "include_ml": False,
+            "line_tolerance": 1.0,
+            "soft_ev_penalty": 0.012,
+            "loss_pattern_extra_penalty": 0.010,
+        },
+    )
+    assert "in last 10" in reason5
+    assert "in last 5)" not in reason5
 
 
 def test_bet_type_macro_buckets():
@@ -505,6 +596,40 @@ def test_include_ml_false_portfolio_no_demote_on_ml_loss():
     assert len(picked) == 1
     assert not (picked[0].similar_recent_reason or "").strip(), (
         f"ML should not get similar_recent demotion: {picked[0].similar_recent_reason!r}"
+    )
+    if picked[0].sort_ev is not None:
+        assert abs(picked[0].sort_ev - picked[0].ev) < 0.001
+
+
+def test_include_ml_false_portfolio_football_1x2_no_demote():
+    """Football Hjemmeseier + Kampresultat - 1X2 loss must not demote next 1X2."""
+    cfg = _portfolio_cfg()
+    phase, risk = _risk_phase(cfg, max_bets=2)
+    hist = [
+        {
+            "match": "Old FC vs Rival",
+            "selection": "Hjemmeseier",
+            "sport": "football",
+            "result": "Loss",
+            "decimal_odds": "1.85",
+            "market_type": "Kampresultat - 1X2",
+            "date": "2026-07-24",
+            "p_l_nok": "-10",
+            "stake_nok": "10",
+        }
+    ]
+    ml = _cand(
+        "New FC vs Other",
+        "Hjemmeseier",
+        "football",
+        p=0.62,
+        market_type="Kampresultat - 1X2",
+    )
+    picked, _ = build_portfolio(cfg, [ml], phase, risk, hist, learning={})
+    assert len(picked) == 1, f"picked={picked!r}"
+    assert not (picked[0].similar_recent_reason or "").strip(), (
+        f"1X2 must not demote under include_ml=false: "
+        f"reason={picked[0].similar_recent_reason!r} notes={picked[0].notes!r}"
     )
     if picked[0].sort_ev is not None:
         assert abs(picked[0].sort_ev - picked[0].ev) < 0.001

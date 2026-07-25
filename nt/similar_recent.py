@@ -16,24 +16,112 @@ from nt.sport_taxonomy import normalize_sport
 _TERMINAL_OK = frozenset({"Win", "Loss", "Refunded"})
 _PENDING_OK = frozenset({"Pending", "ConfirmedPlaced"})
 
+# Window config is clamped to this band (design: 10–15).
+_WINDOW_MIN = 10
+_WINDOW_MAX = 15
+
+# Soft penalty scale caps (Issue 3): mild growth with pattern severity, still soft-only.
+_PEN_COUNT_CAP = 3
+
+
+def clamp_window(window: int | None) -> int:
+    """Clamp similar-recent window to the design band [10, 15]."""
+    w = int(window) if window else 12
+    if w < _WINDOW_MIN:
+        return _WINDOW_MIN
+    if w > _WINDOW_MAX:
+        return _WINDOW_MAX
+    return w
+
+
+def is_ml_family(fam: str) -> bool:
+    """True for ML / 1X2 / DNB / bare-result families (no real line market)."""
+    f = (fam or "").strip().lower()
+    if not f:
+        return False
+    if f.endswith("_ml") or f.endswith("_1x2") or f.endswith("_dnb"):
+        return True
+    if f in ("ml_unknown", "football_1x2", "ml"):
+        return True
+    return False
+
+
+def _is_line_market_context(text: str) -> bool:
+    """True when blob looks like O/U / totals / handicap (not bare 1X2 / ML)."""
+    t = (text or "").lower()
+    if re.search(r"1\s*[x×]\s*2|1x2", t):
+        # 1X2 labels often sit next to other tokens — still not a line market
+        if not any(
+            x in t
+            for x in (
+                "totalt",
+                "over/under",
+                "over under",
+                " o/u",
+                "handikap",
+                "handicap",
+                "over ",
+                "under ",
+            )
+        ):
+            return False
+    return bool(
+        re.search(
+            r"totalt|over/under|over under|\bo/u\b|handikap|handicap|"
+            r"(?<![/\w])over\b|(?<![/\w])under\b|"
+            r"[+-]\s?\d+(?:[.,]\d+)?|"
+            r"antall\s+(?:games?|m[åa]l|points?|kart|maps?)",
+            t,
+        )
+    )
+
 
 def parse_line(selection: str = "", market_type: str = "") -> float | None:
     """
     Extract a betting line (e.g. 22.5, 2.5) from selection / market_type.
 
-    Prefers *.0 / *.5 numbers; falls back to last float. Comma decimals OK.
+    Only accepts lines in O/U / totals / handicap context. Never treats bare
+    ``1`` / ``2`` / ``X`` or digits inside ``1X2`` as a line.
     """
-    text = f"{selection or ''} {market_type or ''}".replace(",", ".")
-    nums = re.findall(r"\d+(?:\.\d+)?", text)
+    sel = (selection or "").strip()
+    mt = (market_type or "").strip()
+    text = f"{sel} {mt}".replace(",", ".")
+    if not text.strip():
+        return None
+
+    # Strip 1X2 tokens so their embedded digits never become a phantom line
+    cleaned = re.sub(r"1\s*[x×]\s*2", " ", text, flags=re.I)
+    cleaned = re.sub(r"\b1x2\b", " ", cleaned, flags=re.I)
+
+    if not _is_line_market_context(cleaned):
+        return None
+
+    # Prefer number adjacent to Over/Under / signed HC; else half-lines (*.0/*.5)
+    adj = re.findall(
+        r"(?:over|under|handikap|handicap|[+-])\s*(\d+(?:\.\d+)?)",
+        cleaned,
+        flags=re.I,
+    )
+    if adj:
+        try:
+            return float(adj[-1])
+        except ValueError:
+            pass
+
+    nums = re.findall(r"\d+(?:\.\d+)?", cleaned)
     if not nums:
         return None
+    # Prefer *.0 / *.5 style lines; reject bare integers 1/2 that are ML outcomes
     half = [float(x) for x in nums if "." in x and x.endswith(("0", "5"))]
     if half:
         return half[-1]
-    try:
-        return float(nums[-1])
-    except ValueError:
-        return None
+    # Integer lines only when clearly a total/HC context with larger numbers
+    # (e.g. Over 3 games) — skip 1 and 2 alone (ML / 1X2 residue)
+    ints = [float(x) for x in nums if "." not in x]
+    ints = [v for v in ints if v >= 3.0 or v == 0.0]
+    if ints:
+        return ints[-1]
+    return None
 
 
 def bet_type_macro(
@@ -57,16 +145,38 @@ def bet_type_macro(
         return "total"
     if "handicap" in fam or fam.endswith("_hc"):
         return "handicap"
-    if (
-        fam.endswith("_ml")
-        or fam.endswith("_1x2")
-        or fam in ("ml_unknown", "football_1x2")
-        or fam.endswith("_dnb")
-    ):
+    if is_ml_family(fam):
         return "ml"
     if "btts" in fam:
         return "other"
     return "other"
+
+
+def _sport_from_family(fam: str) -> str:
+    """Best-effort sport from family prefix (tennis_totals → tennis)."""
+    f = (fam or "").strip().lower()
+    if not f or f in ("other", "player_props", "ml_unknown", "totals_unknown", "handicap_unknown"):
+        return "unknown"
+    # Cross-sport families
+    if f.startswith("esports_"):
+        return "esports"
+    if f.startswith("darts_"):
+        return "darts"
+    prefix = f.split("_", 1)[0]
+    if prefix in (
+        "tennis",
+        "football",
+        "basketball",
+        "baseball",
+        "darts",
+        "esports",
+        "ice",
+        "unknown",
+    ):
+        if prefix == "ice":
+            return "ice_hockey"
+        return prefix
+    return "unknown"
 
 
 def _row_sort_key(r: Mapping[str, Any]) -> str:
@@ -83,18 +193,19 @@ def live_recent_window(
     *,
     window: int = 12,
     include_pending: bool = True,
+    live_ledger_only: bool = True,
 ) -> list[dict[str, Any]]:
     """
     Last N live settled (+ optional pending) rows, newest first.
 
-    Excludes Abandoned and era_archive. Clamps window to 10–15 when outside.
+    Excludes Abandoned. When live_ledger_only (default), drops era_archive via
+    filter_live_rows. Clamps window to 10–15.
     """
-    w = int(window) if window else 12
-    if w < 10:
-        w = 10
-    if w > 15:
-        w = 15
-    live = filter_live_rows(rows)
+    w = clamp_window(window)
+    if live_ledger_only:
+        live = filter_live_rows(rows)
+    else:
+        live = [dict(r) for r in (rows or []) if isinstance(r, Mapping)]
     eligible: list[dict[str, Any]] = []
     for r in live:
         res = str(r.get("result") or "").strip()
@@ -123,8 +234,9 @@ def similar_recent_hits(
     """
     Rows in recent window similar to candidate.
 
-    Default include_ml=False: both sides need parseable lines; same sport +
-    market_family + |line_c - line_r| <= tolerance.
+    Default include_ml=False: skip ML/1X2 families entirely (family-based, not
+    parse_line-only). Line markets need same sport + market_family + line within
+    tolerance. When include_ml=True, no-line pairs require same match.
     """
     sp = normalize_sport(sport or "", default="unknown")
     fam = (market_family_key or "").strip() or market_family(
@@ -133,9 +245,14 @@ def similar_recent_hits(
         market_type=market_type or "",
         market_key=market_key or "",
     )
+
+    # include_ml false → skip ML / 1X2 / DNB families (do not rely on parse_line alone)
+    if not include_ml and is_ml_family(fam):
+        return []
+
     cand_line = parse_line(selection or "", market_type or "")
 
-    # include_ml false → skip ML / no-line candidates entirely
+    # No parseable line and not opting into ML path → skip (bare no-line non-ML)
     if cand_line is None and not include_ml:
         return []
 
@@ -157,10 +274,11 @@ def similar_recent_hits(
             market_type=r_mt,
             market_key=r_mk,
         )
-        if r_sp == "unknown" and fam.startswith("tennis"):
-            r_sp = "tennis"
-        if r_sp == "unknown" and fam.startswith("football"):
-            r_sp = "football"
+        if not include_ml and is_ml_family(r_fam):
+            continue
+
+        if r_sp == "unknown":
+            r_sp = _sport_from_family(r_fam)
 
         if sp != "unknown" and r_sp != "unknown" and sp != r_sp:
             continue
@@ -200,12 +318,14 @@ def similar_recent_penalty(
     Soft penalty + visible reason for composite sort_ev.
 
     Returns (penalty, reason_string, hits). True EV must not use this penalty.
+    Reason window uses the same clamped value as the search window.
     """
     sr = dict(cfg or {})
     if not bool(sr.get("enabled", True)):
         return 0.0, "", []
 
-    window = int(sr.get("window", 12) or 12)
+    # Same clamp as live_recent_window (Issue 2)
+    window = clamp_window(int(sr.get("window", 12) or 12))
     include_ml = bool(sr.get("include_ml", False))
     line_tol = float(sr.get("line_tolerance", 1.0) or 1.0)
     soft_pen = float(sr.get("soft_ev_penalty", 0.012) or 0.0)
@@ -234,9 +354,12 @@ def similar_recent_penalty(
 
     n = len(hits)
     n_loss = sum(1 for h in hits if str(h.get("result") or "") == "Loss")
-    pen = soft_pen if n >= 1 else 0.0
-    if n_loss > 0:
-        pen += loss_extra
+    # Mild scale with count/loss severity, capped (Issue 3) — still soft-only
+    n_scale = min(n, _PEN_COUNT_CAP)
+    loss_scale = min(n_loss, _PEN_COUNT_CAP) if n_loss > 0 else 0
+    pen = soft_pen * n_scale
+    if loss_scale > 0:
+        pen += loss_extra * loss_scale
 
     # Human-visible: similar_recent: similar to recent tennis_totals – demoted (…)
     loss_bit = f"; {n_loss} Loss" if n_loss else ""
@@ -248,7 +371,12 @@ def similar_recent_penalty(
 
 
 def similar_recent_hard_reject_count(cfg: Mapping[str, Any] | None) -> int | None:
-    """Return hard_reject_if_count or None (never hard-reject when null/missing)."""
+    """
+    Return hard_reject_if_count or None.
+
+    ESR product default is null (never hard-reject from similar). A positive
+    value is an opt-in escape hatch only — prefer soft demotion.
+    """
     if not cfg:
         return None
     raw = cfg.get("hard_reject_if_count", None)

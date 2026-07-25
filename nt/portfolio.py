@@ -1031,6 +1031,7 @@ def build_portfolio(
             historical_rows,
             window=int(sr_cfg.get("window", 12) or 12),
             include_pending=bool(sr_cfg.get("include_pending", True)),
+            live_ledger_only=bool(sr_cfg.get("live_ledger_only", True)),
         )
 
     # Macro underrep uses open-book seeds only (pre-pass sort)
@@ -1090,6 +1091,8 @@ def build_portfolio(
                 rec.notes = f"{rec.notes}; {bit}".strip("; ")[:400]
             if bit not in (rec.reasons or []):
                 rec.reasons = list(rec.reasons or []) + [bit]
+        # Opt-in only: ESR default hard_reject_if_count is null (never hard-reject
+        # from similar). Prefer soft sort_ev demotion; do not re-arm casually.
         if hard_sim_n is not None and len(hits) >= hard_sim_n:
             rejects.append(
                 {
