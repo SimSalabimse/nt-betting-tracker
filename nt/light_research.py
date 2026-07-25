@@ -34,12 +34,13 @@ from nt.research_gates.infer import selection_family
 def tiers_cfg(cfg: dict[str, Any]) -> dict[str, Any]:
     rcfg = research_cfg(cfg)
     raw = dict(rcfg.get("tiers") or {})
+    # ESR defaults: composition quotas off; promo hardcodes neutralized (edge-seeking).
     defaults = {
         "light_coverage_target": 0.85,  # fraction of shortlist
         "light_coverage_min_n": 8,  # always light at least this many if shortlist ≥ this
         "min_light_per_sport_when_n": 5,  # if sport has ≥5 shortlist lines…
         "min_light_per_sport": 3,  # …light at least 3
-        "deep_target_n": 8,  # High-Volume v2: focused deep queue
+        "deep_target_n": 10,  # focused deep queue
         "deep_max_n": 15,  # hard cap (≥ deep_target_max when dynamic)
         "deep_target_dynamic": True,  # scale target with board size
         "deep_target_min": 8,
@@ -47,24 +48,29 @@ def tiers_cfg(cfg: dict[str, Any]) -> dict[str, Any]:
         "deep_target_divisor": 8,  # target = clamp(min, max, board_lines // divisor)
         "auto_light_on_board": True,
         "auto_promote_to_deep": False,  # assess never promotes (P1)
-        "engine_deep_queue": True,  # P0: engine fills deep_queue via anti-chalk scorer
-        "deep_min_preferred_share": 0.55,
-        "deep_max_short_main_share": 0.25,
-        "short_chalk_odds": 1.70,
-        "preferred_odds_lo": 1.85,
-        "preferred_odds_hi": 2.60,
-        "alt_preferred_odds_lo": 1.80,  # non-main alts only preferred if ≥ this
-        "promo_mid_band_boost": 60.0,
-        "promo_alt_boost": 14.0,
-        "promo_short_chalk_penalty": -55.0,
-        # Research-rank only (never place): elevate fav HC + natural totals vs soft dog HC
-        "promo_fav_hc_boost": 12.0,
-        "promo_natural_total_boost": 10.0,
+        "engine_deep_queue": True,  # engine fills deep_queue via promotion scorer
+        "deep_min_preferred_share": 0.0,  # composition preferred quota OFF
+        "deep_max_short_main_share": 1.0,  # short-main cap OFF
+        "short_chalk_odds": 1.50,
+        "preferred_odds_lo": 1.40,
+        "preferred_odds_hi": 2.80,
+        "alt_preferred_odds_lo": 1.40,  # non-main alts only preferred if ≥ this
+        "promo_mid_band_boost": 8.0,
+        "promo_mid_band_lo": 1.85,  # mid boost window (independent of preferred_odds)
+        "promo_mid_band_hi": 2.40,
+        "promo_alt_boost": 12.0,
+        "promo_short_chalk_penalty": -12.0,
+        "promo_preferred_boost": 0.0,  # was hardcoded +25
+        "promo_short_main_penalty": 0.0,  # was hardcoded -30
+        "promo_require_signal_for_family_boost": True,  # bare HC/alt need signal
+        # Research-rank only (never place): elevate fav HC + natural totals
+        "promo_fav_hc_boost": 8.0,
+        "promo_natural_total_boost": 12.0,
         "soft_value_min_rel": 0.08,
         "fail_odds_below": 1.35,  # light-fail ultra-short unless exceptional
         "fail_odds_above": 4.0,  # light-fail longshots without deep plan
-        "pass_odds_lo": 1.45,
-        "pass_odds_hi": 2.60,
+        "pass_odds_lo": 1.40,
+        "pass_odds_hi": 3.00,
     }
     return {**defaults, **raw}
 
@@ -280,7 +286,7 @@ def promotion_score_components(
     coverage_overlay: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """
-    Auditable breakdown of anti-chalk promotion_score (research rank only).
+    Auditable breakdown of edge-seeking promotion_score (research rank only).
 
     Returns ``{total, components, scorer}``. Total matches ``promotion_score``.
     Does not invent p_model.
@@ -294,17 +300,27 @@ def promotion_score_components(
     alt_lo = float(tcfg.get("alt_preferred_odds_lo") or short_chalk)
     soft_rel = float(tcfg["soft_value_min_rel"])
 
-    mid_boost = float(tcfg.get("promo_mid_band_boost") or 60.0)
-    alt_boost = float(tcfg.get("promo_alt_boost") or 14.0)
-    short_pen = float(tcfg.get("promo_short_chalk_penalty") or -55.0)
-    fav_hc_boost = float(tcfg.get("promo_fav_hc_boost") or 0.0)
-    natural_total_boost = float(tcfg.get("promo_natural_total_boost") or 0.0)
+    mid_boost = float(_cfg_num(tcfg, "promo_mid_band_boost", 8.0))
+    mid_lo = float(_cfg_num(tcfg, "promo_mid_band_lo", 1.85))
+    mid_hi = float(_cfg_num(tcfg, "promo_mid_band_hi", 2.40))
+    alt_boost = float(_cfg_num(tcfg, "promo_alt_boost", 12.0))
+    short_pen = float(_cfg_num(tcfg, "promo_short_chalk_penalty", -12.0))
+    pref_boost = float(_cfg_num(tcfg, "promo_preferred_boost", 0.0))
+    short_main_pen = float(_cfg_num(tcfg, "promo_short_main_penalty", 0.0))
+    require_signal = bool(tcfg.get("promo_require_signal_for_family_boost", True))
+    fav_hc_boost = float(_cfg_num(tcfg, "promo_fav_hc_boost", 0.0))
+    natural_total_boost = float(_cfg_num(tcfg, "promo_natural_total_boost", 0.0))
 
     components: dict[str, float] = {"base": 50.0}
-    # Odds band — primary research band is preferred_lo–preferred_hi (High-Volume v2)
-    if pref_lo <= odds <= pref_hi:
+    # Soft value first (also a light signal for family boosts)
+    if soft_odds is not None and odds > 1.0:
+        if soft_odds >= odds * (1.0 + soft_rel):
+            components["soft_value"] = 30.0
+
+    # Mid-band boost only in narrow config window (not full preferred range)
+    if mid_lo <= odds <= mid_hi:
         components["mid_band"] = mid_boost
-    elif alt_lo <= odds < pref_lo:
+    elif alt_lo <= odds < mid_lo:
         components["near_pref_band"] = 20.0
     elif pref_hi < odds <= 3.20:
         components["longish_band"] = 12.0
@@ -323,40 +339,65 @@ def promotion_score_components(
         alt_preferred_odds_lo=alt_lo,
     )
     short_main = is_short_main_line(rec.selection, odds, family, preferred_odds_lo=pref_lo)
-    if preferred and not short_main:
-        components["preferred"] = 25.0
-    if short_main:
-        components["short_main"] = -30.0
+    if preferred and not short_main and pref_boost:
+        components["preferred"] = pref_boost
+    if short_main and short_main_pen:
+        components["short_main"] = short_main_pen
+
     fam = (family or "").lower()
     sel = (rec.selection or "").lower()
-    if fam == "handicap" or "handikap" in sel:
-        components["handicap"] = alt_boost
-        # Favourite HC (minus line) research boost — counter soft +HC attraction
-        if fav_hc_boost and _is_favourite_hc_selection(rec.selection):
-            components["fav_hc"] = fav_hc_boost
-    if "3.5" in sel or "4.5" in sel or fam in ("totals_over", "totals_under") and "2.5" not in sel:
-        components["alt_total"] = alt_boost
-    # Natural totals (O/U family including main 2.5) — research rank only
-    if natural_total_boost and (
-        fam in ("totals_over", "totals_under")
-        or (
-            ("over" in sel or "under" in sel)
-            and re.search(r"\d+\.?\d*", sel)
-            and "handikap" not in sel
-            and "handicap" not in sel
-        )
-    ):
-        components["natural_total"] = natural_total_boost
-    if fam == "period" or "1. omgang" in sel or "1. sett" in sel:
-        components["period"] = 6.0
 
-    if soft_odds is not None and odds > 1.0:
-        if soft_odds >= odds * (1.0 + soft_rel):
-            components["soft_value"] = 30.0
+    def _is_natural_total_sel() -> bool:
+        return bool(
+            fam in ("totals_over", "totals_under")
+            or (
+                ("over" in sel or "under" in sel)
+                and re.search(r"\d+\.?\d*", sel)
+                and "handikap" not in sel
+                and "handicap" not in sel
+            )
+        )
+
+    # Natural totals (O/U including main 2.5) — research rank; also a family signal
+    if natural_total_boost and _is_natural_total_sel():
+        components["natural_total"] = natural_total_boost
+
+    # Light signal for bare family boosts (prior_ev / soft_value / natural / notes)
+    def _has_family_signal() -> bool:
+        if components.get("soft_value"):
+            return True
+        if components.get("natural_total"):
+            return True
+        if rec.prior_available and rec.prior_ev is not None and float(rec.prior_ev) > 0:
+            return True
+        blob = f"{rec.reason or ''} {rec.rough_ev_note or ''} {rec.strength_notes or ''}"
+        if re.search(r"\b(form|rank|prior|structural|h2h|value|edge)\b", blob, re.I):
+            return True
+        return False
+
+    family_signal_ok = (not require_signal) or _has_family_signal()
+
+    if fam == "handicap" or "handikap" in sel:
+        if family_signal_ok:
+            components["handicap"] = alt_boost
+        # Favourite HC (minus line) research boost
+        if fav_hc_boost and _is_favourite_hc_selection(rec.selection):
+            if family_signal_ok or not require_signal:
+                components["fav_hc"] = fav_hc_boost
+    if (
+        "3.5" in sel
+        or "4.5" in sel
+        or (fam in ("totals_over", "totals_under") and "2.5" not in sel)
+    ):
+        if family_signal_ok:
+            components["alt_total"] = alt_boost
+    if fam == "period" or "1. omgang" in sel or "1. sett" in sel:
+        if family_signal_ok:
+            components["period"] = 6.0
 
     ov = coverage_overlay or {}
     if ov.get("active"):
-        band_lo, band_hi = parse_odds_band(str(ov.get("target_odds_band") or "1.85-2.60"))
+        band_lo, band_hi = parse_odds_band(str(ov.get("target_odds_band") or "1.40-2.80"))
         in_band = odds >= band_lo and (band_hi is None or odds <= band_hi)
         if in_band:
             wb = ov.get("weight_boost")
@@ -375,6 +416,9 @@ def promotion_score_components(
             components["cov_prefer_period"] = 10.0
         if "dogs" in prefer and odds >= pref_lo and _is_ml_family(family, rec.selection):
             components["cov_prefer_dogs"] = 10.0
+        # natural_totals prefer token (was no-op) — totals family incl. main O/U
+        if "natural_totals" in prefer and _is_natural_total_sel():
+            components["cov_prefer_natural"] = 10.0
 
     if board_score:
         components["board_score"] = min(15.0, 0.1 * float(board_score))
@@ -382,7 +426,8 @@ def promotion_score_components(
     if rec.prior_available and rec.prior_ev is not None:
         pev = float(rec.prior_ev)
         if pev > 0:
-            components["prior_ev"] = min(25.0, 80.0 * pev)
+            # Slightly higher scale so positive prior_ev can outrank bare market tags
+            components["prior_ev"] = min(35.0, 100.0 * pev)
         elif pev < -0.02:
             components["prior_ev"] = max(-25.0, 60.0 * pev)
 
@@ -405,9 +450,9 @@ def promotion_score(
     coverage_overlay: dict[str, Any] | None = None,
 ) -> float:
     """
-    Anti-chalk promotion score for deep worklist.
+    Edge-seeking promotion score for deep worklist.
     Higher = more worth deep research. Does not invent p_model.
-    Heavily favors survivable band 1.85–2.60; demotes short chalk.
+    Prior EV / light signal first; mild mid-band; no preferred-identity hardcode.
     """
     return float(
         promotion_score_components(
@@ -430,7 +475,11 @@ def build_deep_queue(
     board_lines: int | None = None,
 ) -> list["LightRecord"]:
     """
-    Engine deep worklist with hard composition quotas (fail-closed shrink).
+    Engine deep worklist.
+
+    When deep_min_preferred_share > 0: composition quotas + fail-closed shrink
+    (legacy / FEH-era). When min_pref <= 0 (ESR): pure promotion_score order
+    up to deep_max / sport caps — coverage overlay cannot re-arm preferred share.
 
     Coverage floor (Mechanism A): dynamic target, top-promo scaffold, sport rotation.
     Never invents p_model; never softens min_ev / haircut.
@@ -461,9 +510,14 @@ def build_deep_queue(
     )
     min_pref = float(tcfg["deep_min_preferred_share"])
     max_short = float(tcfg["deep_max_short_main_share"])
-    if ov.get("active"):
+    # ESR: coverage must not re-raise a disabled preferred floor (min_pref <= 0)
+    if ov.get("active") and min_pref > 0:
         cov_share = ov.get("coverage_preferred_share")
-        min_pref = max(min_pref, 0.55 if cov_share is None else float(cov_share))
+        min_pref = max(
+            min_pref,
+            0.55 if cov_share is None else float(cov_share),
+        )
+    # When min_pref <= 0: leave at 0 forever (stale overlay share cannot re-arm)
 
     try:
         n_board = int(board_lines) if board_lines is not None else len(records)
@@ -548,10 +602,10 @@ def build_deep_queue(
         if not _pref(r) and not _sm(r)
     ]
 
-    # Fail-closed shrink: never pad with chalk to hit target
     n_pref_avail = len(preferred_pool)
-    if n_pref_avail == 0:
-        # Only non-preferred exist — prefer empty worklist over chalk flood
+    # Legacy composition-on: empty preferred pool → empty worklist (no chalk flood).
+    # ESR composition-off (min_pref <= 0): fill by pure promotion_score; never return [].
+    if n_pref_avail == 0 and min_pref > 0:
         return []
 
     # Max queue size such that preferred can still be ≥ min_pref of final size
@@ -559,13 +613,17 @@ def build_deep_queue(
     max_n_from_pref = int(n_pref_avail / min_pref) if min_pref > 0 else deep_max
     n_target = min(target, deep_max, max_n_from_pref)
     if n_target < 1:
-        n_target = min(n_pref_avail, 1)
+        if min_pref <= 0:
+            n_target = min(len(candidates), deep_max, max(target, 1))
+        else:
+            n_target = min(n_pref_avail, 1)
 
     deep_queue: list[LightRecord] = []
     sp_count: dict[str, int] = defaultdict(int)
     short_count = 0
     pref_count = 0
     selected: set[tuple[str, str]] = set()
+    short_cap_on = max_short < 1.0 - 1e-9  # skip short-main cap when share >= 1.0
 
     def _try_add(
         r: LightRecord,
@@ -586,13 +644,13 @@ def build_deep_queue(
         sp = _sport_key(r)
         if sp_count[sp] >= 3:
             return False
-        if as_short:
+        if as_short and short_cap_on:
             # Short-main share vs *final* trial size (works under force expansion too)
             trial_n = len(deep_queue) + 1
             if (short_count + 1) / max(trial_n, 1) > max_short + 1e-9:
                 return False
-        # Prefer floor on force: apply even when queue is empty (non-pref cannot open queue)
-        if force and not as_pref:
+        # Prefer floor on force: only when composition preferred share is enabled
+        if force and not as_pref and min_pref > 0:
             trial_n = len(deep_queue) + 1
             trial_pref = pref_count  # non-pref add leaves pref_count unchanged
             if trial_pref / max(trial_n, 1) + 1e-9 < min_pref:
@@ -615,19 +673,26 @@ def build_deep_queue(
                 break
             is_p = _pref(r)
             is_s = _sm(r)
-            if _is_pure_short_main(r):
-                # Scaffolds expand preferred/mid set; do not force short-main chalk
+            if min_pref > 0 and _is_pure_short_main(r):
+                # Composition-on: scaffolds expand preferred/mid; do not force short chalk
                 continue
             ok = _try_add(r, as_short=is_s, as_pref=is_p, force=True)
             if not ok and r.key() not in selected:
                 # Composition blocked — still record forced intent
                 _annotate(r, "coverage_floor:top_promo_scaffold:blocked")
 
-    # Phase A: preferred first (score order)
-    for _sc, r in preferred_pool:
-        if len(deep_queue) >= n_target:
-            break
-        _try_add(r, as_short=False, as_pref=True)
+    # Phase A: preferred first (score order) when composition cares; pure score when off
+    if min_pref > 0:
+        for _sc, r in preferred_pool:
+            if len(deep_queue) >= n_target:
+                break
+            _try_add(r, as_short=False, as_pref=True)
+    else:
+        # ESR: fill by pure promotion_score order (candidates already sorted)
+        for _sc, r in candidates:
+            if len(deep_queue) >= n_target:
+                break
+            _try_add(r, as_short=_sm(r), as_pref=_pref(r))
 
     # Ensure preferred share on current queue
     def _pref_share() -> float:
@@ -635,21 +700,23 @@ def build_deep_queue(
             return 0.0
         return pref_count / len(deep_queue)
 
-    # Phase B: fill remainder with other then short under cap (never pad chalk past floor)
-    for _sc, r in other_pool + short_pool:
-        if len(deep_queue) >= n_target:
-            break
-        is_p = _pref(r)
-        is_s = _sm(r)
-        # Do not add non-preferred if it would break preferred floor at target size
-        trial_n = len(deep_queue) + 1
-        trial_pref = pref_count + (1 if is_p else 0)
-        if not is_p and trial_pref / max(trial_n, 1) + 1e-9 < min_pref:
-            continue
-        _try_add(r, as_short=is_s, as_pref=is_p)
+    # Phase B: fill remainder (composition-on path only; ESR already filled in Phase A)
+    if min_pref > 0:
+        for _sc, r in other_pool + short_pool:
+            if len(deep_queue) >= n_target:
+                break
+            is_p = _pref(r)
+            is_s = _sm(r)
+            # Do not add non-preferred if it would break preferred floor at target size
+            trial_n = len(deep_queue) + 1
+            trial_pref = pref_count + (1 if is_p else 0)
+            if not is_p and trial_pref / max(trial_n, 1) + 1e-9 < min_pref:
+                continue
+            _try_add(r, as_short=is_s, as_pref=is_p)
 
     # If preferred share slipped below floor, drop short_main then non-preferred from tail
-    while deep_queue and _pref_share() + 1e-9 < min_pref:
+    # Skip entirely when min_pref <= 0 (ESR composition off)
+    while min_pref > 0 and deep_queue and _pref_share() + 1e-9 < min_pref:
         removed = False
         for i in range(len(deep_queue) - 1, -1, -1):
             r = deep_queue[i]

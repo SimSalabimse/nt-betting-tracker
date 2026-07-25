@@ -37,7 +37,7 @@ def bankroll_regime_cfg(cfg: dict[str, Any]) -> dict[str, Any]:
             "exit_equity": 650.0,
             "min_ev": 0.02,  # High-Volume v2 (was 0.04)
             "open_risk_cap_nok": 100.0,  # was 50 — room for ~3 unit-scale bets
-            "prefer_mid_odds": True,
+            "prefer_mid_odds": False,
             "mid_odds_lo": 1.85,
             "mid_odds_hi": 2.60,
             "weekly_explore_max": 2,
@@ -52,7 +52,7 @@ def bankroll_regime_cfg(cfg: dict[str, Any]) -> dict[str, Any]:
             "exit_equity": 800.0,
             "min_ev": 0.03,  # High-Volume v2 (was 0.075)
             "open_risk_cap_nok": 100.0,
-            "prefer_mid_odds": True,
+            "prefer_mid_odds": False,
             "mid_odds_lo": 1.85,
             "mid_odds_hi": 2.60,
         },
@@ -165,7 +165,7 @@ def evaluate_bankroll_regime(
             "label": "Survival",
             "min_ev": float(sur.get("min_ev") or 0.075),
             "open_risk_cap_nok": float(sur.get("open_risk_cap_nok") or 50.0),
-            "prefer_mid_odds": bool(sur.get("prefer_mid_odds", True)),
+            "prefer_mid_odds": bool(sur.get("prefer_mid_odds", False)),
             "mid_odds_lo": float(sur.get("mid_odds_lo") or 1.85),
             "mid_odds_hi": float(sur.get("mid_odds_hi") or 2.50),
             "reasons": reasons,
@@ -188,7 +188,7 @@ def evaluate_bankroll_regime(
         "label": "Exploration",
         "min_ev": float(exp.get("min_ev") or 0.04),
         "open_risk_cap_nok": float(exp.get("open_risk_cap_nok") or 50.0),
-        "prefer_mid_odds": bool(exp.get("prefer_mid_odds", True)),
+        "prefer_mid_odds": bool(exp.get("prefer_mid_odds", False)),
         "mid_odds_lo": float(exp.get("mid_odds_lo") or 1.85),
         "mid_odds_hi": float(exp.get("mid_odds_hi") or 2.50),
         "weekly_explore_max": int(exp.get("weekly_explore_max") or 2),

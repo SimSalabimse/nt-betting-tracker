@@ -9,8 +9,8 @@ Absolute-last ceiling on seat stakes after all portfolio mutations
 capital_v2 unit sizing, phase ladder, or grade_mult formulas.
 
 Counter increments only on place-ack (Pending → ConfirmedPlaced) for bets
-whose notes carry FEH_TEST_CAP:<system_tag>. Pre-FEH untagged acks are
-excluded.
+whose notes carry TEST_CAP:<system_tag> (legacy FEH_TEST_CAP: also accepted).
+Pre-tag untagged acks are excluded.
 """
 from __future__ import annotations
 
@@ -26,7 +26,8 @@ logger = logging.getLogger(__name__)
 SCHEMA_VERSION = 1
 DEFAULT_STATE_REL = "data/state/feh_test_cap.json"
 CONSTRAINT_TAG = "feh_test_cap_10nok"
-NOTE_TAG_PREFIX = "FEH_TEST_CAP:"
+NOTE_TAG_PREFIX = "TEST_CAP:"
+LEGACY_NOTE_TAG_PREFIX = "FEH_TEST_CAP:"
 
 
 def stake_test_cap_cfg(cfg: dict[str, Any] | None) -> dict[str, Any]:
@@ -198,7 +199,7 @@ def should_tag_pending(cfg: dict[str, Any] | None) -> bool:
     Tag Pending when test_stake_cap.enabled (system_tag path active).
 
     Aligned with clip: both use ``enabled`` so notes always carry
-    FEH_TEST_CAP:<system_tag> whenever stakes may be clipped, the place-ack
+    TEST_CAP:<system_tag> whenever stakes may be clipped, the place-ack
     counter advances, and the 10-bet window can expire. Does **not** require
     FEH place-owning (avoids permanent 10 NOK era if shadow_mode flips while
     cap remains enabled). Tagging always applies when clip is applied.
@@ -215,10 +216,16 @@ def display_cap_note(n_placed: int, max_bets: int, max_stake_nok: float) -> str:
 
 
 def notes_have_system_tag(notes: str | None, system_tag: str) -> bool:
+    """True if notes carry TEST_CAP:<tag> or legacy FEH_TEST_CAP:<tag>."""
     if not notes or not system_tag:
         return False
-    needle = system_tag_note(system_tag)
-    return needle in str(notes)
+    s = str(notes)
+    if f"{NOTE_TAG_PREFIX}{system_tag}" in s:
+        return True
+    # Accept legacy FEH-branded prefix for place-ack counting
+    if f"{LEGACY_NOTE_TAG_PREFIX}{system_tag}" in s:
+        return True
+    return False
 
 
 def annotate_notes_for_cap(
@@ -229,9 +236,9 @@ def annotate_notes_for_cap(
     max_len: int = 400,
 ) -> str:
     """
-    Prepend FEH_TEST_CAP tags so they survive notes truncation.
-    - Always when enabled: FEH_TEST_CAP:<system_tag>
-    - When cap active (n_placed < max): FEH_TEST_CAP:10NOK (k/10)
+    Prepend TEST_CAP tags so they survive notes truncation.
+    - Always when enabled: TEST_CAP:<system_tag>
+    - When cap active (n_placed < max): TEST_CAP:10NOK (k/10)
     """
     base = (notes or "").strip()
     if not should_tag_pending(cfg):
@@ -272,7 +279,7 @@ def apply_test_stake_cap_to_picked(
     constraints_applied feh_test_cap_10nok. Leaves unit_size_nok / grade_mult
     / recommended_stake_nok inputs unchanged.
 
-    Tags notes with FEH_TEST_CAP whenever enabled (same gate as clip path so
+    Tags notes with TEST_CAP whenever enabled (same gate as clip path so
     tagging always occurs when clip is applied).
 
     Returns number of seats whose stake was reduced.
@@ -446,8 +453,8 @@ def record_placed_bet(
     dry_run: bool = False,
 ) -> dict[str, Any]:
     """
-    place_ack hook: count toward n_placed only if notes carry FEH_TEST_CAP:<system_tag>.
-    Idempotent on bet_id. Untagged → excluded_bet_ids + log.
+    place_ack hook: count toward n_placed only if notes carry TEST_CAP:<system_tag>
+    (or legacy FEH_TEST_CAP:<system_tag>). Idempotent on bet_id. Untagged → excluded.
     """
     tsc = stake_test_cap_cfg(cfg)
     bid = (bet_id or "").strip()
@@ -488,7 +495,7 @@ def record_placed_bet(
         result["counted"] = True
         result["n_placed"] = st["n_placed"]
         result["active"] = is_test_cap_active(cfg, st)
-        result["log"] = f"counted FEH_TEST_CAP:{tag} bet_id={bid} n_placed={st['n_placed']}"
+        result["log"] = f"counted TEST_CAP:{tag} bet_id={bid} n_placed={st['n_placed']}"
         if not dry_run:
             save_state(cfg, st)
         logger.info(result["log"])
@@ -523,6 +530,7 @@ def status_line(cfg: dict[str, Any] | None) -> str:
 
 __all__ = [
     "CONSTRAINT_TAG",
+    "LEGACY_NOTE_TAG_PREFIX",
     "NOTE_TAG_PREFIX",
     "annotate_notes_for_cap",
     "apply_test_stake_cap_to_picked",

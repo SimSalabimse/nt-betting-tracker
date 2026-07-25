@@ -335,6 +335,16 @@ def process_settlement_feh_feedback(
         "reasons": [],
         "proofs": [],
     }
+    # ESR: no FEH process feedback when FEH is not place-owning
+    try:
+        from nt.evidence_hierarchy.score import place_uses_saef
+
+        if not place_uses_saef(cfg):
+            out["skip"] = "not_place_uses_saef"
+            return out
+    except Exception:
+        out["skip"] = "place_uses_saef_unavailable"
+        return out
     if not fc.get("enabled", True):
         out["skip"] = "disabled"
         return out

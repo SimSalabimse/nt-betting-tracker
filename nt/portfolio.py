@@ -11,6 +11,7 @@ from nt.evidence import (
     is_strong_confidence,
     normalize_sources,
 )
+from nt.odds_confidence import grade_meets as _grade_meets
 from nt.sport_taxonomy import normalize_sport
 
 
@@ -409,7 +410,7 @@ def build_portfolio(
     for c in candidates:
         odds = float(c.decimal_odds)
         band = odds_band(odds)
-        high = odds >= thr
+        high = odds > thr  # K16: odds == thr is Band D only, not high-odds
         # FEH recomputed every grade via grade_evidence (place-owning fail-closed).
         # Explore / temp_ev_relax / promo never bypass FEH hard rejects (grade F).
         # return_scorecard: odds_confidence FEH H2H polarity + schema-v2 FEH audit (PR5).
@@ -586,20 +587,22 @@ def build_portfolio(
                 continue
             min_ev = float(sel["high_odds_min_ev"])
             need_grade = str(sel["high_odds_min_grade"]).upper()
-            if grade > need_grade or grade == "F" or (need_grade == "A" and grade != "A"):
-                # grades A < B < C < F lexicographically wrong — explicit check
-                if grade != "A":
-                    rejects.append(
-                        {
-                            "match": c.match,
-                            "selection": c.selection,
-                            "odds": odds,
-                            "reason": f"high odds {odds} requires grade A (got {grade})",
-                            "issues": issues,
-                            "ev": round(ev, 4),
-                        }
-                    )
-                    continue
+            # Grade rank: A best … F worst (lex order is wrong for A/B/C)
+            if grade == "F" or not _grade_meets(grade, need_grade):
+                rejects.append(
+                    {
+                        "match": c.match,
+                        "selection": c.selection,
+                        "odds": odds,
+                        "reason": (
+                            f"high odds {odds} requires grade {need_grade} "
+                            f"(got {grade})"
+                        ),
+                        "issues": issues,
+                        "ev": round(ev, 4),
+                    }
+                )
+                continue
             if high_odds_count >= max_high:
                 rejects.append(
                     {
@@ -1389,7 +1392,7 @@ def build_portfolio(
                                 f"legs: {a.match} / {a.selection} @ {a.decimal_odds} + "
                                 f"{b.match} / {b.selection} @ {b.decimal_odds}"
                             )[:400],
-                            high_odds=float(assess.combined_odds) >= thr,
+                            high_odds=float(assess.combined_odds) > thr,
                             explore=False,
                             learning_stake_mult=1.0,
                             learning_ev_boost=0.0,

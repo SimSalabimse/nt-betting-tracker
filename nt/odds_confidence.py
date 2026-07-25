@@ -1,4 +1,4 @@
-﻿"""
+"""
 Sliding odds-band confidence gates (1.40ÔÇô2.60).
 
 Bands (half-open where noted; D includes 2.60):
@@ -32,28 +32,30 @@ BAND_HIGH = "high_odds"  # > 2.60
 def odds_confidence_cfg(cfg: dict[str, Any] | None) -> dict[str, Any]:
     sel = dict((cfg or {}).get("selection") or {})
     raw = dict(sel.get("odds_confidence") or {})
+    # ESR defaults — Band A soft-demote; UD H2H hard reject off; usable_hi = high_odds thr
     defaults: dict[str, Any] = {
         "enabled": True,
         "usable_lo": 1.40,
-        "usable_hi": 2.60,
+        "usable_hi": 2.50,
+        "soft_missing_matchup_stake_mult": 0.85,
         "bands": {
             "A": {
                 "lo": 1.40,
                 "hi": 1.60,  # exclusive hi
-                "min_grade": "A",
-                "min_ev": 0.035,
-                "min_sources": 8,
-                "stake_mult": 0.80,
-                "require_h2h_or_rank_form": True,
+                "min_grade": "B",
+                "min_ev": 0.02,
+                "min_sources": 4,
+                "stake_mult": 0.95,
+                "require_h2h_or_rank_form": True,  # soft-demote path when thin
                 "explore_allowed": False,
             },
             "B": {
                 "lo": 1.60,
                 "hi": 1.85,
                 "min_grade": "B",
-                "min_ev": 0.025,
-                "min_sources": 7,
-                "stake_mult": 0.90,
+                "min_ev": 0.02,
+                "min_sources": 4,
+                "stake_mult": 1.0,
                 "require_core_plus_support": True,
                 "explore_allowed": False,
             },
@@ -61,24 +63,24 @@ def odds_confidence_cfg(cfg: dict[str, Any] | None) -> dict[str, Any]:
                 "lo": 1.85,
                 "hi": 2.30,
                 "min_grade": "B",
-                "min_ev": 0.022,
-                "min_sources": 6,
+                "min_ev": 0.02,
+                "min_sources": 4,
                 "stake_mult": 1.0,
-                "require_core_plus_support": True,
-                "require_h2h_checked": True,
+                "require_core_plus_support": False,
+                "require_h2h_checked": False,
                 "explore_allowed": True,
                 "explore_ev_cap": 0.015,  # explore floor cannot go softer than this
             },
             "D": {
                 "lo": 2.30,
-                "hi": 2.60,  # inclusive via classify
+                "hi": 2.50,  # inclusive via classify; == usable_hi = Band D only
                 "min_grade": "B",
                 "min_ev": 0.025,
-                "min_sources": 7,
+                "min_sources": 5,
                 "stake_mult": 0.95,
                 "require_core_plus_support": True,
-                "require_h2h_checked": True,
-                "underdog_hc_require_matchup": True,
+                "require_h2h_checked": False,
+                "underdog_hc_require_matchup": False,
                 "explore_allowed": True,
                 "explore_ev_cap": 0.015,
             },
@@ -86,11 +88,11 @@ def odds_confidence_cfg(cfg: dict[str, Any] | None) -> dict[str, Any]:
         "below_floor": {
             "allow_exceptional": True,
             "min_grade": "A",
-            "min_ev": 0.05,
-            "min_sources": 10,
-            "stake_mult": 0.70,
+            "min_ev": 0.04,
+            "min_sources": 6,
+            "stake_mult": 0.75,
         },
-        "underdog_hc_negative_h2h_reject": True,
+        "underdog_hc_negative_h2h_reject": False,
     }
     out = {**defaults, **raw}
     if isinstance(raw.get("bands"), dict):
@@ -113,7 +115,7 @@ def classify_odds_confidence_band(
     o = float(odds)
     oc = odds_confidence_cfg(cfg)
     lo = float(oc.get("usable_lo") or 1.40)
-    hi = float(oc.get("usable_hi") or 2.60)
+    hi = float(oc.get("usable_hi") or 2.50)
     if o < lo:
         return BAND_BELOW
     if o > hi:
@@ -351,8 +353,9 @@ def evaluate_odds_band_gates(
     High-odds band (above usable_hi) returns ok=True with band HIGH — caller applies
     existing high_odds grade/EV rules.
 
-    FEH compose (PR3):
-      - bands cannot bypass FEH hard reject / grade F
+    FEH compose:
+      - grade F always blocked
+      - FEH hard_reject only when feh_version present (real place-owning audit)
       - H2H polarity prefers feh.h2h when feh_version present
     """
     oc = odds_confidence_cfg(cfg)
@@ -364,17 +367,30 @@ def evaluate_odds_band_gates(
             reason="odds_confidence disabled",
         )
 
-    # FEH fail-closed: bands never place what FEH hard-rejected
-    if isinstance(feh, dict) and (
+    # Always block grade F (caller grade already F)
+    if str(grade or "").upper() == "F":
+        return OddsBandGateResult(
+            ok=False,
+            band_id="grade_f_blocked",
+            band_label="Grade F",
+            requirements_checked=["grade_f"],
+            failures=["grade F — odds_confidence cannot place"],
+            passes=[],
+            stake_mult=1.0,
+            explore_allowed=False,
+            reason="grade F — bands cannot place",
+        )
+
+    # FEH hard reject only when real place-owning FEH audit (feh_version present)
+    if isinstance(feh, dict) and feh.get("feh_version") is not None and (
         feh.get("hard_reject")
         or str(feh.get("final_grade_suggestion") or "").upper() == "F"
-        or str(grade or "").upper() == "F"
     ):
         return OddsBandGateResult(
             ok=False,
             band_id="feh_blocked",
             band_label="FEH hard reject / grade F",
-            requirements_checked=["feh_non_bypassable"],
+            requirements_checked=["feh_place_owning"],
             failures=["FEH hard reject or grade F — odds_confidence cannot place"],
             passes=[],
             stake_mult=1.0,
@@ -390,6 +406,8 @@ def evaluate_odds_band_gates(
     rank_form = detect_rank_form_edge(evidence)
     n_sup, support = count_support_factors(evidence)
     core = has_core_reason(evidence) if evidence else False
+    ud_h2h_reject = bool(oc.get("underdog_hc_negative_h2h_reject", False))
+    soft_missing_mult = float(oc.get("soft_missing_matchup_stake_mult") or 0.85)
 
     checked: list[str] = [f"band={band_id}", f"odds={float(odds):.3f}", f"grade={grade}"]
     if isinstance(feh, dict) and feh.get("feh_version") is not None:
@@ -397,17 +415,19 @@ def evaluate_odds_band_gates(
     failures: list[str] = []
     passes: list[str] = []
 
+    usable_hi = float(oc.get("usable_hi") or 2.50)
+
     # --- High odds: defer to existing portfolio high-odds path ---
     if band_id == BAND_HIGH:
         return OddsBandGateResult(
             ok=True,
             band_id=BAND_HIGH,
-            band_label="High odds (>2.60)",
+            band_label=f"High odds (>{usable_hi:g})",
             requirements_checked=checked + ["defer_high_odds_rules"],
             passes=["deferred_to_high_odds_rules"],
             stake_mult=1.0,
             explore_allowed=True,
-            reason="above usable band ÔÇö high-odds rules apply",
+            reason="above usable band — high-odds rules apply",
         )
 
     # --- Below floor ---
@@ -421,7 +441,7 @@ def evaluate_odds_band_gates(
                 failures.append(
                     f"odds {odds:.2f} < 1.40 requires grade A (got {grade})"
                 )
-            need_src = int(bf.get("min_sources") or 10)
+            need_src = int(bf.get("min_sources") or 6)
             if n_src < need_src:
                 failures.append(f"below-floor sources {n_src} < {need_src}")
             if not (h2h["positive"] or rank_form):
@@ -438,8 +458,8 @@ def evaluate_odds_band_gates(
             requirements_checked=checked,
             failures=failures,
             passes=passes,
-            min_ev=float(bf.get("min_ev") or 0.05),
-            stake_mult=float(bf.get("stake_mult") or 0.70),
+            min_ev=float(bf.get("min_ev") or 0.04),
+            stake_mult=float(bf.get("stake_mult") or 0.75),
             explore_allowed=False,
             reason="; ".join(failures) if failures else "exceptional short price",
         )
@@ -448,7 +468,7 @@ def evaluate_odds_band_gates(
     bcfg = bands.get(letter) or bands.get(letter[0]) or {}
     min_grade = str(bcfg.get("min_grade") or "B")
     min_ev = float(bcfg.get("min_ev") or 0.02)
-    min_sources = int(bcfg.get("min_sources") or 6)
+    min_sources = int(bcfg.get("min_sources") or 4)
     stake_mult = float(bcfg.get("stake_mult") or 1.0)
     explore_allowed = bool(bcfg.get("explore_allowed", True))
     explore_ev_cap = bcfg.get("explore_ev_cap")
@@ -469,7 +489,8 @@ def evaluate_odds_band_gates(
     else:
         passes.append(f"sources_ok:{n_src}")
 
-    # Band A specials
+    band_a_soft_demote = False
+    # Band A specials — soft-demote when H2H/rank thin but core+grade+sources ok
     if letter == "A":
         checked.append("require_h2h_or_rank_form")
         checked.append("short_price_edge_justification")
@@ -483,25 +504,35 @@ def evaluate_odds_band_gates(
                         else "rank_form"
                     )
                 )
+            elif (
+                core
+                and grade_meets(grade, "B")
+                and n_src >= int(bcfg.get("min_sources") or 4)
+            ):
+                # Soft demote: placeable with stake haircut
+                passes.append("band_a_soft_missing_matchup")
+                stake_mult *= soft_missing_mult
+                band_a_soft_demote = True
             else:
                 failures.append(
-                    "Band A requires positive H2H or strong ranking/form edge "
-                    "with multi-source support"
+                    "Band A: need (H2H+ or rank/form) OR "
+                    "(core reason + grade>=B + min sources)"
                 )
         if n_src < 2:
             failures.append("Band A requires multiple independent sources")
-        # Explicit short-price justification in summary
+        # Short-price edge language: do not hard-fail when soft-demote or core present
         if evidence and not re.search(
             r"short|price|edge|value|mispriced|market wrong|line long",
             str(evidence.get("summary") or "").lower(),
         ):
-            # soft fail only if no other positive edge language
-            if not (h2h["positive"] or rank_form):
+            if band_a_soft_demote or core:
+                passes.append("core_reason_short_price_ok")
+            elif h2h["positive"] or rank_form:
+                passes.append("edge_implied_by_h2h_or_rank")
+            else:
                 failures.append(
                     "Band A reasoning must justify short-price edge in summary"
                 )
-            else:
-                passes.append("edge_implied_by_h2h_or_rank")
 
     # Band B / C / D support + core
     if letter in ("B", "C", "D") and bcfg.get("require_core_plus_support", True):
@@ -510,7 +541,7 @@ def evaluate_odds_band_gates(
             failures.append("missing clear core reason (summary)")
         else:
             passes.append("core_reason")
-        # Pure explore/mid-odds is not enough ÔÇö need ÔëÑ1 real support beyond core
+        # Pure explore/mid-odds is not enough — need >=1 real support beyond core
         real_support = [s for s in support if s not in ("core_reason",)]
         if letter == "C":
             # Raise bar: need at least one support factor beyond multi_source alone
@@ -528,7 +559,7 @@ def evaluate_odds_band_gates(
         elif letter == "B":
             if len(real_support) < 1:
                 failures.append(
-                    "Band B requires solid core + ÔëÑ1 strong supporting factor"
+                    "Band B requires solid core + >=1 strong supporting factor"
                 )
             else:
                 passes.append("support:" + ",".join(real_support[:4]))
@@ -540,28 +571,35 @@ def evaluate_odds_band_gates(
             else:
                 passes.append("support:" + ",".join(real_support[:4]))
 
-    # H2H checked requirement (C/D)
+    # H2H checked requirement (C/D) — UD negative hard reject gated by flag
     if bcfg.get("require_h2h_checked"):
         checked.append("h2h_matchup_checked")
         if h2h["checked"]:
             passes.append("h2h_checked")
-            if h2h["negative"] and oc.get("underdog_hc_negative_h2h_reject", True):
+            if h2h["negative"] and ud_h2h_reject:
                 if is_underdog_handicap(selection, odds):
                     failures.append(
                         "negative H2H / never-beaten signal on underdog handicap"
                     )
+            elif h2h["negative"] and is_underdog_handicap(selection, odds):
+                passes.append("ud_h2h_negative_soft_note")
         else:
             failures.append("H2H / matchup history not checked in pack")
 
-    # Underdog HC matchup bar (any band, stronger on D)
+    # Underdog HC matchup bar — path C hard reject also behind underdog_hc_negative_h2h_reject
     if is_underdog_handicap(selection, odds):
         checked.append("underdog_handicap_matchup")
         if bcfg.get("underdog_hc_require_matchup") or letter in ("A", "B", "D"):
             if h2h["negative"]:
-                failures.append(
-                    "underdog handicap with heavily negative H2H ÔÇö reject/force-down"
-                )
-            elif not h2h["checked"] and letter == "D":
+                if ud_h2h_reject:
+                    failures.append(
+                        "underdog handicap with heavily negative H2H — reject/force-down"
+                    )
+                else:
+                    passes.append("ud_h2h_negative_soft_note")
+            elif not h2h["checked"] and letter == "D" and bcfg.get(
+                "underdog_hc_require_matchup", False
+            ):
                 failures.append(
                     "Band D underdog handicap requires explicit matchup/H2H assessment"
                 )
@@ -570,10 +608,10 @@ def evaluate_odds_band_gates(
 
     ok = not failures
     label_map = {
-        "A": "A Short high-confidence (1.40ÔÇô1.60)",
-        "B": "B Short-medium (1.60ÔÇô1.85)",
-        "C": "C Core (1.85ÔÇô2.30)",
-        "D": "D Upper (2.30ÔÇô2.60)",
+        "A": "A Short high-confidence (1.40-1.60)",
+        "B": "B Short-medium (1.60-1.85)",
+        "C": "C Core (1.85-2.30)",
+        "D": f"D Upper (2.30-{usable_hi:g})",
     }
     return OddsBandGateResult(
         ok=ok,
