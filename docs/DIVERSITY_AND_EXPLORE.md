@@ -30,11 +30,13 @@ You cannot get more data for other sports without **trying** researched bets the
 | `max_football_per_round` | **1** soft preference only — **never** leave empty seats |
 | `min_non_football_per_round` | prefer non-football first |
 | Fill-up pass | Non-football first → limited football → if seats remain, **take good football** (e.g. Racing BTTS Nei) up to `max_per_sport` |
-| `prefer_explore_first` | thin/explore lines sorted ahead |
+| `prefer_explore_first` | explore flag only as **tiebreak** under composite `sort_ev` (not primary reorder) |
 | `explore_min_ev` | **0.012** (lower bar for explore-flagged lines) |
 | `max_per_match` | **1** open market per match (pending + slip) — blocks correlated stacks |
 | `max_per_market_family` | **2** hard cap on coarse `market_family` (open + slip). Line is never in the key: tennis O/U 21.5–23.5 all → `tennis_totals`. See `nt/market_family.py`. |
-| Live ledger only | Diversify seeds use `filter_live_rows` (`nt/live_ledger.py`) — drop `source==era_archive`. `load_bets` refuses `history/archives` and `history/rounds` via `assert_not_archive_path`. |
+| `similar_recent` | Soft demotion on last 10–15 live settled+pending (`nt/similar_recent.py`). Same sport + `market_family` + line within tolerance. `include_ml: false`. Penalties on `sort_ev` / notes only — true EV honest. |
+| Composite `sort_ev` | Annotate once → sort once → retain `_fill_passes` Pass 1/2/3 (soft football skip-then-fill). Non-football ranks above football on equal `sort_ev`. |
+| Live ledger only | Diversify seeds + similar window use `filter_live_rows` (`nt/live_ledger.py`) — drop `source==era_archive`. `load_bets` refuses `history/archives` and `history/rounds` via `assert_not_archive_path`. |
 | Stake packing | min-stake seats first; reserve leftover for extra eligible seats; then EV top-up |
 | Rejects | Full machine-readable `outbox/REJECTS_*.jsonl` (+ MD summary) |
 

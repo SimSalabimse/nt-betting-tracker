@@ -1140,6 +1140,20 @@ def learning_adjustments(
 def diversification_limits(cfg: dict[str, Any]) -> dict[str, Any]:
     """Caps + exploration policy for portfolio construction."""
     div = (cfg.get("learning") or {}).get("diversification") or {}
+    similar_recent = dict(div.get("similar_recent") or {})
+    sort_cfg = dict(div.get("sort") or {})
+    similar_recent.setdefault("enabled", True)
+    similar_recent.setdefault("window", 12)
+    similar_recent.setdefault("include_pending", True)
+    similar_recent.setdefault("include_ml", False)
+    similar_recent.setdefault("live_ledger_only", True)
+    similar_recent.setdefault("line_tolerance", 1.0)
+    similar_recent.setdefault("soft_ev_penalty", 0.012)
+    similar_recent.setdefault("loss_pattern_extra_penalty", 0.010)
+    similar_recent.setdefault("hard_reject_if_count", None)
+    sort_cfg.setdefault("similar_penalty_weight", 1.0)
+    sort_cfg.setdefault("macro_underrep_bonus", 0.004)
+    sort_cfg.setdefault("explore_tiebreak", True)
     return {
         "max_per_sport": int(div.get("max_per_sport", 2)),
         "max_per_market": int(div.get("max_per_market", 2)),
@@ -1150,6 +1164,7 @@ def diversification_limits(cfg: dict[str, Any]) -> dict[str, Any]:
         "min_non_football_per_round": int(div.get("min_non_football_per_round", 1)),
         "explore_min_ev": float(div.get("explore_min_ev", 0.012)),
         "prefer_explore_first": bool(div.get("prefer_explore_first", True)),
+        "prefer_bet_type_spread": bool(div.get("prefer_bet_type_spread", True)),
         # P1 soft correlation
         "max_per_league": int(div.get("max_per_league", 2)),
         "max_per_script_family": int(div.get("max_per_script_family", 2)),
@@ -1157,4 +1172,7 @@ def diversification_limits(cfg: dict[str, Any]) -> dict[str, Any]:
         "max_per_ko_window": int(div.get("max_per_ko_window", 2)),
         # ESR hard coarse market_family (O+U+all lines share family; line never in key)
         "max_per_market_family": int(div.get("max_per_market_family", 2)),
+        # ESR FIX 3: similar-recent soft demotion + composite sort_ev
+        "similar_recent": similar_recent,
+        "sort": sort_cfg,
     }

@@ -421,7 +421,24 @@ learning:
     # Never leave empty slip seats just because "1 football max" was preferred earlier.
     max_football_per_round: 1   # soft preference only — fill-up pass may take more
     min_non_football_per_round: 1
-    prefer_explore_first: true
+    prefer_explore_first: true  # explore only as sort_ev tiebreak (see sort.explore_tiebreak)
+    prefer_bet_type_spread: true  # macro underrep soft bonus on sort_ev only
+    # Cross-run soft demotion (live ledger only; never hard-reject when count null)
+    similar_recent:
+      enabled: true
+      window: 12
+      include_pending: true
+      include_ml: false          # ML/no-line families skip similar-recent
+      live_ledger_only: true
+      line_tolerance: 1.0        # 21.5 vs 22.5 similar; football 2.5 vs 3.5 similar
+      soft_ev_penalty: 0.012
+      loss_pattern_extra_penalty: 0.010
+      hard_reject_if_count: null
+    # Composite sort_ev weights (true EV stays honest; penalties on sort only)
+    sort:
+      similar_penalty_weight: 1.0
+      macro_underrep_bonus: 0.004
+      explore_tiebreak: true
     # Exploration: under-sampled groups get a small EV nudge (not free money)
     explore_min_n: 0          # 0 = allow virgin sports/markets (n=0)
     explore_max_n: 14         # below min_sample → still "thin"

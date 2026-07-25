@@ -708,6 +708,11 @@ def build_chain_from_pick(
         "light": _light_from_notes_or_dict(notes, light),
         "reasons": list(_pick_attr(pick, "reasons") or [])[:8],
         "notes": notes[:400],
+        "market_family": str(_pick_attr(pick, "market_family") or ""),
+        "similar_recent_reason": str(
+            _pick_attr(pick, "similar_recent_reason") or ""
+        ),
+        "sort_ev": _as_float(_pick_attr(pick, "sort_ev")),
     }
     if extra:
         chain["extra"] = dict(extra)
@@ -1283,6 +1288,17 @@ def _format_one_md(i: int, c: dict[str, Any]) -> list[str]:
                 out.append(f"- light/promo: {lite}")
     if c.get("reject_reason"):
         out.append(f"- reject: {c['reject_reason']}")
+    # ESR FIX 3: diversity / similar-recent soft demotion visibility
+    mf = str(c.get("market_family") or "").strip()
+    sim = str(c.get("similar_recent_reason") or "").strip()
+    se = c.get("sort_ev")
+    if mf or sim or se is not None:
+        pen_bit = sim if sim else "none"
+        se_bit = f"{float(se):+.4f}" if se is not None else "n/a"
+        fam_bit = mf or "other"
+        out.append(
+            f"- **Diversity:** {fam_bit} · sort_ev={se_bit} · penalties: {pen_bit}"
+        )
     if c.get("notes"):
         out.append(f"- notes: {c['notes'][:220]}")
     out.append("")

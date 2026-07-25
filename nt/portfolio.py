@@ -61,6 +61,9 @@ class Recommendation:
     script_family: str = "other"
     # ESR hard diversify: coarse market_family (line never in key)
     market_family: str = "other"
+    # ESR FIX 3: similar-recent soft demotion (true EV stays honest)
+    similar_recent_reason: str = ""
+    sort_ev: float | None = None
     # Sliding odds-band confidence (1.40-2.60); FEH-aware in PR3
     odds_confidence_band: str = ""
     odds_confidence: dict[str, Any] | None = None
@@ -1001,36 +1004,122 @@ def build_portfolio(
         )
         scored.append(rec)
 
-    # Sort by EV desc; optional explore-first reorder so thin sports get airtime
-    scored.sort(key=lambda r: (r.ev, 1 if r.explore else 0), reverse=True)
-    # Early regime: soft-prefer mid-odds lower-variance lines (sort only, not hard ban)
-    if risk.get("regime_prefer_mid_odds") and risk.get("bankroll_regime") in (
-        "exploration",
-        "survival",
-        "calibration",  # legacy id if any state still holds it
-    ):
-        from nt.bankroll_regime import is_mid_odds_preferred
+    # --- ESR FIX 3: annotate sort_ev (true EV honest) + composite sort ONCE ---
+    # Replaces prefer_explore_first as primary reorder. Soft penalties never rewrite rec.ev.
+    # Multi-pass _fill_passes (Pass 1/2/3 soft football) is retained below unchanged.
+    from nt.bets_io import is_open_risk as _is_open_risk_for_macro
+    from nt.similar_recent import (
+        bet_type_macro,
+        live_recent_window,
+        similar_recent_hard_reject_count,
+        similar_recent_penalty,
+    )
 
-        regime_blob = risk.get("regime") or {
-            "prefer_mid_odds": True,
-            "mid_odds_lo": 1.85,
-            "mid_odds_hi": 2.50,
-        }
+    sr_cfg = dict(div_lim.get("similar_recent") or {})
+    sort_cfg = dict(div_lim.get("sort") or {})
+    pen_weight = float(sort_cfg.get("similar_penalty_weight", 1.0) or 1.0)
+    macro_bonus = float(sort_cfg.get("macro_underrep_bonus", 0.004) or 0.0)
+    prefer_spread = bool(div_lim.get("prefer_bet_type_spread", True))
+    explore_tie = bool(sort_cfg.get("explore_tiebreak", True)) and bool(
+        div_lim.get("prefer_explore_first", True)
+    )
+    similar_on = bool(sr_cfg.get("enabled", True))
 
-        def _mid_key(r: Recommendation) -> tuple:
-            mid = 1 if is_mid_odds_preferred(float(r.decimal_odds), regime_blob) else 0
-            return (mid, r.ev, 1 if r.explore else 0)
-
-        scored.sort(key=_mid_key, reverse=True)
-    if div_lim.get("prefer_explore_first"):
-        # Stable: explored non-football first among positive-EV, then pure EV
-        scored.sort(
-            key=lambda r: (
-                0 if (r.explore and normalize_sport(r.sport) != "football") else 1,
-                0 if r.explore else 1,
-                -r.ev,
-            )
+    recent_window_rows: list[dict[str, Any]] = []
+    if similar_on:
+        recent_window_rows = live_recent_window(
+            historical_rows,
+            window=int(sr_cfg.get("window", 12) or 12),
+            include_pending=bool(sr_cfg.get("include_pending", True)),
         )
+
+    # Macro underrep uses open-book seeds only (pre-pass sort)
+    macro_counts_open: dict[str, int] = {}
+    for r in filter_live_rows(historical_rows or []):
+        if not _is_open_risk_for_macro(r.get("result")):
+            continue
+        sp_m = normalize_sport(str(r.get("sport") or ""), default="unknown")
+        mf_m = corr_market_family(
+            sport=sp_m,
+            selection=r.get("selection") or "",
+            market_type=r.get("market_type") or "",
+        )
+        mac = bet_type_macro(
+            market_family_key=mf_m,
+            selection=r.get("selection") or "",
+            market_type=r.get("market_type") or "",
+            sport=sp_m,
+        )
+        macro_counts_open[mac] = macro_counts_open.get(mac, 0) + 1
+
+    hard_sim_n = similar_recent_hard_reject_count(sr_cfg) if similar_on else None
+
+    for rec in scored:
+        true_ev = float(rec.ev)
+        pen_similar = 0.0
+        why_sim = ""
+        hits: list[dict[str, Any]] = []
+        if similar_on:
+            pen_similar, why_sim, hits = similar_recent_penalty(
+                sport=rec.sport or "",
+                selection=rec.selection or "",
+                market_type=rec.market_type or "",
+                market_key=rec.market_key or "",
+                market_family_key=rec.market_family or "",
+                match=rec.match or "",
+                recent_rows=recent_window_rows,
+                cfg=sr_cfg,
+            )
+        # PR3 lessons_soft_adjustments: independent; zero until Settlement Lessons ships
+        pen_lessons = 0.0
+        why_les = ""
+        pen = (pen_similar + pen_lessons) * pen_weight
+        macro = bet_type_macro(
+            market_family_key=rec.market_family or "",
+            selection=rec.selection or "",
+            market_type=rec.market_type or "",
+            sport=rec.sport or "",
+        )
+        underrep = 1 if macro_counts_open.get(macro, 0) == 0 else 0
+        bonus = underrep * macro_bonus if prefer_spread else 0.0
+        rec.sort_ev = round(true_ev - pen + bonus, 6)
+        rec.similar_recent_reason = "; ".join(x for x in (why_sim, why_les) if x)
+        if rec.similar_recent_reason:
+            bit = rec.similar_recent_reason
+            if bit not in (rec.notes or ""):
+                rec.notes = f"{rec.notes}; {bit}".strip("; ")[:400]
+            if bit not in (rec.reasons or []):
+                rec.reasons = list(rec.reasons or []) + [bit]
+        if hard_sim_n is not None and len(hits) >= hard_sim_n:
+            rejects.append(
+                {
+                    "match": rec.match,
+                    "selection": rec.selection,
+                    "reason": rec.similar_recent_reason
+                    or f"similar_recent: hard reject ({len(hits)} hits)",
+                }
+            )
+            rec.reject_reason = rec.similar_recent_reason or "similar_recent hard reject"
+
+    if hard_sim_n is not None:
+        scored = [
+            r
+            for r in scored
+            if not (r.reject_reason or "").startswith("similar_recent")
+        ]
+
+    # Composite key once under reverse=True:
+    # non-football sport component = 1, football = 0 (non-football first on ties)
+    # explore only as tiebreak among equal sort_ev
+    scored.sort(
+        key=lambda r: (
+            float(r.sort_ev if r.sort_ev is not None else r.ev),
+            1 if (explore_tie and r.explore) else 0,
+            1 if normalize_sport(r.sport, default="unknown") != "football" else 0,
+            float(r.ev),
+        ),
+        reverse=True,
+    )
 
     picked: list[Recommendation] = []
     remaining = float(risk["remaining_risk_nok"])
