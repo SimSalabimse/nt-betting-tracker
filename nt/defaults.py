@@ -131,6 +131,7 @@ def research_cfg(cfg: dict[str, Any]) -> dict[str, Any]:
             "promo_short_chalk_penalty": -12.0,
             "promo_preferred_boost": 0.0,
             "promo_short_main_penalty": 0.0,
+            "promo_near_pref_boost": 8.0,
             "promo_require_signal_for_family_boost": True,
             "promo_fav_hc_boost": 8.0,
             "promo_natural_total_boost": 12.0,

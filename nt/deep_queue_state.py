@@ -147,8 +147,8 @@ def normalize_queue_line(
 def composition_from_queue(
     queue: list[dict[str, Any]],
     *,
-    min_preferred_share: float = 0.55,
-    max_short_main_share: float = 0.25,
+    min_preferred_share: float = 0.0,
+    max_short_main_share: float = 1.0,
 ) -> dict[str, Any]:
     """
     Count preferred/short_main shares from normalized queue lines.
@@ -161,15 +161,31 @@ def composition_from_queue(
     sm_n = sum(1 for r in queue if r.get("short_main"))
     pref_share = pref_n / n
     sm_share = sm_n / n
+    min_pref = float(min_preferred_share)
+    max_sm = float(max_short_main_share)
     return {
         "n": n,
         "preferred_n": pref_n,
         "short_main_n": sm_n,
         "preferred_share": round(pref_share, 3),
         "short_main_share": round(sm_share, 3),
-        "meets_preferred_floor": pref_share + 1e-9 >= float(min_preferred_share),
-        "meets_short_main_cap": sm_share <= float(max_short_main_share) + 1e-9,
+        # Composition off (min_pref <= 0): always meets floor
+        "meets_preferred_floor": (
+            True if min_pref <= 0 else pref_share + 1e-9 >= min_pref
+        ),
+        "meets_short_main_cap": sm_share <= max_sm + 1e-9,
     }
+
+
+def _cfg_share(tcfg: dict[str, Any], key: str, default: float) -> float:
+    """None-aware share read — preserves legitimate 0.0 (unlike `or default`)."""
+    raw = tcfg.get(key, default)
+    if raw is None:
+        return float(default)
+    try:
+        return float(raw)
+    except (TypeError, ValueError):
+        return float(default)
 
 
 def _normalize_composition(
@@ -182,8 +198,9 @@ def _normalize_composition(
     otherwise recount from queue flags (never invent free-form shares).
     """
     tcfg = tcfg or {}
-    min_pref = float(tcfg.get("deep_min_preferred_share") or 0.55)
-    max_sm = float(tcfg.get("deep_max_short_main_share") or 0.25)
+    # ESR defaults: preferred floor 0 / short-main cap 1.0 — never `or 0.55`
+    min_pref = _cfg_share(tcfg, "deep_min_preferred_share", 0.0)
+    max_sm = _cfg_share(tcfg, "deep_max_short_main_share", 1.0)
 
     if isinstance(comp, dict) and comp:
         n = int(comp.get("n") if comp.get("n") is not None else -1)

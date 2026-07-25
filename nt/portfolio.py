@@ -411,9 +411,9 @@ def build_portfolio(
         odds = float(c.decimal_odds)
         band = odds_band(odds)
         high = odds > thr  # K16: odds == thr is Band D only, not high-odds
-        # FEH recomputed every grade via grade_evidence (place-owning fail-closed).
-        # Explore / temp_ev_relax / promo never bypass FEH hard rejects (grade F).
-        # return_scorecard: odds_confidence FEH H2H polarity + schema-v2 FEH audit (PR5).
+        # Grade path: legacy when FEH not place-owning (place_uses_saef false);
+        # grade F still blocks; FEH audit / hard_reject only when place_uses_saef.
+        # return_scorecard: optional FEH H2H polarity + scorecard audit when present.
         # Natural elevation: pass same-match candidate packs; grade_evidence also
         # auto-discovers sibling packs from the evidence directory.
         mk = normalize_match_key(str(c.match or (c.evidence or {}).get("match") or ""))

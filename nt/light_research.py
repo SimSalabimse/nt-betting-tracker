@@ -62,6 +62,7 @@ def tiers_cfg(cfg: dict[str, Any]) -> dict[str, Any]:
         "promo_short_chalk_penalty": -12.0,
         "promo_preferred_boost": 0.0,  # was hardcoded +25
         "promo_short_main_penalty": 0.0,  # was hardcoded -30
+        "promo_near_pref_boost": 8.0,  # was hardcoded +20 for alt_lo..mid_lo
         "promo_require_signal_for_family_boost": True,  # bare HC/alt need signal
         # Research-rank only (never place): elevate fav HC + natural totals
         "promo_fav_hc_boost": 8.0,
@@ -317,11 +318,12 @@ def promotion_score_components(
         if soft_odds >= odds * (1.0 + soft_rel):
             components["soft_value"] = 30.0
 
+    near_pref_boost = float(_cfg_num(tcfg, "promo_near_pref_boost", 8.0))
     # Mid-band boost only in narrow config window (not full preferred range)
     if mid_lo <= odds <= mid_hi:
         components["mid_band"] = mid_boost
-    elif alt_lo <= odds < mid_lo:
-        components["near_pref_band"] = 20.0
+    elif alt_lo <= odds < mid_lo and near_pref_boost:
+        components["near_pref_band"] = near_pref_boost
     elif pref_hi < odds <= 3.20:
         components["longish_band"] = 12.0
     elif odds < short_chalk:
@@ -510,13 +512,13 @@ def build_deep_queue(
     )
     min_pref = float(tcfg["deep_min_preferred_share"])
     max_short = float(tcfg["deep_max_short_main_share"])
-    # ESR: coverage must not re-raise a disabled preferred floor (min_pref <= 0)
+    # ESR: coverage must not re-raise a disabled preferred floor (min_pref <= 0).
+    # When composition is on (min_pref > 0), only apply an *explicit* overlay share;
+    # omitted/None share must not hardcode 0.55 (leave configured min_pref).
     if ov.get("active") and min_pref > 0:
         cov_share = ov.get("coverage_preferred_share")
-        min_pref = max(
-            min_pref,
-            0.55 if cov_share is None else float(cov_share),
-        )
+        if cov_share is not None:
+            min_pref = max(min_pref, float(cov_share))
     # When min_pref <= 0: leave at 0 forever (stale overlay share cannot re-arm)
 
     try:
@@ -1007,16 +1009,19 @@ def _queue_composition_stats(
     )
     pref_share = pref_n / n
     sm_share = sm_n / n
+    # None-aware: 0.0 is a valid floor (ESR composition off) — never `or 0.55`
+    min_pref = float(_cfg_num(tcfg, "deep_min_preferred_share", 0.0))
+    max_sm = float(_cfg_num(tcfg, "deep_max_short_main_share", 1.0))
     return {
         "n": n,
         "preferred_n": pref_n,
         "short_main_n": sm_n,
         "preferred_share": round(pref_share, 3),
         "short_main_share": round(sm_share, 3),
-        "meets_preferred_floor": pref_share + 1e-9
-        >= float(tcfg.get("deep_min_preferred_share") or 0.55),
-        "meets_short_main_cap": sm_share
-        <= float(tcfg.get("deep_max_short_main_share") or 0.25) + 1e-9,
+        "meets_preferred_floor": (
+            True if min_pref <= 0 else pref_share + 1e-9 >= min_pref
+        ),
+        "meets_short_main_cap": sm_share <= max_sm + 1e-9,
     }
 
 

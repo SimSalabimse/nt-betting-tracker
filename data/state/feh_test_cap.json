@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "enabled": true,
+  "max_bets": 10,
+  "max_stake_nok": 10.0,
+  "n_placed": 0,
+  "bet_ids": [],
+  "system_tag": "esr_v1",
+  "excluded_bet_ids": []
+}

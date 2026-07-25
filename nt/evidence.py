@@ -103,7 +103,8 @@ def grade_evidence(
     sel = cfg["selection"]
     thr = float(sel["high_odds_threshold"])
     need = int(sel["min_research_sources"]["default"])
-    if odds >= thr:
+    # K16: high-odds source floor is odds > thr (2.50 stays Band D / default floor)
+    if odds > thr:
         need = int(sel["min_research_sources"]["high_odds"])
     elif (ev.get("requested_grade") or "").upper() == "A":
         need = int(sel["min_research_sources"]["grade_A"])
@@ -274,7 +275,7 @@ def grade_evidence(
         out_f3 = ("F", issues + soft)
         return (*out_f3, scorecard_audit) if return_scorecard else out_f3
 
-    want_a = n_sources >= int(sel["min_research_sources"]["grade_A"]) or odds >= thr
+    want_a = n_sources >= int(sel["min_research_sources"]["grade_A"]) or odds > thr
     if want_a:
         # P1: Grade A requires uncertainty (SD / CI) or multi-model signal
         require_unc = bool(sel.get("grade_a_require_uncertainty", True))

@@ -159,7 +159,7 @@ def assess_combo(
         p_joint *= p_adj
         if _grade_rank(leg.grade) < _grade_rank(min_grade):
             reasons.append(f"leg grade {leg.grade} < min {min_grade}: {leg.selection}")
-        high = leg.high_odds or (leg.decimal_odds >= thr)
+        high = leg.high_odds or (leg.decimal_odds > thr)  # K16: 2.50 is not high-odds
         if high and not cc.get("allow_high_odds_legs"):
             reasons.append(f"high-odds leg not allowed in combos: {leg.selection}")
         ev_leg = leg.ev if leg.ev else ev_after_haircut(float(leg.p_model), float(leg.decimal_odds), haircut)
