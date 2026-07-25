@@ -401,6 +401,14 @@ learning:
   block_min_sample: 20        # soft-block only with real sample
   block_roi_below: -0.18      # blended ROI ≤ this → reject sport/market
   max_lessons: 14
+  # Settlement Lessons v1 (post-settle root-cause + soft TTL awareness)
+  settlement_lessons:
+    enabled: true
+    recent_window: 12
+    max_soft_notes: 8
+    soft_ev_penalty_repeat_loss: 0.008   # portfolio sort demotion; independent of similar-recent
+    ttl_hours: 72
+    live_ledger_only: true
   # Avoid getting stuck in one sport / market type (counts OPEN PENDING + new slip)
   diversification:
     max_per_sport: 2          # max open bets of same sport (pending + this recommend)

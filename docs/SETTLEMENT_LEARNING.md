@@ -81,9 +81,23 @@ python run_nt.py learn --reject "market:Totals Over:..."
 |------|------|
 | `outbox/SETTLEMENT_RECEIPT.md` | What settled |
 | `outbox/SETTLEMENT_ANALYSIS.md` | Post-settlement narrative |
+| `outbox/SETTLEMENT_LESSONS.md` | Per-batch main reason / driver / soft notes (overwrite) |
+| `data/state/settlement_lessons.json` | Machine SSOT schema v1 (soft_awareness TTL) |
 | `data/state/settlement_reviews.jsonl` | Per-bet reviews |
 | `data/state/learning_proposals.json` | Pending mult proposals |
 | `data/state/learning.json` | Live multipliers (layers + blend) |
+
+### Settlement Lessons v1 (ESR)
+
+After every settle batch with ≥1 terminal, the engine writes Settlement Lessons:
+
+- **`main_reason`** always non-empty (engine auto-template when agent packet is thin)
+- **`outcome_driver`** heuristic enum (`research_quality`, `variance`, `total_line_miss`, …)
+- **Pattern** vs last ~12 **live** bets only (`filter_live_rows` — no `era_archive`)
+- **Soft awareness** with TTL (`learning.settlement_lessons.ttl_hours`, default 72h) — never permanent hard rejects
+- Portfolio applies `lessons_soft:` sort demotion **independent** of similar-recent hits
+
+Config: `learning.settlement_lessons.*`. Failures are logged; settle never blocks.
 
 ## LuminaNT
 

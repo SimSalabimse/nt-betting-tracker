@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from dataclasses import dataclass, field
 from typing import Any
@@ -17,7 +17,7 @@ from nt.sport_taxonomy import normalize_sport
 
 @dataclass
 class Candidate:
-    date: str  # match calendar date (YYYY-MM-DD) from kickoff when known — not place date
+    date: str  # match calendar date (YYYY-MM-DD) from kickoff when known ÔÇö not place date
     match: str
     selection: str
     decimal_odds: float
@@ -52,7 +52,7 @@ class Recommendation:
     market_key: str = ""
     reasons: list = field(default_factory=list)
     evidence_path: str = ""
-    match_date: str = ""  # kickoff calendar date YYYY-MM-DD (CEST); empty → place-day fallback
+    match_date: str = ""  # kickoff calendar date YYYY-MM-DD (CEST); empty ÔåÆ place-day fallback
     kickoff: str = ""
     # Phase 2.3: structured capital_v2 stake decision (in-memory; not JSONL yet)
     stake_decision: dict[str, Any] | None = None
@@ -61,8 +61,10 @@ class Recommendation:
     script_family: str = "other"
     # ESR hard diversify: coarse market_family (line never in key)
     market_family: str = "other"
-    # ESR FIX 3: similar-recent soft demotion (true EV stays honest)
-    similar_recent_reason: str = ""
+    # Soft demotion notes; sort_ev = ev − soft pens (true EV never rewritten)
+    similar_recent_reason: str = ""  # PR2 similar-recent
+    lessons_soft_reason: str = ""  # PR3 lessons_soft: … (independent of similar)
+    soft_demotion_reason: str = ""  # combined display
     sort_ev: float | None = None
     # Sliding odds-band confidence (1.40-2.60); FEH-aware in PR3
     odds_confidence_band: str = ""
@@ -128,7 +130,7 @@ def _stake_for_capital_v2(
     """
     Unit-ladder sizing when capital_v2.enabled.
     Returns (final_stake, stake_decision_dict).
-    High-Volume v2: grade_mult scales unit (C 1.0 · B 1.4 · A 2.0/2.2).
+    High-Volume v2: grade_mult scales unit (C 1.0 ┬À B 1.4 ┬À A 2.0/2.2).
     """
     from nt.capital_v2 import (
         RULE_BUNDLE_VERSION,
@@ -286,7 +288,7 @@ def rebalance_stakes(
         picked.extend(kept)
         n = len(picked)
         if max_stakes is not None and len(max_stakes) != n:
-            max_stakes = None  # indices shifted — fall back to global cap
+            max_stakes = None  # indices shifted ÔÇö fall back to global cap
     if n == 0:
         return budget
 
@@ -505,7 +507,7 @@ def build_portfolio(
         strong = is_strong_confidence(c.evidence, grade, min_sources=strong_n)
         min_ev = strong_floor if strong else standard_floor
 
-        # Sliding odds-band confidence gates (1.40–2.60) — after grade, FEH-aware
+        # Sliding odds-band confidence gates (1.40ÔÇô2.60) ÔÇö after grade, FEH-aware
         from nt.odds_confidence import (
             BAND_HIGH,
             evaluate_odds_band_gates,
@@ -537,7 +539,7 @@ def build_portfolio(
             )
             continue
 
-        # Explore / virgin boosts off in Bands A/B — recompute adj without explore
+        # Explore / virgin boosts off in Bands A/B ÔÇö recompute adj without explore
         if not band_gate.explore_allowed and adj.get("explored"):
             learn_cfg_no_exp = dict(learn_cfg or {})
             div_no = dict(learn_cfg_no_exp.get("diversification") or {})
@@ -566,7 +568,7 @@ def build_portfolio(
         ):
             min_ev = max(float(min_ev), float(band_gate.min_ev))
 
-        # Thin sport/market explore path — capped by band policy
+        # Thin sport/market explore path ÔÇö capped by band policy
         if adj.get("explored") and band_gate.explore_allowed:
             explore_floor = float(div_lim.get("explore_min_ev", 0.012))
             if band_gate.explore_ev_cap is not None:
@@ -600,7 +602,7 @@ def build_portfolio(
                 continue
             min_ev = float(sel["high_odds_min_ev"])
             need_grade = str(sel["high_odds_min_grade"]).upper()
-            # Grade rank: A best … F worst (lex order is wrong for A/B/C)
+            # Grade rank: A best ÔÇª F worst (lex order is wrong for A/B/C)
             if grade == "F" or not _grade_meets(grade, need_grade):
                 rejects.append(
                     {
@@ -687,7 +689,7 @@ def build_portfolio(
             min_ev += pg_raise
 
         # Before EV reject: try Exploration regime-explore quota (after process_gate raise)
-        # Sliding bands A/B: explore_allowed=False — do not soft-pass short prices on thin EV
+        # Sliding bands A/B: explore_allowed=False ÔÇö do not soft-pass short prices on thin EV
         if (
             not high
             and band_gate.explore_allowed
@@ -717,7 +719,7 @@ def build_portfolio(
                     has_deep_pack=has_pack,
                 ):
                     # pass at explore_min_ev only (process_gate still blocks if ev < raised min
-                    # unless still within explore band — apply process_gate on top of explore floor)
+                    # unless still within explore band ÔÇö apply process_gate on top of explore floor)
                     explore_floor = float(
                         regime_blob.get("explore_min_ev")
                         or risk.get("regime_explore_min_ev")
@@ -806,7 +808,7 @@ def build_portfolio(
                     {
                         "match": c.match,
                         "selection": c.selection,
-                        "reason": "grade C requires clear core reason (summary/takeaway ≥20 chars)",
+                        "reason": "grade C requires clear core reason (summary/takeaway ÔëÑ20 chars)",
                         "issues": issues,
                     }
                 )
@@ -816,7 +818,7 @@ def build_portfolio(
                     {
                         "match": c.match,
                         "selection": c.selection,
-                        "reason": f"grade C needs ≥{min_c_src} sources (got {n_src})",
+                        "reason": f"grade C needs ÔëÑ{min_c_src} sources (got {n_src})",
                         "issues": issues,
                     }
                 )
@@ -826,7 +828,7 @@ def build_portfolio(
                 {
                     "match": c.match,
                     "selection": c.selection,
-                    "reason": f"loss streak ≥{streak_lim}: grade A only (got {grade})",
+                    "reason": f"loss streak ÔëÑ{streak_lim}: grade A only (got {grade})",
                     "issues": issues,
                 }
             )
@@ -915,12 +917,12 @@ def build_portfolio(
         elif adj.get("explored"):
             note_bits.append("EXPLORE")
         if adj.get("stake_mult") and abs(float(adj["stake_mult"]) - 1.0) > 0.01:
-            note_bits.append(f"learn_stake×{adj['stake_mult']}")
+            note_bits.append(f"learn_stake├ù{adj['stake_mult']}")
         if adj.get("ev_boost"):
             note_bits.append(f"learn_EV{float(adj['ev_boost']):+.3f}")
         if used_ev_relax and relax_delta > 0:
             note_bits.append(
-                f"temp_ev_relax:delta={relax_delta:.3f};stake×{relax_stake_mult:.2f}"
+                f"temp_ev_relax:delta={relax_delta:.3f};stake├ù{relax_stake_mult:.2f}"
             )
             if stake_decision is not None:
                 stake_decision = dict(stake_decision)
@@ -1055,6 +1057,22 @@ def build_portfolio(
 
     hard_sim_n = similar_recent_hard_reject_count(sr_cfg) if similar_on else None
 
+    # Settlement Lessons soft awareness — independent of similar-recent (hits may be 0)
+    try:
+        from nt.settlement_lessons import (
+            lessons_soft_adjustments,
+            load_settlement_lessons,
+            settlement_lessons_cfg,
+        )
+
+        _sl_cfg = settlement_lessons_cfg(cfg)
+        _lessons_payload = (
+            load_settlement_lessons(cfg) if _sl_cfg.get("enabled", True) else None
+        )
+    except Exception:  # noqa: BLE001
+        _lessons_payload = None
+        _sl_cfg = {"enabled": False}
+
     for rec in scored:
         true_ev = float(rec.ev)
         pen_similar = 0.0
@@ -1071,10 +1089,19 @@ def build_portfolio(
                 recent_rows=recent_window_rows,
                 cfg=sr_cfg,
             )
-        # PR3 lessons_soft_adjustments: independent; zero until Settlement Lessons ships
         pen_lessons = 0.0
         why_les = ""
-        pen = (pen_similar + pen_lessons) * pen_weight
+        if _sl_cfg.get("enabled", True) and _lessons_payload is not None:
+            try:
+                pen_lessons, why_les = lessons_soft_adjustments(
+                    rec.market_family or "other",
+                    _lessons_payload,
+                    cfg,
+                )
+            except Exception:  # noqa: BLE001
+                pen_lessons, why_les = 0.0, ""
+        # similar_penalty_weight scales similar only; lessons pen is absolute (independent)
+        pen = (pen_similar * pen_weight) + float(pen_lessons or 0.0)
         macro = bet_type_macro(
             market_family_key=rec.market_family or "",
             selection=rec.selection or "",
@@ -1084,13 +1111,23 @@ def build_portfolio(
         underrep = 1 if macro_counts_open.get(macro, 0) == 0 else 0
         bonus = underrep * macro_bonus if prefer_spread else 0.0
         rec.sort_ev = round(true_ev - pen + bonus, 6)
-        rec.similar_recent_reason = "; ".join(x for x in (why_sim, why_les) if x)
-        if rec.similar_recent_reason:
-            bit = rec.similar_recent_reason
+        rec.similar_recent_reason = why_sim or ""
+        rec.lessons_soft_reason = why_les or ""
+        parts = [x for x in (rec.similar_recent_reason, rec.lessons_soft_reason) if x and str(x).strip()]
+        seen: set[str] = set()
+        merged: list[str] = []
+        for p_part in parts:
+            if p_part not in seen:
+                seen.add(p_part)
+                merged.append(p_part)
+        rec.soft_demotion_reason = "; ".join(merged)
+        if rec.soft_demotion_reason:
+            bit = rec.soft_demotion_reason
             if bit not in (rec.notes or ""):
                 rec.notes = f"{rec.notes}; {bit}".strip("; ")[:400]
-            if bit not in (rec.reasons or []):
-                rec.reasons = list(rec.reasons or []) + [bit]
+            for reason_bit in merged:
+                if reason_bit not in (rec.reasons or []):
+                    rec.reasons = list(rec.reasons or []) + [reason_bit]
         # Opt-in only: ESR default hard_reject_if_count is null (never hard-reject
         # from similar). Prefer soft sort_ev demotion; do not re-arm casually.
         if hard_sim_n is not None and len(hits) >= hard_sim_n:
@@ -1171,13 +1208,13 @@ def build_portfolio(
                 "uavgjort",
                 "tilbakebetales",
                 "handikap",
-                "mål",
+                "m├Ñl",
             )
         ):
             return "football"
         return "unknown"
 
-    # Seed caps from OPEN RISK (Pending + ConfirmedPlaced) — book-wide, live only
+    # Seed caps from OPEN RISK (Pending + ConfirmedPlaced) ÔÇö book-wide, live only
     from nt.bets_io import is_open_risk
 
     for r in filter_live_rows(historical_rows or []):
@@ -1273,7 +1310,7 @@ def build_portfolio(
         mk_key = rec.market_key or infer_market(rec.selection, rec.market_type)
         bd_key = rec.odds_band or ""
 
-        # Soft football preference only — never hard-kill remaining EV football
+        # Soft football preference only ÔÇö never hard-kill remaining EV football
         if soft_football_cap and _is_football(sp_key):
             fb_open = sport_counts.get("football", 0)
             if fb_open >= max_football:
@@ -1380,7 +1417,7 @@ def build_portfolio(
                         "selection": rec.selection,
                         "reason": (
                             f"soft correlation: max {max_ko_window} open in "
-                            f"±{ko_window_h:.0f}h kickoff window (already {n_ko})"
+                            f"┬▒{ko_window_h:.0f}h kickoff window (already {n_ko})"
                         ),
                     }
                 )
@@ -1756,7 +1793,7 @@ def build_portfolio(
         if len(picked) >= max_bets or remaining < min_stake:
             return 0
         n_extra = 0
-        # Snapshot counts — trial without mutating
+        # Snapshot counts ÔÇö trial without mutating
         for rec in scored:
             if (rec.match, rec.selection) in picked_keys:
                 continue
@@ -1792,8 +1829,8 @@ def build_portfolio(
     _fill_passes()
 
     # Multi-pass pack: reserve min seats for still-eligible candidates, then refill
-    # High-Volume v2: per-run stake sum ≤ max_run_stake_pct_of_equity × equity
-    # (also min'd with remaining_risk — fail-closed).
+    # High-Volume v2: per-run stake sum Ôëñ max_run_stake_pct_of_equity ├ù equity
+    # (also min'd with remaining_risk ÔÇö fail-closed).
     remaining_risk_budget = float(risk["remaining_risk_nok"])
     equity_now = float(risk.get("equity_nok") or 0.0)
     run_pct = float((cfg.get("recommend") or {}).get("max_run_stake_pct_of_equity") or 0.20)
@@ -1807,7 +1844,7 @@ def build_portfolio(
     max_stake = float(phase.get("stake_max") or min_stake)
     if _capital_v2_enabled(cfg):
         # Unit ladder is the hard per-bet ceiling (active unit after size_mode).
-        # Grade mult can lift recommended above unit — rebalance may top toward
+        # Grade mult can lift recommended above unit ÔÇö rebalance may top toward
         # max of unit and each seat's recommended final from scoring.
         from nt.capital_v2 import active_unit_for_mode, capital_v2_cfg, unit_size
 
@@ -1823,7 +1860,7 @@ def build_portfolio(
                 liq = risk.get("working_equity_nok") or budget
             u = unit_size(float(liq), v2)
         active_u = active_unit_for_mode(float(u), mode, floor)
-        # Cap rebalance top-up at active unit × max grade mult (High-Volume v2)
+        # Cap rebalance top-up at active unit ├ù max grade mult (High-Volume v2)
         max_stake = max(floor, active_u * 2.2) if active_u > 0 else floor
         for rec in picked:
             if rec.stake_decision is not None:
@@ -1993,10 +2030,10 @@ def build_portfolio(
                 }
             )
 
-    # ★ FEH test stake cap — ABSOLUTE LAST mutation of every seat stake.
+    # Ôÿà FEH test stake cap ÔÇö ABSOLUTE LAST mutation of every seat stake.
     # Nothing after this may raise stake_nok. Survives rebalance top-up and
     # post-rebalance EXPLORE_REGIME unit clamp (which may set unit > 10).
-    # Fail-closed when selection.test_stake_cap.enabled — never bare-pass.
+    # Fail-closed when selection.test_stake_cap.enabled ÔÇö never bare-pass.
     try:
         from nt.stake_test_cap import run_absolute_last_stake_cap
 
