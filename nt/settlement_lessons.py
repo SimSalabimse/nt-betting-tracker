@@ -206,6 +206,17 @@ def auto_main_reason(
     return text[:240] if len(text) > 240 else text
 
 
+def _strip_engine_blobs(text: str) -> str:
+    """Remove settle{…} / psp{…} engine payloads; keep free-text prefix only."""
+    t = (text or "").strip()
+    if not t:
+        return ""
+    for marker in ("settle{", "psp{"):
+        if marker in t:
+            t = t.split(marker, 1)[0]
+    return t.strip(" |;")
+
+
 def resolve_main_reason(
     bet: dict[str, Any],
     *,
@@ -215,21 +226,37 @@ def resolve_main_reason(
     """Priority: explicit agent/UI reason → auto-template."""
     for key in ("main_reason", "settlement_notes", "notes"):
         raw = bet.get(key)
-        if isinstance(raw, str) and raw.strip() and not raw.strip().startswith("settle{"):
-            # Prefer short free-text; skip pure engine settle{} blobs as main_reason source
-            t = raw.strip()
-            if "settle{" in t and len(t) > 40:
-                # may still have agent prefix before settle{
-                prefix = t.split("settle{", 1)[0].strip(" |")
-                if prefix and len(prefix) >= 8:
-                    return prefix[:240]
-                continue
-            return t[:240]
-    packet = bet.get("post_settlement_packet") if isinstance(bet.get("post_settlement_packet"), dict) else {}
+        if not isinstance(raw, str) or not raw.strip():
+            continue
+        t = raw.strip()
+        # Pure engine blobs → fall through to auto-template
+        if t.startswith("settle{") or t.startswith("psp{"):
+            continue
+        # Always strip engine payloads from composite notes (any length)
+        if "settle{" in t or "psp{" in t:
+            prefix = _strip_engine_blobs(t)
+            if prefix and len(prefix) >= 8:
+                return prefix[:240]
+            continue
+        return t[:240]
+    packet = (
+        bet.get("post_settlement_packet")
+        if isinstance(bet.get("post_settlement_packet"), dict)
+        else {}
+    )
     for key in ("main_reason", "notes", "settlement_notes"):
         raw = packet.get(key) if packet else None
-        if isinstance(raw, str) and raw.strip():
-            return raw.strip()[:240]
+        if not isinstance(raw, str) or not raw.strip():
+            continue
+        t = raw.strip()
+        if t.startswith("settle{") or t.startswith("psp{"):
+            continue
+        if "settle{" in t or "psp{" in t:
+            prefix = _strip_engine_blobs(t)
+            if prefix and len(prefix) >= 8:
+                return prefix[:240]
+            continue
+        return t[:240]
     return auto_main_reason(
         result=str(bet.get("result") or ""),
         market_family=market_family,
@@ -313,7 +340,7 @@ def infer_outcome_driver(bet: dict[str, Any], *, market_family: str = "") -> str
     if tag == "variance" and result == "Loss":
         return "variance"
 
-    # 3 total_line_miss — score clearly wrong side of line
+    # 3 total_line_miss — score clearly wrong side of line (require explicit O/U token)
     fam = market_family or str(bet.get("market_family") or "")
     score = str(bet.get("actual_score") or bet.get("score") or packet.get("actual_score") or "")
     sel = str(bet.get("selection") or "")
@@ -322,21 +349,30 @@ def infer_outcome_driver(bet: dict[str, Any], *, market_family: str = "") -> str
         est = _parse_score_total(score, fam)
         if est is not None:
             sel_l = sel.lower()
-            want_over = bool(re.search(r"\bover\b", sel_l)) and not re.search(
-                r"\bunder\b", sel_l.split("over")[0] if "over" in sel_l else sel_l
+            has_over = bool(
+                re.search(r":\s*over\b|\bover\s+\d|\bover\b", sel_l)
             )
-            # Prefer explicit Over/Under token near end
-            if re.search(r"\bunder\b", sel_l) and not re.search(
-                r":\s*over\b", sel_l
-            ):
+            has_under = bool(
+                re.search(r":\s*under\b|\bunder\s+\d|\bunder\b", sel_l)
+            )
+            # Require explicit over XOR under; ambiguous → fall through
+            if has_over and not has_under:
+                want_over: bool | None = True
+            elif has_under and not has_over:
                 want_over = False
-            if re.search(r":\s*over\b|\bover\s+\d", sel_l):
-                want_over = True
-            if re.search(r":\s*under\b|\bunder\s+\d", sel_l):
-                want_over = False
-            if want_over and est < ln:
+            elif has_over and has_under:
+                # Prefer the side after the last colon (NT "…: Over 22.5")
+                if re.search(r":\s*over\b", sel_l):
+                    want_over = True
+                elif re.search(r":\s*under\b", sel_l):
+                    want_over = False
+                else:
+                    want_over = None
+            else:
+                want_over = None
+            if want_over is True and est < ln:
                 return "total_line_miss"
-            if (not want_over) and est > ln:
+            if want_over is False and est > ln:
                 return "total_line_miss"
 
     # 4 form_miss
@@ -378,19 +414,27 @@ def recent_live_window(
     live_rows: list[dict[str, Any]],
     *,
     n: int = 12,
+    settled_only: bool = False,
 ) -> list[dict[str, Any]]:
     """
-    Last N settled-or-pending from live rows only.
+    Last N live ledger rows for pattern peers.
 
+    Default: settled-only (Win/Loss/Refunded) so open tickets do not push
+    historical same-family losses out of the window.
+
+    ``settled_only=False`` also includes Pending / ConfirmedPlaced (cluster view).
     Excludes Abandoned. Order: updated_at / date descending.
     """
-    keep_results = {
-        "win",
-        "loss",
-        "refunded",
-        "pending",
-        "confirmedplaced",
-    }
+    if settled_only:
+        keep_results = {"win", "loss", "refunded"}
+    else:
+        keep_results = {
+            "win",
+            "loss",
+            "refunded",
+            "pending",
+            "confirmedplaced",
+        }
     filtered: list[dict[str, Any]] = []
     for r in live_rows or []:
         res = str(r.get("result") or "").strip().lower()
@@ -408,7 +452,15 @@ def detect_pattern_flag(
     *,
     family: str,
     window: list[dict[str, Any]],
+    open_window: list[dict[str, Any]] | None = None,
 ) -> str:
+    """
+    Pattern vs peers.
+
+    Loss/Win repeat detection uses ``window`` (prefer settled-only).
+    ``cluster_same_family`` may also use open tickets in ``open_window``.
+    Soft awareness is only emitted for loss-linked patterns (see build).
+    """
     bet_id = str(bet.get("bet_id") or "")
     peers = [
         w
@@ -424,7 +476,12 @@ def detect_pattern_flag(
         str(p.get("result") or "") == "Win" for p in peers
     ):
         return "repeat_type_win"
-    if len(peers) >= 2:
+    open_peers = [
+        w
+        for w in (open_window or [])
+        if _row_family(w) == family and str(w.get("bet_id") or "") != bet_id
+    ]
+    if len(peers) >= 2 or len(open_peers) >= 2:
         return "cluster_same_family"
     return "none"
 
@@ -550,20 +607,45 @@ def build_settlement_lessons(
         except Exception:
             live_rows = []
 
+    # live_ledger_only is always enforced (informational in config; archive peers forbidden)
     live = filter_live_rows(live_rows)
-    window = recent_live_window(live, n=window_n)
+    # Settled-only peers for loss/win repeat detection (open tickets do not crowd out history)
+    settled_window = recent_live_window(live, n=window_n, settled_only=True)
+    # Open tickets only for cluster_same_family visibility (no soft_awareness by itself)
+    open_window = recent_live_window(live, n=window_n, settled_only=False)
+
+    # Enrich thin settle summaries from full ledger rows by bet_id
+    by_id: dict[str, dict[str, Any]] = {}
+    for r in live_rows or []:
+        if not isinstance(r, dict):
+            continue
+        bid = str(r.get("bet_id") or "").strip()
+        if bid:
+            by_id[bid] = r
 
     bet_entries: list[dict[str, Any]] = []
     family_loss_counts: dict[str, int] = {}
 
-    for bet in settled_batch:
+    for raw_bet in settled_batch:
+        bet = dict(raw_bet)
+        ledger = by_id.get(str(bet.get("bet_id") or "").strip()) or {}
+        # Prefer settle-batch fields; fill gaps from post-write ledger row
+        for k in (
+            "market_type",
+            "market_key",
+            "p_model",
+            "sport",
+            "selection",
+            "match",
+            "notes",
+        ):
+            if bet.get(k) in (None, "") and ledger.get(k) not in (None, ""):
+                bet[k] = ledger.get(k)
+        # main_reason from item/agent if present on either side
+        if not bet.get("main_reason") and ledger.get("main_reason"):
+            bet["main_reason"] = ledger.get("main_reason")
+
         fam = _row_family(bet)
-        if not fam or fam == "other":
-            fam = corr_market_family(
-                sport=str(bet.get("sport") or ""),
-                selection=str(bet.get("selection") or ""),
-                market_type=str(bet.get("market_type") or ""),
-            )
         line = parse_line(str(bet.get("selection") or ""), str(bet.get("market_type") or ""))
         packet = (
             bet.get("post_settlement_packet")
@@ -578,8 +660,14 @@ def build_settlement_lessons(
         driver = infer_outcome_driver(bet, market_family=fam)
         if driver not in OUTCOME_DRIVERS:
             driver = "mixed"
-        pattern = detect_pattern_flag(bet, family=fam, window=window)
+        pattern = detect_pattern_flag(
+            bet,
+            family=fam,
+            window=settled_window,
+            open_window=open_window,
+        )
         soft_note = ""
+        # Soft note prose on bet for both; soft_awareness emission is loss-linked only
         if pattern in ("repeat_type_loss", "cluster_same_family"):
             soft_note = _soft_note_for(fam, pattern)
         if str(bet.get("result") or "") == "Loss":
@@ -606,7 +694,8 @@ def build_settlement_lessons(
             }
         )
 
-    # Soft awareness: previous non-expired + new from patterns / batch cluster
+    # Soft awareness: previous non-expired + new from loss patterns / batch multi-loss
+    # (cluster_same_family alone on open tickets does NOT create soft_awareness)
     prev = load_settlement_lessons(cfg)
     merged: dict[str, dict[str, Any]] = {}
     for sa in active_soft_awareness(prev, now=now_dt):
@@ -650,13 +739,14 @@ def build_settlement_lessons(
                 }
 
     soft_list = list(merged.values())
-    # Prefer freshest / loss patterns; cap
+    # Cap keeps freshest notes: sort freshest-first, then stable-promote loss patterns
     soft_list.sort(
-        key=lambda s: (
-            0 if s.get("pattern_flag") == "repeat_type_loss" else 1,
-            str(s.get("created_at") or ""),
-        )
+        key=lambda s: str(s.get("created_at") or ""),
+        reverse=True,  # newest created_at first
     )
+    soft_list.sort(
+        key=lambda s: 0 if s.get("pattern_flag") == "repeat_type_loss" else 1,
+    )  # stable: loss patterns first; freshest order preserved within priority
     soft_list = soft_list[:max_notes]
 
     payload: dict[str, Any] = {
@@ -664,7 +754,8 @@ def build_settlement_lessons(
         "updated_at": created_at,
         "settled_at": created_at,
         "batch_id": _batch_id(created_at),
-        "live_ledger_only": bool(sl.get("live_ledger_only", True)),
+        # Always true in v1 — config key is informational / fail-closed documentation
+        "live_ledger_only": True,
         "source": "data/bets.csv",
         "n_settled": len(bet_entries),
         "bets": bet_entries,

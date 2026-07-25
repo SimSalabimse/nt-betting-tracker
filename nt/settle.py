@@ -436,6 +436,11 @@ def run_settle(cfg: dict[str, Any], results_path: Path) -> dict[str, Any]:
                 "match": bet.get("match"),
                 "selection": bet.get("selection"),
                 "sport": bet.get("sport"),
+                # Ledger fields for Settlement Lessons family / variance heuristics
+                "market_type": bet.get("market_type"),
+                "market_key": bet.get("market_key"),
+                "p_model": bet.get("p_model"),
+                "main_reason": item.get("main_reason") or item.get("settlement_notes"),
                 "post_settlement_packet": packet,
                 "actual_lineup_status": (packet or {}).get("actual_lineup_status"),
                 "predicted_vs_actual_xi_delta": (packet or {}).get(

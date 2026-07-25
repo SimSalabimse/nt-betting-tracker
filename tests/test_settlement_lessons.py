@@ -261,94 +261,130 @@ def test_settle_continues_if_lessons_throws(tmp_path: Path):
     assert "boom" in str(out.get("error") or "")
 
 
-def test_portfolio_soft_pen_visible_reason(tmp_path: Path):
-    """With soft_awareness active, portfolio notes include lessons_soft (similar_count=0)."""
-    from nt.portfolio import Candidate, build_portfolio
-    from nt.recommend import refresh_state
-
+def test_soft_awareness_cap_keeps_freshest(tmp_path: Path):
+    """max_soft_notes retains newest TTL notes, not oldest."""
     cfg = _cfg(tmp_path)
-    # Minimal production-like keys for build_portfolio
-    base = {
-        **cfg,
-        "paths": {
-            **cfg["paths"],
-            "bankroll_json": str(tmp_path / "state" / "bankroll.json"),
-            "phase_json": str(tmp_path / "state" / "phase.json"),
-            "risk_json": str(tmp_path / "state" / "risk.json"),
-            "learning_json": str(tmp_path / "state" / "learning.json"),
-            "edges_jsonl": str(tmp_path / "state" / "edges.jsonl"),
-        },
-        "capital_v2": {"enabled": False},
-        "portfolio": {
-            "min_ev": 0.01,
-            "min_grade": "C",
-            "max_bets": 4,
-            "min_stake_nok": 10,
-            "high_odds_threshold": 3.0,
-            "high_odds_stake_mult": 0.5,
-            "max_high_odds": 2,
-        },
-        "learning": {
-            **cfg["learning"],
-            "enabled": True,
-            "diversification": {
-                "max_per_sport": 3,
-                "max_per_market": 3,
-                "max_per_band": 5,
-                "max_per_match": 1,
-                "max_per_league": 5,
-                "max_per_script_family": 5,
-                "max_per_market_family": 5,
-                "max_football_per_round": 2,
-                "prefer_explore_first": False,
-            },
-        },
-        "phases": {
-            "1A": {
-                "stake_min": 10,
-                "stake_max": 20,
-                "daily_risk_pct": 0.05,
-            }
-        },
-        "bankroll": {"starting_nok": 500},
-        "risk": {"daily_risk_pct": 0.05, "kill_switch_drawdown_pct": 0.25},
-    }
-    # Seed lessons soft awareness
-    state = Path(cfg["paths"]["state_dir"])
-    lessons_path = Path(cfg["paths"]["settlement_lessons_json"])
-    lessons_path.write_text(
-        json.dumps(
+    cfg["learning"]["settlement_lessons"]["max_soft_notes"] = 2
+    # Seed three prior families (oldest → newest)
+    prev = {
+        "schema_version": 1,
+        "updated_at": "2026-07-20T10:00:00Z",
+        "settled_at": "2026-07-20T10:00:00Z",
+        "batch_id": "settle_old",
+        "live_ledger_only": True,
+        "source": "data/bets.csv",
+        "n_settled": 0,
+        "bets": [],
+        "soft_awareness": [
             {
-                "schema_version": 1,
-                "updated_at": "2026-07-25T12:00:00Z",
-                "settled_at": "2026-07-25T12:00:00Z",
-                "batch_id": "settle_test",
-                "live_ledger_only": True,
-                "source": "data/bets.csv",
-                "n_settled": 1,
-                "bets": [],
-                "soft_awareness": [
-                    {
-                        "family": "tennis_totals",
-                        "note": "temporary caution — losses",
-                        "pattern_flag": "repeat_type_loss",
-                        "created_at": "2026-07-25T12:00:00Z",
-                        "expires_at": "2099-01-01T00:00:00Z",
-                        "expired": False,
-                    }
-                ],
+                "family": "f0_oldest",
+                "note": "temporary caution — old",
+                "pattern_flag": "cluster_same_family",
+                "created_at": "2026-07-20T10:00:00Z",
+                "expires_at": "2099-01-01T00:00:00Z",
+                "expired": False,
             },
-            indent=2,
-        )
-        + "\n",
-        encoding="utf-8",
+            {
+                "family": "f1_mid",
+                "note": "temporary caution — mid",
+                "pattern_flag": "cluster_same_family",
+                "created_at": "2026-07-21T10:00:00Z",
+                "expires_at": "2099-01-01T00:00:00Z",
+                "expired": False,
+            },
+            {
+                "family": "f2_newest",
+                "note": "temporary caution — new",
+                "pattern_flag": "cluster_same_family",
+                "created_at": "2026-07-22T10:00:00Z",
+                "expires_at": "2099-01-01T00:00:00Z",
+                "expired": False,
+            },
+        ],
+    }
+    Path(cfg["paths"]["settlement_lessons_json"]).write_text(
+        json.dumps(prev, indent=2) + "\n", encoding="utf-8"
     )
+    # New settle that does not add more families — just rebuilds/caps
+    settled = [
+        {
+            "bet_id": "solo",
+            "result": "Win",
+            "sport": "darts",
+            "selection": "Vinner: Player A",
+            "match": "A vs B",
+        }
+    ]
+    payload = build_settlement_lessons(cfg, settled, live_rows=settled, persist=True)
+    fams = [s["family"] for s in payload["soft_awareness"]]
+    assert len(fams) == 2
+    assert "f0_oldest" not in fams
+    assert "f2_newest" in fams
+    assert "f1_mid" in fams
 
-    # Lightweight unit: call lessons_soft via portfolio annotation path with mock state
-    # Prefer direct function assertion already done; also check load+adjustments end-to-end
-    loaded = load_settlement_lessons(base)
-    pen, why = lessons_soft_adjustments("tennis_totals", loaded, base)
-    assert pen > 0
-    assert "lessons_soft:" in why
-    # similar_count conceptually 0 — no similar_recent module required
-    assert "similar" not in why.lower() or "lessons_soft" in why
+
+def test_main_reason_strips_short_settle_blob():
+    """Short composite notes must not keep settle{…} in main_reason."""
+    bet = {
+        "result": "Loss",
+        "sport": "tennis",
+        "selection": "Totalt antall games 22.5: Over 22.5",
+        "notes": "thin | settle{score:0-0}",
+    }
+    reason = resolve_main_reason(bet, market_family="tennis_totals")
+    assert "settle{" not in reason
+    # prefix "thin" is < 8 chars → auto-template
+    assert "family=tennis_totals" in reason
+
+    bet2 = {
+        "result": "Loss",
+        "sport": "tennis",
+        "selection": "Totalt antall games 22.5: Over 22.5",
+        "notes": "line too high late fade | settle{score:6-3 6-2}",
+    }
+    reason2 = resolve_main_reason(bet2, market_family="tennis_totals")
+    assert "settle{" not in reason2
+    assert "line too high" in reason2
+
+
+def test_total_line_miss_requires_explicit_side():
+    """Ambiguous totals selection without Over/Under → not total_line_miss."""
+    bet = {
+        "result": "Loss",
+        "selection": "Totalt antall games 22.5",  # no Over/Under token
+        "score": "6-3 6-2",  # 17 < 22.5
+    }
+    driver = infer_outcome_driver(bet, market_family="tennis_totals")
+    assert driver != "total_line_miss"
+
+
+def test_lessons_soft_reason_field_separate_from_similar():
+    """PR2-safe: lessons use lessons_soft_reason; soft_demotion_reason merges."""
+    from nt.portfolio import Recommendation
+
+    rec = Recommendation(
+        match="A vs B",
+        selection="Over 22.5",
+        decimal_odds=1.9,
+        stake_nok=10,
+        ev=0.04,
+        grade="B",
+        odds_band="1.8-2.2",
+        sport="tennis",
+        market_type="",
+        p_model=0.55,
+        notes="",
+        market_family="tennis_totals",
+    )
+    rec.similar_recent_reason = "similar_recent: tennis_totals (2 in last 12)"
+    rec.lessons_soft_reason = "lessons_soft: tennis_totals (repeat_type_loss)"
+    parts = [
+        x
+        for x in (rec.similar_recent_reason, rec.lessons_soft_reason)
+        if x and str(x).strip()
+    ]
+    rec.soft_demotion_reason = "; ".join(parts)
+    assert "similar_recent" in rec.soft_demotion_reason
+    assert "lessons_soft" in rec.soft_demotion_reason
+    assert rec.similar_recent_reason.startswith("similar_recent")
+    assert rec.lessons_soft_reason.startswith("lessons_soft")

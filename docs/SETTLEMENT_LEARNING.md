@@ -91,11 +91,12 @@ python run_nt.py learn --reject "market:Totals Over:..."
 
 After every settle batch with ≥1 terminal, the engine writes Settlement Lessons:
 
-- **`main_reason`** always non-empty (engine auto-template when agent packet is thin)
+- **`main_reason`** always non-empty (engine auto-template when agent packet is thin; `settle{…}` blobs stripped)
 - **`outcome_driver`** heuristic enum (`research_quality`, `variance`, `total_line_miss`, …)
-- **Pattern** vs last ~12 **live** bets only (`filter_live_rows` — no `era_archive`)
-- **Soft awareness** with TTL (`learning.settlement_lessons.ttl_hours`, default 72h) — never permanent hard rejects
-- Portfolio applies `lessons_soft:` sort demotion **independent** of similar-recent hits
+- **Pattern peers** = last ~12 **live settled** (Win/Loss/Refunded) via `filter_live_rows` — no `era_archive`. Open tickets do not push losses out of the window. `cluster_same_family` may note open same-family seats but **soft_awareness is only emitted for loss-linked patterns** (repeat losses / batch multi-loss).
+- **Soft awareness** with TTL (`learning.settlement_lessons.ttl_hours`, default 72h) — never permanent hard rejects; `max_soft_notes` keeps **freshest** notes
+- **`live_ledger_only`**: always enforced (informational in config — cannot re-enable archive peers)
+- Portfolio applies `lessons_soft:` sort demotion **independent** of similar-recent hits (`Recommendation.lessons_soft_reason` + combined `soft_demotion_reason`)
 
 Config: `learning.settlement_lessons.*`. Failures are logged; settle never blocks.
 

@@ -404,10 +404,11 @@ learning:
   # Settlement Lessons v1 (post-settle root-cause + soft TTL awareness)
   settlement_lessons:
     enabled: true
-    recent_window: 12
-    max_soft_notes: 8
+    recent_window: 12          # settled-only peers for repeat_type_loss (open does not crowd history)
+    max_soft_notes: 8          # cap keeps freshest notes (loss patterns prioritized)
     soft_ev_penalty_repeat_loss: 0.008   # portfolio sort demotion; independent of similar-recent
     ttl_hours: 72
+    # Informational / always enforced: peers never use era_archive (filter_live_rows)
     live_ledger_only: true
   # Avoid getting stuck in one sport / market type (counts OPEN PENDING + new slip)
   diversification:
