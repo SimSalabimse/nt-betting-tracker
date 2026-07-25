@@ -199,9 +199,14 @@ Engine queue rank = research **hint** / coverage SSOT — **not** automatic plac
 4. Family rule: each market_family MUST be ≤2 after merge (drop at ≥3)
 5. Open occupancy soft: deprioritize open_family_full / open_sport_full (live ledger only)
 6. Soft sport: prefer ≤3 per sport on multi-sport boards when size allows
-7. Size clamp: multi-agent shortlist 8–15 (board-limited may be <8)
-8. Build primary_worklist = shortlist ∪ coverage_critical (cap 15)
-9. Write outbox/MULTI_AGENT_SHORTLIST.md including ## Primary worklist + ## Dropped
+7. Light-eligibility (KD16) for multi-agent-only lines (not in engine deep_queue):
+     light pass OR never lighted → eligible
+     hard light-fail → DROP unless reason contains "force_scan:" and main keeps with note
+     (default DROP — no expensive Exa on light-fail noise)
+8. Size clamp: multi-agent shortlist 8–15 (board-limited may be <8;
+     if <8 and engine has unused light-pass not open-full → top up by promo)
+9. Build primary_worklist = shortlist ∪ coverage_critical (cap 15)
+10. Write outbox/MULTI_AGENT_SHORTLIST.md including ## Primary worklist + ## Dropped
 ```
 
 **coverage_critical** = engine deep_queue lines with tags `coverage_floor:top_promo_scaffold` OR `coverage_floor:sport_rotation` (Mechanism A — never silently drop).

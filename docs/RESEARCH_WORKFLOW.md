@@ -132,7 +132,8 @@ Override only for tests/emergency: `--force-mechanical`.
 
 ```bash
 python run_nt.py research board --odds inbox/odds_….txt --write-scaffolds
-# deep research queue with Exa → evidence/*.json
+# Stage 1b multi-agent → outbox/MULTI_AGENT_SHORTLIST.md (primary worklist);
+# Exa deep primary worklist only → evidence/*.json
 python run_nt.py research ready --odds inbox/odds_….txt
 python run_nt.py recommend --odds inbox/odds_….txt
 # expansion if large board & <2 picks, then re-recommend
@@ -161,7 +162,7 @@ Main agent spawns three **scan-only** agents (parallel preferred; sequential A�
 | **B** | Totals & props (self-limit ≤2 same family) | 5 |
 | **C** | HC & matchup dogs with real reason | 5 |
 
-Merge: dedupe · family **≤2** · soft open occupancy · soft ≤3/sport · shortlist **8–15**. Deliverable: **`outbox/MULTI_AGENT_SHORTLIST.md`** (includes **Primary worklist** = shortlist ∪ coverage_critical, cap 15). Scan agents never deep-research. Full design: [`ESR_MULTI_AGENT_SCAN_2026-07-25.md`](./ESR_MULTI_AGENT_SCAN_2026-07-25.md).
+Merge: dedupe · family **≤2** · soft open occupancy · soft ≤3/sport · **light-eligibility (KD16):** multi-agent-only light-fail **DROP** unless `force_scan:` · shortlist **8–15**. Deliverable: **`outbox/MULTI_AGENT_SHORTLIST.md`** (includes **Primary worklist** = shortlist ∪ coverage_critical, cap 15). Scan agents never deep-research. Full design: [`ESR_MULTI_AGENT_SCAN_2026-07-25.md`](./ESR_MULTI_AGENT_SCAN_2026-07-25.md).
 
 ### Stage 1c / Stage 2 work order
 

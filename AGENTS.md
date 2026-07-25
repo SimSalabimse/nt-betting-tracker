@@ -171,8 +171,9 @@ python run_nt.py research light --odds <odds_file>   # if board did not auto-lig
 2. After merge each `market_family` **must be ≤2** (drop when ≥3); second seat allowed; prefer spread to 1 when priority equal.
 3. Soft open-book occupancy: deprioritize / prefer drop when live open family or sport already at portfolio max (Pending+ConfirmedPlaced only — never archives).
 4. Soft prefer **≤3** candidates per sport on multi-sport boards when shortlist stays ≥8.
-5. Final multi-agent shortlist band: **8–15** (may be &lt;8 on tiny boards).
-6. Write **`outbox/MULTI_AGENT_SHORTLIST.md`** (+ optional `outbox/scan_agent_{a,b,c}_*.jsonl`).
+5. **Light-eligibility (KD16) for multi-agent-only lines** (not already in engine `deep_queue`): light **pass** or **never lighted** → eligible; hard light-**fail** → **DROP** unless scan reason contains `force_scan:` and main agent keeps with note. Avoid expensive Exa on light-fail noise.
+6. Final multi-agent shortlist band: **8–15** (may be &lt;8 on tiny boards; if &lt;8 and engine has unused light-pass not open-full, top up by promo).
+7. Write **`outbox/MULTI_AGENT_SHORTLIST.md`** (+ optional `outbox/scan_agent_{a,b,c}_*.jsonl`).
 
 **Failure / fallback:** parallel preferred; sequential A→B→C if spawn unavailable; wait ≤12 min; partial merge + engine top-up if some agents missing; **all-fail** → `primary_worklist = engine deep_queue` (pre-plan path). Do **not** rewrite `data/state/deep_queue.json`.
 
