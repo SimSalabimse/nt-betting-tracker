@@ -109,8 +109,8 @@ python scripts/backfill_settlement_taxonomy.py --n 30 --apply   # after review
 | 10 NOK test cap | First 10 place-acked `TEST_CAP:esr_v1` seats ≤ 10 NOK |
 | Settlement Lessons | After settle ≥1 terminal: print before research; missing/stale = **warn** only |
 | Diversify | Hard max **2** `market_family`; similar-recent + lessons soft demotion (sort only) |
-| Archive isolation | **Never** `history/archives/` or `history/rounds/` for memory — live `data/bets.csv` only |
-| Untouched | capital_v2 · phase · secure · unit · ControlSignals |
+| Archive isolation | **Never** `history/archives/` or `history/rounds/` for memory — live only: `data/bets.csv` · pending · latest results · current odds · `data/state/*` |
+| Untouched | capital_v2 · phase · secure · unit · **10 NOK** · ControlSignals · FEH stays demoted |
 
 ### `/daily-run` reasoning output
 

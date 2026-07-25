@@ -15,17 +15,31 @@ FEH non-bypassable place law is **SUPERSEDED** — see [`FORCED_EVIDENCE_HIERARC
 
 ```
 0. COLLECT             Oddsen dump → inbox/odds_*.txt
-        ↓
+        ↓              (if prior settle ≥1 terminal: print Settlement Lessons first)
 1. BROAD SCAN          market-scan → board → light → promising queue 8–15
-        ↓              (all lines scored; no anti-soft filter)
+        ↓              (all lines scored; no anti-soft filter; no family demote of queue)
 2. DEEP RESEARCH       Exa both-sides on shortlist → evidence/*.json
         ↓
 3. SELECTION           ready → recommend (gates + EV + soft bands)
+        ↓              hard max 2 market_family · similar-recent + lessons soft demote
         ↓              if large board & <2 picks → EXPANSION (deep next tier)
 4. OUTPUT              PLACE_THESE + why/support/risk + near-miss → place-ack
         ↓
-   SETTLE / LEARN      results → taxonomy (no hard-reject list growth)
+   SETTLE / LEARN      results → taxonomy → Settlement Lessons (soft TTL)
+                       → print lessons before next Stage 1 (warn if missing/stale)
 ```
+
+### Automatic desk law (lessons · diversify · archive isolation)
+
+| Rule | Behaviour |
+|------|-----------|
+| **Settlement Lessons** | After settle with ≥1 terminal: print `outbox/SETTLEMENT_LESSONS.md` + `data/state/settlement_lessons.json` **before** next Stage 1. Missing/stale → **warn**, not hard-stop. Soft `sort_ev` only. |
+| **Hard max 2** `market_family` | Portfolio open+slip (coarse family; line not in key). Diversify binds at recommend — not Stage 1 queue demote. |
+| **similar-recent + lessons soft** | Visible demotion on notes / near-misses; true EV stays honest. |
+| **Archive isolation** | **Never** seed peers from `history/archives/` or `history/rounds/`. Live only: `data/bets.csv` · pending · latest results · current odds · `data/state/*`. |
+| **Untouched** | capital_v2 · phase · secure · unit · **10 NOK** · ControlSignals · FEH stays demoted |
+
+Full law: root `AGENTS.md` § Settlement Lessons + diversify + archive isolation · [`SETTLEMENT_LEARNING.md`](./SETTLEMENT_LEARNING.md) · [`DIVERSITY_AND_EXPLORE.md`](./DIVERSITY_AND_EXPLORE.md).
 
 ### CLI map
 
@@ -256,7 +270,8 @@ Empty with `expansion_needed` and next tier unresearched = **process miss**.
 
 1. Place only what is on `outbox/PLACE_THESE.md` (after user places on NT → `place-ack`).  
 2. Settle via results + `nt settle`.  
-3. Review with `learn` / `analyze` / taxonomy — **no hard-reject list growth**.
+3. Review with `learn` / `analyze` / taxonomy — **no hard-reject list growth**.  
+4. If settle wrote ≥1 terminal: **print Settlement Lessons** before the next research board; missing/stale = warn only. Soft awareness only — never seed peers from `history/archives/` or `history/rounds/`.
 
 ---
 
@@ -306,4 +321,6 @@ If you cannot afford Stage 2 for a selection → **skip that line**, not the who
 | `docs/RESEARCH_GATES.md` | Gate fields |
 | `docs/EXA_RESEARCH_USAGE.md` | Exa usage |
 | `docs/DESK_SKILLS.md` | Skills |
-| Root `AGENTS.md` | Operator law |
+| `docs/SETTLEMENT_LEARNING.md` | Settlement Lessons v1 |
+| `docs/DIVERSITY_AND_EXPLORE.md` | max 2 family · similar-recent · archive isolation |
+| Root `AGENTS.md` | Operator law · lessons + diversify + archive isolation |
