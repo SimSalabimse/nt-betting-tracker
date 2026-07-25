@@ -1,11 +1,15 @@
 """
 P1 soft correlation keys: league / script family / kickoff window.
+
+Also re-exports market_family (coarse diversify hard-cap family).
 """
 from __future__ import annotations
 
 import re
 from datetime import datetime, timezone
 from typing import Any
+
+from nt.market_family import market_family  # noqa: F401  — re-export
 
 
 def league_key(

@@ -1155,4 +1155,6 @@ def diversification_limits(cfg: dict[str, Any]) -> dict[str, Any]:
         "max_per_script_family": int(div.get("max_per_script_family", 2)),
         "ko_window_hours": float(div.get("ko_window_hours", 3)),
         "max_per_ko_window": int(div.get("max_per_ko_window", 2)),
+        # ESR hard coarse market_family (O+U+all lines share family; line never in key)
+        "max_per_market_family": int(div.get("max_per_market_family", 2)),
     }

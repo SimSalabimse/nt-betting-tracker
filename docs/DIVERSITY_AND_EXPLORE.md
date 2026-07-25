@@ -33,8 +33,12 @@ You cannot get more data for other sports without **trying** researched bets the
 | `prefer_explore_first` | thin/explore lines sorted ahead |
 | `explore_min_ev` | **0.012** (lower bar for explore-flagged lines) |
 | `max_per_match` | **1** open market per match (pending + slip) — blocks correlated stacks |
+| `max_per_market_family` | **2** hard cap on coarse `market_family` (open + slip). Line is never in the key: tennis O/U 21.5–23.5 all → `tennis_totals`. See `nt/market_family.py`. |
+| Live ledger only | Diversify seeds use `filter_live_rows` (`nt/live_ledger.py`) — `source==era_archive` and archive paths never seed counters. |
 | Stake packing | min-stake seats first; reserve leftover for extra eligible seats; then EV top-up |
 | Rejects | Full machine-readable `outbox/REJECTS_*.jsonl` (+ MD summary) |
+
+**Family reject reason example:** `diversify: max 2 open for market_family 'tennis_totals' (already 2 pending/picked)`.
 
 ### Learning (`nt/learning.py`)
 

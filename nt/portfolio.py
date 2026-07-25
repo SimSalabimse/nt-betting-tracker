@@ -59,6 +59,8 @@ class Recommendation:
     # P1 soft correlation keys
     league_key: str = "unknown"
     script_family: str = "other"
+    # ESR hard diversify: coarse market_family (line never in key)
+    market_family: str = "other"
     # Sliding odds-band confidence (1.40-2.60); FEH-aware in PR3
     odds_confidence_band: str = ""
     odds_confidence: dict[str, Any] | None = None
@@ -932,6 +934,7 @@ def build_portfolio(
                 note_bits.append("band_ok:" + ",".join(band_gate.passes[:3]))
 
         mk = adj.get("market_key") or infer_market(c.selection or "", c.market_type or "")
+        from nt.market_family import market_family as _market_family
         from nt.portfolio_correlation import league_key as _league_key
         from nt.portfolio_correlation import script_family as _script_family
 
@@ -947,6 +950,18 @@ def build_portfolio(
             market_key=str(mk or ""),
             evidence=c.evidence if isinstance(c.evidence, dict) else None,
         )
+        sp_norm = (
+            normalize_sport(c.sport or "", default="unknown")
+            if (c.sport or "").strip()
+            else ""
+        )
+        mf = _market_family(
+            sport=sp_norm or c.sport or "",
+            selection=c.selection or "",
+            market_type=c.market_type or "",
+            market_key=str(mk or ""),
+            evidence=c.evidence if isinstance(c.evidence, dict) else None,
+        )
         rec = Recommendation(
             match=c.match,
             selection=c.selection,
@@ -955,9 +970,7 @@ def build_portfolio(
             ev=round(ev, 4),
             grade=grade,
             odds_band=band,
-            sport=normalize_sport(c.sport or "", default="unknown")
-            if (c.sport or "").strip()
-            else "",
+            sport=sp_norm,
             market_type=c.market_type or "",
             p_model=p_model,
             notes="; ".join(note_bits)[:400],
@@ -975,6 +988,7 @@ def build_portfolio(
             stake_decision=stake_decision,
             league_key=lg,
             script_family=sf,
+            market_family=mf,
             odds_confidence_band=band_gate.band_id,
             odds_confidence=band_audit,
             feh=feh_audit,
@@ -1028,9 +1042,12 @@ def build_portfolio(
     min_non_football = int(div_lim.get("min_non_football_per_round", 1))
     max_league = int(div_lim.get("max_per_league", 2))
     max_script = int(div_lim.get("max_per_script_family", 2))
+    max_mkt_family = int(div_lim.get("max_per_market_family", 2))
     ko_window_h = float(div_lim.get("ko_window_hours", 3))
     max_ko_window = int(div_lim.get("max_per_ko_window", 2))
 
+    from nt.live_ledger import filter_live_rows
+    from nt.market_family import market_family as corr_market_family
     from nt.portfolio_correlation import (
         count_ko_window,
         league_key as corr_league_key,
@@ -1040,6 +1057,7 @@ def build_portfolio(
 
     league_counts: dict[str, int] = {}
     script_counts: dict[str, int] = {}
+    market_family_counts: dict[str, int] = {}
     open_ko_hours: list[float | None] = []
 
     def _pending_sport(r: dict[str, str]) -> str:
@@ -1071,10 +1089,10 @@ def build_portfolio(
             return "football"
         return "unknown"
 
-    # Seed caps from OPEN RISK (Pending + ConfirmedPlaced) — book-wide
+    # Seed caps from OPEN RISK (Pending + ConfirmedPlaced) — book-wide, live only
     from nt.bets_io import is_open_risk
 
-    for r in historical_rows or []:
+    for r in filter_live_rows(historical_rows or []):
         if not is_open_risk(r.get("result")):
             continue
         sp = _pending_sport(r)
@@ -1103,6 +1121,14 @@ def build_portfolio(
             market_type=r.get("market_type") or "",
         )
         script_counts[sf] = script_counts.get(sf, 0) + 1
+        mf = corr_market_family(
+            sport=sp,
+            selection=r.get("selection") or "",
+            market_type=r.get("market_type") or "",
+            market_key=mk or "",
+        )
+        if mf:
+            market_family_counts[mf] = market_family_counts.get(mf, 0) + 1
         # kickoff from notes if present
         ko = ""
         if "kickoff=" in notes:
@@ -1238,6 +1264,24 @@ def build_portfolio(
                 }
             )
             return "reject"
+        mf = (rec.market_family or "").strip() or corr_market_family(
+            sport=sp_key,
+            selection=rec.selection or "",
+            market_type=rec.market_type or "",
+            market_key=mk_key or "",
+        )
+        if market_family_counts.get(mf, 0) >= max_mkt_family:
+            rejects.append(
+                {
+                    "match": rec.match,
+                    "selection": rec.selection,
+                    "reason": (
+                        f"diversify: max {max_mkt_family} open for market_family '{mf}' "
+                        f"(already {market_family_counts.get(mf, 0)} pending/picked)"
+                    ),
+                }
+            )
+            return "reject"
         cand_h = parse_kickoff_hour(rec.kickoff or "")
         if cand_h is not None:
             n_ko = count_ko_window(cand_h, open_ko_hours, window_hours=ko_window_h)
@@ -1259,6 +1303,7 @@ def build_portfolio(
         if stake < min_stake:
             return "skip"
         rec.stake_nok = stake
+        rec.market_family = mf
         picked.append(rec)
         remaining = round(remaining - stake, 2)
         if rec.high_odds:
@@ -1271,6 +1316,7 @@ def build_portfolio(
         if lg != "unknown":
             league_counts[lg] = league_counts.get(lg, 0) + 1
         script_counts[sf] = script_counts.get(sf, 0) + 1
+        market_family_counts[mf] = market_family_counts.get(mf, 0) + 1
         open_ko_hours.append(cand_h)
         return "ok"
 
@@ -1403,13 +1449,65 @@ def build_portfolio(
             if best_combo is not None and best_pair is not None:
                 stake = min(best_combo.stake_nok, remaining)
                 stake = float(int(stake))
-                if stake >= min_stake and len(picked) < max_bets:
+                # Combo legs consume sport + market_family seats (correlation is real)
+                leg_fams: list[str] = []
+                leg_sports: list[str] = []
+                trial_fam = dict(market_family_counts)
+                trial_sport = dict(sport_counts)
+                combo_family_ok = True
+                for leg in best_pair:
+                    lsp = normalize_sport(leg.sport, default="unknown")
+                    lmf = (leg.market_family or "").strip() or corr_market_family(
+                        sport=lsp,
+                        selection=leg.selection or "",
+                        market_type=leg.market_type or "",
+                        market_key=leg.market_key or "",
+                    )
+                    leg_fams.append(lmf)
+                    leg_sports.append(lsp)
+                    if trial_sport.get(lsp, 0) >= max_sport:
+                        combo_family_ok = False
+                        rejects.append(
+                            {
+                                "match": best_combo.match,
+                                "selection": best_combo.selection,
+                                "reason": (
+                                    f"diversify: max {max_sport} open for sport '{lsp}' "
+                                    f"(combo legs)"
+                                ),
+                            }
+                        )
+                        break
+                    if trial_fam.get(lmf, 0) >= max_mkt_family:
+                        combo_family_ok = False
+                        rejects.append(
+                            {
+                                "match": best_combo.match,
+                                "selection": best_combo.selection,
+                                "reason": (
+                                    f"diversify: max {max_mkt_family} open for "
+                                    f"market_family '{lmf}' (combo legs)"
+                                ),
+                            }
+                        )
+                        break
+                    trial_sport[lsp] = trial_sport.get(lsp, 0) + 1
+                    trial_fam[lmf] = trial_fam.get(lmf, 0) + 1
+                if (
+                    combo_family_ok
+                    and stake >= min_stake
+                    and len(picked) < max_bets
+                ):
                     best_combo.stake_nok = stake
                     picked.append(best_combo)
                     remaining = round(remaining - stake, 2)
-                    for leg in best_pair:
+                    for leg, lmf, lsp in zip(best_pair, leg_fams, leg_sports):
                         combo_leg_keys.add((leg.match, leg.selection))
                         picked_keys.add((leg.match, leg.selection))
+                        sport_counts[lsp] = sport_counts.get(lsp, 0) + 1
+                        market_family_counts[lmf] = (
+                            market_family_counts.get(lmf, 0) + 1
+                        )
     except Exception as exc:
         rejects.append({"reason": f"combo pass skipped: {exc}"})
 
@@ -1463,6 +1561,14 @@ def build_portfolio(
             if market_counts.get(mk_key, 0) >= max_market:
                 continue
             if bd_key and band_counts.get(bd_key, 0) >= max_band:
+                continue
+            mf = (rec.market_family or "").strip() or corr_market_family(
+                sport=sp_key,
+                selection=rec.selection or "",
+                market_type=rec.market_type or "",
+                market_key=mk_key or "",
+            )
+            if market_family_counts.get(mf, 0) >= max_mkt_family:
                 continue
             if rec.high_odds and high_odds_count >= max_high:
                 continue

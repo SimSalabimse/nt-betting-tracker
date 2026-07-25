@@ -411,6 +411,7 @@ learning:
     # P1 soft correlation (known leagues/scripts/KO windows only)
     max_per_league: 2
     max_per_script_family: 2
+    max_per_market_family: 2       # ESR hard coarse family (tennis O/U 21.5–23.5 → tennis_totals)
     ko_window_hours: 3
     max_per_ko_window: 2
     # Soft football preference only:
