@@ -76,10 +76,32 @@ Detail: [`docs/DIVERSITY_AND_EXPLORE.md`](docs/DIVERSITY_AND_EXPLORE.md).
 
 - `history/archives/`
 - `history/rounds/`
+- **Git history / stash / other branches' `data/bets.csv` or `data/state/*`**
 
-**Allowed live memory only:** `data/bets.csv` · open Pending/ConfirmedPlaced · latest results (`inbox/results*`) · **current** odds dump · `data/state/*` live SSOT.
+**Allowed live memory only:** current working-tree `data/bets.csv` · open Pending/ConfirmedPlaced · latest results (`inbox/results*`) · **current** odds dump · current `data/state/*` live SSOT.
 
 `load_bets` / `assert_not_archive_path` fail-closed on archive paths. Era rows (`source==era_archive`) stay out of live windows via `filter_live_rows`.
+
+### Live desk SSOT — NEVER overwrite during engineering
+
+**Hard law (2026-07-25 clean-restart era):** the live ledger is the operator's money state. Engineering (`/execute-plan`, worktrees, branch switch, cherry-pick, stash) **must not** replace it.
+
+| Forbidden | Why |
+|-----------|-----|
+| `git checkout <branch> -- data/bets.csv` / `data/state/*` | Restores old era (e.g. 28-settled 550 NOK) over clean 500 NOK |
+| `git stash pop/apply` that rewrites desk SSOT without explicit user ask | Same |
+| `git restore` / merge that silently rewrites `data/bets.csv` | Same |
+| Reading `history/archives/*` into live paths | Archive is cold storage only |
+| Using equity/settled_count from an old branch as "current" | Desk is working tree only |
+
+| Required | Detail |
+|----------|--------|
+| **Before any git branch switch that might touch data/** | Confirm live desk: `python run_nt.py status` — expect **era_start ≥ 2026-07-25**, baseline **500**, only this-era bets |
+| **After accidental overwrite** | Stop. Restore from last known good live copy (operator-confirmed). Do **not** invent history from archives. |
+| **Local protection** | Live files use `git update-index --skip-worktree` + `.gitignore` so checkouts do not clobber them |
+| **Virgin learning** | Do not re-import pre-era `learning.json` sports ROI into the clean era |
+
+**Current clean era (operator SSOT):** `bankroll.era_start: 2026-07-25` · baseline **500 NOK** · live open = ConfirmedPlaced/Pending from **2026-07-25 only** · no pre-2026-07-25 settled ledger in equity.
 
 ### Untouched by this layer
 

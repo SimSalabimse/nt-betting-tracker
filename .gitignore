@@ -58,3 +58,36 @@ data/odds/
 **/*.xcuserstate
 tools/ios-desk/build_unsigned/
 tools/ios-desk/**/DerivedData/
+
+# LIVE DESK SSOT — never commit / never restore from git during engineering
+# Branch checkouts must not overwrite the clean-era ledger.
+data/bets.csv
+data/edges.jsonl
+data/state/bankroll.json
+data/state/learning.json
+data/state/phase.json
+data/state/risk.json
+data/state/current_bankroll.md
+data/state/status.md
+data/state/capital_segments.json
+data/state/edges_summary.md
+data/state/bet_decisions.jsonl
+data/state/stake_decisions.jsonl
+data/state/settlement_reviews.jsonl
+data/state/learning_history.jsonl
+data/state/learning_proposals.json
+data/state/evidence_links.jsonl
+data/state/agent_audit.jsonl
+data/state/calibration.jsonl
+data/state/sim_audit.jsonl
+data/state/control_signals.jsonl
+data/state/deep_queue.json
+data/state/feh_test_cap.json
+data/state/reasoning_chains.jsonl
+data/state/settlement_lessons.json
+data/state/coverage_health.json
+outbox/PLACE_THESE.md
+outbox/REJECTS.md
+outbox/REJECTS_LATEST.jsonl
+outbox/SETTLEMENT_LESSONS.md
+outbox/SETTLEMENT_ANALYSIS.md

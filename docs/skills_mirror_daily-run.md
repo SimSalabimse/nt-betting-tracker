@@ -117,7 +117,8 @@ Near-misses: one short line each (why not / what would change).
 | **Hard max 2** `market_family` | Engine diversify on open+slip. Coarse family (line not in key). Expect family rejects on 3rd same family. |
 | **similar-recent** | Soft `sort_ev` demotion + notes on live recent same sport/family/line — true EV honest. |
 | **Lessons soft** | Independent portfolio demotion from Settlement Lessons soft_awareness. |
-| **Archive isolation** | **FORBIDDEN** for memory/peers: `history/archives/`, `history/rounds/`. Use only live `data/bets.csv`, pending, latest results, current odds, `data/state/*`. |
+| **Archive isolation** | **FORBIDDEN** for memory/peers: `history/archives/`, `history/rounds/`, **and git stash/branch copies of `data/*`**. Use only live working-tree `data/bets.csv`, pending, latest results, current odds, `data/state/*`. |
+| **Live desk SSOT** | Never `git checkout`/`restore`/`stash apply` onto `data/bets.csv` or `data/state/*` during engineering. Clean era: **era_start 2026-07-25**, baseline **500 NOK**. Verify with `python run_nt.py status` before research. |
 | **Stage 1** | Do **not** hand-demote deep_queue by family/lessons — engine queue is research priority; diversify binds at recommend. |
 | **Untouched** | No FEH/anti-soft revival · capital_v2/phase/secure/unit/10 NOK · ControlSignals contracts. |
 
@@ -250,4 +251,5 @@ python run_nt.py status
 - Learning: no permanent hard-reject list growth.
 - After settle ≥1 terminal: **print Settlement Lessons** before research; missing/stale = warn only.
 - Hard max **2** `market_family`; respect similar-recent + lessons soft demotion (sort only).
-- **FORBIDDEN memory:** `history/archives/`, `history/rounds/` — live `data/bets.csv` + pending + current odds/results only.
+- **FORBIDDEN memory:** `history/archives/`, `history/rounds/`, git stash/branch `data/*` — live working-tree `data/bets.csv` + pending + current odds/results only.
+- **Never overwrite live desk SSOT** via git during `/execute-plan` or branch work. Clean era = **2026-07-25 / 500 NOK**.

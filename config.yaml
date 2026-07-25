@@ -10,7 +10,7 @@ bankroll:
   # Clean-restart era (fresh start 2026-07-22, closed-loop + Phase v5).
   # Prior live book archived under history/archives/fresh_start_20260721_235802/
   baseline_nok: 500.0
-  era_start: "2026-07-22"
+  era_start: "2026-07-25"
   # Equity = baseline + sum(settled P/L) over data/bets.csv only (no pre-restart archive in equity).
   include_era_archive: false
 
