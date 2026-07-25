@@ -3,6 +3,12 @@ Normative coarse market_family keys for diversify hard caps.
 
 Line numbers are NEVER part of the family key — all tennis game totals
 (O/U 21.5–23.5 and beyond) share ``tennis_totals``.
+
+Order (aligned with ``infer_market`` where practical):
+  correct score → player props (incl. period scorers) → period/map →
+  sport totals → BTTS → HC → ML → fallback.
+
+Coarse by design: corners O/U and goal O/U both map to ``football_totals``.
 """
 from __future__ import annotations
 
@@ -16,29 +22,69 @@ def _slug(s: str) -> str:
     return re.sub(r"[^a-z0-9]+", "_", (s or "").lower()).strip("_")[:40]
 
 
+def _is_correct_score_blob(blob: str, mk: str) -> bool:
+    if "correct score" in mk or "correct_score" in mk:
+        return True
+    return bool(
+        re.search(
+            r"riktig resultat|korrekt resultat|correct score|korrekt score",
+            blob,
+        )
+    )
+
+
 def _is_totals_blob(blob: str, mk: str) -> bool:
     """Match totals / O-U markets (sport-agnostic blob)."""
-    if mk.startswith("totals") or "period totals" in mk or "map totals" in mk:
-        return True
-    if "totalt" in blob or "over/under" in blob or "over under" in blob or " o/u" in blob:
-        return True
-    if re.search(r"(?<![/\w])over\b", blob) and re.search(r"\d", blob):
-        return True
-    if re.search(r"(?<![/\w])under\b", blob) and re.search(r"\d", blob):
-        return True
-    if "total" in blob and any(
-        x in blob for x in ("mål", "goal", "game", "point", "corner", "run")
+    # Explicit ML / vinner structure wins over bare name "Over" in selection
+    # (infer_market can tag Totals from player name "Over, Jeff").
+    if "vinner" in blob or "to win" in blob or mk in (
+        "match result",
+        "match_result",
+        "winner",
+        "ml",
     ):
-        return True
-    return False
+        if not (
+            "totalt" in blob
+            or "over/under" in blob
+            or "over under" in blob
+            or " o/u" in blob
+            or re.search(r"(?<![/\w])over\s*[\d,.]", blob)
+            or re.search(r"(?<![/\w])under\s*[\d,.]", blob)
+        ):
+            return False
+
+    has_total_token = (
+        "totalt" in blob
+        or "over/under" in blob
+        or "over under" in blob
+        or " o/u" in blob
+        or (
+            "total" in blob
+            and any(x in blob for x in ("mål", "goal", "game", "point", "corner", "run"))
+        )
+        or (re.search(r"(?<![/\w])over\b", blob) is not None and re.search(r"\d", blob))
+        or (re.search(r"(?<![/\w])under\b", blob) is not None and re.search(r"\d", blob))
+    )
+    # Trust mk Totals* only when blob also looks total-ish (or mk is period/map totals)
+    if mk.startswith("totals") or "period totals" in mk or "map totals" in mk:
+        return has_total_token or "period totals" in mk or "map totals" in mk
+    return has_total_token
 
 
 def _is_handicap_blob(blob: str, mk: str) -> bool:
+    if "correct score" in mk or _is_correct_score_blob(blob, mk):
+        return False
     if "handicap" in mk or "handikap" in mk or mk in ("hc", "set handicap", "map handicap"):
         return True
     if "handikap" in blob or "handicap" in blob or "asian" in blob:
         return True
-    if re.search(r"[+-]\s?\d+(?:[.,]\d+)?\s*(?:sets?|maps?|games?)?\b", blob):
+    # Signed line with unit (sets/maps/games) — not score fragments like 2-1
+    if re.search(r"[+-]\s?\d+(?:[.,]\d+)?\s*(?:sets?|maps?|games?)\b", blob):
+        return True
+    # Explicit signed spread not part of a score pair digit-digit (avoid 2-1)
+    if re.search(r"(?<!\d)[+-]\s?\d+(?:[.,]\d+)?\b", blob) and not re.search(
+        r"\b\d+\s*[-–]\s*\d+\b", blob
+    ):
         return True
     return False
 
@@ -78,7 +124,7 @@ def _is_player_prop(blob: str, mk: str) -> bool:
         )
     ):
         return True
-    # Bare "scorer" (not BTTS) — player goals
+    # Bare "scorer" (not BTTS) — player goals (incl. "scorer i 1. omgang")
     if "scorer" in blob and "begge" not in blob:
         return True
     return False
@@ -94,8 +140,8 @@ def market_family(
     """
     Coarse sport-scoped market family for hard diversify caps.
 
-    Order: period/map → player props → sport totals → BTTS → HC → ML → fallback.
-    Line is never part of the key.
+    Order: correct score → player props → period/map → sport totals →
+    BTTS → HC → ML → fallback. Line is never part of the key.
     """
     del evidence  # reserved for future pack-aware refinements
     sp = normalize_sport(sport or "", default="unknown")
@@ -112,7 +158,20 @@ def market_family(
     mk_raw = market_key or infer_market(selection, market_type) or ""
     mk = mk_raw.lower()
 
-    # --- Step 0: period / map / special totals BEFORE generic totals ---
+    # --- Step -1: correct score before handicap (score hyphens are not spreads) ---
+    if _is_correct_score_blob(blob, mk):
+        if sp == "football" or sp == "unknown":
+            return "football_correct_score"
+        return f"{sp}_correct_score"
+
+    # --- Step 0a: player props BEFORE period (HT scorers stay player_props) ---
+    # Matches infer_market SSOT: props before period classification.
+    if _is_player_prop(blob, mk):
+        if "180" in blob:
+            return "darts_180s"
+        return "player_props"
+
+    # --- Step 0b: period / map / special totals BEFORE generic totals ---
     if re.search(
         r"1\.\s*omgang|2\.\s*omgang|1st half|2nd half|first half|second half",
         blob,
@@ -125,12 +184,6 @@ def market_family(
         if _is_totals_blob(blob, mk) or "map totals" in mk:
             return "esports_map_totals"
         return "esports_map_handicap"
-
-    # --- Step 1: player props (before bare totals) ---
-    if _is_player_prop(blob, mk):
-        if "180" in blob:
-            return "darts_180s"
-        return "player_props"
 
     # --- Step 2: totals / O-U (sport-scoped); line band is NOT a filter ---
     if _is_totals_blob(blob, mk):

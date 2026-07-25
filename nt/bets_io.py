@@ -137,6 +137,11 @@ def make_bet_id(date: str, match: str, selection: str, odds: float, stake: float
 
 
 def load_bets(path: Path) -> list[dict[str, str]]:
+    # Refuse history/archives and history/rounds — live diversify/similar/lessons
+    # must never silently load archive CSVs as the bets SSOT.
+    from nt.live_ledger import assert_not_archive_path
+
+    assert_not_archive_path(path)
     if not path.exists():
         return []
     with open(path, newline="", encoding="utf-8") as f:

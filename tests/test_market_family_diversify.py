@@ -74,14 +74,15 @@ def test_matrix_tennis_ml_vinner():
     assert market_family("tennis", "Vinner: Darderi, Luciano") == "tennis_ml"
 
 
-def test_matrix_tennis_handicap():
+def test_matrix_tennis_sett_handikap():
     assert (
-        market_family("tennis", "Sett handikap: Player A -1.5")
-        == "tennis_handicap"
-        or market_family(
-            "tennis",
-            "Parti handikap 1.5: Graham, Liam +1.5",
-        )
+        market_family("tennis", "Sett handikap: Player A -1.5") == "tennis_handicap"
+    )
+
+
+def test_matrix_tennis_parti_handikap():
+    assert (
+        market_family("tennis", "Parti handikap 1.5: Graham, Liam +1.5")
         == "tennis_handicap"
     )
 
@@ -99,12 +100,45 @@ def test_matrix_football_period_totals():
     assert fam == "football_period_totals"
 
 
-def test_matrix_esports_map_totals():
+def test_matrix_esports_map_totals_no():
     assert (
         market_family("esports", "Totalt antall kart over/under 2.5: Over 2.5")
         == "esports_map_totals"
-        or market_family("esports", "Maps total Over 2.5") == "esports_map_totals"
     )
+
+
+def test_matrix_esports_map_totals_en():
+    assert market_family("esports", "Maps total Over 2.5") == "esports_map_totals"
+
+
+def test_matrix_correct_score_not_handicap():
+    assert (
+        market_family("football", "Riktig resultat 2-1") == "football_correct_score"
+    )
+    assert (
+        market_family("football", "Korrekt resultat 1-0") == "football_correct_score"
+    )
+    assert (
+        market_family("football", "Correct score 2-1") == "football_correct_score"
+    )
+
+
+def test_matrix_period_scorer_is_player_props():
+    assert (
+        market_family("football", "scorer i 1. omgang: Kane") == "player_props"
+    )
+    assert (
+        market_family("football", "1. omgang: Harry Kane scorer") == "player_props"
+    )
+    assert (
+        market_family("football", "Harry Kane scorer i 1. omgang") == "player_props"
+    )
+
+
+def test_matrix_vinner_named_over_is_ml_not_totals():
+    # Player surname "Over" must not force totals via infer_market short-circuit
+    fam = market_family("tennis", "Vinner: Over, Jeff", market_type="Vinner")
+    assert fam == "tennis_ml", fam
 
 
 def test_matrix_darts_180s():
@@ -315,3 +349,68 @@ def test_over_and_under_share_tennis_totals_family():
         and "market_family" in str(r.get("reason", ""))
         for r in rejects
     ), f"rejects={rejects!r}"
+
+
+def test_combo_legs_reject_when_market_family_at_cap():
+    """
+    Seed 1 open tennis_totals; enable doubles of two more tennis totals legs.
+    Combo needs 2 family seats but only 1 remains → reject with (combo legs).
+    """
+    cfg = _portfolio_cfg_family_test()
+    combos = dict(cfg.get("combos") or {})
+    combos["enabled"] = True
+    combos["aggressiveness"] = "aggressive"
+    combos["min_leg_ev"] = 0.01
+    combos["min_leg_grade"] = "F"
+    combos["min_correlation_score"] = 0.0
+    combos["allow_high_odds_legs"] = True
+    combos["stake_multiplier"] = 1.0
+    cfg["combos"] = combos
+
+    _, phase, risk = refresh_state(cfg)
+    risk = dict(risk)
+    risk["can_bet"] = True
+    risk["remaining_risk_nok"] = 500.0
+    risk["daily_risk_cap_nok"] = 500.0
+    risk["stopped"] = False
+    phase = dict(phase)
+    phase["max_bets_per_round"] = 5
+    phase["max_doubles_per_round"] = 2
+    phase["research_only"] = False
+    phase["stake_min"] = 10
+    phase["stake_max"] = 20
+
+    open_one = [
+        {
+            "match": "Open seed vs Z",
+            "selection": "Totalt antall games 22.5: Over 22.5",
+            "sport": "tennis",
+            "result": "Pending",
+            "decimal_odds": "1.90",
+            "odds_band": "1.8-2.2",
+            "market_type": "Totalt antall games",
+        }
+    ]
+    # Only two candidates so the only possible double is both tennis_totals legs
+    cands = [
+        _tennis_ou_cand("Leg A vs B", "Over", "22.5"),
+        _tennis_ou_cand("Leg C vs D", "Over", "21.5"),
+    ]
+    picked, rejects = build_portfolio(
+        cfg, cands, phase, risk, open_one, learning={}
+    )
+    combo_rejects = [
+        r
+        for r in rejects
+        if "combo legs" in str(r.get("reason", "")).lower()
+        and "market_family" in str(r.get("reason", "")).lower()
+        and "tennis_totals" in str(r.get("reason", ""))
+    ]
+    assert combo_rejects, (
+        f"expected combo family reject with (combo legs); "
+        f"picked={[(p.match, p.market_key) for p in picked]!r} rejects={rejects!r}"
+    )
+    # Combo must not land on the slip (would consume 2 family seats over seed)
+    assert not any(
+        (p.market_key or "") == "combo_double" for p in picked
+    ), f"combo should not accept when family lacks seats: {picked!r}"

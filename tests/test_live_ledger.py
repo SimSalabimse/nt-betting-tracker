@@ -55,3 +55,15 @@ def test_assert_not_archive_path_ok():
 def test_assert_not_archive_path_refuses(bad: str):
     with pytest.raises(RuntimeError, match="archive"):
         assert_not_archive_path(bad)
+
+
+def test_load_bets_refuses_archive_path(tmp_path: Path):
+    """Production load_bets wires assert_not_archive_path (Issue 4)."""
+    from nt.bets_io import load_bets
+
+    # Nested under a synthetic history/archives path segment
+    arch = tmp_path / "history" / "archives" / "bets_old.csv"
+    arch.parent.mkdir(parents=True, exist_ok=True)
+    arch.write_text("bet_id,date,match,selection,decimal_odds,stake_nok,result\n", encoding="utf-8")
+    with pytest.raises(RuntimeError, match="archive"):
+        load_bets(arch)

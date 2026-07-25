@@ -196,21 +196,9 @@ def assess_combo(
 
             fail_closed_hook_error(cfg, e, where="combos.clip")
 
-    ok = not any(
-        r.startswith("hard reject")
-        or r.startswith("combos disabled")
-        or r.startswith("phase ")
-        or r.startswith("need ")
-        or r.startswith("legs ")
-        or r.startswith("trebles")
-        or r.startswith("leg grade")
-        or r.startswith("high-odds")
-        or r.startswith("leg EV")
-        or r.startswith("correlation_score")
-        or r.startswith("bad odds")
-        for r in reasons
-    )
-    # tighten: if any reject-class reason above
+    # Reject-class reasons only. Note: correlation_score() also appends
+    # informational "correlation_score=0.85" — that must NOT kill ok.
+    # The fail form is "correlation_score 0.40 < min 0.55" (space after key).
     reject_prefixes = (
         "hard reject",
         "combos disabled",
@@ -221,10 +209,14 @@ def assess_combo(
         "leg grade",
         "high-odds",
         "leg EV",
-        "correlation_score",
+        "correlation_score ",  # trailing space: fail form only
         "bad odds",
     )
-    ok = not any(any(r.startswith(p) for p in reject_prefixes) for r in reasons) and n >= 2 and corr >= min_corr
+    ok = (
+        not any(any(r.startswith(p) for p in reject_prefixes) for r in reasons)
+        and n >= 2
+        and corr >= min_corr
+    )
 
     if ok:
         reasons.insert(0, f"OK combo n={n} odds={combined_odds:.2f} EV={ev:.3f}")
