@@ -46,9 +46,37 @@ def is_ml_family(fam: str) -> bool:
     return False
 
 
-def _is_line_market_context(text: str) -> bool:
-    """True when blob looks like O/U / totals / handicap (not bare 1X2 / ML)."""
+def is_correct_score_family(fam: str) -> bool:
+    """Correct-score families have scorelines (2-1), not O/U or HC lines."""
+    f = (fam or "").strip().lower()
+    return "correct_score" in f or f.endswith("_cs")
+
+
+def is_no_line_family(fam: str) -> bool:
+    """Families that should skip similar-recent when include_ml is false."""
+    return is_ml_family(fam) or is_correct_score_family(fam)
+
+
+def _is_correct_score_blob(text: str) -> bool:
     t = (text or "").lower()
+    if re.search(
+        r"riktig resultat|korrekt resultat|correct score|korrekt score|riktig score",
+        t,
+    ):
+        return True
+    # Bare score pair like 2-1 / 1-0 without HC/totals tokens
+    if re.search(r"\b\d+\s*[-–]\s*\d+\b", t) and not re.search(
+        r"handikap|handicap|totalt|over|under", t
+    ):
+        return True
+    return False
+
+
+def _is_line_market_context(text: str) -> bool:
+    """True when blob looks like O/U / totals / handicap (not bare 1X2 / ML / CS)."""
+    t = (text or "").lower()
+    if _is_correct_score_blob(t):
+        return False
     if re.search(r"1\s*[x×]\s*2|1x2", t):
         # 1X2 labels often sit next to other tokens — still not a line market
         if not any(
@@ -65,14 +93,16 @@ def _is_line_market_context(text: str) -> bool:
             )
         ):
             return False
+    # Signed HC: require leading +/- not interior score hyphen (2-1 → not HC)
+    has_signed_hc = bool(re.search(r"(?<!\d)[+-]\s?\d+(?:[.,]\d+)?", t))
     return bool(
         re.search(
             r"totalt|over/under|over under|\bo/u\b|handikap|handicap|"
             r"(?<![/\w])over\b|(?<![/\w])under\b|"
-            r"[+-]\s?\d+(?:[.,]\d+)?|"
             r"antall\s+(?:games?|m[åa]l|points?|kart|maps?)",
             t,
         )
+        or has_signed_hc
     )
 
 
@@ -81,7 +111,8 @@ def parse_line(selection: str = "", market_type: str = "") -> float | None:
     Extract a betting line (e.g. 22.5, 2.5) from selection / market_type.
 
     Only accepts lines in O/U / totals / handicap context. Never treats bare
-    ``1`` / ``2`` / ``X`` or digits inside ``1X2`` as a line.
+    ``1`` / ``2`` / ``X``, digits inside ``1X2``, or scoreline hyphens
+    (``2-1``) as a line.
     """
     sel = (selection or "").strip()
     mt = (market_type or "").strip()
@@ -89,24 +120,39 @@ def parse_line(selection: str = "", market_type: str = "") -> float | None:
     if not text.strip():
         return None
 
+    # Correct score / scoreline markets are not line markets
+    if _is_correct_score_blob(text):
+        return None
+
     # Strip 1X2 tokens so their embedded digits never become a phantom line
     cleaned = re.sub(r"1\s*[x×]\s*2", " ", text, flags=re.I)
     cleaned = re.sub(r"\b1x2\b", " ", cleaned, flags=re.I)
+    # Neutralize score pairs so interior hyphens never look like signed HC
+    cleaned = re.sub(r"\b\d+\s*[-–]\s*\d+\b", " ", cleaned)
 
     if not _is_line_market_context(cleaned):
         return None
 
-    # Prefer number adjacent to Over/Under / signed HC; else half-lines (*.0/*.5)
+    # Prefer number adjacent to Over/Under / HC token; signed HC must not be
+    # interior score residue (already stripped). Bound sign with (?<!\d).
     adj = re.findall(
-        r"(?:over|under|handikap|handicap|[+-])\s*(\d+(?:\.\d+)?)",
+        r"(?:over|under|handikap|handicap)\s*[:+]?\s*(\d+(?:\.\d+)?)"
+        r"|(?<!\d)[+-]\s*(\d+(?:\.\d+)?)",
         cleaned,
         flags=re.I,
     )
     if adj:
-        try:
-            return float(adj[-1])
-        except ValueError:
-            pass
+        # findall returns tuples when alternation has two groups
+        for groups in adj:
+            if isinstance(groups, tuple):
+                num = next((g for g in groups if g), None)
+            else:
+                num = groups
+            if num:
+                try:
+                    return float(num)
+                except ValueError:
+                    continue
 
     nums = re.findall(r"\d+(?:\.\d+)?", cleaned)
     if not nums:
@@ -246,8 +292,8 @@ def similar_recent_hits(
         market_key=market_key or "",
     )
 
-    # include_ml false → skip ML / 1X2 / DNB families (do not rely on parse_line alone)
-    if not include_ml and is_ml_family(fam):
+    # include_ml false → skip ML / 1X2 / DNB / correct-score (no real O/U-HC line)
+    if not include_ml and is_no_line_family(fam):
         return []
 
     cand_line = parse_line(selection or "", market_type or "")
@@ -274,7 +320,7 @@ def similar_recent_hits(
             market_type=r_mt,
             market_key=r_mk,
         )
-        if not include_ml and is_ml_family(r_fam):
+        if not include_ml and is_no_line_family(r_fam):
             continue
 
         if r_sp == "unknown":

@@ -47,6 +47,42 @@ def test_parse_line_1x2_market_type_not_phantom_line():
     assert parse_line("X", "1X2") is None
 
 
+def test_parse_line_correct_score_scoreline_not_phantom_hc():
+    """Scorelines like 2-1 must not become signed HC lines (Issue 9)."""
+    assert parse_line("Riktig resultat 2-1", "Correct score") is None
+    assert parse_line("Korrekt resultat 1-0") is None
+    assert parse_line("Correct score 3-1") is None
+    assert parse_line("2-1", "Riktig resultat") is None
+    # Real HC still works
+    assert parse_line("Handikap: Ace -1.5", "Handikap") == 1.5
+    assert parse_line("Sett handikap: Player A -1.5") == 1.5
+
+
+def test_correct_score_does_not_demote_other_scores():
+    """Distinct correct scores must not similar-hit via phantom line 1.0."""
+    recent = [
+        {
+            "match": "Old FC vs Rival",
+            "selection": "Riktig resultat 2-1",
+            "sport": "football",
+            "result": "Loss",
+            "market_type": "Correct score",
+            "date": "2026-07-24",
+        }
+    ]
+    hits = similar_recent_hits(
+        sport="football",
+        selection="Riktig resultat 3-1",
+        market_type="Correct score",
+        market_family_key="football_correct_score",
+        match="New FC vs Other",
+        recent_rows=recent,
+        include_ml=False,
+        line_tolerance=1.0,
+    )
+    assert hits == []
+
+
 def test_include_ml_false_skips_ml():
     recent = [
         {
