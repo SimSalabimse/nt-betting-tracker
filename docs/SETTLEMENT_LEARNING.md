@@ -95,10 +95,22 @@ After every settle batch with ≥1 terminal, the engine writes Settlement Lesson
 - **`outcome_driver`** heuristic enum (`research_quality`, `variance`, `total_line_miss`, …)
 - **Pattern peers** = last ~12 **live settled** (Win/Loss/Refunded) via `filter_live_rows` — no `era_archive`. Open tickets do not push losses out of the window. `cluster_same_family` may note open same-family seats but **soft_awareness is only emitted for loss-linked patterns** (repeat losses / batch multi-loss).
 - **Soft awareness** with TTL (`learning.settlement_lessons.ttl_hours`, default 72h) — never permanent hard rejects; `max_soft_notes` keeps **freshest** notes
-- **`live_ledger_only`**: always enforced (informational in config — cannot re-enable archive peers)
+- **`live_ledger_only`**: always enforced (informational in config — cannot re-enable archive peers). **FORBIDDEN** memory paths: `history/archives/`, `history/rounds/`.
 - Portfolio applies `lessons_soft:` sort demotion **independent** of similar-recent hits (`Recommendation.lessons_soft_reason` + combined `soft_demotion_reason`)
 
 Config: `learning.settlement_lessons.*`. Failures are logged; settle never blocks.
+
+#### Agent / `/daily-run` mandate (automatic)
+
+| Step | Rule |
+|------|------|
+| After settle ≥1 terminal | **Print/use** `outbox/SETTLEMENT_LESSONS.md` + soft notes from `data/state/settlement_lessons.json` **before** Stage 1 research |
+| Missing or stale | **Warning only** — not a hard-stop; continue board/light |
+| Soft only | Awareness demotes sort — never hard-reject lists, never invent `p_model`, never soften min_EV by hand |
+| Orthogonal | Diversify hard max 2 `market_family` + similar-recent still apply at recommend ([`DIVERSITY_AND_EXPLORE.md`](./DIVERSITY_AND_EXPLORE.md)) |
+| Untouched | ControlSignals · capital_v2 · phase · secure · 10 NOK · FEH stays demoted |
+
+Root law: `AGENTS.md` § Settlement Lessons + diversify + archive isolation. Skill dual-write: `docs/skills_mirror_daily-run.md` · `~/.grok/skills/daily-run/SKILL.md`.
 
 ## LuminaNT
 

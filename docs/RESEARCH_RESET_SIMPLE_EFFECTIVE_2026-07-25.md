@@ -152,8 +152,10 @@ Near-misses short (why not / what would change).
 
 ## Learning constraint
 
-**Allowed:** stake_mult / ev_boost clamps; process_gate temp raises; taxonomy + learning_weight.  
-**Forbidden:** auto hard reject config; re-enable anti_soft from settlement; block lists from single-loss anecdotes.
+**Allowed:** stake_mult / ev_boost clamps; process_gate temp raises; taxonomy + learning_weight; **Settlement Lessons soft TTL** awareness (sort demotion only).  
+**Forbidden:** auto hard reject config; re-enable anti_soft / FEH place-owning from settlement; block lists from single-loss anecdotes; seeding peers from `history/archives/` or `history/rounds/`.
+
+Desk automatic: after settle with ≥1 terminal, print Settlement Lessons before research (warn if missing/stale — not hard-stop). Portfolio hard max **2** `market_family`; similar-recent + lessons soft demotion. See root `AGENTS.md` and [`DIVERSITY_AND_EXPLORE.md`](./DIVERSITY_AND_EXPLORE.md).
 
 ---
 
@@ -177,5 +179,8 @@ Near-misses short (why not / what would change).
 | [`RESEARCH_GATES.md`](./RESEARCH_GATES.md) | Soft/hard gate fields |
 | [`EXA_RESEARCH_USAGE.md`](./EXA_RESEARCH_USAGE.md) | Exa feeds research |
 | [`DESK_SKILLS.md`](./DESK_SKILLS.md) | `/daily-run` and siblings |
+| [`SETTLEMENT_LEARNING.md`](./SETTLEMENT_LEARNING.md) | Settlement Lessons soft TTL (print before research) |
+| [`DIVERSITY_AND_EXPLORE.md`](./DIVERSITY_AND_EXPLORE.md) | Hard max 2 `market_family` · similar-recent · archive isolation |
+| [`skills_mirror_daily-run.md`](./skills_mirror_daily-run.md) | `/daily-run` dual-write (lessons + diversify automatic) |
 | [`FORCED_EVIDENCE_HIERARCHY_FULL_CLEANUP_AND_10NOK_TEST_2026-07-24.md`](./FORCED_EVIDENCE_HIERARCHY_FULL_CLEANUP_AND_10NOK_TEST_2026-07-24.md) | **SUPERSEDED** FEH design (historical) |
-| Root `AGENTS.md` | Operator law |
+| Root `AGENTS.md` | Operator law · Settlement Lessons + diversify + archive isolation |

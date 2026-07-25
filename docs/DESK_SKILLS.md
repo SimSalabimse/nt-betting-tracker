@@ -12,7 +12,7 @@ Authoritative: [`RESEARCH_RESET_SIMPLE_EFFECTIVE_2026-07-25.md`](./RESEARCH_RESE
 
 | Slash | Directory | Role |
 |-------|-----------|------|
-| `/daily-run` | `~/.grok/skills/daily-run/` | Full day: results → odds → Stage 1 scan → deep queue → ESR packs (Exa both-sides) → expand if &lt;2 on large board → recommend + **why · support · main risk** → `PLACE_THESE.md` → place-ack (10 NOK cap when active) |
+| `/daily-run` | `~/.grok/skills/daily-run/` | Full day: results → **Settlement Lessons** (warn if stale) → odds → Stage 1 scan → deep queue → ESR packs (Exa both-sides) → expand if &lt;2 on large board → recommend (max 2 family / similar soft) + **why · support · main risk** → `PLACE_THESE.md` → place-ack (10 NOK cap when active) · live ledger only |
 | `/missed-audit` | `~/.grok/skills/missed-audit/` | Promising lines out of deep; promo components; cheapest fix — **edge-seeking, not soft-dog guilt** |
 | `/chain-explain` | `~/.grok/skills/chain-explain/` | Simple chain: why · strongest support · main risk (+ EV/stake when useful) |
 | `/bankroll-tune` | `~/.grok/skills/bankroll-tune/` | Secure/phase/unit/regime proposal → MC + capital tools |
@@ -104,9 +104,13 @@ python scripts/backfill_settlement_taxonomy.py --n 30 --apply   # after review
 | Soft underdogs | Not guilty by default; place on matchup + EV |
 | Short 1.40–1.80 | Allowed when research supports (Grade B + core + EV) |
 | Empty slip | Only after full deep + expansion + no +EV — process miss if next tier unresearched |
-| FEH | Shadow/demoted — not place law |
+| FEH | Shadow/demoted — not place law; **no** anti-soft revival |
 | Coverage / temp_ev_relax | Expand research or rare EV soften — never invent p_model |
 | 10 NOK test cap | First 10 place-acked `TEST_CAP:esr_v1` seats ≤ 10 NOK |
+| Settlement Lessons | After settle ≥1 terminal: print before research; missing/stale = **warn** only |
+| Diversify | Hard max **2** `market_family`; similar-recent + lessons soft demotion (sort only) |
+| Archive isolation | **Never** `history/archives/` or `history/rounds/` for memory — live `data/bets.csv` only |
+| Untouched | capital_v2 · phase · secure · unit · ControlSignals |
 
 ### `/daily-run` reasoning output
 
@@ -151,6 +155,7 @@ Taxonomy + weights + temp ControlSignals. **Forbidden:** proposing permanent har
 | Status / risk | `data/state/status.md` · `risk.json` · `phase.json` |
 | Evidence packs | `evidence/*.json` |
 | Settlement reviews | `data/state/settlement_reviews.jsonl` |
+| Settlement Lessons | `outbox/SETTLEMENT_LESSONS.md` · `data/state/settlement_lessons.json` |
 | Taxonomy backfill (proposed) | `data/state/settlement_reviews_backfill.jsonl` |
 | ControlSignals | `data/state/control_signals.jsonl` |
 | Learning | `data/state/learning.json` |
@@ -159,12 +164,13 @@ Taxonomy + weights + temp ControlSignals. **Forbidden:** proposing permanent har
 
 | Doc | Role |
 |-----|------|
-| `AGENTS.md` | Desk law + ESR Stage 0–4 |
+| `AGENTS.md` | Desk law + ESR Stage 0–4 · lessons + diversify + archive isolation |
 | `docs/RESEARCH_RESET_SIMPLE_EFFECTIVE_2026-07-25.md` | ESR philosophy |
 | `docs/RESEARCH_WORKFLOW.md` | Stage map |
 | `docs/EXA_RESEARCH_USAGE.md` | Exa feeds research |
-| `docs/skills_mirror_daily-run.md` | Committed daily-run skill text |
+| `docs/skills_mirror_daily-run.md` | Committed daily-run skill text (dual-write) |
 | `docs/RESEARCH_GATES.md` | Hard vs soft gates |
 | `docs/CAPITAL_HYBRID_PROGRESSION.md` | Capital hybrid |
-| `docs/SETTLEMENT_LEARNING.md` | Settle + learn |
+| `docs/SETTLEMENT_LEARNING.md` | Settle + learn · Settlement Lessons v1 |
+| `docs/DIVERSITY_AND_EXPLORE.md` | max 2 family · similar-recent · archive isolation |
 | `docs/FORCED_EVIDENCE_HIERARCHY_FULL_CLEANUP_AND_10NOK_TEST_2026-07-24.md` | **SUPERSEDED** |

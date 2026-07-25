@@ -12,12 +12,13 @@ Real-money capital desk. Engines in `nt/` are law. UI (LuminaNT, Flet desktop) p
 > | **FEH** | **Demoted / shadow only** — not place law ([`docs/RESEARCH_RESET_SIMPLE_EFFECTIVE_2026-07-25.md`](docs/RESEARCH_RESET_SIMPLE_EFFECTIVE_2026-07-25.md)) |
 > | **Coverage floor (A)** + **`temp_ev_relax` (B)** | Floor expands research; never invents `p_model`; relax is rare safety net |
 > | **Settlement taxonomy** `learning_weight` · CS gate ≥**0.5** | [`docs/SETTLEMENT_LEARNING.md`](docs/SETTLEMENT_LEARNING.md) |
+> | **Settlement Lessons + diversify + archive isolation** | Soft lessons after settle · hard max **2** `market_family` · similar-recent demote · **never** read `history/archives/` or `history/rounds/` |
 > | **Desk skills** `/daily-run` · `/missed-audit` · `/chain-explain` · `/bankroll-tune` · `/learning-rootcause` | [`docs/DESK_SKILLS.md`](docs/DESK_SKILLS.md) |
 > | **Reasoning** on recommend | `why · support · main risk` + short near-misses in `PLACE_THESE.md` |
 >
 > Package narrative: permanent rules below. Skills: **`docs/DESK_SKILLS.md`**. Capital hybrid: **`docs/CAPITAL_HYBRID_PROGRESSION.md`**. Taxonomy: **`docs/SETTLEMENT_LEARNING.md`**. **ESR philosophy: [`docs/RESEARCH_RESET_SIMPLE_EFFECTIVE_2026-07-25.md`](docs/RESEARCH_RESET_SIMPLE_EFFECTIVE_2026-07-25.md).** FEH design doc is **SUPERSEDED**.
 
-**Status (permanent package):** clean-restart **500 NOK** era · capital_v2 live · **hybrid half-steps (1A+/1B+) + continuous unit** · **secure bucket Variant A** · **Exploration→Survival→Normal** bankroll regimes · multi-stage quant prefilter · engine deep queue (**edge-seeking promise score**; preferred composition quotas **off**) · **ESR place path** (legacy grade + research_gates + EV + soft odds bands; FEH shadow) · Coverage Health + soft gate · `force_coverage_priority` · totalgrense residual buffer · closed-loop ControlSignals · PhaseState v5 · **neutral sport start at zero data** · **find best edges** (empty slip only after full scan + expansion).
+**Status (permanent package):** clean-restart **500 NOK** era · capital_v2 live · **hybrid half-steps (1A+/1B+) + continuous unit** · **secure bucket Variant A** · **Exploration→Survival→Normal** bankroll regimes · multi-stage quant prefilter · engine deep queue (**edge-seeking promise score**; preferred composition quotas **off**) · **ESR place path** (legacy grade + research_gates + EV + soft odds bands; FEH shadow) · Coverage Health + soft gate · `force_coverage_priority` · totalgrense residual buffer · closed-loop ControlSignals · PhaseState v5 · **Settlement Lessons** (soft TTL) · diversify hard max **2** `market_family` + similar-recent · **archive isolation** (no `history/archives|rounds` memory) · **neutral sport start at zero data** · **find best edges** (empty slip only after full scan + expansion).
 
 Docs: `docs/RESEARCH_RESET_SIMPLE_EFFECTIVE_2026-07-25.md` · `docs/RESEARCH_WORKFLOW.md` · `docs/RESEARCH_GATES.md` · `docs/EXA_RESEARCH_USAGE.md` · `docs/DESK_SKILLS.md` · `docs/BANKROLL_PLAN.md` · `docs/CAPITAL_HYBRID_PROGRESSION.md` · `docs/SETTLEMENT_LEARNING.md` · `docs/RESIDUAL_RISKS.md` · `docs/LUMINA_INTEGRATION.md` · `docs/FORCED_EVIDENCE_HIERARCHY_FULL_CLEANUP_AND_10NOK_TEST_2026-07-24.md` (**SUPERSEDED**).
 
@@ -39,6 +40,54 @@ Docs: `docs/RESEARCH_RESET_SIMPLE_EFFECTIVE_2026-07-25.md` · `docs/RESEARCH_WOR
 | **FEH demoted** | Place path = grade + research_gates + EV + odds_confidence; FEH is shadow/audit only |
 
 Full design: **`docs/RESEARCH_RESET_SIMPLE_EFFECTIVE_2026-07-25.md`**.
+
+---
+
+## Settlement Lessons + diversify + archive isolation (automatic desk law)
+
+Engines already enforce these (PR1–PR3). Agents and `/daily-run` must **surface and respect** them every session — not re-invent place law.
+
+### After settle with ≥1 terminal — Settlement Lessons first
+
+When a settle batch writes **≥1** terminal outcome (Win / Loss / Refunded):
+
+1. Engine writes **`outbox/SETTLEMENT_LESSONS.md`** (human) + **`data/state/settlement_lessons.json`** (SSOT, soft_awareness TTL).
+2. **Before Stage 1 research / board**, the agent **reads and prints** Settlement Lessons (main_reason · outcome_driver · soft notes).
+3. Missing or **stale** lessons (no file, empty, or older than TTL / not from this batch) → **warning only** — continue research. **Not** a hard-stop.
+4. Soft awareness demotes portfolio **sort_ev** only (`lessons_soft:` …) — **never** permanent hard rejects; **never** invents `p_model` or softens min_EV.
+5. **ControlSignals unchanged** (`temp_gate_raise` · `force_coverage_priority` · `temp_ev_relax` still primary process actuators).
+
+Config: `learning.settlement_lessons.*` · code `nt/settlement_lessons.py`. Detail: [`docs/SETTLEMENT_LEARNING.md`](docs/SETTLEMENT_LEARNING.md).
+
+### Portfolio diversify (visible; engine hard/soft)
+
+| Rule | Behaviour |
+|------|-----------|
+| **Hard max 2** `market_family` | Coarse family open+slip (`max_per_market_family: 2`). Line is **not** in the key (tennis O/U 21.5–23.5 all → `tennis_totals`). |
+| **similar-recent** | Soft demotion on last ~10–15 **live** settled+pending; same sport + family + line tolerance. Visible on rejects/notes / `sort_ev` — true EV stays honest. |
+| **Lessons soft** | Independent of similar-recent; TTL soft awareness from Settlement Lessons. |
+| Stage 1 queue | **No** engine demote of deep_queue by family/lessons — diversify binds at **recommend / portfolio**. |
+
+Detail: [`docs/DIVERSITY_AND_EXPLORE.md`](docs/DIVERSITY_AND_EXPLORE.md).
+
+### Archive isolation — FORBIDDEN memory paths
+
+**Never** load, cite, or seed diversify / similar-recent / Settlement Lessons / learning peers from:
+
+- `history/archives/`
+- `history/rounds/`
+
+**Allowed live memory only:** `data/bets.csv` · open Pending/ConfirmedPlaced · latest results (`inbox/results*`) · **current** odds dump · `data/state/*` live SSOT.
+
+`load_bets` / `assert_not_archive_path` fail-closed on archive paths. Era rows (`source==era_archive`) stay out of live windows via `filter_live_rows`.
+
+### Untouched by this layer
+
+| Keep as-is | Meaning |
+|------------|---------|
+| **No FEH / anti-soft revival** | FEH stays shadow; soft dogs not guilty by default |
+| **capital_v2 / phase / secure / unit / 10 NOK cap** | Unchanged |
+| **ControlSignals** | Unchanged contracts and emit paths |
 
 ---
 
@@ -379,7 +428,8 @@ After every settle:
    ```
 4. Learning recompute (`run_learning`) — sample influence × `learning_weight`.  
 5. **ControlSignals** — `temp_gate_raise` · `force_coverage_priority` · `temp_ev_relax` as above.  
-6. **Learning proposals** auto-resolve when configured. Mults are soft; ControlSignals are durable process actuators.
+6. **Learning proposals** auto-resolve when configured. Mults are soft; ControlSignals are durable process actuators.  
+7. **Settlement Lessons** (≥1 terminal) — engine writes `outbox/SETTLEMENT_LESSONS.md` + `data/state/settlement_lessons.json`. **Agent: print/use before next research.** Missing/stale → **warn**, not hard-stop. Soft awareness only (TTL); no hard-reject list growth. See [Settlement Lessons + diversify + archive isolation](#settlement-lessons--diversify--archive-isolation-automatic-desk-law).
 
 ### Learning must not grow hard reject lists
 
@@ -388,7 +438,8 @@ After every settle:
 | stake_mult / ev_boost clamps | Auto hard-reject config patches |
 | process_gate **temp** raises | Re-enable anti_soft / FEH place-owning from settlement |
 | Taxonomy + learning_weight | Block lists from single-loss anecdotes |
-| Soft mult recompute | FEH-style permanent guilt lists |
+| Soft mult recompute · Settlement Lessons soft TTL | FEH-style permanent guilt lists |
+| Live ledger peers only (`data/bets.csv`) | Seeding lessons/similar/diversify from `history/archives/` or `history/rounds/` |
 
 ```bash
 python run_nt.py control-signals list --json
@@ -449,6 +500,10 @@ python run_nt.py simulate --sport basketball --home H --away A ...
 | Trust ControlSignals as process loop | Expect permanent mults alone to stick after recompute |
 | Respect RESEARCH_ONLY / size_mode floor | Force recommend when phase health blocks |
 | Exa feeds packs + reasoning | Use Exa as FEH hard-reject gate |
+| After settle ≥1 terminal: **print Settlement Lessons** before research | Skip lessons silently; treat missing/stale as hard-stop |
+| Hard max **2** `market_family`; note similar-recent + lessons soft demotion | Stack same coarse family; ignore diversify rejects |
+| Memory = **live** `data/bets.csv` + pending + current odds/results only | Read or cite `history/archives/` / `history/rounds/` for peers |
+| Keep FEH demoted; capital_v2/phase/secure/10 NOK untouched | Revive anti-soft / FEH place law from losses |
 
 ---
 
@@ -469,7 +524,7 @@ User-scope skills in `%USERPROFILE%\.grok\skills\` — load **this file first**,
 
 | Slash | Skill | When |
 |-------|--------|------|
-| `/daily-run` | Full day desk | settle → odds → Stage 1 scan → deep queue → ESR packs → expand if needed → recommend + why/support/risk → `PLACE_THESE.md` → place-ack (10 NOK cap when active) |
+| `/daily-run` | Full day desk | settle → **Settlement Lessons** (warn if stale) → odds → Stage 1 scan → deep queue → ESR packs → expand if needed → recommend (max 2 family / similar soft) → why/support/risk → `PLACE_THESE.md` → place-ack (10 NOK cap when active) |
 | `/missed-audit` | Missed edges | promising lines out of deep; promo components; cheapest fix — **not** soft-dog guilt |
 | `/chain-explain` | Reasoning | **why · support · main risk** for one match/selection (or whole slip) |
 | `/bankroll-tune` | Capital tune | secure/phase/unit/regime proposal → MC + capital CLI |
@@ -507,8 +562,8 @@ User-scope skills in `%USERPROFILE%\.grok\skills\` — load **this file first**,
 | `docs/CAPITAL_V2_GO_LIVE.md` | Capital v2 enable / rollback |
 | `docs/LUMINA_INTEGRATION.md` | LuminaNT cockpit contract |
 | `docs/RESIDUAL_RISKS.md` | Honest remaining risks |
-| `docs/SETTLEMENT_LEARNING.md` | Settle + learn loop |
-| `docs/DIVERSITY_AND_EXPLORE.md` | Virgin explore + diversify |
+| `docs/SETTLEMENT_LEARNING.md` | Settle + learn loop · **Settlement Lessons v1** |
+| `docs/DIVERSITY_AND_EXPLORE.md` | Virgin explore · max 2 `market_family` · similar-recent · archive isolation |
 | `docs/CLOSED_LOOP_PHASE_REDESIGN_SUMMARY.md` | ControlSignals + Phase v5 |
 
 ### Desktop (Flet)
