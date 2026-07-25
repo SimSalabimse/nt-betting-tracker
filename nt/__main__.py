@@ -649,6 +649,36 @@ def cmd_research(args: argparse.Namespace) -> int:
                 print(f"\nWrote: {payload['md_path']}")
         return 0 if payload.get("coverage_ok", True) else 1
 
+    if sub in ("scan-merge", "scan_merge"):
+        from nt.scan_merge import run_scan_merge
+
+        odds = Path(args.odds)
+        if not odds.exists():
+            print(f"Odds file not found: {odds}", file=sys.stderr)
+            return 2
+        payload = run_scan_merge(
+            cfg,
+            odds=odds,
+            agent_a=getattr(args, "a", None) or None,
+            agent_b=getattr(args, "b", None) or None,
+            agent_c=getattr(args, "c", None) or None,
+            agents_dir=getattr(args, "agents_dir", None) or None,
+            out=getattr(args, "out", None) or None,
+            out_json=getattr(args, "out_json", None) or None,
+            use_live_open=not bool(getattr(args, "no_live_open", False)),
+            write=not bool(getattr(args, "no_write", False)),
+        )
+        if getattr(args, "json", False):
+            slim = {k: v for k, v in payload.items() if k != "markdown"}
+            print(json.dumps(slim, indent=2, default=str))
+        else:
+            print(payload.get("markdown") or json.dumps(payload, indent=2, default=str))
+            if payload.get("md_path"):
+                print(f"\nWrote: {payload['md_path']}")
+            if payload.get("json_path"):
+                print(f"JSON:  {payload['json_path']}")
+        return 0
+
     print(f"Unknown research subcommand: {sub}", file=sys.stderr)
     return 2
 
@@ -1318,6 +1348,38 @@ def main(argv: list[str] | None = None) -> int:
     rs_ms.add_argument("--json", action="store_true", help="Print full JSON")
     rs_ms.add_argument("--no-write", action="store_true", help="Do not write outbox reports")
     rs_ms.set_defaults(func=cmd_research)
+
+    rs_sm = rs.add_parser(
+        "scan-merge",
+        help="Stage 1b: merge multi-agent scan JSONL → MULTI_AGENT_SHORTLIST (+ primary worklist)",
+    )
+    rs_sm.add_argument("--odds", required=True, help="Full odds dump path (validation universe)")
+    rs_sm.add_argument("--a", default=None, help="Agent A scan file (jsonl/json/md)")
+    rs_sm.add_argument("--b", default=None, help="Agent B scan file (jsonl/json/md)")
+    rs_sm.add_argument("--c", default=None, help="Agent C scan file (jsonl/json/md)")
+    rs_sm.add_argument(
+        "--agents-dir",
+        default=None,
+        help="Directory with scan_agent_a/b/c* files (used when --a/--b/--c omitted)",
+    )
+    rs_sm.add_argument(
+        "--out",
+        default=None,
+        help="Markdown output path (default outbox/MULTI_AGENT_SHORTLIST.md)",
+    )
+    rs_sm.add_argument(
+        "--out-json",
+        default=None,
+        help="Optional JSON output path (default outbox/multi_agent_shortlist.json)",
+    )
+    rs_sm.add_argument(
+        "--no-live-open",
+        action="store_true",
+        help="Skip live ledger open-family/sport soft occupancy (read-only when enabled)",
+    )
+    rs_sm.add_argument("--no-write", action="store_true", help="Do not write shortlist artifacts")
+    rs_sm.add_argument("--json", action="store_true", help="Print machine JSON (no markdown body)")
+    rs_sm.set_defaults(func=cmd_research)
 
     rs_ready = rs.add_parser("ready", help="Check if recommend is allowed for an odds file")
     rs_ready.add_argument("--odds", required=True)

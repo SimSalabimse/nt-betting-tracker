@@ -125,6 +125,11 @@ python run_nt.py research board --odds inbox/odds_YYYY-MM-DD.txt
 python run_nt.py research light --odds inbox/odds_YYYY-MM-DD.txt
 python run_nt.py recommend --odds inbox/odds_YYYY-MM-DD.txt --dry-run
 
+# Multi-agent Stage 1b shortlist merge (JSONL primary; validates vs full odds dump)
+python run_nt.py research scan-merge --odds inbox/odds_YYYY-MM-DD.txt \
+  --a outbox/scan_agent_a.jsonl --b outbox/scan_agent_b.jsonl --c outbox/scan_agent_c.jsonl
+# or: --agents-dir outbox  → writes outbox/MULTI_AGENT_SHORTLIST.md (+ multi_agent_shortlist.json)
+
 # Settle (after results file in inbox/)
 python run_nt.py settle --results inbox/results.txt
 
