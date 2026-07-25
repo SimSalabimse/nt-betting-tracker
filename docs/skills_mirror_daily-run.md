@@ -110,7 +110,10 @@ Fallback if Exa unavailable: HQ web search + sport sites; note fallback in pack.
 - **Why:** …
 - **Support:** …
 - **Main risk:** …
+- **scan_agent:** A   # or A+C / B / … when multi-agent Stage 1b ran
 ```
+
+**Provenance (when multi-agent Stage 1b ran):** each placed pick's why block **must** include `scan_agent: A` or `A+C` (union from shortlist). Source = `MULTI_AGENT_SHORTLIST.md` / merge `scan_agents`. Omit only if the line never appeared on the multi-agent shortlist (pure coverage_critical / Stage 3b expansion).
 
 Near-misses: one short line each (why not / what would change).
 

@@ -354,10 +354,13 @@ Present the slip with reasoning.
 - **Why:** …
 - **Support:** …
 - **Main risk:** …
+- **scan_agent:** A   # or A+C / B / … when multi-agent Stage 1b ran
 
 ## Near-miss / Rejected
 - {line} — short reason (EV / gates / thin research)
 ```
+
+**Provenance (when multi-agent Stage 1b ran):** each placed pick's why block **must** include `scan_agent: A` or `A+C` (union from shortlist, e.g. `B`, `A+C`). Source = `outbox/MULTI_AGENT_SHORTLIST.md` / merge `scan_agents`. Omit only if the line never appeared on the multi-agent shortlist (pure coverage_critical / Stage 3b expansion).
 
 Near-misses short. Prefer mid-band + light-pass for near-miss sources. Light LATEST is SSOT for promo join. Verify: `python scripts/verify_chain_residuals.py`.
 

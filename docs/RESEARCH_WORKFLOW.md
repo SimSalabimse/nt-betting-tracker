@@ -296,6 +296,8 @@ Empty with `expansion_needed` and next tier unresearched = **process miss**.
 
 ### Reasoning format
 
+When multi-agent Stage 1b ran, each pick's why block **must** carry `scan_agent: A` or `A+C` (union from shortlist). Omit only for pure coverage_critical / Stage 3b expansion lines never on the multi-agent shortlist.
+
 ```markdown
 ## Reasoning
 
@@ -303,6 +305,7 @@ Empty with `expansion_needed` and next tier unresearched = **process miss**.
 - **Why:** Clear ranking + form gap; opponent cold last 3.
 - **Support:** ranking delta; last-5 averages; H2H 4–1.
 - **Main risk:** single-set variance.
+- **scan_agent:** A
 
 ## Near-miss / Rejected
 - Smith +2.5 @ 1.85 — form favours other side; EV ~0.4% after haircut.
