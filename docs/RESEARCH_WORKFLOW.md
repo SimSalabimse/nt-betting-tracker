@@ -1,91 +1,81 @@
-# Research & Bet-Finding Workflow (Best-in-Class)
+# Research & Bet-Finding Workflow — Edge-Seeking Research (ESR)
 
 ## Agent trigger (every odds dump)
 
-When the user provides a **new or updated odds file** in `inbox/`, the agent **must** run the full research → recommend path (see root `AGENTS.md`). Defaults: **live recommend** (logs Pending when picks exist); **dry-run only if the user asks**; **do not re-advise already Pending tickets**; honest evidence only (no mechanical p_model unless explicitly ordered).
+When the user provides a **new or updated odds file** in `inbox/`, the agent **must** run the full **Stage 0–4** path (see root `AGENTS.md`). Defaults: **live recommend** (logs Pending when picks exist); **dry-run only if the user asks**; **do not re-advise already Pending tickets**; honest evidence only (no mechanical `p_model` unless explicitly ordered).
 
-**Forced Evidence Hierarchy (FEH)** is **NON-BYPASSABLE** place law: side first, then price; anti-soft underdog; prefer empty slip over weak soft dogs. Deep-queue **preferred band (1.85–2.60)** is **research-rank only** — not place quality or inherent soft-dog attractiveness. Temporary **10 NOK** stake cap applies to the first 10 FEH-tagged placed bets. Design: [`FORCED_EVIDENCE_HIERARCHY_FULL_CLEANUP_AND_10NOK_TEST_2026-07-24.md`](./FORCED_EVIDENCE_HIERARCHY_FULL_CLEANUP_AND_10NOK_TEST_2026-07-24.md).
+**Philosophy:** **Edge-Seeking Research (ESR)** — find the best available +EV edges. Soft underdogs are **not** guilty by default. Short favourites **1.40–1.80** are allowed when research supports them. Empty slip only after full scan + **expansion** + no honest edge.
 
-## End-to-end stages (mandatory order)
+Authoritative design: [`RESEARCH_RESET_SIMPLE_EFFECTIVE_2026-07-25.md`](./RESEARCH_RESET_SIMPLE_EFFECTIVE_2026-07-25.md).  
+FEH non-bypassable place law is **SUPERSEDED** — see [`FORCED_EVIDENCE_HIERARCHY_FULL_CLEANUP_AND_10NOK_TEST_2026-07-24.md`](./FORCED_EVIDENCE_HIERARCHY_FULL_CLEANUP_AND_10NOK_TEST_2026-07-24.md).
+
+---
+
+## Stage 0–4 (mandatory order)
 
 ```
-0. SETTLE              results first if any pending
+0. COLLECT             Oddsen dump → inbox/odds_*.txt
         ↓
-1. MARKET COVERAGE     nt research market-scan --odds …
+1. BROAD SCAN          market-scan → board → light → promising queue 8–15
+        ↓              (all lines scored; no anti-soft filter)
+2. DEEP RESEARCH       Exa both-sides on shortlist → evidence/*.json
         ↓
-2. BOARD SHORTLIST     nt research board --odds …
-        ↓              (auto Stage-1 Light Research)
-3. LIGHT RESEARCH      ≥70–85% shortlist · sport minimums
-        ↓              outbox/light_research/*.md
-4. DEEP RESEARCH       only light-pass deep queue
-        ↓              evidence/*.json + honest p_model (side-first)
-5. READY CHECK         nt research ready --odds …
+3. SELECTION           ready → recommend (gates + EV + soft bands)
+        ↓              if large board & <2 picks → EXPANSION (deep next tier)
+4. OUTPUT              PLACE_THESE + why/support/risk + near-miss → place-ack
         ↓
-6. VALIDATION          FEH + grade_evidence + portfolio + risk/phase
-        ↓              (FEH F cannot be bypassed by promo/explore/temp_ev_relax)
-7. DECISION            recommend → PLACE_THESE.md  (Deep only; empty slip OK)
-        ↓
-8. SETTLEMENT          results → settle → learning
-        ↓
-9. REVIEW              nt analyze / nt learn
+   SETTLE / LEARN      results → taxonomy (no hard-reject list growth)
 ```
 
-### Tiered research (Light vs Deep)
-
-| | **Light (Stage 1)** | **Deep (Stage 2)** |
-|--|---------------------|--------------------|
-| Scope | Most of shortlist (target 85%) | Promote queue (~8–12 lines) |
-| Content | script lean, base-rate flag, odds/EV bar, strength/weakness notes | Full evidence pack + p_model + gates |
-| Time | Fast / structured | Web research, quality bar |
-| Recommend? | **No** | **Yes** (only these) |
+### CLI map
 
 ```bash
-python run_nt.py research board --odds inbox/current_odds_01.txt
-python run_nt.py research light --odds inbox/current_odds_01.txt
-# … deep packs for deep_queue …
-python run_nt.py recommend --odds inbox/current_odds_01.txt
+# Stage 0 — collect (agent dump or user file)
+# Stage 1
+python run_nt.py research market-scan --odds inbox/odds_….txt
+python run_nt.py research board --odds inbox/odds_….txt
+python run_nt.py research light --odds inbox/odds_….txt   # if not auto
+
+# Stage 2 — agent Exa + write packs
+python run_nt.py research write-pack --match "…" --selection "…" --p-model 0.XX …
+
+# Stage 3
+python run_nt.py research ready --odds inbox/odds_….txt
+python run_nt.py recommend --odds inbox/odds_….txt
+
+# Stage 4
+python run_nt.py place-ack --ids …
 ```
 
-Config: `research.tiers` in `config.yaml` (`light_coverage_target`, `min_light_per_sport`, `deep_target_n`, …).
+| Stage | Scope | Output | Can recommend? |
+|-------|--------|--------|----------------|
+| **Prefilter** | Noise screens + classical prior | discard hopeless; `prior_ev` rank-only | **No** |
+| **Light** | ≥70–85% shortlist | pass/fail + notes | **No** |
+| **Deep queue** | Engine promise ranking ~8–15 | worklist | **No** until packs |
+| **Deep packs** | Honest `p_model` + sources | gradeable | **Yes** |
+| **Expand** | Next 5–8 light-pass if &lt;2 picks | more packs | Re-recommend |
 
-**SSOT export:** board/light writes engine composition + queue lines to **`data/state/deep_queue.json`** (`nt/deep_queue_state.py`) for Lumina preferred/short-main bars (D17).
+Config: `research.tiers` (`deep_target_*`, promo weights, composition **off** under ESR).
 
-**Preferred / mid band = research-rank only.** Composition targets (≥55% preferred, promo boosts for 1.85–2.60, handicaps, longer ML) decide *what gets deep packs* — they do **not** seal place quality. Soft underdog at 1.85–2.20 is **not** inherently attractive; FEH anti-soft + structured H2H own place.
+**SSOT export:** `data/state/deep_queue.json` (may include `expansion_needed` / `next_tier_keys`).
 
-### Coverage floor + temp_ev_relax safety net
-
-Two permanent mechanisms keep high-volume boards from starving mid-price research **without** inventing `p_model` or casually softening EV.
+### Coverage floor + temp_ev_relax
 
 | | **Mechanism A — coverage floor** | **Mechanism B — `temp_ev_relax`** |
 |--|----------------------------------|-------------------------------------|
-| Role | Quality-preserving research pressure | Auditable temporary EV soften (safety net) |
-| Config | `research.coverage_floor` + `research.tiers.deep_target_*` | `learning.control_signals.temp_ev_relax` |
-| Code | `dynamic_deep_target_n`, top-promo scaffold (~20%), sport rotation | `maybe_emit_temp_ev_relax*` → portfolio allowlist |
-| Softens EV? | **No** | Yes, **only** on allowlisted lines (1–2pp) + stake ×0.80 · TTL 24h |
-| Blocked when | Composition / short-main rules | `process_gate_raise` active on candidate; high-odds / grade C by default |
-| vs FEH | Never invents place pass | **Never** overrides FEH F / anti-soft |
-
-**Operator surface:** `python run_nt.py status` / `data/state/status.md` → **Coverage floor** section shows `deep_target_n_effective`, scaffold/rotation summary, and active `temp_ev_relax` (ΔEV, stake mult, expires, line_keys count). Soft-fails if light/signals files are missing.
-
-**Verify (no live odds required):**
+| Role | Research pressure (dynamic target, scaffold, rotation) | Auditable temporary EV soften |
+| Softens EV? | **No** | Allowlisted lines only (1–2pp) + stake ×0.80 |
+| Place law | Never invents place pass | Never invents `p_model` |
 
 ```bash
 python scripts/verify_coverage_floor.py --synthetic-large
 ```
 
-Full agent mandate: root `AGENTS.md` → **Coverage floor + temp_ev_relax**.
-
-
-### Market Coverage Agent (high-volume matches)
-
-For matches with **many lines** (default ≥40; internationals often 100+):
+### Market coverage (high-volume matches)
 
 ```bash
 python run_nt.py research market-scan --odds inbox/current_odds_01.txt
-python run_nt.py research market-scan --odds inbox/current_odds_01.txt --match "Frankrike"
 ```
-
-**Tiers**
 
 | Tier | Contents |
 |------|----------|
@@ -94,9 +84,7 @@ python run_nt.py research market-scan --odds inbox/current_odds_01.txt --match "
 | T3 | Corners, cards, halves/periods |
 | T4 | Specials & SGPs |
 
-Output: `outbox/market_scans/*.md` + coverage confidence %.  
-`research board` runs this automatically and injects flagged interesting lines into the shortlist.
-
+`research board` runs market-scan automatically unless `--skip-market-scan`.
 
 ### Wrong path (blocked by default)
 
@@ -111,104 +99,78 @@ Override only for tests/emergency: `--force-mechanical`.
 
 ```bash
 python run_nt.py research board --odds inbox/odds_….txt --write-scaffolds
-# optional: football sim for O/U / BTTS / 1X2 p_model suggestions
-python run_nt.py simulate --input inbox/sim_match_template.yaml --selection "BTTS Ja"
-# research shortlist → fill evidence packs (sim is not enough alone)
+# deep research queue with Exa → evidence/*.json
 python run_nt.py research ready --odds inbox/odds_….txt
-python run_nt.py recommend --odds inbox/odds_….txt --dry-run
 python run_nt.py recommend --odds inbox/odds_….txt
-# after settle:
-python run_nt.py calibrate report
+# expansion if large board & <2 picks, then re-recommend
 ```
 
-**Code is law at stages 6–7.** Research quality at 1–4 determines whether anything clears the bar.  
-**Empty slip after research = success.** Empty slip *instead of* research = process failure (now refused).
+**Code is law at selection.** Research quality at Stages 1–2 determines whether edges clear.  
+**Empty slip after full scan + expansion + no +EV = OK.** Empty slip *instead of* research or expansion = process failure.
 
 ---
 
-## Stage 1 — Idea generation
+## Stage 1 — Broad scan (promising shortlist)
 
 **Primary input:** Norsk Tipping Oddsen paste → `inbox/odds_*.txt`
 
-Optional filters (discipline aids, not bans):
+Go through **ALL** lines. Rank **8–15** most promising **without** anti-underdog filters and **without** heavy short-chalk moralization.
 
-| Priority | Focus |
-|----------|--------|
-| High | Any sport on the **actual NT board** you can research well (football, tennis, NBA/WNBA, etc.) |
-| Medium | Secondary markets on those same events (totals, handicaps) with data |
-| Low | Ultra-thin markets without lineups/stats; do not default to “football only” |
+| Signal | Direction |
+|--------|-----------|
+| Rough prior EV | ↑↑ |
+| Soft value vs ref (when real soft odds present) | ↑ |
+| Natural totals | ↑ |
+| Light form/rank notes | mild ↑ |
+| Mid-band alone | neutral / mild |
+| Bare HC with no signal | **no** family boost |
+| Soft dog with no light signal | **neutral** (not guilt, not promo) |
 
-**Important:** Football-focused *simulation* (`nt simulate`) is a tool for scorelines.  
+Short favourite @ 1.55 with prior_ev should rank **above** bare soft +HC @ 1.95 with no notes.
+
 **Research and recommend are multi-sport.** Always shortlist across sports on the dump.
-
-**CLI helpers**
 
 ```bash
 python run_nt.py research checklist --sport football
 python run_nt.py research scaffold --match "Bodø/Glimt vs Brann" --selection "Bodø/Glimt to Win"
 ```
 
-Empty board after research → **empty slip**. That is success.
+---
+
+## Stage 2 — Deep research (shortlist only)
+
+### Research gates
+
+**Canonical:** [`RESEARCH_GATES.md`](./RESEARCH_GATES.md)
+
+Hard failures → grade F → cannot place. Soft issues → notes / higher bar — **not** stacked volume killers.
+
+| Field | Domestic / late data | High context |
+|-------|----------------------|--------------|
+| `availability_status` | predicted / stable_guess OK | notes or confirmed |
+| `context_risk` | low / medium | **high** |
+| `script_lean` | must not conflict | same |
+
+**Hard rejects:** script conflict · base_rate · blank availability on sensitive markets · football high_scoring+Under/BTTS No · tennis retirement+overs · basketball star_rest+player overs.
+
+### Exa / HQ search
+
+Primary tool: Exa. Both sides · form · H2H · rank · natural markets. Feeds packs — **not** FEH hard reject. See [`EXA_RESEARCH_USAGE.md`](./EXA_RESEARCH_USAGE.md).
+
+### Sources (football example)
+
+| Tier | Sources |
+|------|---------|
+| Core | FBref, Transfermarkt, Sofascore, Flashscore, official/club news |
+| Depth | Understat, WhoScored, odds history (soft signal), motivation table |
+
+Per-sport lists: [SOURCES.md](./SOURCES.md).
 
 ---
 
-## Stage 2 — Data gathering (Eliteserien / football)
+## Stage 3 — Model / edge / selection
 
-### Research gates (engine) — multi-sport, balanced for 12h boards
-
-**Canonical doc:** [`docs/RESEARCH_GATES.md`](RESEARCH_GATES.md)
-
-We research many events **hours before** official availability (PL ~1h; small leagues rarely publish early). Confirmed is ideal, not mandatory.
-
-Gates apply to **football, tennis, basketball**, plus a **default** profile (hockey, handball, darts, esports…). Hard failures → grade F → cannot place.
-
-| Field | Domestic / late data | High context (WC, intl, B2B, bronze) |
-|-------|----------------------|--------------------------------------|
-| `availability_status` | `predicted` / `stable_guess` OK | Predicted + substantive notes, or confirmed |
-| Availability research | Injuries / load / fitness | Required + who replaces whom / minutes |
-| `context_risk` | `low` / `medium` | **`high`** |
-| `script_lean` | Must not conflict with selection | Same (often open/high-scoring for bronze) |
-
-**Hard rejects:** script conflict · base_rate conflict · blank availability on sensitive markets · football high_scoring+Under/BTTS No · tennis retirement+overs · basketball star_rest+player overs.
-
-Config: `research.gates` in `config.yaml` (legacy flat keys still aliased).
-
-### Tier 1 (required for grade B+)
-
-| Source | Use for |
-|--------|---------|
-| **FBref** | xG, form, shooting, historical tables |
-| **Transfermarkt** | injuries, suspensions, squad value, absences |
-| **Sofascore** | form, ratings, predicted **and** confirmed lineups when live |
-| **Flashscore** | H2H, live context, kickoff, cards streaks |
-| **Official / NFF / club** | competition context, weather postponements |
-| **Team news (BBC/Sky/L'Équipe etc.)** | absences, late XI leaks, rotation, farewell starts |
-
-### Tier 2 (grade A / high-odds)
-
-| Source | Use for |
-|--------|---------|
-| **Understat** (where covered) | shot quality / xG maps |
-| **WhoScored** | event trends, referee-adjacent patterns |
-| **OddsPortal / odds history** | line movement (soft signal only) |
-| **League table depth** | motivation (relegation, title, mid-table dead rubber) |
-
-### Efficient use (no illegal scraping required)
-
-1. Keep a browser bookmark folder: `NT Research / Eliteserien`, `NT Research / Injuries`, etc.
-2. Fill the evidence template fields as you open each tab (URL + one-line takeaway).
-3. Prefer **manual** confirmation of lineups within ~1–2h of kickoff for grade A.
-4. Automation helpers (`scripts/`, `nt research`) only produce **templates and checklists** — you still own takeaways.
-
-See [SOURCES.md](./SOURCES.md) for per-sport lists.
-
----
-
-## Stage 3 — Model / edge estimation
-
-### p_model
-
-Your subjective (or model) probability that the selection wins, **before** haircut.
+### p_model & EV
 
 ```
 implied = 1 / decimal_odds
@@ -216,30 +178,23 @@ p_adj   = clamp(p_model - probability_haircut, 0.01, 0.99)
 EV      = p_adj * odds - 1
 ```
 
-Haircut (default 5%) absorbs NT margin + optimism bias.
+Haircut default **3pp** (High-Volume v2). Do **not** invent `p_model = 1/odds + ε`.
 
-### Guidelines
+| Odds | ESR stance |
+|------|------------|
+| **1.40–1.80** | Allowed at Grade B + core + EV; soft demote stake if matchup thin |
+| **1.80–2.40** | Fine with real edge — not “preferred band identity” |
+| **>2.50** | High-odds path only (strict `>`): higher min EV, stake mult |
 
-| Odds band | Typical p_model discipline |
-|-----------|----------------------------|
-| <1.50 | Need strong structural edge; small EV still needs volume control; FEH / short-odds bar high |
-| 1.50–2.60 | **Research-rank** mid band — honest packs when queued; place only if **FEH + EV** clear (underdog HC ~1.70–2.20 is anti-soft territory, not a default long) |
-| 2.50+ | Grade **A**, higher min EV, reduced stake mult (existing high-odds rules) |
-
-**Do not** invent p_model = 1/odds + 0.05 to force EV. **Do not** treat mid-band underdog price alone as edge. The learning loop and your P/L will punish you.
-
-Optional: import model probs via odds CSV column `p_model` or evidence JSON.
+Soft underdog HC: place when matchup + EV support; **mixed H2H is not automatic F**.
 
 ```bash
 python run_nt.py research p-model --odds 1.85 --p 0.58
-# shows implied, haircut EV, min-EV gate status
 ```
 
----
+### Evidence packaging
 
-## Stage 4 — Evidence packaging
-
-Minimum viable pack (`evidence/example.json`):
+Minimum viable pack:
 
 ```json
 {
@@ -254,62 +209,54 @@ Minimum viable pack (`evidence/example.json`):
 }
 ```
 
-### Optional v5 fields (additive; grader ignores unknowns safely)
-
-| Field | Purpose |
-|-------|---------|
-| `requested_grade` | `"A"` raises source threshold |
-| `league` | e.g. Eliteserien |
-| `kickoff` | ISO datetime |
-| `confidence` | 1–5 research confidence |
-| `checklist` | completed research checklist keys |
-| `correlation_tags` | for combo risk (`same_match`, `same_league_round`) |
-| `model_name` / `model_version` | if p_model from external model |
-| `sources[].kind` | stats / injury / lineup / news / odds / official |
-| `sources[].accessed_at` | ISO date of research |
-
 Scaffold:
 
 ```bash
-python run_nt.py research scaffold \
+python run_nt.py research write-pack \
   --match "Rosenborg vs Viking" \
   --selection "Over 2.5" \
-  --p-model 0.58 \
-  --league Eliteserien
+  --p-model 0.58
 ```
+
+### Engine validation (`recommend`)
+
+`attach_evidence` → `grade_evidence` (legacy path under ESR) → `odds_confidence` → `build_portfolio`:
+
+- Risk can_bet / remaining cap  
+- Min EV (standard vs high-odds **>** threshold)  
+- Grade floors  
+- Learning soft-blocks and diversification  
+- Phase max bets / doubles  
+- Empty slip OK **after** expansion check  
+
+FEH place-owning is **off** (`forced_hierarchy.enabled: false`).
+
+### Expansion (Stage 3b)
+
+Large board + &lt;2 picks after primary deep → deep next 5–8 light-pass → re-recommend.  
+Empty with `expansion_needed` and next tier unresearched = **process miss**.
 
 ---
 
-## Stage 5 — Validation (engine)
+## Stage 4 — Output, place, settle
 
-`nt recommend` → `attach_evidence` → `grade_evidence` → `build_portfolio`:
+### Reasoning format
 
-- Risk can_bet / remaining cap
-- Min EV (standard vs high-odds)
-- Grade floors (B+ standard; A high-odds)
-- Learning soft-blocks and diversification
-- Phase max bets / doubles policy
-- Empty slip OK
+```markdown
+## Reasoning
 
----
+### 1. Humphries −2.5 @ 1.62 · Grade B · EV +3.1% · stake 12 NOK
+- **Why:** Clear ranking + form gap; opponent cold last 3.
+- **Support:** ranking delta; last-5 averages; H2H 4–1.
+- **Main risk:** single-set variance.
 
-## Stage 6–8 — Decision, settle, review
-
-1. Place only what is on `outbox/PLACE_THESE.md`.
-2. Settle via `inbox/results_*.yaml` + `nt settle`.
-3. Review with:
-
-```bash
-python run_nt.py learn
-python run_nt.py analyze
-python run_nt.py edges --last 20
+## Near-miss / Rejected
+- Smith +2.5 @ 1.85 — form favours other side; EV ~0.4% after haircut.
 ```
 
-Optional agent (never auto-places):
-
-```bash
-python run_nt.py agent ask "What patterns hurt ROI in the last 40 settled bets?"
-```
+1. Place only what is on `outbox/PLACE_THESE.md` (after user places on NT → `place-ack`).  
+2. Settle via results + `nt settle`.  
+3. Review with `learn` / `analyze` / taxonomy — **no hard-reject list growth**.
 
 ---
 
@@ -317,12 +264,12 @@ python run_nt.py agent ask "What patterns hurt ROI in the last 40 settled bets?"
 
 | Grade | Meaning | Placeable? |
 |-------|---------|------------|
-| **A** | Full sources (grade_A or high-odds threshold), p_model, summary, failure_modes | Yes; required for odds ≥ high_odds_threshold |
-| **B** | Default source count met + core fields | Yes for standard odds |
-| **C** | Partial credit | **No** (portfolio rejects) |
-| **F** | Missing pack / critical fields | **No** |
+| **A** | Full sources + uncertainty when required | Yes; high-odds path may require stronger bar |
+| **B** | Default source count + core fields | Yes for standard odds under ESR |
+| **C** | Partial | Placeable when `grade_c_placeable` + core reason |
+| **F** | Missing pack / hard gate conflict | **No** |
 
-Raise quality, don’t lower the bar in config for temporary volume.
+Raise quality; do not re-arm FEH ideology for temporary volume control.
 
 ---
 
@@ -330,10 +277,33 @@ Raise quality, don’t lower the bar in config for temporary volume.
 
 | Slot | Activity |
 |------|----------|
-| 10–15 min | Parse board, shortlist 3–8 candidates |
-| 15–40 min | Deep research on shortlist only |
-| 5 min | Evidence JSON + recommend dry-run |
-| 5 min | Place / archive slip |
-| After events | Settle + one-line edge note if process lesson |
+| 10–15 min | Parse board, shortlist 8–15 promising |
+| 15–40 min | Deep research on shortlist (Exa both-sides) |
+| 5 min | Evidence JSON + recommend |
+| +expand | If &lt;2 picks on large board — next tier deep |
+| 5 min | Place / place-ack |
+| After events | Settle + taxonomy |
 
-If you cannot afford Stage 2 for a selection → **skip it**.
+If you cannot afford Stage 2 for a selection → **skip that line**, not the whole board scan.
+
+---
+
+## Large vs thin boards
+
+| Board | Stage 1 shortlist | Deep | Target bets | Empty slip |
+|-------|-------------------|------|-------------|------------|
+| **Large** (≥15 matches) | 12–15 | Full queue + expand if &lt;2 | **2–6** | Rare; only after expansion + no +EV |
+| **Medium** | 8–12 | Full | 1–4 | Uncommon |
+| **Thin** (&lt;8 matches) | All viable | All light-pass | 0–2 | Acceptable if no edge |
+
+---
+
+## Related
+
+| Doc | Role |
+|-----|------|
+| `docs/RESEARCH_RESET_SIMPLE_EFFECTIVE_2026-07-25.md` | ESR philosophy |
+| `docs/RESEARCH_GATES.md` | Gate fields |
+| `docs/EXA_RESEARCH_USAGE.md` | Exa usage |
+| `docs/DESK_SKILLS.md` | Skills |
+| Root `AGENTS.md` | Operator law |

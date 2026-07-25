@@ -4,17 +4,19 @@ User-scope Grok skills for the NT capital desk. Skills live under **`%USERPROFIL
 
 Engines in `nt/` remain law. Skills encode **workflows**; they never invent `p_model`, bankroll equity, or hand-softened min_EV.
 
-**Forced Evidence Hierarchy (FEH) is NON-BYPASSABLE place law** on every `/daily-run` and recommend path. Side first, then price. Anti-soft underdog rejects soft mid-band dogs without structured matchup support. Prefer **empty slip** over weak soft Grade B. Preferred / mid band (**1.85–2.60**) is **research-rank only** — not place quality or soft-dog attractiveness. Temporary **10 NOK** max stake on the first **10** FEH-tagged placed bets (does not change capital_v2 math). Full design: [`FORCED_EVIDENCE_HIERARCHY_FULL_CLEANUP_AND_10NOK_TEST_2026-07-24.md`](./FORCED_EVIDENCE_HIERARCHY_FULL_CLEANUP_AND_10NOK_TEST_2026-07-24.md). Repo mirror of daily-run skill text: [`skills_mirror_daily-run.md`](./skills_mirror_daily-run.md).
+**Edge-Seeking Research (ESR)** is the research + recommend philosophy. Stage 0–4: Collect → scan all lines → shortlist 8–15 promising → deep research → pick best +EV → expand if needed. Soft underdogs are **not** guilty by default. Short favourites **1.40–1.80** allowed. Empty slip only after full scan + expansion. FEH is **demoted / shadow only** — not place law.
+
+Authoritative: [`RESEARCH_RESET_SIMPLE_EFFECTIVE_2026-07-25.md`](./RESEARCH_RESET_SIMPLE_EFFECTIVE_2026-07-25.md) · Workflow: [`RESEARCH_WORKFLOW.md`](./RESEARCH_WORKFLOW.md) · Repo mirror of daily-run: [`skills_mirror_daily-run.md`](./skills_mirror_daily-run.md).
 
 ## Installed skills
 
 | Slash | Directory | Role |
 |-------|-----------|------|
-| `/daily-run` | `~/.grok/skills/daily-run/` | Full day: results → odds → board+light → deep queue → **FEH** packs → recommend + Reasoning Chains (`## Reasoning` + `## Near-miss / Rejected`, empty/blocked too) → `PLACE_THESE.md` → place-ack (10 NOK cap when active) |
-| `/missed-audit` | `~/.grok/skills/missed-audit/` | Mid-band 1.80–2.20 out of deep; `promotion_score` components; cheapest fix; AH/tennis/snooker patterns |
-| `/chain-explain` | `~/.grok/skills/chain-explain/` | Full Reasoning Chain for match/selection — light SSOT promo components + near-miss stage/reason |
-| `/bankroll-tune` | `~/.grok/skills/bankroll-tune/` | Secure/phase/unit/regime proposal → MC (`mc_phase_progression.py`) + capital tools |
-| `/learning-rootcause` | `~/.grok/skills/learning-rootcause/` | Taxonomy + `learning_weight` + ControlSignals; **safe** backfill (proposed file default; `--apply` for live) |
+| `/daily-run` | `~/.grok/skills/daily-run/` | Full day: results → odds → Stage 1 scan → deep queue → ESR packs (Exa both-sides) → expand if &lt;2 on large board → recommend + **why · support · main risk** → `PLACE_THESE.md` → place-ack (10 NOK cap when active) |
+| `/missed-audit` | `~/.grok/skills/missed-audit/` | Promising lines out of deep; promo components; cheapest fix — **edge-seeking, not soft-dog guilt** |
+| `/chain-explain` | `~/.grok/skills/chain-explain/` | Simple chain: why · strongest support · main risk (+ EV/stake when useful) |
+| `/bankroll-tune` | `~/.grok/skills/bankroll-tune/` | Secure/phase/unit/regime proposal → MC + capital tools |
+| `/learning-rootcause` | `~/.grok/skills/learning-rootcause/` | Taxonomy + `learning_weight` + ControlSignals; **must not grow hard reject lists** |
 
 Each skill **must** load root `AGENTS.md` first and use real CLI/tools.
 
@@ -51,24 +53,19 @@ Skills are plain directories:
 
 Grok reloads skills when files change on disk (slash menu updates within a few seconds).
 
-Copy from a machine that already has them, or recreate from this doc + `AGENTS.md` Desk skills section.
+Copy from a machine that already has them, or recreate from this doc + `AGENTS.md` Desk skills section + `docs/skills_mirror_daily-run.md`.
 
 ## PowerShell helpers (optional)
 
 Repo scripts (run from tracker root):
 
 ```powershell
-# Print skill paths + open SKILL.md in editor
 .\scripts\skill_list.ps1
-
-# Invoke reminder: print the /slash and first steps for a skill
 .\scripts\skill_invoke.ps1 daily-run
 .\scripts\skill_invoke.ps1 missed-audit
 .\scripts\skill_invoke.ps1 chain-explain
 .\scripts\skill_invoke.ps1 bankroll-tune
 .\scripts\skill_invoke.ps1 learning-rootcause
-
-# Smoke suite used by desk skill PR validation
 .\scripts\skill_smoke.ps1
 ```
 
@@ -95,49 +92,52 @@ python run_nt.py learn --proposals
 python scripts/verify_coverage_floor.py --synthetic-large
 python scripts/verify_chain_residuals.py
 python scripts/mc_phase_progression.py --paths 50
-# Safe taxonomy backfill: proposed only (default) — never live without --apply
 python scripts/backfill_settlement_taxonomy.py --n 30
 python scripts/backfill_settlement_taxonomy.py --n 30 --apply   # after review
-python scripts/backfill_settlement_taxonomy.py --n 30 --dry-run # classify only
 ```
 
-### `/daily-run` FEH + quality bar
+### `/daily-run` ESR bar
 
 | Rule | Detail |
 |------|--------|
-| FEH NON-BYPASSABLE | Checklist · side-first · anti-soft underdog · natural markets when required — fail-closed Grade F |
-| Preferred band | **Research-rank only** (deep-queue composition 1.85–2.60) — **not** automatic Grade B or soft-dog attractiveness |
-| Soft underdog HC ~1.70–2.20 | Needs structured positive H2H + form/rank support; mixed/missing → reject |
-| Empty slip | Success after honest deep research; prefer over weak soft dogs |
-| Coverage / `temp_ev_relax` / explore | Expand research or soften allowlisted EV only — **never** place FEH F |
-| 10 NOK test cap | First 10 place-acked FEH-tagged seats ≤ 10 NOK absolute-last; status.md **Forced Evidence Hierarchy** section |
+| Stage 0–4 | Collect → scan all → shortlist 8–15 → deep → best +EV → expand if needed |
+| Soft underdogs | Not guilty by default; place on matchup + EV |
+| Short 1.40–1.80 | Allowed when research supports (Grade B + core + EV) |
+| Empty slip | Only after full deep + expansion + no +EV — process miss if next tier unresearched |
+| FEH | Shadow/demoted — not place law |
+| Coverage / temp_ev_relax | Expand research or rare EV soften — never invent p_model |
+| 10 NOK test cap | First 10 place-acked `TEST_CAP:esr_v1` seats ≤ 10 NOK |
 
-### `/daily-run` richer chain output
+### `/daily-run` reasoning output
 
 After `recommend`, always check:
 
-- `outbox/PLACE_THESE.md` → `## Reasoning` (picks) **and** `## Near-miss / Rejected` (even empty slip / blocked)
-- `data/state/reasoning_chains.jsonl` — kinds: `pick` · `near_miss` · `rejected_prefilter` (FEH codes when present)
-- Light join: each chain should carry `light.promotion_score` + components when light LATEST exists (not notes-only)
-- `data/state/status.md` → **Forced Evidence Hierarchy** + **Coverage floor** sections
+- `outbox/PLACE_THESE.md` → `## Reasoning` (**why · support · main risk**) **and** `## Near-miss / Rejected` (short)
+- `data/state/reasoning_chains.jsonl`
+- `data/state/status.md` → ESR / coverage floor sections
+- `data/state/deep_queue.json` → `expansion_needed` if present
 
-### `/chain-explain` richer output
+### `/chain-explain` output
 
-When explaining a line / slip:
+1. Prefer latest chain row for `(match, selection)`  
+2. Lead with **why · strongest support · main risk**  
+3. Add EV / stake / light promo only as supporting detail — less FEH gate-code archaeology  
 
-1. Prefer the latest chain row for that `(match, selection)` from `reasoning_chains.jsonl`
-2. Surface `rejected_at_stage`, `reject_reason`, `promotion_score` + component top drivers
-3. If light LATEST has the line and chain is thin, re-join via light SSOT (promo scorer)
+### `/missed-audit` stance
+
+Edge-seeking: which promising lines never got deep packs? Cheapest fix is usually **research them now** — not “soft dogs are bad.”
+
+### `/learning-rootcause` stance
+
+Taxonomy + weights + temp ControlSignals. **Forbidden:** proposing permanent hard-reject lists, re-enabling anti_soft/FEH place-owning from anecdotes.
 
 ### Safe taxonomy backfill
 
 | Flag | Effect |
 |------|--------|
-| *(default)* | Write `data/state/settlement_reviews_backfill.jsonl` only — **never** mutates live reviews |
-| `--apply` | Merge into live `settlement_reviews.jsonl` after operator review |
+| *(default)* | Write `data/state/settlement_reviews_backfill.jsonl` only |
+| `--apply` | Merge into live after operator review |
 | `--dry-run` | Classify only — no write |
-
-`/learning-rootcause` must default to proposed path; only pass `--apply` when the operator explicitly confirms.
 
 ## Deliverable paths (common)
 
@@ -159,11 +159,12 @@ When explaining a line / slip:
 
 | Doc | Role |
 |-----|------|
-| `AGENTS.md` | Desk law + FEH + skills section |
-| `docs/RESEARCH_WORKFLOW.md` | Prefilter → deep → FEH place → recommend |
-| `docs/FORCED_EVIDENCE_HIERARCHY_FULL_CLEANUP_AND_10NOK_TEST_2026-07-24.md` | FEH design · anti-soft · 10 NOK |
+| `AGENTS.md` | Desk law + ESR Stage 0–4 |
+| `docs/RESEARCH_RESET_SIMPLE_EFFECTIVE_2026-07-25.md` | ESR philosophy |
+| `docs/RESEARCH_WORKFLOW.md` | Stage map |
+| `docs/EXA_RESEARCH_USAGE.md` | Exa feeds research |
 | `docs/skills_mirror_daily-run.md` | Committed daily-run skill text |
-| `docs/RESEARCH_GATES.md` | Gate fields |
-| `docs/CAPITAL_HYBRID_PROGRESSION.md` | Half-steps + continuous unit + Variant A |
-| `docs/SETTLEMENT_LEARNING.md` | Settle + learn loop |
-| `docs/BANKROLL_PLAN.md` | Clean 500 era plan |
+| `docs/RESEARCH_GATES.md` | Hard vs soft gates |
+| `docs/CAPITAL_HYBRID_PROGRESSION.md` | Capital hybrid |
+| `docs/SETTLEMENT_LEARNING.md` | Settle + learn |
+| `docs/FORCED_EVIDENCE_HIERARCHY_FULL_CLEANUP_AND_10NOK_TEST_2026-07-24.md` | **SUPERSEDED** |

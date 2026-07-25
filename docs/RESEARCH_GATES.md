@@ -2,9 +2,26 @@
 
 **Why this exists:** France vs England WC 2026 bronze — Under 3.5 and BTTS No were placed without treating **high rotation / international availability** seriously. EV math cleared; process did not.
 
-**Principle:** Empty slip beats betting against your own script or inventing a full-strength prior when availability is unknown. Gates must work for a **12-hour** research window (PL XIs ~1h before KO; many leagues never publish early).
+**Principle under ESR:** Gates stop **betting against your own script** and inventing full-strength priors when availability is unknown. They are **not** volume killers and **not** FEH-style soft-underdog guilt lists. Empty slip is OK only when there is truly no edge after scan + expansion — not as a substitute for honest research.
 
 Engine entry point: `nt.research_gates.evaluate_research_gates` → hard issues force **grade F** in `grade_evidence` → cannot place.
+
+**Philosophy:** [`RESEARCH_RESET_SIMPLE_EFFECTIVE_2026-07-25.md`](./RESEARCH_RESET_SIMPLE_EFFECTIVE_2026-07-25.md) · Workflow: [`RESEARCH_WORKFLOW.md`](./RESEARCH_WORKFLOW.md).
+
+---
+
+## Soft checks vs volume killers
+
+| Keep as **hard** | Treat as **soft** (notes / higher bar / stake demote) |
+|------------------|--------------------------------------------------------|
+| `selection_vs_script = conflict` | Thin but non-empty availability notes on low context |
+| `base_rate_conflict = true` | Mixed H2H (allowed under ESR; may lower confidence) |
+| Missing availability + no research on **sensitive** markets | Incomplete optional checklist fields |
+| Anti-script unders (high_scoring + Under/BTTS No) | Soft underdog at mid-odds without perfect H2H packaging |
+| Tennis retirement_risk + long overs | Short favourite without 8 sources (Grade B + core can place) |
+| Basketball star_rest + player overs | Natural-market eval imperfect on HC sibling |
+
+**Do not** layer FEH anti-soft, preferred-band guilt, or “empty slip over every imperfect Grade B” on top of these gates.
 
 ---
 
@@ -50,9 +67,9 @@ Nested `research_gates: { ... }` may mirror the same keys.
 
 ## Hard vs soft
 
-**Hard (cannot place):** script conflict; base_rate conflict; missing availability with no research on sensitive markets; predicted without availability research (when enabled); T3 thin notes; optional confirmed-only.
+**Hard (cannot place):** script conflict; base_rate conflict; missing availability with no research on sensitive markets; predicted without availability research (when enabled); T3 thin notes when high_context_stricter; optional confirmed-only.
 
-**Soft:** high odds + predicted; prefer re-check when official availability drops.
+**Soft (do not auto-kill volume):** high odds + predicted; prefer re-check when official availability drops; mixed H2H on underdogs; imperfect natural-market narrative; thin Exa opposite-side (note it).
 
 ---
 
@@ -99,25 +116,12 @@ Legacy keys (`predicted_lineup_ok_for_totals_btts`, etc.) still map in.
 
 ---
 
-## Workflow placement
+## ESR interaction
 
-```
-Research → fill pack fields
-grade_evidence()  ← gates run here (hard → F)
-build_portfolio() ← rejects F
-```
-
----
-
-## Examples
-
-| Scenario | Result |
-|----------|--------|
-| Domestic + predicted + injuries + Under + low_scoring | Allow |
-| Bronze + no availability research + BTTS No | **Block** |
-| Confirmed rotated defence + high_scoring + Under | **Block** |
-| Same + Over if EV clears | Allow |
-| NBA B2B player prop, no minutes note | **Block** |
-| Tennis games over, no fitness, high fatigue context | **Block** |
-
-Full design origin: session plan + `outbox/POSTMORTEM_FRA_ENG_2026-07-18.md`.
+| Layer | Interaction with research_gates |
+|-------|----------------------------------|
+| FEH place-owning | **Off** — gates remain the main hard research rejects |
+| Anti-soft underdog | **Off** — do not re-encode as gate ideology |
+| Odds confidence bands | Soft demote / floors — separate from gates |
+| Learning | Temp process gates OK; **no** permanent hard-reject lists grown from losses |
+| Empty slip | Only after Stage 2–3 + expansion + no +EV — not “gates said pass nothing” on large boards without research |
