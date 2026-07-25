@@ -72,7 +72,13 @@ def _place_cfg(**fh_over):
 
 
 def _load_smith() -> dict:
-    assert SMITH_PATH.is_file(), "Smith pack missing"
+    if not SMITH_PATH.is_file():
+        import pytest
+
+        pytest.skip(
+            "Smith pack missing (FEH fixture); production is ESR/FEH-off — "
+            "this module needs evidence/smith_* packs when testing place-owning"
+        )
     return json.loads(SMITH_PATH.read_text(encoding="utf-8"))
 
 
@@ -81,7 +87,8 @@ def test_production_config_place_uses_saef():
 
     place_uses_saef = enabled ∧ ¬shadow_mode ∧ forced_hierarchy.enabled
     → False when shadow_mode true and forced_hierarchy.enabled false.
-    Synthetic FEH unit tests use local _place_cfg() (FEH-on fixtures).
+    Synthetic FEH unit tests use local _place_cfg() (FEH-on fixtures),
+    not production config. Production = ESR (FEH place-owning OFF).
     """
     cfg = load_config()
     assert place_uses_saef(cfg) is False
@@ -91,6 +98,8 @@ def test_production_config_place_uses_saef():
     # ESR test window retag (counter resets on system_tag mismatch)
     tsc = (cfg.get("selection") or {}).get("test_stake_cap") or {}
     assert tsc.get("system_tag") == "esr_v1"
+    # Explicit FEH fixture still enables place-owning for unit tests
+    assert place_uses_saef(_place_cfg()) is True
 
 
 def test_s1_smith_grade_f_anti_soft():

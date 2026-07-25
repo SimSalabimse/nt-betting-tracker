@@ -163,15 +163,20 @@ def test_rebalance_cannot_exceed_10(tmp_path: Path):
 
 
 def test_tag_on_pending_notes(tmp_path: Path):
-    """Pending notes include FEH_TEST_CAP:feh_v1 and display when active."""
+    """Pending notes include TEST_CAP:feh_v1 (ESR prefix) and display when active."""
+    from nt.stake_test_cap import NOTE_TAG_PREFIX, LEGACY_NOTE_TAG_PREFIX
+
     cfg = _cfg(tmp_path)
     rec = _rec(stake=12.0, notes="p_model=0.55; EV=0.04")
     apply_test_stake_cap_to_picked([rec], cfg)
     assert notes_have_system_tag(rec.notes, "feh_v1")
-    assert "FEH_TEST_CAP:10NOK (0/10)" in rec.notes
+    assert f"{NOTE_TAG_PREFIX}10NOK (0/10)" in rec.notes
+    assert f"{NOTE_TAG_PREFIX}feh_v1" in rec.notes
     # annotate path also idempotent
     again = annotate_notes_for_cap(rec.notes, cfg)
-    assert again.count("FEH_TEST_CAP:feh_v1") == 1
+    assert again.count(f"{NOTE_TAG_PREFIX}feh_v1") == 1
+    # Legacy prefix still recognized by notes_have_system_tag
+    assert notes_have_system_tag(f"{LEGACY_NOTE_TAG_PREFIX}feh_v1; other", "feh_v1")
 
 
 def test_untagged_place_ack_excluded(tmp_path: Path):
@@ -282,7 +287,7 @@ def test_place_ack_integration(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
             "odds_band": "1.8-2.2",
             "research_grade": "B",
             "phase": "1A",
-            "notes": "FEH_TEST_CAP:feh_v1; FEH_TEST_CAP:10NOK (0/10); p_model=0.55",
+            "notes": "TEST_CAP:feh_v1; TEST_CAP:10NOK (0/10); p_model=0.55",
             "source": "recommend",
             "created_at": "2026-07-24T10:00:00Z",
             "updated_at": "2026-07-24T10:00:00Z",
@@ -319,6 +324,16 @@ def test_place_ack_integration(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     assert st["n_placed"] == 1
     assert "tagged1" in st["bet_ids"]
     assert "untagged_smith" in st["excluded_bet_ids"]
+
+
+def test_legacy_feh_test_cap_prefix_still_counts(tmp_path: Path):
+    """Legacy FEH_TEST_CAP:<tag> notes still count on place-ack."""
+    cfg = _cfg(tmp_path)
+    notes = "FEH_TEST_CAP:feh_v1; p_model=0.55"
+    assert notes_have_system_tag(notes, "feh_v1")
+    evt = record_placed_bet(cfg, "legacy_tagged_1", notes)
+    assert evt["counted"] is True
+    assert load_state(cfg)["n_placed"] == 1
 
 
 def test_nothing_raises_stake_after_clip(tmp_path: Path):

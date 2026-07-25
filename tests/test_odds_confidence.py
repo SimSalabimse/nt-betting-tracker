@@ -1,4 +1,4 @@
-﻿"""Sliding odds-band confidence gates (1.40ÔÇô2.60)."""
+"""Sliding odds-band confidence gates (ESR defaults: soft demote, UD flag off)."""
 from __future__ import annotations
 
 import sys
@@ -44,7 +44,7 @@ def _ev_strong(**kwargs) -> dict:
 
 
 def _ev_soft_mid() -> dict:
-    """Previous soft Grade-B mid-odds underdog: thin process / explore-style."""
+    """Thin mid-odds pack (ESR Band C: min grade B + sources; no hard support bar)."""
     return {
         "summary": "Mid-odds underdog explore look.",
         "sources": _sources(6),
@@ -53,6 +53,7 @@ def _ev_soft_mid() -> dict:
 
 
 def test_classify_bands():
+    """K16: usable_hi=2.50 → 2.50 Band D; 2.51+ HIGH."""
     assert classify_odds_confidence_band(1.35) == BAND_BELOW
     assert classify_odds_confidence_band(1.40) == BAND_A
     assert classify_odds_confidence_band(1.59) == BAND_A
@@ -61,36 +62,41 @@ def test_classify_bands():
     assert classify_odds_confidence_band(1.85) == BAND_C
     assert classify_odds_confidence_band(2.29) == BAND_C
     assert classify_odds_confidence_band(2.30) == BAND_D
-    assert classify_odds_confidence_band(2.60) == BAND_D
-    assert classify_odds_confidence_band(2.61) == BAND_HIGH
+    assert classify_odds_confidence_band(2.50) == BAND_D
+    assert classify_odds_confidence_band(2.51) == BAND_HIGH
 
 
-def test_band_a_short_favourite_requires_strong_evidence():
-    """Short favourite @1.50: Grade B alone fails; strong A + H2H/form passes."""
+def test_band_a_short_favourite_soft_demote_grade_b():
+    """ESR: short fav @1.50 Grade B + core + sources → soft demote placeable (not hard reject)."""
+    # Avoid rank/form/H2H keywords so soft-demote path (not h2h_or_rank_form pass) is hit.
+    soft = evaluate_odds_band_gates(
+        odds=1.50,
+        grade="B",
+        evidence={
+            "summary": (
+                "Solid favourite after confirmed lineup; core reason supports "
+                "the short price and market mispricing."
+            ),
+            "sources": _sources(4),
+        },
+        selection="Vinner: Seed Player",
+    )
+    assert soft.band_id == BAND_A
+    assert soft.ok is True, (soft.failures, soft.passes)
+    assert any("soft_missing_matchup" in p for p in soft.passes), soft.passes
+    assert abs(soft.stake_mult - 0.95 * 0.85) < 1e-6
+
+    # No core + no H2H/rank → still hard fail
     thin = evaluate_odds_band_gates(
         odds=1.50,
         grade="B",
         evidence={
-            "summary": "Solid favourite.",
-            "sources": _sources(8),
+            "summary": "ok",  # too short for core reason
+            "sources": _sources(4),
         },
         selection="Vinner: Seed Player",
     )
-    assert thin.band_id == BAND_A
     assert thin.ok is False
-    assert any("grade" in f.lower() for f in thin.failures)
-
-    weak_a = evaluate_odds_band_gates(
-        odds=1.50,
-        grade="A",
-        evidence={
-            "summary": "Favourite looks good.",
-            "sources": _sources(8),
-        },
-        selection="Vinner: Seed Player",
-    )
-    assert weak_a.ok is False
-    assert any("h2h" in f.lower() or "rank" in f.lower() for f in weak_a.failures)
 
     strong = evaluate_odds_band_gates(
         odds=1.50,
@@ -100,12 +106,12 @@ def test_band_a_short_favourite_requires_strong_evidence():
     )
     assert strong.ok is True
     assert strong.stake_mult < 1.0
-    assert strong.min_ev is not None and strong.min_ev >= 0.03
+    assert strong.min_ev is not None and strong.min_ev >= 0.02
     assert strong.explore_allowed is False
 
 
-def test_band_c_soft_underdog_rejected_without_support():
-    """Previous soft 1.90 underdog / explore-style Grade B should fail Band C bar."""
+def test_band_c_thin_mid_passes_under_esr():
+    """ESR Band C: require_core_plus_support false — thin Grade B with sources can pass."""
     soft = evaluate_odds_band_gates(
         odds=1.90,
         grade="B",
@@ -113,16 +119,8 @@ def test_band_c_soft_underdog_rejected_without_support():
         selection="Underdog +1.5",
     )
     assert soft.band_id == BAND_C
-    assert soft.ok is False
-    # Missing H2H check and/or thin support
-    assert soft.failures
-    assert any(
-        "h2h" in f.lower()
-        or "support" in f.lower()
-        or "matchup" in f.lower()
-        or "core" in f.lower()
-        for f in soft.failures
-    )
+    # summary "Mid-odds underdog explore look." is >= 20 chars → core ok
+    assert soft.ok is True
 
 
 def test_band_c_solid_b_with_h2h_and_support_passes():
@@ -183,7 +181,8 @@ def test_high_odds_defers():
     assert r.ok is True  # caller applies high-odds grade/EV rules
 
 
-def test_underdog_hc_negative_h2h_rejects():
+def test_underdog_hc_negative_h2h_soft_when_flag_false():
+    """ESR default: underdog_hc_negative_h2h_reject false → no hard reject on path C."""
     r = evaluate_odds_band_gates(
         odds=2.40,
         grade="B",
@@ -196,8 +195,39 @@ def test_underdog_hc_negative_h2h_rejects():
         selection="Handikap +2.5: Underdog Team +2.5",
     )
     assert r.band_id == BAND_D
+    assert r.ok is True
+    assert any("ud_h2h_negative_soft_note" in p for p in r.passes) or not any(
+        "negative" in f.lower() for f in r.failures
+    )
+
+
+def test_underdog_hc_negative_h2h_rejects_when_flag_true():
+    """Legacy/explicit flag true still hard-rejects negative H2H on UD HC."""
+    cfg = {
+        "selection": {
+            "odds_confidence": {
+                "underdog_hc_negative_h2h_reject": True,
+            }
+        }
+    }
+    r = evaluate_odds_band_gates(
+        odds=2.40,
+        grade="B",
+        evidence={
+            "summary": "Underdog HC with venue edge and form support.",
+            "h2h": "never beaten this opponent; 0-5 in H2H",
+            "form": "recent form mixed",
+            "sources": _sources(7),
+        },
+        selection="Handikap +2.5: Underdog Team +2.5",
+        cfg=cfg,
+    )
+    assert r.band_id == BAND_D
     assert r.ok is False
-    assert any("h2h" in f.lower() or "never" in f.lower() or "negative" in f.lower() for f in r.failures)
+    assert any(
+        "h2h" in f.lower() or "never" in f.lower() or "negative" in f.lower()
+        for f in r.failures
+    )
 
 
 def test_reasoning_chain_embeds_odds_confidence():
@@ -217,11 +247,11 @@ def test_reasoning_chain_embeds_odds_confidence():
         odds_confidence={
             "ok": True,
             "band_id": BAND_A,
-            "band_label": "A Short high-confidence (1.40ÔÇô1.60)",
+            "band_label": "A Short high-confidence (1.40-1.60)",
             "passes": ["grade_ok:A", "h2h_or_rank_form:h2h_pos"],
             "failures": [],
-            "min_ev": 0.035,
-            "stake_mult": 0.8,
+            "min_ev": 0.02,
+            "stake_mult": 0.95,
         },
     )
     chain = build_chain_from_pick(rec, haircut=0.03)
@@ -290,7 +320,7 @@ def test_detect_h2h_prefers_feh_polarity():
 
 
 def test_band_cannot_bypass_feh_hard_reject():
-    """Bands cannot place FEH hard-reject / grade F candidates."""
+    """Bands cannot place FEH hard-reject / grade F candidates (when FEH audit present)."""
     strong = _ev_strong()
     r = evaluate_odds_band_gates(
         odds=1.95,

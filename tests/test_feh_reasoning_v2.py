@@ -29,6 +29,8 @@ from nt.reasoning_chain import (
 
 
 def _promo_cfg(**tier_over) -> dict:
+    # Explicit FEH-era promo fixtures (not production ESR defaults).
+    # promo_require_signal_for_family_boost false so bare family boosts fire in unit tests.
     tiers = {
         "short_chalk_odds": 1.70,
         "preferred_odds_lo": 1.85,
@@ -40,9 +42,26 @@ def _promo_cfg(**tier_over) -> dict:
         "promo_short_chalk_penalty": -55,
         "promo_fav_hc_boost": 12,
         "promo_natural_total_boost": 10,
+        "promo_require_signal_for_family_boost": False,
+        "promo_preferred_boost": 0,
+        "promo_short_main_penalty": 0,
     }
     tiers.update(tier_over)
     return {"research": {"tiers": tiers}, "selection": {"probability_haircut": 0.03}}
+
+
+def _feh_place_owning_selection(**extra) -> dict:
+    """Inject FEH place-owning so process_settlement_feh_feedback is not ESR-skipped."""
+    sel = {
+        "evidence": {
+            "enabled": True,
+            "shadow_mode": False,
+            "forced_hierarchy": {"enabled": True},
+        },
+        "feh_feedback": {"enabled": True},
+    }
+    sel.update(extra)
+    return sel
 
 
 def test_schema_version_is_2():
@@ -144,7 +163,9 @@ def test_soft_ud_feedback_pattern_only_without_feh_proof(tmp_path: Path):
     """Legacy soft-UD loss: tag pattern, do NOT lean process_miss without FEH proof."""
     cfg = {
         "paths": {"state_dir": str(tmp_path)},
-        "selection": {"feh_feedback": {"enabled": True, "jsonl": "feh_feedback.jsonl"}},
+        "selection": _feh_place_owning_selection(
+            feh_feedback={"enabled": True, "jsonl": "feh_feedback.jsonl"}
+        ),
     }
     bet = {
         "bet_id": "legacy1",
@@ -177,7 +198,9 @@ def test_soft_ud_feedback_pattern_only_without_feh_proof(tmp_path: Path):
 def test_soft_ud_feedback_leans_process_miss_when_feh_proves(tmp_path: Path):
     cfg = {
         "paths": {"state_dir": str(tmp_path)},
-        "selection": {"feh_feedback": {"enabled": True}},
+        "selection": _feh_place_owning_selection(
+            feh_feedback={"enabled": True}
+        ),
     }
     bet = {
         "bet_id": "feh1",
