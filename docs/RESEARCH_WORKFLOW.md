@@ -16,41 +16,58 @@ FEH non-bypassable place law is **SUPERSEDED** — see [`FORCED_EVIDENCE_HIERARC
 ```
 0. COLLECT             Oddsen dump → inbox/odds_*.txt
         ↓              (if prior settle ≥1 terminal: print Settlement Lessons first)
-1. BROAD SCAN          market-scan → board → light → promising queue 8–15
+1a ENGINE BASELINE     market-scan → board → light → engine deep_queue SSOT
         ↓              (all lines scored; no anti-soft filter; no family demote of queue)
-2. DEEP RESEARCH       Exa both-sides on shortlist → evidence/*.json
-        ↓
+1b MULTI-AGENT SCAN    A favourites / B totals+props / C HC+matchup dogs (max 5 each)
+        ↓              merge/dedupe → shortlist 8–15 · family ≤2 · open occupancy soft
+1c PRIMARY WORKLIST    shortlist ∪ coverage_critical · hard cap 15
+        ↓              deliverable: outbox/MULTI_AGENT_SHORTLIST.md
+2. DEEP RESEARCH       Exa both-sides ONCE on primary worklist → evidence/*.json
+        ↓              (not "engine deep_queue first" when multi-agent ran)
 3. SELECTION           ready → recommend (gates + EV + soft bands)
         ↓              hard max 2 market_family · similar-recent + lessons soft demote
-        ↓              if large board & <2 picks → EXPANSION (deep next tier)
+        ↓              if large board & <2 picks → EXPANSION (engine next tier only)
 4. OUTPUT              PLACE_THESE + why/support/risk + near-miss → place-ack
         ↓
    SETTLE / LEARN      results → taxonomy → Settlement Lessons (soft TTL)
                        → print lessons before next Stage 1 (warn if missing/stale)
 ```
 
-### Automatic desk law (lessons · diversify · archive isolation)
+### Automatic desk law (lessons · diversify · archive isolation · multi-agent)
 
 | Rule | Behaviour |
 |------|-----------|
 | **Settlement Lessons** | After settle with ≥1 terminal: print `outbox/SETTLEMENT_LESSONS.md` + `data/state/settlement_lessons.json` **before** next Stage 1. Missing/stale → **warn**, not hard-stop. Soft `sort_ev` only. |
-| **Hard max 2** `market_family` | Portfolio open+slip (coarse family; line not in key). Diversify binds at recommend — not Stage 1 queue demote. |
+| **Hard max 2** `market_family` | Portfolio open+slip (coarse family; line not in key). Diversify binds at recommend — not Stage 1 engine queue demote. |
 | **similar-recent + lessons soft** | Visible demotion on notes / near-misses; true EV stays honest. |
 | **Archive isolation** | **Never** seed peers from `history/archives/` or `history/rounds/`. Live only: `data/bets.csv` · pending · latest results · current odds · `data/state/*`. |
+| **Multi-agent Stage 1b** | After board/light; A/B/C scan only (max 5); merge → shortlist 8–15; primary worklist = shortlist ∪ coverage_critical (cap 15). Design: [`ESR_MULTI_AGENT_SCAN_2026-07-25.md`](./ESR_MULTI_AGENT_SCAN_2026-07-25.md). |
 | **Untouched** | capital_v2 · phase · secure · unit · **10 NOK** · ControlSignals · FEH stays demoted |
 
-Full law: root `AGENTS.md` § Settlement Lessons + diversify + archive isolation · [`SETTLEMENT_LEARNING.md`](./SETTLEMENT_LEARNING.md) · [`DIVERSITY_AND_EXPLORE.md`](./DIVERSITY_AND_EXPLORE.md).
+#### Diversity triad (law)
+
+| # | Layer | Rule |
+|---|-------|------|
+| **(1)** | Engine `deep_queue` SSOT | **No** family demote of engine queue at Stage 1. Coverage floor + promo ranking remain engine law. |
+| **(2)** | Multi-agent shortlist overlay | Soft family **≤2** on Stage 2 **work order only**. Does **not** rewrite `deep_queue.json`. |
+| **(3)** | Portfolio place law | Hard max **2** `market_family` **and** `max_per_sport: 2` at recommend — unchanged. |
+
+**Forbidden misreads:** (a) family demote illegal everywhere → wrong (shortlist soft cap is legal); (b) hand-prune engine queue by family before deep → wrong.
+
+Full law: root `AGENTS.md` § Settlement Lessons + diversify + multi-agent Stage 1b · [`SETTLEMENT_LEARNING.md`](./SETTLEMENT_LEARNING.md) · [`DIVERSITY_AND_EXPLORE.md`](./DIVERSITY_AND_EXPLORE.md) · [`ESR_MULTI_AGENT_SCAN_2026-07-25.md`](./ESR_MULTI_AGENT_SCAN_2026-07-25.md).
 
 ### CLI map
 
 ```bash
 # Stage 0 — collect (agent dump or user file)
-# Stage 1
+# Stage 1a
 python run_nt.py research market-scan --odds inbox/odds_….txt
 python run_nt.py research board --odds inbox/odds_….txt
 python run_nt.py research light --odds inbox/odds_….txt   # if not auto
+# Stage 1b — multi-agent A/B/C scan (agent orchestration; no CLI required)
+# Stage 1c — primary worklist in outbox/MULTI_AGENT_SHORTLIST.md
 
-# Stage 2 — agent Exa + write packs
+# Stage 2 — agent Exa + write packs ON primary worklist only
 python run_nt.py research write-pack --match "…" --selection "…" --p-model 0.XX …
 
 # Stage 3
@@ -65,9 +82,11 @@ python run_nt.py place-ack --ids …
 |-------|--------|--------|----------------|
 | **Prefilter** | Noise screens + classical prior | discard hopeless; `prior_ev` rank-only | **No** |
 | **Light** | ≥70–85% shortlist | pass/fail + notes | **No** |
-| **Deep queue** | Engine promise ranking ~8–15 | worklist | **No** until packs |
-| **Deep packs** | Honest `p_model` + sources | gradeable | **Yes** |
-| **Expand** | Next 5–8 light-pass if &lt;2 picks | more packs | Re-recommend |
+| **Deep queue** | Engine promise ranking ~8–15 (SSOT, unrewritten) | research hint / coverage | **No** until packs |
+| **Multi-agent 1b** | A/B/C scan max 5 → merge shortlist 8–15 | `MULTI_AGENT_SHORTLIST.md` | **No** |
+| **Primary worklist** | shortlist ∪ coverage_critical cap 15 | Stage 2 work order | **No** until packs |
+| **Deep packs** | Honest `p_model` + sources on primary worklist | gradeable | **Yes** |
+| **Expand** | Next 5–8 engine light-pass if &lt;2 picks | more packs | Re-recommend |
 
 Config: `research.tiers` (`deep_target_*`, promo weights, composition **off** under ESR).
 
@@ -128,7 +147,27 @@ python run_nt.py recommend --odds inbox/odds_….txt
 
 **Primary input:** Norsk Tipping Oddsen paste → `inbox/odds_*.txt`
 
-Go through **ALL** lines. Rank **8–15** most promising **without** anti-underdog filters and **without** heavy short-chalk moralization.
+### Stage 1a — Engine baseline
+
+Go through **ALL** lines via market-scan / board / light. Engine builds `deep_queue` (~8–15 by promo) **without** anti-underdog filters and **without** heavy short-chalk moralization. **No family demote of engine queue.**
+
+### Stage 1b — Multi-agent scan (after board/light)
+
+Main agent spawns three **scan-only** agents (parallel preferred; sequential A→B→C fallback):
+
+| Agent | Role | Max |
+|-------|------|-----|
+| **A** | Favourites **1.40–1.90** | 5 |
+| **B** | Totals & props (self-limit ≤2 same family) | 5 |
+| **C** | HC & matchup dogs with real reason | 5 |
+
+Merge: dedupe · family **≤2** · soft open occupancy · soft ≤3/sport · shortlist **8–15**. Deliverable: **`outbox/MULTI_AGENT_SHORTLIST.md`** (includes **Primary worklist** = shortlist ∪ coverage_critical, cap 15). Scan agents never deep-research. Full design: [`ESR_MULTI_AGENT_SCAN_2026-07-25.md`](./ESR_MULTI_AGENT_SCAN_2026-07-25.md).
+
+### Stage 1c / Stage 2 work order
+
+When multi-agent ran: deep **primary worklist only** (not “engine deep_queue first”). Remaining engine-only lines → Stage 3b expansion. All-fail multi-agent → fall back to engine `deep_queue`.
+
+Engine promo signals still matter for ranking / coverage:
 
 | Signal | Direction |
 |--------|-----------|

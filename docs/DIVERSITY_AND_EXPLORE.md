@@ -88,7 +88,19 @@ Subtype `nba`/`wnba` is UI-only via `basketball_subtype()`; diversify never spli
 
 Portfolio also applies **Settlement Lessons** soft demotion (`lessons_soft:` …) independent of similar-recent — TTL soft notes only, never hard reject. Agent must print lessons after settle (≥1 terminal) before research. See [`SETTLEMENT_LEARNING.md`](./SETTLEMENT_LEARNING.md) and root `AGENTS.md` § Settlement Lessons + diversify + archive isolation.
 
-**Stage 1:** deep_queue is **not** demoted by family/lessons — diversify + soft demotions bind at **recommend / portfolio**.
+**Stage 1 engine queue:** `deep_queue` is **not** demoted by family/lessons — diversify + soft demotions bind at **recommend / portfolio**.
+
+### Diversity triad (multi-agent Stage 1b + portfolio)
+
+Three layers — do not collapse them into one rule:
+
+| # | Layer | Rule |
+|---|-------|------|
+| **(1)** | **Engine `deep_queue` SSOT** | Unchanged. **No** family demote of the engine queue at Stage 1. Coverage floor tags and promo ranking remain engine law. Multi-agent merge **must not** rewrite `data/state/deep_queue.json`. |
+| **(2)** | **Multi-agent shortlist overlay** | Soft family cap on **Stage 2 agent work order only**: after merge each `market_family` count **must be ≤2** (drop when ≥3). Soft open-book family/sport occupancy and soft ≤3/sport also apply at shortlist merge. This does **not** demote the engine queue. Design: [`ESR_MULTI_AGENT_SCAN_2026-07-25.md`](./ESR_MULTI_AGENT_SCAN_2026-07-25.md). |
+| **(3)** | **Portfolio place law** | Hard max **2** `market_family` **and** `max_per_sport: 2` on open+slip at recommend — **unchanged** engine enforcement in `nt/portfolio.py`. |
+
+**Forbidden misreads:** (a) “family demote is illegal everywhere” → wrong — shortlist soft cap (layer 2) is legal; (b) “hand-prune engine queue by family before deep” → wrong — engine queue stays intact (layer 1).
 
 ## What this is *not*
 

@@ -13,14 +13,15 @@ Real-money capital desk. Engines in `nt/` are law. UI (LuminaNT, Flet desktop) p
 > | **Coverage floor (A)** + **`temp_ev_relax` (B)** | Floor expands research; never invents `p_model`; relax is rare safety net |
 > | **Settlement taxonomy** `learning_weight` · CS gate ≥**0.5** | [`docs/SETTLEMENT_LEARNING.md`](docs/SETTLEMENT_LEARNING.md) |
 > | **Settlement Lessons + diversify + archive isolation** | Soft lessons after settle · hard max **2** `market_family` · similar-recent demote · **never** read `history/archives/` or `history/rounds/` |
+> | **Multi-agent Stage 1b scan** | Agents A/B/C ≤5 each → merge shortlist 8–15 → primary worklist = shortlist ∪ coverage_critical (cap 15) · design [`docs/ESR_MULTI_AGENT_SCAN_2026-07-25.md`](docs/ESR_MULTI_AGENT_SCAN_2026-07-25.md) |
 > | **Desk skills** `/daily-run` · `/missed-audit` · `/chain-explain` · `/bankroll-tune` · `/learning-rootcause` | [`docs/DESK_SKILLS.md`](docs/DESK_SKILLS.md) |
 > | **Reasoning** on recommend | `why · support · main risk` + short near-misses in `PLACE_THESE.md` |
 >
 > Package narrative: permanent rules below. Skills: **`docs/DESK_SKILLS.md`**. Capital hybrid: **`docs/CAPITAL_HYBRID_PROGRESSION.md`**. Taxonomy: **`docs/SETTLEMENT_LEARNING.md`**. **ESR philosophy: [`docs/RESEARCH_RESET_SIMPLE_EFFECTIVE_2026-07-25.md`](docs/RESEARCH_RESET_SIMPLE_EFFECTIVE_2026-07-25.md).** FEH design doc is **SUPERSEDED**.
 
-**Status (permanent package):** clean-restart **500 NOK** era · capital_v2 live · **hybrid half-steps (1A+/1B+) + continuous unit** · **secure bucket Variant A** · **Exploration→Survival→Normal** bankroll regimes · multi-stage quant prefilter · engine deep queue (**edge-seeking promise score**; preferred composition quotas **off**) · **ESR place path** (legacy grade + research_gates + EV + soft odds bands; FEH shadow) · Coverage Health + soft gate · `force_coverage_priority` · totalgrense residual buffer · closed-loop ControlSignals · PhaseState v5 · **Settlement Lessons** (soft TTL) · diversify hard max **2** `market_family` + similar-recent · **archive isolation** (no `history/archives|rounds` memory) · **neutral sport start at zero data** · **find best edges** (empty slip only after full scan + expansion).
+**Status (permanent package):** clean-restart **500 NOK** era · capital_v2 live · **hybrid half-steps (1A+/1B+) + continuous unit** · **secure bucket Variant A** · **Exploration→Survival→Normal** bankroll regimes · multi-stage quant prefilter · engine deep queue (**edge-seeking promise score**; preferred composition quotas **off**) · **multi-agent Stage 1b scan** (A/B/C → shortlist → primary worklist) · **ESR place path** (legacy grade + research_gates + EV + soft odds bands; FEH shadow) · Coverage Health + soft gate · `force_coverage_priority` · totalgrense residual buffer · closed-loop ControlSignals · PhaseState v5 · **Settlement Lessons** (soft TTL) · diversify hard max **2** `market_family` + similar-recent · **archive isolation** (no `history/archives|rounds` memory) · **neutral sport start at zero data** · **find best edges** (empty slip only after full scan + expansion).
 
-Docs: `docs/RESEARCH_RESET_SIMPLE_EFFECTIVE_2026-07-25.md` · `docs/RESEARCH_WORKFLOW.md` · `docs/RESEARCH_GATES.md` · `docs/EXA_RESEARCH_USAGE.md` · `docs/DESK_SKILLS.md` · `docs/BANKROLL_PLAN.md` · `docs/CAPITAL_HYBRID_PROGRESSION.md` · `docs/SETTLEMENT_LEARNING.md` · `docs/RESIDUAL_RISKS.md` · `docs/LUMINA_INTEGRATION.md` · `docs/FORCED_EVIDENCE_HIERARCHY_FULL_CLEANUP_AND_10NOK_TEST_2026-07-24.md` (**SUPERSEDED**).
+Docs: `docs/RESEARCH_RESET_SIMPLE_EFFECTIVE_2026-07-25.md` · `docs/ESR_MULTI_AGENT_SCAN_2026-07-25.md` · `docs/RESEARCH_WORKFLOW.md` · `docs/RESEARCH_GATES.md` · `docs/EXA_RESEARCH_USAGE.md` · `docs/DESK_SKILLS.md` · `docs/BANKROLL_PLAN.md` · `docs/CAPITAL_HYBRID_PROGRESSION.md` · `docs/SETTLEMENT_LEARNING.md` · `docs/RESIDUAL_RISKS.md` · `docs/LUMINA_INTEGRATION.md` · `docs/FORCED_EVIDENCE_HIERARCHY_FULL_CLEANUP_AND_10NOK_TEST_2026-07-24.md` (**SUPERSEDED**).
 
 ---
 
@@ -66,9 +67,10 @@ Config: `learning.settlement_lessons.*` · code `nt/settlement_lessons.py`. Deta
 | **Hard max 2** `market_family` | Coarse family open+slip (`max_per_market_family: 2`). Line is **not** in the key (tennis O/U 21.5–23.5 all → `tennis_totals`). |
 | **similar-recent** | Soft demotion on last ~10–15 **live** settled+pending; same sport + family + line tolerance. Visible on rejects/notes / `sort_ev` — true EV stays honest. |
 | **Lessons soft** | Independent of similar-recent; TTL soft awareness from Settlement Lessons. |
-| Stage 1 queue | **No** engine demote of deep_queue by family/lessons — diversify binds at **recommend / portfolio**. |
+| Stage 1 engine queue | **No** engine demote of deep_queue by family/lessons — diversify binds at **recommend / portfolio**. |
+| Multi-agent shortlist (1b) | Soft family **≤2** on Stage 2 **work order only** — does **not** rewrite `deep_queue.json`. See diversity triad below. |
 
-Detail: [`docs/DIVERSITY_AND_EXPLORE.md`](docs/DIVERSITY_AND_EXPLORE.md).
+Detail: [`docs/DIVERSITY_AND_EXPLORE.md`](docs/DIVERSITY_AND_EXPLORE.md) · multi-agent design [`docs/ESR_MULTI_AGENT_SCAN_2026-07-25.md`](docs/ESR_MULTI_AGENT_SCAN_2026-07-25.md).
 
 ### Archive isolation — FORBIDDEN memory paths
 
@@ -122,14 +124,15 @@ Detail: [`docs/DIVERSITY_AND_EXPLORE.md`](docs/DIVERSITY_AND_EXPLORE.md).
 ### Mandatory workflow — Stage 0–4
 
 ```
-0 Collect  →  1 Broad Scan  →  2 Deep  →  3 Select (+ expand)  →  4 Output
+0 Collect  →  1a Engine board/light  →  1b Multi-agent scan  →  1c Primary worklist
+           →  2 Deep (primary worklist only)  →  3 Select (+ expand)  →  4 Output
 ```
 
 #### Stage 0 — Collect
 
 Identify the odds file: path the user named, or **newest** `inbox/odds*.txt` by mtime. Write/dump Oddsen for the user timeframe when asked. Odds collection pipeline behaviour unchanged.
 
-#### Stage 1 — Broad Scan (all lines → promising 8–15)
+#### Stage 1a — Engine baseline (market-scan → board → light)
 
 ```bash
 python run_nt.py research market-scan --odds <odds_file>
@@ -147,9 +150,64 @@ python run_nt.py research light --odds <odds_file>   # if board did not auto-lig
 - **Assess never auto-promotes** (`auto_promote_to_deep: false`).
 - **Engine fills deep_queue** via **edge-seeking** `promotion_score` (prior_ev / soft value / natural / light signal — **not** anti-soft, not heavy short-chalk moralization).
 - Preferred composition quotas **disabled** under ESR (`deep_min_preferred_share: 0`, `deep_max_short_main_share: 1.0`); coverage **must not** re-arm preferred floor.
-- You **must** deep-research the deep queue — queue alone does not invent `p_model` or place bets.
 - Light is quick/heuristic; Deep stays high quality (sources, script honesty, both sides).
 - **No anti-underdog filters at Stage 1.** Soft dogs are candidates like anything else with signal.
+
+#### Stage 1b — Multi-agent scan (after board/light; before deep)
+
+**Default on full `/daily-run` and new-odds research.** Controlled parallel scan only — **no** Exa packs, **no** write-pack, **no** recommend, **no** ledger writes. Design: [`docs/ESR_MULTI_AGENT_SCAN_2026-07-25.md`](docs/ESR_MULTI_AGENT_SCAN_2026-07-25.md).
+
+**Legal universe:** full current odds dump. Board / light / `deep_queue` are **hints only**.
+
+| Agent | Role | Max | Notes |
+|-------|------|-----|-------|
+| **A** | Favourites **1.40–1.90** (prefer 1.40–1.80 when strong) | **5** | Scan only · ML/fav side with form/rank story |
+| **B** | Totals & player props | **5** | Scan only · self-limit **≤2** same `market_family` |
+| **C** | Handicaps & matchup dogs with **real reason** | **5** | Scan only · not bare price |
+
+**Main agent merge:**
+
+1. Dedupe by `evidence_pair_key(match, selection)`; union `scan_agents` → render `scan_agent: A+C`.
+2. After merge each `market_family` **must be ≤2** (drop when ≥3); second seat allowed; prefer spread to 1 when priority equal.
+3. Soft open-book occupancy: deprioritize / prefer drop when live open family or sport already at portfolio max (Pending+ConfirmedPlaced only — never archives).
+4. Soft prefer **≤3** candidates per sport on multi-sport boards when shortlist stays ≥8.
+5. Final multi-agent shortlist band: **8–15** (may be &lt;8 on tiny boards).
+6. Write **`outbox/MULTI_AGENT_SHORTLIST.md`** (+ optional `outbox/scan_agent_{a,b,c}_*.jsonl`).
+
+**Failure / fallback:** parallel preferred; sequential A→B→C if spawn unavailable; wait ≤12 min; partial merge + engine top-up if some agents missing; **all-fail** → `primary_worklist = engine deep_queue` (pre-plan path). Do **not** rewrite `data/state/deep_queue.json`.
+
+#### Stage 1c — Primary worklist (KD15)
+
+```text
+coverage_critical =
+  engine deep_queue lines tagged coverage_floor:top_promo_scaffold
+  OR coverage_floor:sport_rotation
+
+primary_worklist =
+  unique_by evidence_pair_key( multi_agent_shortlist ∪ coverage_critical )
+  hard-capped at 15
+  (shortlist first, then remaining coverage_critical by promo desc)
+
+remaining engine-only lines → Stage 3b expansion only (not ignored forever)
+```
+
+When multi-agent layer fails entirely: primary worklist = engine `deep_queue`.
+
+#### Diversity triad (law — do not misread)
+
+| # | Layer | Rule |
+|---|-------|------|
+| **(1)** | **Engine `deep_queue` SSOT** | Unchanged. **No** family demote of engine queue at Stage 1. Coverage floor + promo ranking remain engine law. |
+| **(2)** | **Multi-agent shortlist overlay** | Soft family cap on **Stage 2 agent work order only**: each `market_family` ≤2 after merge. Does **not** rewrite `deep_queue.json`. |
+| **(3)** | **Portfolio place law** | Hard max **2** `market_family` **and** `max_per_sport: 2` on open+slip at recommend — **unchanged**. |
+
+**Forbidden misreads:** (a) “family demote is illegal everywhere” → wrong, shortlist soft cap is legal; (b) “hand-prune engine queue by family before deep” → wrong, engine queue stays intact.
+
+#### Multi-agent non-goals (hard)
+
+- Parallel **deep** research agents · multi-agent recommend/place/stake · **FEH / anti-soft revival**
+- Engine hard demote of `deep_queue` by family · rewrite `deep_queue.json` from merge
+- **capital_v2 / phase / secure / unit / 10 NOK** changes · archive/history memory paths
 
 ### Engine deep queue (ESR — inherit every session)
 
@@ -197,11 +255,15 @@ Two orthogonal mechanisms. Operators see both on **`data/state/status.md`** → 
 
 **Agent mandate:** Do not invent `p_model`. Do not manually lower min_EV outside ControlSignals. Prefer Mechanism A (more deep research).
 
-#### Stage 2 — Deep research (shortlist / deep queue)
+#### Stage 2 — Deep research (primary worklist only)
 
-Work the **Deep queue**. Use **Exa** (primary) + sport sites (Sofascore, FBref, HLTV, ATP/WTA, Flashscore, etc.). See **`docs/EXA_RESEARCH_USAGE.md`**.
+**When multi-agent Stage 1b ran:** deep **PRIMARY WORKLIST** from `outbox/MULTI_AGENT_SHORTLIST.md` (shortlist ∪ coverage_critical, cap 15). **Do not** default to “work engine deep_queue first.” **Do not** hand-prune `deep_queue.json`. **Do not** deep random odds lines outside primary worklist + Stage 3b expansion.
 
-For each line:
+**When multi-agent failed entirely:** primary worklist = engine `deep_queue` (pre-plan path).
+
+Deep **once** on the primary pass — scan agents never run Exa packs. Use **Exa** (primary) + sport sites (Sofascore, FBref, HLTV, ATP/WTA, Flashscore, etc.). See **`docs/EXA_RESEARCH_USAGE.md`**.
+
+For each primary-worklist line:
 
 1. **Both sides** form and recent results  
 2. **H2H** — record polarity honestly; **mixed is allowed**  
@@ -502,7 +564,7 @@ python run_nt.py simulate --sport basketball --home H --away A ...
 | Short favourites **1.40–1.80** when research supports | Demand Grade A + 8 sources only for every short price |
 | Empty slip **only after** full deep + expansion + no +EV | Celebrate empty slip while next tier unresearched |
 | **Auto-apply learning proposals** after settle | Ask the user to accept/reject learnings |
-| Deep-research engine **deep_queue** (promise score) | Deep-dive only 2–3 lines while ignoring queue |
+| Deep **primary worklist** once (multi-agent shortlist ∪ coverage_critical; else engine queue) | Deep-dive only 2–3 lines; ignore primary worklist; deep inside scan agents |
 | Treat Coverage Health **critical** as process miss | Silent empty slip while promising lines unresearched |
 | Respect recommend soft gate / use `--allow-low-coverage` only explicitly | Bypass coverage with `--force-mechanical` casually |
 | Light assess never promotes; engine builds deep_queue | Expect assess-time auto-promote |
@@ -546,7 +608,7 @@ User-scope skills in `%USERPROFILE%\.grok\skills\` — load **this file first**,
 
 | Slash | Skill | When |
 |-------|--------|------|
-| `/daily-run` | Full day desk | settle → **Settlement Lessons** (warn if stale) → odds → Stage 1 scan → deep queue → ESR packs → expand if needed → recommend (max 2 family / similar soft) → why/support/risk → `PLACE_THESE.md` → place-ack (10 NOK cap when active) |
+| `/daily-run` | Full day desk | settle → **Settlement Lessons** (warn if stale) → odds → Stage 1a board/light → **1b multi-agent A/B/C** → primary worklist → deep once → expand if needed → recommend (max 2 family / similar soft) → why/support/risk → `PLACE_THESE.md` → place-ack (10 NOK cap when active) |
 | `/missed-audit` | Missed edges | promising lines out of deep; promo components; cheapest fix — **not** soft-dog guilt |
 | `/chain-explain` | Reasoning | **why · support · main risk** for one match/selection (or whole slip) |
 | `/bankroll-tune` | Capital tune | secure/phase/unit/regime proposal → MC + capital CLI |
@@ -572,6 +634,7 @@ User-scope skills in `%USERPROFILE%\.grok\skills\` — load **this file first**,
 | Doc | Role |
 |-----|------|
 | `docs/RESEARCH_RESET_SIMPLE_EFFECTIVE_2026-07-25.md` | **ESR authoritative philosophy** |
+| `docs/ESR_MULTI_AGENT_SCAN_2026-07-25.md` | Multi-agent Stage 1b scan design (roles · merge · primary worklist) |
 | `docs/RESEARCH_WORKFLOW.md` | Stage 0–4 map + CLI |
 | `docs/RESEARCH_GATES.md` | Hard nonsense vs soft checks |
 | `docs/EXA_RESEARCH_USAGE.md` | Exa feeds research (not FEH hard reject) |

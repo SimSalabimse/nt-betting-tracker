@@ -4,15 +4,15 @@ User-scope Grok skills for the NT capital desk. Skills live under **`%USERPROFIL
 
 Engines in `nt/` remain law. Skills encode **workflows**; they never invent `p_model`, bankroll equity, or hand-softened min_EV.
 
-**Edge-Seeking Research (ESR)** is the research + recommend philosophy. Stage 0–4: Collect → scan all lines → shortlist 8–15 promising → deep research → pick best +EV → expand if needed. Soft underdogs are **not** guilty by default. Short favourites **1.40–1.80** allowed. Empty slip only after full scan + expansion. FEH is **demoted / shadow only** — not place law.
+**Edge-Seeking Research (ESR)** is the research + recommend philosophy. Stage 0–4: Collect → engine board/light → **multi-agent Stage 1b** (A/B/C ≤5) → shortlist 8–15 → primary worklist (cap 15) → deep once → pick best +EV → expand if needed. Soft underdogs are **not** guilty by default. Short favourites **1.40–1.80** allowed. Empty slip only after full scan + expansion. FEH is **demoted / shadow only** — not place law.
 
-Authoritative: [`RESEARCH_RESET_SIMPLE_EFFECTIVE_2026-07-25.md`](./RESEARCH_RESET_SIMPLE_EFFECTIVE_2026-07-25.md) · Workflow: [`RESEARCH_WORKFLOW.md`](./RESEARCH_WORKFLOW.md) · Repo mirror of daily-run: [`skills_mirror_daily-run.md`](./skills_mirror_daily-run.md).
+Authoritative: [`RESEARCH_RESET_SIMPLE_EFFECTIVE_2026-07-25.md`](./RESEARCH_RESET_SIMPLE_EFFECTIVE_2026-07-25.md) · Multi-agent scan: [`ESR_MULTI_AGENT_SCAN_2026-07-25.md`](./ESR_MULTI_AGENT_SCAN_2026-07-25.md) · Workflow: [`RESEARCH_WORKFLOW.md`](./RESEARCH_WORKFLOW.md) · Repo mirror of daily-run: [`skills_mirror_daily-run.md`](./skills_mirror_daily-run.md).
 
 ## Installed skills
 
 | Slash | Directory | Role |
 |-------|-----------|------|
-| `/daily-run` | `~/.grok/skills/daily-run/` | Full day: results → **Settlement Lessons** (warn if stale) → odds → Stage 1 scan → deep queue → ESR packs (Exa both-sides) → expand if &lt;2 on large board → recommend (max 2 family / similar soft) + **why · support · main risk** → `PLACE_THESE.md` → place-ack (10 NOK cap when active) · live ledger only |
+| `/daily-run` | `~/.grok/skills/daily-run/` | Full day: results → **Settlement Lessons** (warn if stale) → odds → Stage 1a board/light → **1b multi-agent A/B/C** (max 5) → primary worklist → ESR packs once (Exa both-sides) → expand if &lt;2 on large board → recommend (max 2 family / similar soft) + **why · support · main risk** → `PLACE_THESE.md` → place-ack (10 NOK cap when active) · live ledger only |
 | `/missed-audit` | `~/.grok/skills/missed-audit/` | Promising lines out of deep; promo components; cheapest fix — **edge-seeking, not soft-dog guilt** |
 | `/chain-explain` | `~/.grok/skills/chain-explain/` | Simple chain: why · strongest support · main risk (+ EV/stake when useful) |
 | `/bankroll-tune` | `~/.grok/skills/bankroll-tune/` | Secure/phase/unit/regime proposal → MC + capital tools |
@@ -100,7 +100,8 @@ python scripts/backfill_settlement_taxonomy.py --n 30 --apply   # after review
 
 | Rule | Detail |
 |------|--------|
-| Stage 0–4 | Collect → scan all → shortlist 8–15 → deep → best +EV → expand if needed |
+| Stage 0–4 | Collect → 1a board/light → **1b multi-agent A/B/C** → primary worklist (cap 15) → deep once → best +EV → expand if needed |
+| Multi-agent 1b | A favourites 1.40–1.90 · B totals/props · C HC/matchup dogs · max 5 each · merge family ≤2 · deliverable `MULTI_AGENT_SHORTLIST.md` |
 | Soft underdogs | Not guilty by default; place on matchup + EV |
 | Short 1.40–1.80 | Allowed when research supports (Grade B + core + EV) |
 | Empty slip | Only after full deep + expansion + no +EV — process miss if next tier unresearched |
@@ -108,7 +109,7 @@ python scripts/backfill_settlement_taxonomy.py --n 30 --apply   # after review
 | Coverage / temp_ev_relax | Expand research or rare EV soften — never invent p_model |
 | 10 NOK test cap | First 10 place-acked `TEST_CAP:esr_v1` seats ≤ 10 NOK |
 | Settlement Lessons | After settle ≥1 terminal: print before research; missing/stale = **warn** only |
-| Diversify | Hard max **2** `market_family`; similar-recent + lessons soft demotion (sort only) |
+| Diversify triad | Engine queue not family-demoted · shortlist soft family ≤2 · portfolio hard max 2 at place |
 | Archive isolation | **Never** `history/archives/` or `history/rounds/` for memory — live only: `data/bets.csv` · pending · latest results · current odds · `data/state/*` |
 | Untouched | capital_v2 · phase · secure · unit · **10 NOK** · ControlSignals · FEH stays demoted |
 
@@ -148,6 +149,7 @@ Taxonomy + weights + temp ControlSignals. **Forbidden:** proposing permanent har
 | Artifact | Path |
 |----------|------|
 | Place slip | `outbox/PLACE_THESE.md` |
+| Multi-agent shortlist | `outbox/MULTI_AGENT_SHORTLIST.md` (+ optional `outbox/scan_agent_{a,b,c}_*.jsonl`) |
 | Reasoning chains | `data/state/reasoning_chains.jsonl` |
 | Light research | `outbox/light_research/` |
 | Deep queue SSOT | `data/state/deep_queue.json` |
@@ -164,8 +166,9 @@ Taxonomy + weights + temp ControlSignals. **Forbidden:** proposing permanent har
 
 | Doc | Role |
 |-----|------|
-| `AGENTS.md` | Desk law + ESR Stage 0–4 · lessons + diversify + archive isolation |
+| `AGENTS.md` | Desk law + ESR Stage 0–4 · lessons + diversify + multi-agent Stage 1b |
 | `docs/RESEARCH_RESET_SIMPLE_EFFECTIVE_2026-07-25.md` | ESR philosophy |
+| `docs/ESR_MULTI_AGENT_SCAN_2026-07-25.md` | Multi-agent Stage 1b design |
 | `docs/RESEARCH_WORKFLOW.md` | Stage map |
 | `docs/EXA_RESEARCH_USAGE.md` | Exa feeds research |
 | `docs/skills_mirror_daily-run.md` | Committed daily-run skill text (dual-write) |
