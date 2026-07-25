@@ -71,6 +71,26 @@ Repo scripts (run from tracker root):
 
 These scripts **do not** replace Grok skills — they list paths and run engine smokes.
 
+### Multi-agent Stage 1b fallback (skill law — dual-write)
+
+Codified in [`skills_mirror_daily-run.md`](./skills_mirror_daily-run.md) § Failure / timeout / fallback **and** `~/.grok/skills/daily-run/SKILL.md` (keep in sync):
+
+| Case | Behaviour |
+|------|-----------|
+| Parallel | Preferred for A/B/C |
+| Spawn unavailable | **Sequential A → B → C** |
+| Wait | ≤ **12 min** wall-clock |
+| Partial fail | Merge completed + **engine top-up** |
+| All-fail / empty | **Engine `deep_queue`** primary worklist (`scan-merge` fallback) |
+| Stage 2 | **Never silent-skip deep** after 1b (success, partial, or all-fail) |
+
+**Ops residual:** [`RESIDUAL_RISKS.md`](./RESIDUAL_RISKS.md) · R-S2-10.  
+**Live dry desk day (ops):** shortlist **8–15** · primary worklist **≤15** · deep **once** · `scan_agent` provenance on slip picks · still deep on fallback path. Full checklist in skills_mirror § Ops smoke + live dry desk day.
+
+```powershell
+.\scripts\skill_smoke.ps1   # engine + skills install smoke (does not spawn A/B/C)
+```
+
 ## Exhaustive CLI (daily desk)
 
 See also `AGENTS.md` and `docs/RESEARCH_WORKFLOW.md`.
@@ -101,7 +121,7 @@ python scripts/backfill_settlement_taxonomy.py --n 30 --apply   # after review
 | Rule | Detail |
 |------|--------|
 | Stage 0–4 | Collect → 1a board/light → **1b multi-agent A/B/C** → primary worklist (cap 15) → deep once → best +EV → expand if needed |
-| Multi-agent 1b | A favourites 1.40–1.90 · B totals/props · C HC/matchup dogs · max 5 each · merge family ≤2 · deliverable `MULTI_AGENT_SHORTLIST.md` |
+| Multi-agent 1b | A favourites 1.40–1.90 · B totals/props · C HC/matchup dogs · max 5 each · merge family ≤2 · deliverable `MULTI_AGENT_SHORTLIST.md` · parallel preferred / sequential fallback / ≤12 min / partial top-up / all-fail → engine queue · **never skip Stage 2** |
 | Soft underdogs | Not guilty by default; place on matchup + EV |
 | Short 1.40–1.80 | Allowed when research supports (Grade B + core + EV) |
 | Empty slip | Only after full deep + expansion + no +EV — process miss if next tier unresearched |

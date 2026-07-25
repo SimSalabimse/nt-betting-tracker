@@ -1,6 +1,6 @@
 # Residual Risks — Final Honest List
 
-**As of:** 2026-07-21 (after closed-loop ControlSignals + multi-factor PhaseState + Lumina surfaces + validation)  
+**As of:** 2026-07-26 (closed-loop + ESR multi-agent Stage 1b spawn/fallback ops)  
 **Purpose:** What can still lose real money or mislead process — not a feature backlog.
 
 Severity: **S0** bankroll/settlement truth · **S1** size/select wrong · **S2** process/ops · **S3** visibility/docs.
@@ -48,6 +48,7 @@ Severity: **S0** bankroll/settlement truth · **S1** size/select wrong · **S2**
 | R-S2-7 | Sport tag drift | Taxonomy normalize | Wrong diversify/learning bucket |
 | R-S2-8 | settlement_reviews pollution | Ops hygiene (test rows removed once) | Future tests must not write live state paths |
 | R-S2-9 | ControlSignal JSONL growth | Append-only + revoke tombstones | No compaction job |
+| R-S2-10 | **Multi-agent Stage 1b spawn reliability** — parallel subagents may hang, fail, or be unavailable on some hosts | Skill law: **parallel preferred**; **sequential A→B→C** if spawn unavailable; wait ≤**12 min**; **partial** merge + engine top-up; **all-fail / empty** → `scan-merge` engine `deep_queue` fallback; **never silent-skip Stage 2 deep**. Codified in `docs/skills_mirror_daily-run.md` + `~/.grok/skills/daily-run/SKILL.md`. Engine helper already fail-soft (`fallback: engine_deep_queue`) | Host-dependent spawn quality; sequential day is slower; all-fail reverts to pre-plan blind spots (single scorer). Ops: live dry desk checklist (shortlist 8–15 · primary ≤15 · deep once · `scan_agent` provenance). Smoke: `.\scripts\skill_smoke.ps1` + optional one-agent-missing merge |
 
 ---
 
@@ -118,4 +119,4 @@ For a **~500–1500 NOK working book**, NT min 10, unit ladder 10/15/20:
 
 ## Verdict line
 
-**Closed-loop ControlSignals and multi-factor PhaseState are production-ready for this bankroll.** Residual risk is dominated by **operator tagging discipline**, **thin sample**, **soft (not hard) portfolio correlation**, **phantom Pending**, and **Kelly step-up at 1500** — not by missing process actuators or phase fighting capital_v2.
+**Closed-loop ControlSignals and multi-factor PhaseState are production-ready for this bankroll.** Residual risk is dominated by **operator tagging discipline**, **thin sample**, **soft (not hard) portfolio correlation**, **phantom Pending**, **Kelly step-up at 1500**, and **multi-agent scan spawn reliability** (mitigated by sequential/partial/engine fallbacks — never skip Stage 2) — not by missing process actuators or phase fighting capital_v2.

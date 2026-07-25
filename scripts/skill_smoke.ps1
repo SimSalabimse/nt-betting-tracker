@@ -1,5 +1,11 @@
-# Desk-skill smoke: coverage floor, MC phase progression, taxonomy weights.
+# Desk-skill smoke: skills install, coverage floor, MC phase progression, taxonomy weights.
 # Usage (from tracker root): .\scripts\skill_smoke.ps1
+#
+# Does NOT spawn multi-agent Stage 1b (A/B/C). Fallback law + live dry desk checklist:
+#   docs/skills_mirror_daily-run.md  (§ Failure/timeout + Ops smoke)
+#   docs/DESK_SKILLS.md              (multi-agent fallback pointer)
+#   docs/RESIDUAL_RISKS.md           (R-S2-10 spawn reliability)
+# Dual-write skill: %USERPROFILE%\.grok\skills\daily-run\SKILL.md
 
 $ErrorActionPreference = "Continue"
 $Root = Split-Path -Parent $PSScriptRoot

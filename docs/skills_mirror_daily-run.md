@@ -129,7 +129,7 @@ Near-misses: one short line each (why not / what would change).
 | **Live desk SSOT** | Never `git checkout`/`restore`/`stash apply` onto `data/bets.csv` or `data/state/*` during engineering. Clean era: **era_start 2026-07-25**, baseline **500 NOK**. Verify with `python run_nt.py status` before research. |
 | **Diversity triad** | (1) Engine `deep_queue` **not** family-demoted. (2) Multi-agent shortlist soft family **≤2** (work-order only; no rewrite of queue). (3) Portfolio hard max 2 family + sport at recommend. |
 | **Stage 1 engine queue** | Do **not** hand-demote `deep_queue` by family/lessons — engine queue SSOT intact; diversify binds at recommend. |
-| **Stage 1b multi-agent** | After board/light; A/B/C scan only (max 5); merge → `MULTI_AGENT_SHORTLIST.md`; primary worklist = shortlist ∪ coverage_critical (cap 15). |
+| **Stage 1b multi-agent** | After board/light; A/B/C scan only (max 5); parallel preferred / sequential A→B→C / ≤12 min; partial merge + engine top-up; all-fail → engine `deep_queue`; **never silent-skip Stage 2**. Merge → `MULTI_AGENT_SHORTLIST.md`; primary = shortlist ∪ coverage_critical (cap 15). |
 | **Untouched** | No FEH/anti-soft revival · capital_v2/phase/secure/unit/10 NOK · ControlSignals contracts. |
 
 ## 1) Results first (if any open risk)
@@ -214,18 +214,30 @@ Engine queue rank = research **hint** / coverage SSOT — **not** automatic plac
 
 **coverage_critical** = engine deep_queue lines with tags `coverage_floor:top_promo_scaffold` OR `coverage_floor:sport_rotation` (Mechanism A — never silently drop).
 
-**Timeout / fallback:** wait ≤ **12 min**; merge completed agents if partial; top up from engine/coverage_critical; **all three fail** → `primary_worklist = engine deep_queue` (pre-plan path); warn process miss on multi-agent layer.
+### Failure / timeout / fallback (KD17 · KD12) — never silent-skip Stage 2
 
-**Do not:** rewrite `deep_queue.json` · run deep inside A/B/C · revive FEH/anti-soft · touch capital.
+| Case | Behaviour |
+|------|-----------|
+| **Parallel preferred** | Spawn A/B/C together when the host supports parallel subagents. |
+| **Parallel spawn unavailable** | Run **sequential A → B → C** (same role cards); still apply full merge. |
+| **Wait budget** | Wait ≤ **12 minutes** wall-clock for the scan layer (host-dependent skill default). Do **not** wait forever for a hung agent. |
+| **Partial fail / timeout (≥1 complete)** | Merge **what completed**; note `scan_agent_missing: X[,Y]`; **engine top-up** from light-pass / coverage_critical / promo so shortlist band stays useful (target 8–15 when board allows). `scan-merge` helper already supports partial agent sets. |
+| **Proceed after 2/3** | Allowed once timeout fires or one agent hard-fails — do not block the desk on the third. |
+| **All-fail / empty scan merge** | `primary_worklist = engine deep_queue` (pre-plan path). Empty multi-agent shortlist → **engine fallback** (`scan-merge` `fallback: engine_deep_queue` / ISS-2). Warn **process miss on multi-agent layer** — still continue. |
+| **Never silent-skip Stage 2** | After Stage 1b (success, partial, or all-fail fallback), **always** deep the resulting primary worklist. Multi-agent spawn failure is **not** a hard-stop and is **not** a license to jump to empty recommend without deep. |
+| **Agent returns &gt;5** | Truncate to 5 before merge. |
+| **Lines not on odds dump** | Drop at merge. |
+
+**Do not:** rewrite `deep_queue.json` · run deep inside A/B/C · revive FEH/anti-soft · touch capital · treat spawn failure as “skip research day.”
 
 ## 3) Stage 2 — Deep research on PRIMARY WORKLIST (Exa)
 
-**When multi-agent ran:** deep **every line on PRIMARY WORKLIST** from `outbox/MULTI_AGENT_SHORTLIST.md`.  
-**Do not** “work engine deep_queue first” as the default primary pass.  
+**When multi-agent shortlist exists (full or partial merge):** deep **every line on PRIMARY WORKLIST** from `outbox/MULTI_AGENT_SHORTLIST.md`.  
+**Do not** “work engine deep_queue first” as the default primary pass when a multi-agent shortlist was produced.  
 **Do not** deep random odds lines outside primary worklist + Stage 3b expansion.  
 **Do not** hand-prune `deep_queue.json`.
 
-**When multi-agent failed entirely:** primary worklist = engine `deep_queue` (pre-plan path).
+**When multi-agent failed entirely / empty merge → engine fallback:** primary worklist = engine `deep_queue` (pre-plan path). **Still run Stage 2 deep once** on that worklist — never skip deep because scan agents failed.
 
 1. Scaffold if needed:
 
@@ -301,12 +313,43 @@ python run_nt.py status
 11. Expansion done? (if large board &lt;2 initially)
 12. place-ack / abandon ids if place session ran
 
+## Ops smoke + live dry desk day (PR4 checklist)
+
+**Engine smoke (no live ledger writes required):**
+
+```powershell
+.\scripts\skill_smoke.ps1
+# skills installed · coverage floor synthetic · MC phase · taxonomy weights
+```
+
+**Multi-agent scan-merge smoke (optional; docs/ops):**
+
+| Check | Pass |
+|-------|------|
+| Simulated one-agent-missing merge | Shortlist still written; notes include missing agent; engine top-up if needed |
+| Simulated all-fail / empty agent sets | `fallback: engine_deep_queue` · primary worklist from queue · Stage 2 still scheduled |
+| Family ≤2 after merge | No `market_family` with ≥3 seats on shortlist |
+
+**Live dry desk day (ops — real odds, no invent p_model; dry-run recommend only if operator asks):**
+
+| Gate | Target |
+|------|--------|
+| Multi-agent shortlist size | **8–15** on large boards (board-limited may be &lt;8) |
+| Primary worklist | shortlist ∪ coverage_critical · **≤15** |
+| Stage 2 deep | **Once** on primary worklist only (no deep inside A/B/C) |
+| Provenance | Placed / slip picks show `scan_agent: A` or `A+C` when line was on multi-agent shortlist |
+| Fallback path exercised? | If any agent missing: still deep; if all-fail: engine path + still deep |
+| Deliverables | `outbox/MULTI_AGENT_SHORTLIST.md` · packs · `PLACE_THESE.md` with why/support/risk |
+
+Design residual: `docs/RESIDUAL_RISKS.md` · **R-S2-10** multi-agent spawn reliability.
+
 ## Hard rules (do not break)
 
 - Load AGENTS.md first every session.
 - Live recommend by default; dry-run only on request.
 - After board/light: run **multi-agent Stage 1b** (A/B/C max 5) unless recommend-only / empty dump.
-- Deep **primary worklist once** when multi-agent ran; do **not** “work engine deep_queue first” as primary; expand before accepting empty on large boards.
+- Stage 1b spawn: **parallel preferred**; **sequential A→B→C** if needed; wait ≤**12 min**; partial → merge + engine top-up; all-fail → engine `deep_queue` path. **Never silent-skip Stage 2 deep.**
+- Deep **primary worklist once** (shortlist ∪ coverage_critical, or engine queue on all-fail); do **not** “work engine deep_queue first” as primary when shortlist exists; expand before accepting empty on large boards.
 - Scan agents: **scan only** — no Exa packs, no place, no ledger.
 - Diversity triad: no engine-queue family demote · shortlist family ≤2 soft · portfolio hard max 2 at place.
 - **ESR** — soft dogs not guilty by default; short 1.40–1.80 OK with support.
