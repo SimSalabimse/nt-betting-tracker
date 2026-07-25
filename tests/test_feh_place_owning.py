@@ -77,11 +77,20 @@ def _load_smith() -> dict:
 
 
 def test_production_config_place_uses_saef():
+    """ESR kill-switch: production config demotes FEH place ownership.
+
+    place_uses_saef = enabled ∧ ¬shadow_mode ∧ forced_hierarchy.enabled
+    → False when shadow_mode true and forced_hierarchy.enabled false.
+    Synthetic FEH unit tests use local _place_cfg() (FEH-on fixtures).
+    """
     cfg = load_config()
-    assert place_uses_saef(cfg) is True
+    assert place_uses_saef(cfg) is False
     ev = (cfg.get("selection") or {}).get("evidence") or {}
-    assert ev.get("shadow_mode") is False
-    assert (ev.get("forced_hierarchy") or {}).get("enabled") is True
+    assert ev.get("shadow_mode") is True
+    assert (ev.get("forced_hierarchy") or {}).get("enabled") is False
+    # ESR test window retag (counter resets on system_tag mismatch)
+    tsc = (cfg.get("selection") or {}).get("test_stake_cap") or {}
+    assert tsc.get("system_tag") == "esr_v1"
 
 
 def test_s1_smith_grade_f_anti_soft():

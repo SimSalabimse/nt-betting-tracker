@@ -253,8 +253,9 @@ selection:
   # ESR PR1 kill-switch (research-reset-simple-effective-2026-07-25):
   #   place_uses_saef = enabled AND NOT shadow_mode AND forced_hierarchy.enabled
   #   → False with shadow_mode true + forced_hierarchy.enabled false (legacy grade path).
-  # Residual volume killers remain until PR2 (coverage re-arm, Band A hard H2H/rank,
-  # promo hardcodes preferred+25 / short_main-30, n_pref_avail==0 empty queue).
+  # Residual volume killers until PR2: Band A hard H2H/rank, promo hardcodes
+  # preferred+25 / short_main-30, mid-band window ignored; re-arm only if overlay
+  # omits coverage_preferred_share (None→0.55); n_pref_avail==0 empty queue.
   evidence:
     enabled: true
     shadow_mode: true           # ESR: demote FEH place ownership (was false)
@@ -344,7 +345,8 @@ selection:
       stake_mult: 0.75
   # Temporary ESR test stake cap: max 10 NOK for first 10 place-acked bets under system_tag.
   # Absolute-last ceiling after rebalance + EXPLORE_REGIME clamp - does not change capital_v2 math.
-  # Counter resets on system_tag change (feh_v1 → esr_v1). NOTE_TAG_PREFIX → TEST_CAP: in PR2.
+  # Counter resets on system_tag change (feh_v1 → esr_v1) — path keep is intentional; tag is SSOT.
+  # NOTE_TAG_PREFIX → TEST_CAP: and optional path rename in PR2.
   test_stake_cap:
     enabled: true
     max_bets: 10
@@ -453,7 +455,7 @@ learning:
       near_empty_max_picks: 1
       min_no_pmodel_reject_share: 0.70
       min_mid_unresearched: 3
-      coverage_preferred_share: 0.0  # ESR: disable preferred-share re-arm (code guard PR2)
+      coverage_preferred_share: 0.0  # ESR: emit 0 so re-arm cannot force 0.55; PR2: guard when key omitted
       weight_boost: 30.0            # deep-queue score boost under active signal
     # Mechanism B: temporary auditable EV softening (safety net only)
     # Per-line allowlist · never softens haircut · grade F always excluded
@@ -577,7 +579,8 @@ research:
     # assess never promotes; engine fills deep_queue via promotion_score
     auto_promote_to_deep: false
     engine_deep_queue: true
-    # ESR: neutralize preferred-share / short-main composition (code still re-arms until PR2)
+    # ESR: composition floors off. Re-arm only if active overlay omits
+    # coverage_preferred_share (None → legacy 0.55); PR2 fail-closed default 0 under ESR.
     deep_min_preferred_share: 0.0
     deep_max_short_main_share: 1.0
     short_chalk_odds: 1.70           # Stage1 drop short-main below 1.70 (was 1.80)
