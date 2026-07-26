@@ -58,3 +58,6 @@ data/odds/
 **/*.xcuserstate
 tools/ios-desk/build_unsigned/
 tools/ios-desk/**/DerivedData/
+
+# mobile-view package-local content identity cache (never commit)
+tools/mobile-view/.cache/

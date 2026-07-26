@@ -5,7 +5,27 @@ Wire shape = `schema_version` (still **1** unless a breaking change).
 
 Format: [Keep a Changelog](https://keepachangelog.com/)-style.
 
+## [1.2.0] — 2026-07-26
+
+### Added
+- **`content_hash`** on `/api/desk` — first 16 hex chars of SHA-256 over canonical JSON of the
+  desk object **excluding** `generated_at` and `content_hash` (stable content identity)
+- Durable **`generated_at`** = last **content** change time (not HTTP response time), persisted at
+  package-local `tools/mobile-view/.cache/desk_identity.json` (survives process restart)
+- In-process full-snapshot memory cache keyed on explicit per-file fingerprints
+  (core state files + odds candidate path/mtime/size; no odds parse cache yet)
+
+### Changed
+- `generated_at` no longer stamped on every request when the ledger is idle — clients can skip
+  unchanged payloads via string equality (including post-restart for iOS 1.1.4)
+
+### Notes
+- `schema_version` remains **1** (additive only)
+- GET may write **only** `.cache/desk_identity.json` under this package; never engine SSOT
+- ETag/304 deferred to a follow-up PR
+
 ## [1.1.3] — 2026-07-26
+
 
 ### Fixed
 - Equity curve: only **terminal** P/L (never ConfirmedPlaced/Pending); baseline from bankroll

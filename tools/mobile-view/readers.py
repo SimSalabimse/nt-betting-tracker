@@ -12,10 +12,13 @@ Versions:
 from __future__ import annotations
 
 import csv
+import hashlib
 import json
+import os
 import re
 import sys
 from collections import defaultdict
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -30,9 +33,144 @@ from version_info import API_VERSION, SCHEMA_VERSION  # noqa: E402
 PLACE_EXCERPT_CHARS = 4000
 STATUS_EXCERPT_CHARS = 2500
 
+# Package-local identity cache (never under data/state/). Overridable in tests.
+_IDENTITY_PATH: Path | None = None
+
+# Core ledger inputs for full-snapshot memory short-circuit (per-file path/mtime_ns/size).
+_CORE_INPUT_REL = (
+    ("data", "state", "bankroll.json"),
+    ("data", "state", "risk.json"),
+    ("data", "state", "phase.json"),
+    ("data", "state", "capital_segments.json"),
+    ("data", "state", "status.md"),
+    ("data", "bets.csv"),
+    ("outbox", "PLACE_THESE.md"),
+)
+
+_ODDS_SUFFIXES = {".txt", ".md", ".csv", ".log", ".odds"}
+
 
 def _now_iso() -> str:
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+
+
+def _canonical_json_bytes(obj: dict) -> bytes:
+    """Canonical JSON for content fingerprint (sorted keys, compact, UTF-8)."""
+    return json.dumps(
+        obj,
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+        allow_nan=False,
+    ).encode("utf-8")
+
+
+def fingerprint_desk(body: dict) -> str:
+    """Hash desk content identity. Input must not include generated_at or content_hash."""
+    payload = {k: v for k, v in body.items() if k not in ("generated_at", "content_hash")}
+    digest = hashlib.sha256(_canonical_json_bytes(payload)).hexdigest()
+    return digest[:16]
+
+
+def _identity_file_path() -> Path:
+    if _IDENTITY_PATH is not None:
+        return _IDENTITY_PATH
+    return _HERE / ".cache" / "desk_identity.json"
+
+
+def _load_identity() -> tuple[str | None, str | None]:
+    data = _read_json(_identity_file_path())
+    if not data:
+        return None, None
+    h = data.get("content_hash")
+    g = data.get("generated_at")
+    if isinstance(h, str) and isinstance(g, str) and h and g:
+        return h, g
+    return None, None
+
+
+def _persist_identity(content_hash: str, generated_at: str) -> None:
+    """Atomic write of package-local desk identity (temp + os.replace)."""
+    path = _identity_file_path()
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        payload = json.dumps(
+            {"content_hash": content_hash, "generated_at": generated_at},
+            ensure_ascii=False,
+            separators=(",", ":"),
+        )
+        tmp = path.parent / f".desk_identity.{os.getpid()}.tmp"
+        tmp.write_text(payload, encoding="utf-8")
+        os.replace(tmp, path)
+    except OSError:
+        try:
+            tmp = path.parent / f".desk_identity.{os.getpid()}.tmp"
+            if tmp.is_file():
+                tmp.unlink()
+        except OSError:
+            pass
+
+
+def _file_stat_tuple(path: Path) -> tuple[str, int, int]:
+    """(path_posix, mtime_ns, size); missing/unreadable → mtime/size = -1."""
+    try:
+        st = path.stat()
+        return (path.as_posix(), int(st.st_mtime_ns), int(st.st_size))
+    except OSError:
+        return (path.as_posix(), -1, -1)
+
+
+def _odds_candidate_paths(root: Path) -> list[Path]:
+    """Same selection rules as odds kickoff scan (top 60 per folder, allowed suffixes)."""
+    out: list[Path] = []
+    for folder in (root / "inbox", root / "outbox"):
+        if not folder.is_dir():
+            continue
+        try:
+            files = [p for p in folder.iterdir() if p.is_file()]
+        except OSError:
+            continue
+        files.sort(key=lambda p: p.stat().st_mtime if p.exists() else 0, reverse=True)
+        for p in files[:60]:
+            suf = p.suffix.lower()
+            if suf and suf not in _ODDS_SUFFIXES:
+                continue
+            out.append(p)
+    return out
+
+
+def _input_fingerprint(root: Path) -> tuple[Any, ...]:
+    """Explicit per-file (path, mtime_ns, size) for core inputs + odds candidates."""
+    root = Path(root)
+    try:
+        root_key = str(root.resolve())
+    except OSError:
+        root_key = str(root)
+    core = tuple(_file_stat_tuple(root.joinpath(*parts)) for parts in _CORE_INPUT_REL)
+    odds = tuple(_file_stat_tuple(p) for p in _odds_candidate_paths(root))
+    return (root_key, core, odds)
+
+
+@dataclass
+class _DeskMemoryCache:
+    input_fingerprint: tuple[Any, ...]
+    content_hash: str
+    generated_at: str
+    body: dict[str, Any]
+
+
+_desk_memory: _DeskMemoryCache | None = None
+
+
+def clear_desk_cache() -> None:
+    """Drop in-process full-snapshot cache (tests / process restart simulation)."""
+    global _desk_memory
+    _desk_memory = None
+
+
+def _debug_log(msg: str) -> None:
+    if os.environ.get("MOBILE_VIEW_DEBUG", "").strip() in ("1", "true", "yes"):
+        print(f"[mobile-view] {msg}", file=sys.stderr)
 
 
 def _read_json(path: Path) -> dict[str, Any] | None:
@@ -185,27 +323,16 @@ def _index_odds_text(text: str, index: dict[str, str]) -> None:
 def _kickoff_index_from_odds_files(root: Path) -> dict[str, str]:
     """Scan inbox / outbox odds dumps (desktop odds list source) for Kick-off times."""
     index: dict[str, str] = {}
-    for folder in (root / "inbox", root / "outbox"):
-        if not folder.is_dir():
-            continue
+    for p in _odds_candidate_paths(root):
         try:
-            files = [p for p in folder.iterdir() if p.is_file()]
+            # Cap read — odds pastes are usually well under this.
+            raw = p.read_bytes()[:1_500_000]
+            text = raw.decode("utf-8", errors="replace")
         except OSError:
             continue
-        files.sort(key=lambda p: p.stat().st_mtime if p.exists() else 0, reverse=True)
-        for p in files[:60]:
-            suf = p.suffix.lower()
-            if suf and suf not in {".txt", ".md", ".csv", ".log", ".odds"}:
-                continue
-            try:
-                # Cap read — odds pastes are usually well under this.
-                raw = p.read_bytes()[:1_500_000]
-                text = raw.decode("utf-8", errors="replace")
-            except OSError:
-                continue
-            if "kick" not in text.lower() and "kickoff" not in text.lower():
-                continue
-            _index_odds_text(text, index)
+        if "kick" not in text.lower() and "kickoff" not in text.lower():
+            continue
+        _index_odds_text(text, index)
     return index
 
 
@@ -669,9 +796,9 @@ def build_charts(root: Path, bankroll: dict[str, Any] | None) -> dict[str, Any]:
     }
 
 
-def build_desk_snapshot(root: Path) -> dict[str, Any]:
+def _build_desk_body(root: Path) -> dict[str, Any]:
     """
-    Schema v1 desk JSON. Optional `charts` key is additive (unknown keys safe for old clients).
+    Build desk dict **without** generated_at / content_hash (fingerprint input).
     """
     root = Path(root)
     warnings: list[str] = []
@@ -723,7 +850,6 @@ def build_desk_snapshot(root: Path) -> dict[str, Any]:
     return {
         "schema_version": SCHEMA_VERSION,
         "api_version": API_VERSION,
-        "generated_at": _now_iso(),
         "project_root": str(root),
         "view_only": True,
         "stale": stale,
@@ -759,3 +885,47 @@ def build_desk_snapshot(root: Path) -> dict[str, Any]:
         "status_excerpt": status_text,
         "charts": charts,
     }
+
+
+def build_desk_snapshot(root: Path) -> dict[str, Any]:
+    """
+    Schema v1 desk JSON. Optional `charts` key is additive (unknown keys safe for old clients).
+
+    Content identity (api_version ≥ 1.2.0):
+      - ``content_hash`` — first 16 hex of SHA-256 over canonical JSON excluding
+        ``generated_at`` and ``content_hash``
+      - ``generated_at`` — last **content** change time (durable across restarts via
+        package-local ``.cache/desk_identity.json``), not HTTP response time
+      - In-process memory cache keyed on explicit per-file input fingerprints
+    """
+    global _desk_memory
+    root = Path(root)
+    fp = _input_fingerprint(root)
+    if _desk_memory is not None and _desk_memory.input_fingerprint == fp:
+        _debug_log("cache_hit")
+        # Shallow copy so callers cannot mutate the cached body.
+        return dict(_desk_memory.body)
+
+    _debug_log("rebuild")
+    body = _build_desk_body(root)
+    content_hash = fingerprint_desk(body)
+    stored_h, stored_g = _load_identity()
+    if stored_h == content_hash and stored_g:
+        generated_at = stored_g
+        _debug_log("identity_reuse")
+    else:
+        generated_at = _now_iso()
+        _persist_identity(content_hash, generated_at)
+
+    # Assignment order: hash first, then generated_at (never hash a body that already
+    # has content_hash set — fingerprint_desk already strips both).
+    body["content_hash"] = content_hash
+    body["generated_at"] = generated_at
+
+    _desk_memory = _DeskMemoryCache(
+        input_fingerprint=fp,
+        content_hash=content_hash,
+        generated_at=generated_at,
+        body=body,
+    )
+    return dict(body)

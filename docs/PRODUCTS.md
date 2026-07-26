@@ -29,10 +29,12 @@ This monorepo holds **four products**. They share a machine and a ledger; they d
 |---------|------|---------|-------------------|--------------|
 | **Engine** | `nt/`, `run_nt.py`, `config.yaml` | Windows PC (or any ops machine) | **Yes** (CLI / desktop) | Engine releases via git tags on the monorepo |
 | **Desktop** | `desktop/` | Windows PC | **Yes** (calls engine) | Same as engine |
-| **Mobile-view API** | `tools/mobile-view/` | **Same PC as data** | **No** (GET-only) | [`tools/mobile-view/VERSION`](../tools/mobile-view/VERSION) → `api_version` |
+| **Mobile-view API** | `tools/mobile-view/` | **Same PC as data** | **No** (GET-only; may write only package-local `.cache/desk_identity.json`) | [`tools/mobile-view/VERSION`](../tools/mobile-view/VERSION) → `api_version` |
 | **iOS Desk** | `tools/ios-desk/` | iPhone (sideload) | **No** | [`tools/ios-desk/VERSION`](../tools/ios-desk/VERSION) → app marketing version |
 
 **Law:** PC is source of truth. Phone never place/settle. See root [`AGENTS.md`](../AGENTS.md).
+
+**Mobile-view write exception:** mobile-view may write **only** `tools/mobile-view/.cache/desk_identity.json` (content identity for stable `generated_at`); it never mutates engine files under `data/`, `inbox/`, or `outbox/`.
 
 ---
 

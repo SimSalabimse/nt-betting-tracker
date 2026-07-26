@@ -9,7 +9,7 @@
 | Field | Location | Current |
 |-------|----------|---------|
 | `schema_version` | desk JSON | **1** (breaking changes only) |
-| `api_version` | desk JSON + `/api/health` | See `tools/mobile-view/VERSION` (e.g. **1.1.0**) |
+| `api_version` | desk JSON + `/api/health` | See `tools/mobile-view/VERSION` (e.g. **1.2.0**) |
 
 **Compatibility rule:** keep `schema_version == 1` while only **adding** optional keys. iOS must tolerate missing keys (decode defaults / optionals).
 
@@ -31,7 +31,7 @@
   "ok": true,
   "view_only": true,
   "service": "nt-mobile-view",
-  "api_version": "1.1.0",
+  "api_version": "1.2.0",
   "schema_version": 1,
   "project_root": "/path/to/nt-betting-tracker"
 }
@@ -43,7 +43,8 @@
 |-----|------|--------|
 | `schema_version` | int | Always `1` for this document |
 | `api_version` | string | Package version of mobile-view |
-| `generated_at` | string | ISO UTC |
+| `generated_at` | string | ISO UTC — **last content change** for this desk body (may be older than wall clock when inputs are unchanged). Clients may treat equality of this field (or of `content_hash`) as “payload unchanged.” **Not** “time of HTTP response.” HTML “Generated …” may look stale while idle — acceptable. |
+| `content_hash` | string | Additive (api ≥ 1.2.0). First 16 hex chars of SHA-256 over **canonical JSON** of the desk object **excluding** `generated_at` and `content_hash` (`sort_keys=True`, compact separators, `ensure_ascii=False`). Canonical identity for debugging and client skip. |
 | `view_only` | bool | Always true |
 | `stale` / `warnings` | bool / list | Server-side hints |
 | `equity_nok`, `liquid_nok`, `pending_at_risk_nok`, … | number | Bankroll KPIs |
