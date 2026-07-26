@@ -23,6 +23,11 @@ final class SyncService: ObservableObject {
         didSet {
             guard !isApplyingProfileURL else { return }
             profileStore.setDefaultBaseURL(baseURLString)
+            // Re-bind cache/freshness against the new preferred URL (Legacy Save path
+            // often syncs immediately after; still avoids stale `.fresh` under a new host).
+            if oldValue != baseURLString {
+                loadCacheOnly()
+            }
         }
     }
 
@@ -33,16 +38,17 @@ final class SyncService: ObservableObject {
 
     let profileStore: ConnectionProfileStore
 
-    private let cache = CacheStore()
+    private let cache: CacheStore
     private let client = DeskAPIClient()
     private var timer: Timer?
     /// Prevents recursive baseURLString ↔ profile store updates.
     private var isApplyingProfileURL = false
     private var profileCancellable: AnyCancellable?
 
-    init(profileStore: ConnectionProfileStore? = nil) {
+    init(profileStore: ConnectionProfileStore? = nil, cache: CacheStore? = nil) {
         let store = profileStore ?? ConnectionProfileStore.shared
         self.profileStore = store
+        self.cache = cache ?? CacheStore()
         store.migrateFromLegacyBaseURLIfNeeded()
         // didSet is not invoked during init assignment — dual-write already handled by migrate/seed.
         self.baseURLString = store.defaultBaseURLString
@@ -81,12 +87,15 @@ final class SyncService: ObservableObject {
         }
     }
 
+    /// Apply store default URL to the facade. When the URL changes, re-evaluate
+    /// cache freshness against the new preferred host (never leave prior host as `.fresh`).
     private func applyDefaultURLFromStore() {
         let url = profileStore.defaultBaseURLString
         guard url != baseURLString else { return }
         isApplyingProfileURL = true
         baseURLString = url
         isApplyingProfileURL = false
+        loadCacheOnly()
     }
 
     // MARK: - Polling / cache / sync (unchanged signatures)
@@ -107,6 +116,10 @@ final class SyncService: ObservableObject {
 
     func loadCacheOnly() {
         guard let env = cache.load() else {
+            // No cache for any host — clear live desk state so a prior host's snapshot
+            // cannot linger under a different active URL.
+            snapshot = nil
+            lastSuccessSyncAt = nil
             freshness = .empty
             return
         }
@@ -126,7 +139,11 @@ final class SyncService: ObservableObject {
         isSyncing = true
         defer { isSyncing = false }
 
-        guard let base = PrivateHostPolicy.normalizeBaseURL(baseURLString) else {
+        // Capture the profile/URL this request belongs to before any awaits.
+        let syncedProfileID = profileStore.defaultProfile?.id
+        let preferredURL = baseURLString
+
+        guard let base = PrivateHostPolicy.normalizeBaseURL(preferredURL) else {
             lastError = DeskAPIError.cleartextDenied.localizedDescription
             loadCacheOnly()
             return
@@ -144,7 +161,10 @@ final class SyncService: ObservableObject {
                 try cache.save(deskObject: raw, sourceBaseURL: base.absoluteString)
                 let when = ISO8601DateFormatter().string(from: Date())
                 lastSuccessSyncAt = when
-                profileStore.markDefaultSuccess(at: when)
+                // Attribute success to the profile that started this request, not current default.
+                if let syncedProfileID {
+                    profileStore.markSuccess(profileID: syncedProfileID, at: when)
+                }
                 snapshot = snap
                 freshness = .fresh
                 lastError = nil

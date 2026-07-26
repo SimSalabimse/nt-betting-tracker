@@ -44,16 +44,8 @@ struct SettingsView: View {
                 }
                 .accessibilityHint("Add, delete, or set the default connection profile")
 
-                Button("Save & sync") {
-                    // Re-apply facade (dual-write) then sync — matches Legacy path.
-                    sync.baseURLString = sync.baseURLString
-                    Task { await sync.sync() }
-                }
-                .foregroundStyle(DeskTheme.accent)
-                .accessibilityHint("Syncs a read-only desk snapshot from the default connection")
-
                 Text(
-                    "Profiles store LAN or Tailscale URLs for home/office/travel. Default profile drives sync. Prefer numeric IP over MagicDNS for cleartext."
+                    "Profiles store LAN or Tailscale URLs for home/office/travel. Default profile drives sync. Prefer numeric IP over MagicDNS for cleartext. Edit connection to save a URL, or use Sync now below."
                 )
                 .font(.caption)
                 .foregroundStyle(DeskTheme.textMuted)

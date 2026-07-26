@@ -161,8 +161,10 @@ final class ConnectionProfileStore: ObservableObject {
         dualWriteLegacyBaseURL(trimmed)
     }
 
-    func markDefaultSuccess(at iso8601: String) {
-        guard let idx = profiles.firstIndex(where: \.isDefault) else { return }
+    /// Stamp last-success on the profile that performed the in-flight sync (by id),
+    /// not whatever is currently default — avoids races if the user switches mid-request.
+    func markSuccess(profileID: UUID, at iso8601: String) {
+        guard let idx = profiles.firstIndex(where: { $0.id == profileID }) else { return }
         profiles[idx].lastSuccessAt = iso8601
         save()
     }
