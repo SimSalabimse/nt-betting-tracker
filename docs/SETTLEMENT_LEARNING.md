@@ -108,9 +108,11 @@ Emitted when settle detects an **opposite-side handicap** after a recent **heavy
 |------|-----------|
 | **Detection** | Live settled peer: heavy-fav minus HC + Win + opposite HC sign / same teams; or flip language + process-miss notes |
 | **Enforcement** | Soft awareness TTL only — **never hard-reject** |
-| **Scope** | Prefer **matchup-scoped** SA (`match` field, `scope: matchup`) so unrelated same-family seats are not hammered |
+| **Scope** | Prefer **matchup-scoped** SA (`match` field, `scope: matchup`) so unrelated same-family seats are not hammered. Empty candidate `match` is **fail-closed** (no pen) |
 | **Penalty** | Mild only (`soft_ev_penalty_repeat_loss`, default **0.008**) |
-| **Double-count guard** | `form_continuity` owns place-path soft-reject (`form_continuity:`). When that already soft-rejected the flip, lessons **skip** the side_flip pen. Family caution stays mild — no second large stack |
+| **Double-count guard** | Portfolio runs form_continuity **before** lessons and passes `form_continuity_soft_rejected`. When FC soft-rejects the flip, lessons **skip** the side_flip pen. Family caution stays mild — no second large stack |
+| **Series window** | Peer detection reuses form_continuity `max_hours` + `max_games` (fail-closed AND). SA emission is **Loss-linked only** |
+| **Settle hook** | `run_settlement_lessons_safe` after each terminal batch — never blocks settle |
 | **Ownership** | Continuity / anti-flip logic lives in `nt/form_continuity.py`; lessons annotate family/matchup awareness only |
 
 See also: `docs/FORM_CONTINUITY_AND_ANTI_FLIP_HARDENING_2026-07-26.md` (PR6).

@@ -512,19 +512,46 @@ def _bet_text_blob(bet: dict[str, Any]) -> str:
     return " ".join(str(x) for x in parts if x)
 
 
+def _side_flip_series_bounds(cfg: dict[str, Any] | None) -> tuple[float, int]:
+    """Reuse form_continuity max_hours / max_games (fail-closed series window)."""
+    max_hours = 48.0
+    max_games = 2
+    try:
+        from nt.form_continuity import default_form_continuity_cfg  # type: ignore
+
+        fc = dict(default_form_continuity_cfg())
+        div = ((cfg or {}).get("learning") or {}).get("diversification") or {}
+        sec = div.get("form_continuity") if isinstance(div, dict) else None
+        if isinstance(sec, dict):
+            fc.update(sec)
+        max_hours = float(fc.get("max_hours", max_hours) or max_hours)
+        max_games = int(fc.get("max_games", max_games) or max_games)
+    except Exception:  # noqa: BLE001
+        pass
+    return max_hours, max_games
+
+
 def detect_side_flip_after_fav_win(
     bet: dict[str, Any],
     *,
     window: list[dict[str, Any]],
+    cfg: dict[str, Any] | None = None,
 ) -> bool:
     """
-    True when this seat is an opposite-side HC after a recent heavy-fav HC Win.
+    True when this **Loss** seat is an opposite-side HC after a recent heavy-fav HC Win.
 
     Primary signal: live settled peer (Win, heavy fav minus HC) on same matchup
-    with opposite HC sign. Secondary: process-miss notes / variance class.
+    with opposite HC sign, inside form_continuity series window (hours AND games).
+    Secondary: process-miss notes / variance class (Loss only).
+
+    Soft-awareness emission is loss-linked only (Win/Refunded never flag this pattern).
     """
     bet_id = str(bet.get("bet_id") or "").strip()
     result = str(bet.get("result") or "").strip()
+    # Loss-linked only — soft awareness / pattern for process-miss flips
+    if result != "Loss":
+        return False
+
     packet = (
         bet.get("post_settlement_packet")
         if isinstance(bet.get("post_settlement_packet"), dict)
@@ -534,17 +561,21 @@ def detect_side_flip_after_fav_win(
         bet.get("variance_class") or packet.get("variance_class") or ""
     ).strip().lower()
     blob = _bet_text_blob(bet)
+    cand_match = str(bet.get("match") or "")
 
     # Anchor scan: prior heavy-fav HC Win on opposite side of same teams
     try:
         from nt.form_continuity import (  # type: ignore
             is_heavy_favourite_hc,
             is_opposite_side_hc,
+            in_series_window,
         )
     except ImportError:  # pragma: no cover
         is_heavy_favourite_hc = None  # type: ignore
         is_opposite_side_hc = None  # type: ignore
+        in_series_window = None  # type: ignore
 
+    max_hours, max_games = _side_flip_series_bounds(cfg)
     peer_hit = False
     if is_heavy_favourite_hc is not None and is_opposite_side_hc is not None:
         for peer in window or []:
@@ -557,6 +588,17 @@ def detect_side_flip_after_fav_win(
                     continue
                 if not is_opposite_side_hc(peer, bet):
                     continue
+                # Series window: same team-pair AND hours AND games (fail-closed)
+                if in_series_window is not None and cand_match:
+                    ok, _h, _g = in_series_window(
+                        peer,
+                        cand_match,
+                        window or [],
+                        max_hours=max_hours,
+                        max_games=max_games,
+                    )
+                    if not ok:
+                        continue
             except Exception:  # noqa: BLE001
                 continue
             peer_hit = True
@@ -565,14 +607,9 @@ def detect_side_flip_after_fav_win(
     note_hit = bool(_FLIP_NOTE_RE.search(blob))
     process_miss = vc in ("research_process_miss", "process_error", "process_miss")
 
-    # Settled flip loss with structural peer, or process-miss + flip language
-    if peer_hit and result in ("Loss", "Win", "Refunded"):
-        # Prefer loss / process-miss; Win on flip still annotated for awareness
-        if result == "Loss" or process_miss or note_hit:
-            return True
-    if result == "Loss" and note_hit and (process_miss or peer_hit or "opposite" in blob.lower()):
+    if peer_hit:
         return True
-    if result == "Loss" and peer_hit:
+    if note_hit and (process_miss or "opposite" in blob.lower()):
         return True
     return False
 
@@ -583,6 +620,7 @@ def detect_pattern_flag(
     family: str,
     window: list[dict[str, Any]],
     open_window: list[dict[str, Any]] | None = None,
+    cfg: dict[str, Any] | None = None,
 ) -> str:
     """
     Pattern vs peers.
@@ -595,7 +633,7 @@ def detect_pattern_flag(
     HC Win is followed by opposite-side process miss — TTL soft only.
     """
     # Highest-specificity process miss first (Brewers −1.5 Win → Rockies +2.5)
-    if detect_side_flip_after_fav_win(bet, window=window):
+    if detect_side_flip_after_fav_win(bet, window=window, cfg=cfg):
         return "side_flip_after_fav_win"
 
     bet_id = str(bet.get("bet_id") or "")
@@ -726,10 +764,12 @@ def lessons_soft_adjustments(
     ----------------------------------------------------
     * Pattern is **TTL soft only** — never hard-reject.
     * Family pen stays **mild** (``soft_ev_penalty_repeat_loss``, default 0.008).
-    * Prefer **matchup-scoped** notes: when SA carries ``match``, only same-matchup
-      seats take the side_flip pen (unrelated same-family seats are not hammered).
+    * Prefer **matchup-scoped** notes: when SA carries ``match`` or ``scope=matchup``,
+      only same-matchup seats take the side_flip pen. Empty candidate match is
+      **fail-closed** (skip pen) so family-wide hammers cannot land by accident.
     * If ``form_continuity_soft_rejected`` (or rec already has a ``form_continuity:``
       reject), skip the side_flip pen so lessons do not stack on top of continuity.
+      Portfolio must call lessons **after** form_continuity so this flag is live.
     """
     # --- resolve call style ---
     fam = ""
@@ -826,9 +866,14 @@ def lessons_soft_adjustments(
             if form_continuity_soft_rejected:
                 continue
             sa_match = str(sa.get("match") or "").strip()
-            if sa_match and cand_match:
-                # Matchup-scoped: unrelated same-family seats skip this pen
-                if sa_match.lower() != cand_match.lower():
+            matchup_scoped = (
+                str(sa.get("scope") or "").strip().lower() == "matchup" or bool(sa_match)
+            )
+            if matchup_scoped:
+                # Fail-closed: empty candidate match must not apply family-wide
+                if not cand_match:
+                    continue
+                if sa_match and sa_match.lower() != cand_match.lower():
                     continue
             # Mild only; never stack multiple side_flip notes
             if side_flip_applied:
@@ -956,6 +1001,7 @@ def build_settlement_lessons(
             family=fam,
             window=settled_window,
             open_window=open_window,
+            cfg=cfg,
         )
         match_s = str(bet.get("match") or "")
         soft_note = ""
@@ -1007,7 +1053,12 @@ def build_settlement_lessons(
         pf = entry.get("pattern_flag") or "none"
         fam = entry.get("market_family") or ""
         match_s = str(entry.get("match") or "")
-        if pf == "side_flip_after_fav_win" and fam:
+        # Soft awareness for side_flip is loss-linked only
+        if (
+            pf == "side_flip_after_fav_win"
+            and fam
+            and str(entry.get("result") or "") == "Loss"
+        ):
             sa_entry = {
                 "family": fam,
                 "match": match_s,

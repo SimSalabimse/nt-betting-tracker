@@ -515,6 +515,57 @@ def run_settle(cfg: dict[str, Any], results_path: Path) -> dict[str, Any]:
     except Exception as ex:  # noqa: BLE001
         review_report = {"error": str(ex)}
 
+    # Settlement Lessons v1 (engine auto-templates + soft TTL notes). Never fail settle.
+    lessons_summary: dict[str, Any] = {}
+    if settled:
+        try:
+            from nt.settlement_lessons import (
+                load_settlement_lessons,
+                run_settlement_lessons_safe,
+            )
+
+            lessons_summary = run_settlement_lessons_safe(cfg, settled, live_rows=rows)
+            # Append this batch's lessons into SETTLEMENT_ANALYSIS.md when present
+            if lessons_summary.get("ok"):
+                try:
+                    outbox_early = path_from_config(cfg, "outbox")
+                    analysis_md = outbox_early / "SETTLEMENT_ANALYSIS.md"
+                    lessons = load_settlement_lessons(cfg)
+                    if lessons.get("bets") and analysis_md.is_file():
+                        extra = ["", "## Settlement Lessons (this batch)", ""]
+                        for b in (lessons.get("bets") or [])[:8]:
+                            extra.append(
+                                f"- **{b.get('result')}** `{b.get('bet_id')}` "
+                                f"{b.get('market_family')} · "
+                                f"driver=`{b.get('outcome_driver')}` · "
+                                f"pattern=`{b.get('pattern_flag')}`"
+                            )
+                            extra.append(f"  - {b.get('main_reason')}")
+                        sa = [
+                            s
+                            for s in (lessons.get("soft_awareness") or [])
+                            if not s.get("expired")
+                        ]
+                        if sa:
+                            extra.append("")
+                            extra.append("Soft awareness:")
+                            for s in sa[:6]:
+                                extra.append(
+                                    f"- `{s.get('family')}` ({s.get('pattern_flag')}) — "
+                                    f"{(s.get('note') or '')[:120]}"
+                                )
+                        extra.append("")
+                        extra.append(
+                            "_Full write-up: `outbox/SETTLEMENT_LESSONS.md`_"
+                        )
+                        extra.append("")
+                        with open(analysis_md, "a", encoding="utf-8") as af:
+                            af.write("\n".join(extra))
+                except Exception:
+                    pass
+        except Exception as ex:  # noqa: BLE001
+            lessons_summary = {"ok": False, "error": str(ex)}
+
     outbox = path_from_config(cfg, "outbox")
     outbox.mkdir(parents=True, exist_ok=True)
     receipt = outbox / "SETTLEMENT_RECEIPT.md"
@@ -559,6 +610,28 @@ def run_settle(cfg: dict[str, Any], results_path: Path) -> dict[str, Any]:
         )
         for n in (review_report.get("narrative") or [])[:4]:
             lines.append(f"- {n}")
+    if lessons_summary and not lessons_summary.get("skipped"):
+        lines.extend(
+            [
+                "",
+                "## Settlement Lessons",
+            ]
+        )
+        if lessons_summary.get("ok"):
+            lines.append(
+                f"- Batch **{lessons_summary.get('batch_id')}** · "
+                f"n=**{lessons_summary.get('n_settled')}** · "
+                f"soft notes **{lessons_summary.get('n_soft')}**"
+            )
+            lines.append(
+                "- See `outbox/SETTLEMENT_LESSONS.md` and "
+                "`data/state/settlement_lessons.json`"
+            )
+        else:
+            lines.append(
+                f"- Lessons build failed (settle continued): "
+                f"{lessons_summary.get('error')}"
+            )
     if errors:
         lines.append("")
         lines.append("## Errors")
@@ -574,6 +647,7 @@ def run_settle(cfg: dict[str, Any], results_path: Path) -> dict[str, Any]:
         "daily_cap": risk["daily_risk_cap_nok"],
         "learning": learning_summary,
         "temp_ev_relax_clear": temp_ev_relax_clear,
+        "lessons": lessons_summary,
         "review": {
             "summary": review_report.get("summary"),
             "narrative": review_report.get("narrative"),

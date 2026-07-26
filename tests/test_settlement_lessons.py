@@ -473,6 +473,16 @@ def test_side_flip_double_count_guard_matchup_and_fc(tmp_path: Path):
     assert pen_other == 0.0
     assert why_other == ""
 
+    # Empty candidate match + matchup-scoped SA → fail-closed (no family-wide pen)
+    pen_empty, why_empty = lessons_soft_adjustments(
+        "baseball_handicap",
+        lessons,
+        cfg,
+        match="",
+    )
+    assert pen_empty == 0.0
+    assert why_empty == ""
+
     # form_continuity already soft_rejected the flip → skip lessons side_flip pen
     pen_fc, why_fc = lessons_soft_adjustments(
         "baseball_handicap",
@@ -600,3 +610,107 @@ def test_lessons_soft_reason_field_separate_from_similar():
     assert "lessons_soft" in rec.soft_demotion_reason
     assert rec.similar_recent_reason.startswith("similar_recent")
     assert rec.lessons_soft_reason.startswith("lessons_soft")
+
+def test_side_flip_empty_match_fail_closed_standalone(tmp_path: Path):
+    """Matchup-scoped SA never applies when candidate match is empty."""
+    cfg = _cfg(tmp_path)
+    lessons = empty_lessons_payload()
+    lessons["soft_awareness"] = [
+        {
+            "family": "baseball_handicap",
+            "match": _BREWERS_MATCH,
+            "note": "temporary caution — side flip",
+            "pattern_flag": "side_flip_after_fav_win",
+            "scope": "matchup",
+            "created_at": "2026-07-26T20:00:00Z",
+            "expires_at": "2099-01-01T00:00:00Z",
+            "expired": False,
+        }
+    ]
+    pen, why = lessons_soft_adjustments("baseball_handicap", lessons, cfg, match="")
+    assert pen == 0.0
+    assert why == ""
+
+
+def test_side_flip_peer_outside_series_window_not_detected():
+    """Heavy-fav peer older than form_continuity max_hours does not flag side_flip."""
+    prior_win = {
+        "bet_id": "old_fav",
+        "source": "live",
+        "result": "Win",
+        "sport": "baseball",
+        "match": _BREWERS_MATCH,
+        "selection": _BREWERS_PRIOR,
+        "decimal_odds": 1.79,
+        "updated_at": "2026-07-01T01:00:00Z",  # weeks before
+    }
+    flip_loss = {
+        "bet_id": "flip_late",
+        "result": "Loss",
+        "sport": "baseball",
+        "match": _BREWERS_MATCH,
+        "selection": _ROCKIES_FLIP,
+        "decimal_odds": 1.75,
+        "updated_at": "2026-07-26T20:00:00Z",
+        # no flip notes — pure peer path
+    }
+    assert not detect_side_flip_after_fav_win(flip_loss, window=[prior_win, flip_loss])
+
+
+def test_side_flip_win_not_loss_linked():
+    """Win results never emit side_flip pattern (loss-linked only)."""
+    prior_win = {
+        "bet_id": "brewers_prior",
+        "result": "Win",
+        "sport": "baseball",
+        "match": _BREWERS_MATCH,
+        "selection": _BREWERS_PRIOR,
+        "decimal_odds": 1.79,
+        "updated_at": "2026-07-26T01:36:21Z",
+    }
+    flip_win = {
+        "bet_id": "flip_win",
+        "result": "Win",
+        "sport": "baseball",
+        "match": _BREWERS_MATCH,
+        "selection": _ROCKIES_FLIP,
+        "decimal_odds": 1.75,
+        "variance_class": "research_process_miss",
+        "notes": "opposite of yesterday Brewers -1.5 that hit",
+        "updated_at": "2026-07-26T20:14:34Z",
+    }
+    assert not detect_side_flip_after_fav_win(flip_win, window=[prior_win, flip_win])
+
+
+def test_portfolio_order_fc_then_lessons_skips_side_flip_pen(tmp_path: Path):
+    """Mirrors live portfolio order: FC soft_reject then lessons with flag."""
+    cfg = _cfg(tmp_path)
+    lessons = empty_lessons_payload()
+    lessons["soft_awareness"] = [
+        {
+            "family": "baseball_handicap",
+            "match": _BREWERS_MATCH,
+            "note": "temporary caution — side flip",
+            "pattern_flag": "side_flip_after_fav_win",
+            "scope": "matchup",
+            "created_at": "2026-07-26T20:00:00Z",
+            "expires_at": "2099-01-01T00:00:00Z",
+            "expired": False,
+        }
+    ]
+    # Without FC flag → mild pen
+    pen0, _ = lessons_soft_adjustments(
+        "baseball_handicap", lessons, cfg, match=_BREWERS_MATCH
+    )
+    assert pen0 == pytest.approx(0.008)
+    # After FC soft_reject (portfolio passes flag) → skip
+    pen1, why1 = lessons_soft_adjustments(
+        "baseball_handicap",
+        lessons,
+        cfg,
+        match=_BREWERS_MATCH,
+        form_continuity_soft_rejected=True,
+    )
+    assert pen1 == 0.0
+    assert why1 == ""
+

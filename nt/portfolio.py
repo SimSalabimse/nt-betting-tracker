@@ -1059,23 +1059,7 @@ def build_portfolio(
                 pen_similar = 0.0
                 why_sim = ""
 
-        if lessons_soft_fn is not None:
-            try:
-                les = lessons_soft_fn(
-                    rec,
-                    cfg=cfg,
-                    historical_rows=historical_rows,
-                )
-                if isinstance(les, tuple) and len(les) >= 2:
-                    pen_lessons = float(les[0] or 0.0)
-                    why_les = str(les[1] or "")
-                elif isinstance(les, dict):
-                    pen_lessons = float(les.get("penalty") or les.get("pen") or 0.0)
-                    why_les = str(les.get("reason") or "")
-            except Exception:
-                pen_lessons = 0.0
-                why_les = ""
-
+        # form_continuity BEFORE lessons so double-count guard sees soft_reject
         if fc_on:
             pen_fc, why_fc, meta_fc = form_continuity_penalty(
                 match=rec.match,
@@ -1107,6 +1091,29 @@ def build_portfolio(
                     if why_fc.startswith("form_continuity:")
                     else f"form_continuity: {why_fc}"
                 )
+
+        if lessons_soft_fn is not None:
+            try:
+                les = lessons_soft_fn(
+                    rec,
+                    cfg=cfg,
+                    historical_rows=historical_rows,
+                    form_continuity_soft_rejected=bool(
+                        meta_fc.get("soft_reject")
+                        or str(getattr(rec, "reject_reason", "") or "").startswith(
+                            "form_continuity:"
+                        )
+                    ),
+                )
+                if isinstance(les, tuple) and len(les) >= 2:
+                    pen_lessons = float(les[0] or 0.0)
+                    why_les = str(les[1] or "")
+                elif isinstance(les, dict):
+                    pen_lessons = float(les.get("penalty") or les.get("pen") or 0.0)
+                    why_les = str(les.get("reason") or "")
+            except Exception:
+                pen_lessons = 0.0
+                why_les = ""
 
         # Macro under-rep bonus reserved for diversify merge (0 when no macro counts)
         macro_bonus = 0.0
