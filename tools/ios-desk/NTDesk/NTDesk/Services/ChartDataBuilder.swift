@@ -13,6 +13,7 @@ enum ChartDataBuilder {
         f.locale = Locale(identifier: "en_US_POSIX")
         f.timeZone = TimeZone(secondsFromGMT: 0)!
         f.dateFormat = "yyyy-MM-dd"
+        f.isLenient = false
         return f
     }()
 
@@ -27,7 +28,13 @@ enum ChartDataBuilder {
         guard let raw else { return nil }
         let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return nil }
+        // Strict yyyy-MM-dd shape before formatter (rejects alternate separators).
+        guard trimmed.range(of: #"^\d{4}-\d{2}-\d{2}$"#, options: .regularExpression) != nil else {
+            return nil
+        }
         guard let date = dayFormatter.date(from: trimmed) else { return nil }
+        // Reject rollover of invalid calendar days even if formatter is lenient.
+        guard dayFormatter.string(from: date) == trimmed else { return nil }
         return ChartDay(raw: trimmed, date: date)
     }
 
