@@ -41,9 +41,18 @@ struct DeskAPIClient {
         waitForConnectivity ? manualSession : pollSession
     }
 
-    /// Health probe. Returns round-trip time in milliseconds when the body is OK.
+    /// Result of `GET /api/health` (RTT + optional version identity).
+    struct HealthProbe: Sendable {
+        var rttMs: Int
+        /// Present on mobile-view ≥ 1.1.0.
+        var apiVersion: String?
+        var schemaVersion: Int?
+        var service: String?
+    }
+
+    /// Health probe. Returns RTT + `api_version` when the body includes it.
     @discardableResult
-    func health(baseURL: URL, waitForConnectivity: Bool = false) async throws -> Int {
+    func health(baseURL: URL, waitForConnectivity: Bool = false) async throws -> HealthProbe {
         let url = baseURL.appendingPathComponent("api/health")
         var req = URLRequest(url: url)
         req.httpMethod = "GET"
@@ -53,6 +62,9 @@ struct DeskAPIClient {
         guard let http = resp as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
             throw DeskAPIError.http((resp as? HTTPURLResponse)?.statusCode ?? -1)
         }
+        var apiVersion: String?
+        var schemaVersion: Int?
+        var service: String?
         // Prefer ok==true when JSON body present (discovery contract); accept empty 200 for older servers.
         if let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
             if let ok = obj["ok"] as? Bool, !ok {
@@ -61,8 +73,23 @@ struct DeskAPIClient {
             if let n = obj["ok"] as? NSNumber, !n.boolValue {
                 throw DeskAPIError.http(http.statusCode)
             }
+            apiVersion = obj["api_version"] as? String
+            if apiVersion == nil, let n = obj["api_version"] as? NSNumber {
+                apiVersion = n.stringValue
+            }
+            if let s = obj["schema_version"] as? Int {
+                schemaVersion = s
+            } else if let n = obj["schema_version"] as? NSNumber {
+                schemaVersion = n.intValue
+            }
+            service = obj["service"] as? String
         }
-        return max(0, rttMs)
+        return HealthProbe(
+            rttMs: max(0, rttMs),
+            apiVersion: apiVersion,
+            schemaVersion: schemaVersion,
+            service: service
+        )
     }
 
     /// Returns raw JSON object as Foundation dictionary (for cache) + decoded UI model.

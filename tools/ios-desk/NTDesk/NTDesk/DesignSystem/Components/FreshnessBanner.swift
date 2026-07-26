@@ -16,6 +16,14 @@ struct FreshnessBanner: View {
                         accessibilityLabel: "Device offline, showing cache only"
                     )
                 }
+                if sync.isServerAPIOutdated {
+                    banner(
+                        text: sync.apiCompatibility.warningDetail,
+                        symbol: "exclamationmark.triangle.fill",
+                        color: DeskTheme.pending,
+                        accessibilityLabel: "\(sync.apiCompatibility.warningTitle). \(sync.apiCompatibility.warningDetail)"
+                    )
+                }
                 syncClockBanner(now: context.date)
                 if sync.canRestoreLastKnownGood {
                     lastKnownGoodRow

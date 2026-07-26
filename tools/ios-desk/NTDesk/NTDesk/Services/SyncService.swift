@@ -22,6 +22,10 @@ final class SyncService: ObservableObject {
     @Published private(set) var rttSamplesMs: [Int] = []
     /// Last URL that completed a full desk sync successfully (UserDefaults-backed).
     @Published private(set) var lastKnownGoodBaseURL: String?
+    /// Last `api_version` from live health or desk (nil if server omitted it).
+    @Published private(set) var serverApiVersion: String?
+    /// Whether the connected PC mobile-view is new enough for this app.
+    @Published private(set) var apiCompatibility: MobileAPICompatibility = .unknown
 
     static let lastKnownGoodURLKey = "last_known_good_base_url"
     static let rttSamplesKey = "health_rtt_samples_ms"
@@ -177,7 +181,14 @@ final class SyncService: ObservableObject {
         snapshot = nil
         lastSuccessSyncAt = nil
         lastHealthRTTMs = nil
+        serverApiVersion = nil
+        apiCompatibility = .unknown
         freshness = .empty
+    }
+
+    /// True when live (or cached) desk came from an old mobile-view package.
+    var isServerAPIOutdated: Bool {
+        apiCompatibility.isOutdated
     }
 
     func sync() async {
@@ -200,9 +211,17 @@ final class SyncService: ObservableObject {
         }
 
         do {
-            let rtt = try await client.health(baseURL: base, waitForConnectivity: waitForConnectivity)
-            recordRTT(rtt)
+            let health = try await client.health(baseURL: base, waitForConnectivity: waitForConnectivity)
+            recordRTT(health.rttMs)
+            // Prefer health.api_version; desk body is a second source (same package).
+            noteServerAPIVersion(health.apiVersion)
             let (raw, snap) = try await client.fetchDesk(baseURL: base, waitForConnectivity: waitForConnectivity)
+            if let fromDesk = snap.apiVersion {
+                noteServerAPIVersion(fromDesk)
+            } else if health.apiVersion == nil {
+                // Live desk with no version field → definitely pre-1.1 mobile-view.
+                noteServerAPIVersion(nil)
+            }
             do {
                 try cache.save(deskObject: raw, sourceBaseURL: base.absoluteString)
                 let when = ISO8601DateFormatter().string(from: Date())
@@ -254,6 +273,8 @@ final class SyncService: ObservableObject {
         let data = try? JSONSerialization.data(withJSONObject: env.desk.toFoundation())
         if let data, let snap = try? JSONDecoder().decode(DeskSnapshot.self, from: data) {
             snapshot = snap
+            // Cached desk still tells us if the last PC was an old API.
+            noteServerAPIVersion(snap.apiVersion)
         }
         if urlsMatch(env.sourceBaseURL, preferredURL) {
             freshness = .stale
@@ -261,6 +282,12 @@ final class SyncService: ObservableObject {
             freshness = .staleMismatch
         }
         lastSuccessSyncAt = env.cachedAt
+    }
+
+    private func noteServerAPIVersion(_ version: String?) {
+        let trimmed = version?.trimmingCharacters(in: .whitespacesAndNewlines)
+        serverApiVersion = (trimmed?.isEmpty == false) ? trimmed : nil
+        apiCompatibility = MobileAPICompatibility.evaluate(apiVersion: serverApiVersion)
     }
 
     private func urlsMatch(_ a: String, _ b: String) -> Bool {

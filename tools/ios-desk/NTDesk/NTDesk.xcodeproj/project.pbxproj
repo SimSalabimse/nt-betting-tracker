@@ -74,6 +74,7 @@
 		C41A1B2C3D4E5F6000000003 /* PendingBetDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C41A1B2C3D4E5F6000000013 /* PendingBetDetailView.swift */; };
 		C41A1B2C3D4E5F6000000004 /* PendingBetRouteTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C41A1B2C3D4E5F6000000014 /* PendingBetRouteTests.swift */; };
 		C51A1B2C3D4E5F6000000001 /* ChartSeries.swift in Sources */ = {isa = PBXBuildFile; fileRef = C51A1B2C3D4E5F6000000011 /* ChartSeries.swift */; };
+		C51A1B2C3D4E5F60000000D1 /* MobileAPICompatibility.swift in Sources */ = {isa = PBXBuildFile; fileRef = C51A1B2C3D4E5F60000000E1 /* MobileAPICompatibility.swift */; };
 		C51A1B2C3D4E5F6000000002 /* ChartDataBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = C51A1B2C3D4E5F6000000012 /* ChartDataBuilder.swift */; };
 		C51A1B2C3D4E5F6000000003 /* ChartSelectionCallout.swift in Sources */ = {isa = PBXBuildFile; fileRef = C51A1B2C3D4E5F6000000013 /* ChartSelectionCallout.swift */; };
 		C51A1B2C3D4E5F6000000004 /* ChartExpandedContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = C51A1B2C3D4E5F6000000014 /* ChartExpandedContainer.swift */; };
@@ -177,6 +178,7 @@
 		C31A1B2C3D4E5F6000000022 /* PLACE_THESE_empty.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = PLACE_THESE_empty.md; sourceTree = "<group>"; };
 		C31A1B2C3D4E5F6000000023 /* desk_sample_v1.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = desk_sample_v1.json; sourceTree = "<group>"; };
 		C51A1B2C3D4E5F6000000011 /* ChartSeries.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartSeries.swift; sourceTree = "<group>"; };
+		C51A1B2C3D4E5F60000000E1 /* MobileAPICompatibility.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MobileAPICompatibility.swift; sourceTree = "<group>"; };
 		C51A1B2C3D4E5F6000000012 /* ChartDataBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartDataBuilder.swift; sourceTree = "<group>"; };
 		C51A1B2C3D4E5F6000000013 /* ChartSelectionCallout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartSelectionCallout.swift; sourceTree = "<group>"; };
 		C51A1B2C3D4E5F6000000014 /* ChartExpandedContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartExpandedContainer.swift; sourceTree = "<group>"; };
@@ -337,6 +339,7 @@
 				C31A1B2C3D4E5F6000000011 /* PlaceTheseDocument.swift */,
 				C41A1B2C3D4E5F6000000011 /* PendingBetRoute.swift */,
 				C81A1B2C3D4E5F6000000011 /* ConnectionQuality.swift */,
+				C51A1B2C3D4E5F60000000E1 /* MobileAPICompatibility.swift */,
 				C51A1B2C3D4E5F6000000011 /* ChartSeries.swift */,
 			);
 			path = Models;
@@ -605,6 +608,7 @@
 				C41A1B2C3D4E5F6000000002 /* PendingBetRow.swift in Sources */,
 				C41A1B2C3D4E5F6000000003 /* PendingBetDetailView.swift in Sources */,
 				C51A1B2C3D4E5F6000000001 /* ChartSeries.swift in Sources */,
+				C51A1B2C3D4E5F60000000D1 /* MobileAPICompatibility.swift in Sources */,
 				C51A1B2C3D4E5F6000000002 /* ChartDataBuilder.swift in Sources */,
 				C51A1B2C3D4E5F6000000003 /* ChartSelectionCallout.swift in Sources */,
 				C51A1B2C3D4E5F6000000004 /* ChartExpandedContainer.swift in Sources */,
@@ -723,7 +727,7 @@
 				CODE_SIGNING_REQUIRED = NO;
 				CODE_SIGN_IDENTITY = "";
 				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_PREVIEWS = YES;
 				ENABLE_TESTABILITY = YES;
@@ -735,7 +739,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.1.1;
+				MARKETING_VERSION = 1.1.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.simsalabim.ntdesk;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -755,7 +759,7 @@
 				CODE_SIGNING_REQUIRED = NO;
 				CODE_SIGN_IDENTITY = "";
 				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
@@ -766,7 +770,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.1.1;
+				MARKETING_VERSION = 1.1.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.simsalabim.ntdesk;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -786,7 +790,7 @@
 				CODE_SIGNING_REQUIRED = NO;
 				CODE_SIGN_IDENTITY = "";
 				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_PREVIEWS = YES;
 				ENABLE_TESTABILITY = YES;
@@ -798,7 +802,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.1.1;
+				MARKETING_VERSION = 1.1.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.simsalabim.ntdesk;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -819,7 +823,7 @@
 				CODE_SIGNING_REQUIRED = NO;
 				CODE_SIGN_IDENTITY = "";
 				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
@@ -830,7 +834,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.1.1;
+				MARKETING_VERSION = 1.1.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.simsalabim.ntdesk;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -850,7 +854,7 @@
 				CODE_SIGNING_REQUIRED = NO;
 				CODE_SIGN_IDENTITY = "";
 				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = "";
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
@@ -859,7 +863,7 @@
 					"@executable_path/Frameworks",
 					"@loader_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.1.1;
+				MARKETING_VERSION = 1.1.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.simsalabim.ntdesk.tests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -879,7 +883,7 @@
 				CODE_SIGNING_REQUIRED = NO;
 				CODE_SIGN_IDENTITY = "";
 				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = "";
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
@@ -888,7 +892,7 @@
 					"@executable_path/Frameworks",
 					"@loader_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.1.1;
+				MARKETING_VERSION = 1.1.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.simsalabim.ntdesk.tests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -908,7 +912,7 @@
 				CODE_SIGNING_REQUIRED = NO;
 				CODE_SIGN_IDENTITY = "";
 				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = "";
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
@@ -917,7 +921,7 @@
 					"@executable_path/Frameworks",
 					"@loader_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.1.1;
+				MARKETING_VERSION = 1.1.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.simsalabim.ntdesk.tests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -937,7 +941,7 @@
 				CODE_SIGNING_REQUIRED = NO;
 				CODE_SIGN_IDENTITY = "";
 				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = "";
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
@@ -946,7 +950,7 @@
 					"@executable_path/Frameworks",
 					"@loader_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.1.1;
+				MARKETING_VERSION = 1.1.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.simsalabim.ntdesk.tests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";

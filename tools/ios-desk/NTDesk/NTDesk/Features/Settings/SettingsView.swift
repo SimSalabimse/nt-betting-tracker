@@ -149,20 +149,33 @@ struct SettingsView: View {
                 LabeledContent("App version", value: appVersionLine)
                     .font(.caption)
                     .foregroundStyle(DeskTheme.textMuted)
-                if let api = sync.snapshot?.apiVersion, !api.isEmpty {
+                if let api = sync.serverApiVersion ?? sync.snapshot?.apiVersion, !api.isEmpty {
                     LabeledContent("PC API", value: "mobile-view \(api)")
                         .font(.caption)
-                        .foregroundStyle(DeskTheme.textMuted)
+                        .foregroundStyle(sync.isServerAPIOutdated ? DeskTheme.pending : DeskTheme.textMuted)
+                } else if sync.freshness == .fresh || sync.freshness == .liveNotPersisted {
+                    LabeledContent("PC API", value: "unknown / old")
+                        .font(.caption)
+                        .foregroundStyle(DeskTheme.pending)
                 }
                 if let schema = sync.snapshot?.schemaVersion {
                     LabeledContent("Desk schema", value: "v\(schema)")
                         .font(.caption)
                         .foregroundStyle(DeskTheme.textMuted)
                 }
+                LabeledContent("API need", value: "≥ \(MobileAPICompatibility.minimumRequired)")
+                    .font(.caption)
+                    .foregroundStyle(DeskTheme.textDim)
+                if sync.isServerAPIOutdated {
+                    Text(sync.apiCompatibility.warningDetail)
+                        .font(.caption)
+                        .foregroundStyle(DeskTheme.pending)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             } header: {
                 Text("About")
             } footer: {
-                Text("App = phone IPA. PC API = tools/mobile-view VERSION. Schema = wire shape (docs/api).")
+                Text("App = phone IPA. PC API = tools/mobile-view VERSION. Update only tools/mobile-view on Windows if this warns.")
             }
         }
         .scrollContentBackground(.hidden)

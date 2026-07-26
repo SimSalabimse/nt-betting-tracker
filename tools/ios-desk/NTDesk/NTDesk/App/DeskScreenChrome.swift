@@ -140,6 +140,18 @@ struct DeskScreenChrome<Content: View>: View {
                     .font(.system(.footnote, design: .monospaced))
                     .foregroundStyle(DeskTheme.text)
                     .textSelection(.enabled)
+                if sync.isServerAPIOutdated {
+                    Label(sync.apiCompatibility.warningDetail, systemImage: "exclamationmark.triangle.fill")
+                        .font(.caption)
+                        .foregroundStyle(DeskTheme.pending)
+                        .fixedSize(horizontal: false, vertical: true)
+                } else if let api = sync.serverApiVersion {
+                    LabeledContent("API") {
+                        Text("mobile-view \(api)")
+                            .font(.system(.caption, design: .monospaced))
+                            .foregroundStyle(DeskTheme.profit)
+                    }
+                }
                 if let rtt = sync.lastHealthRTTMs {
                     LabeledContent("Last health RTT") {
                         Text("\(rtt) ms")

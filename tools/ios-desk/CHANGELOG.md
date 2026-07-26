@@ -3,7 +3,14 @@
 App version = `VERSION` file = `CFBundleShortVersionString` / Xcode `MARKETING_VERSION`.  
 Build = `CFBundleVersion` / `CURRENT_PROJECT_VERSION`.
 
-Requires **mobile-view `api_version` ≥ 1.1.0** for kickoff countdown + Secure A cards (older APIs still load; features degrade).
+Requires **mobile-view `api_version` ≥ 1.1.1** for settlement equity, kickoff countdown, Secure A.  
+Older APIs still load; the app shows an **outdated API** warning.
+
+## [1.1.2] (build 4) — 2026-07-26
+
+### Added
+- Warning banner when connected PC mobile-view is older than required (`api_version` missing or &lt; 1.1.1)
+- Settings / Connection sheet show API need + outdated detail
 
 ## [1.1.1] (build 3) — 2026-07-26
 
