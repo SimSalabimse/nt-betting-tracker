@@ -838,6 +838,44 @@ def p_model_report(cfg: dict[str, Any], odds: float, p_model: float, high_odds: 
     }
 
 
+def _is_deep_research_pack(ev: dict[str, Any]) -> bool:
+    """True when pack looks like deep_research_v1 / agent_deep_research Stage 2."""
+    if not isinstance(ev, dict):
+        return False
+    model = str(ev.get("model_name") or "").strip().lower()
+    if model == DEEP_RESEARCH_MODEL.lower() or "deep_research" in model:
+        return True
+    if isinstance(ev.get("deep_research"), dict):
+        return True
+    notes = str(ev.get("notes") or "").lower()
+    if DEEP_RESEARCH_SCHEMA in notes or "deep_research_v1" in notes:
+        return True
+    return False
+
+
+def deep_pack_opposite_side_warnings(ev: dict[str, Any]) -> list[str]:
+    """
+    Soft-only process notes for deep packs missing opposite-side evaluation.
+
+    Never hard-fails grade/place (NG8: audit-only). critique_pack appends these
+    to quality_notes; write_deep_research_pack still hard-requires evaluated=true.
+    """
+    if not _is_deep_research_pack(ev):
+        return []
+    opp = ev.get("opposite_side_check")
+    if not isinstance(opp, dict):
+        return [
+            "deep pack missing opposite_side_check "
+            "(soft process warn — not a hard grade fail)"
+        ]
+    if opp.get("evaluated") is not True:
+        return [
+            "deep pack opposite_side_check.evaluated is not true "
+            "(soft process warn — not a hard grade fail)"
+        ]
+    return []
+
+
 def critique_pack(cfg: dict[str, Any], path: Path, odds: float = 1.90) -> dict[str, Any]:
     if not path.exists():
         return {"ok": False, "error": f"not found: {path}"}
@@ -857,6 +895,8 @@ def critique_pack(cfg: dict[str, Any], path: Path, odds: float = 1.90) -> dict[s
     )
     if empty_takeaways:
         extra.append(f"{empty_takeaways} sources missing takeaways")
+    # ESR deep-research: missing/unevaluated opposite_side_check = soft warn only
+    extra.extend(deep_pack_opposite_side_warnings(ev))
     p = ev.get("p_model")
     report = None
     if p is not None:
