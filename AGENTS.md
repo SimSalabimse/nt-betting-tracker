@@ -12,8 +12,9 @@ Real-money capital desk. Engines in `nt/` are law. UI (LuminaNT, Flet desktop) p
 > | **Settlement taxonomy** `learning_weight` · CS gate ≥**0.5** | [`docs/SETTLEMENT_LEARNING.md`](docs/SETTLEMENT_LEARNING.md) |
 > | **Desk skills** `/daily-run` · `/missed-audit` · `/chain-explain` · `/bankroll-tune` · `/learning-rootcause` | [`docs/DESK_SKILLS.md`](docs/DESK_SKILLS.md) |
 > | **Reasoning chains** on recommend | `data/state/reasoning_chains.jsonl` + `## Reasoning` + `## Near-miss / Rejected` in `PLACE_THESE.md` (empty/blocked too) |
+> | **Form continuity / anti-flip** | Soft `sort_ev` + narrow soft-reject prefix **`form_continuity:` only** · ranking-gap HC soft max 1 · explore boost gated on base_ev · opposite-side always in PLACE_THESE |
 >
-> Package narrative: permanent rules below. Skills invoke guide: **`docs/DESK_SKILLS.md`**. Capital hybrid: **`docs/CAPITAL_HYBRID_PROGRESSION.md`**. Taxonomy: **`docs/SETTLEMENT_LEARNING.md`**.
+> Package narrative: permanent rules below. Skills invoke guide: **`docs/DESK_SKILLS.md`**. Capital hybrid: **`docs/CAPITAL_HYBRID_PROGRESSION.md`**. Taxonomy: **`docs/SETTLEMENT_LEARNING.md`**. Form continuity: **`docs/FORM_CONTINUITY_AND_ANTI_FLIP_HARDENING_2026-07-26.md`**.
 
 **Status (permanent package):** clean-restart **500 NOK** era · capital_v2 live · **hybrid half-steps (1A+/1B+) + continuous unit** · **secure bucket Variant A** (soft/hard skim) · **Exploration→Survival→Normal** bankroll regimes · multi-stage quant prefilter · engine deep queue (composition ≥**55%** preferred / ≤**25%** short-main · band **1.85–2.60**) · Coverage Health + soft gate · `force_coverage_priority` · totalgrense residual buffer · closed-loop ControlSignals · PhaseState v5 · **neutral sport start at zero data**.  
 
@@ -208,6 +209,37 @@ Full design: **`docs/RESEARCH_GATES.md`**. Empty slip beats betting against your
 | **Virgin explore** | Same `explore_virgin_ev_boost` for all sports at n=0 — **symmetrical** |
 | **Regime floor** | Exploration **4%** / Survival **7.5%**; weekly `EXPLORE_REGIME` quota may use **2.0–3.9%** (≤2 unit bets/week, mid/alt only) |
 | **Haircut / Grade A** | High-Volume v2: **3pp** haircut · Grade A + elevated EV for odds **≥2.5** · Grade C placeable with core reason |
+
+---
+
+## Portfolio diversify + form continuity (automatic desk law)
+
+Engines enforce these at recommend / portfolio. Agents and `/daily-run` must **surface and respect** them — not re-invent place law. Detail: [`docs/DIVERSITY_AND_EXPLORE.md`](docs/DIVERSITY_AND_EXPLORE.md) · design: [`docs/FORM_CONTINUITY_AND_ANTI_FLIP_HARDENING_2026-07-26.md`](docs/FORM_CONTINUITY_AND_ANTI_FLIP_HARDENING_2026-07-26.md).
+
+### Portfolio diversify (visible; engine hard/soft)
+
+| Rule | Behaviour |
+|------|-----------|
+| **Hard max 2** `market_family` | Coarse family open+slip. Line is **not** in the key. |
+| **similar-recent** | Soft demotion on last ~10–15 **live** settled+pending; same sport + family + line tolerance. Visible on notes / `sort_ev` — **true EV stays honest**. **Sort-only** (not place reject). |
+| **Lessons soft** | Independent TTL soft awareness from Settlement Lessons — **sort-only**. |
+| **Form continuity / anti-flip** | After a successful **heavy-fav HC** (minus line, sport threshold, odds ≤ heavy_fav_max), an **opposite-side** candidate on the same team-pair **within window** (hours **AND** games, fail-closed) needs **≥2 strong flip signals**. Weak flip → **soft-reject** with reason prefix **`form_continuity:` only**. Strong flip → demote only (base pen on `sort_ev`). Code: `nt/form_continuity.py`. |
+| **Narrow soft-reject class** | **Only** `form_continuity:` weak flips. **Not** FEH, **not** anti_soft, **not** expanding `similar_recent.hard_reject_if_count`. Similar/lessons remain soft sort-only. Display prose may say “anti-flip / continuity penalty”; reject codes never use `FEH_*` / `anti_soft`. |
+| **Ranking-gap HC soft cap** | Prefer **≤1** tagged ranking-gap HC per slip (EV-slack skip-then-fill; same-match non-HC preferred even for first RG seat). Force-accept when only RG remain (Pass 3). Soft preference — **not** a permanent ban. |
+| **Explore boost gate** | Explore/virgin boost + explore floor only when **`base_ev ≥ explore_base_ev_min`** (default **0.005**). Reasoning / PLACE_THESE show **dual EV**: `base_ev` · `explore_boost` · `placed_ev`. |
+| **Opposite-side check** | Every deep candidate: evaluate opposite side. PLACE_THESE **always emits** `- **Opposite side:** …` (default **`not evaluated`** if missing). Audit flag only if pack path exists without check — **not** a reject. Anti-flip safety is engine `form_continuity`, not agent prose. |
+| Stage 1 queue | **No** engine demote of `deep_queue` by family/lessons/continuity — diversify + continuity bind at **recommend / portfolio**. |
+
+### Soft vs soft-reject (do not revive hard ideology)
+
+| Allowed | Forbidden |
+|---------|-----------|
+| `form_continuity:` weak-flip soft-reject (narrow process class) | FEH place law / Anti-Soft-Underdog hard reject |
+| similar-recent + lessons on `sort_ev` only | Permanent soft-underdog guilt lists from flips |
+| Ranking-gap soft skip-then-fill | Empty seats solely due to ranking-gap soft cap |
+| Live ledger peers only | Peers from `history/archives/` or `history/rounds/` |
+
+**Stage 2/3 agent notes:** expect `form_continuity:` near-misses on Brewers/Rockies-class flips; do **not** hand-override without structural `why_flip` (≥2 strong signals). Opposite-side line is non-optional in PLACE_THESE template.
 
 ---
 
@@ -411,6 +443,9 @@ python run_nt.py simulate --sport basketball --home H --away A ...
 | Classify predictability + variance_class + learning_weight every settle | Leave taxonomy blank forever or invent p_model to "fix" |
 | Trust ControlSignals as process loop | Expect permanent mults alone to stick after recompute |
 | Respect RESEARCH_ONLY / size_mode floor | Force recommend when phase health blocks |
+| Respect **form continuity** soft-reject (`form_continuity:` only) + ranking-gap soft max 1 + explore base_ev gate | Hand-override weak flips; invent FEH/anti_soft reject codes; expand similar hard_reject |
+| Similar-recent + lessons remain **sort-only**; **no FEH / anti-soft place-law revival** | Treat diversify soft pens as hard gates; re-arm anti-soft underdog guilt |
+| PLACE_THESE always emits **Opposite side** (+ Form continuity · EV split when present) | Omit opposite-side line; hide base vs explore EV when boost applied |
 
 ---
 
@@ -432,7 +467,7 @@ User-scope skills in `%USERPROFILE%\.grok\skills\` — load **this file first**,
 
 | Slash | Skill | When |
 |-------|--------|------|
-| `/daily-run` | Full day desk | results → odds → board+light → deep queue → scaffolds → recommend + Reasoning Chains (`## Reasoning` + `## Near-miss / Rejected`) → `outbox/PLACE_THESE.md` → place-ack |
+| `/daily-run` | Full day desk | results → odds → board+light → deep queue → scaffolds → recommend (form continuity · ranking-gap · explore gate · opposite-side always) + Reasoning Chains → `outbox/PLACE_THESE.md` → place-ack |
 | `/missed-audit` | Mid-band misses | 1.80–2.20 out of deep; `promotion_score` components; cheapest fix; Bodø/Glimt −1.5 & tennis/snooker patterns |
 | `/chain-explain` | Reasoning Chain | forensic justify one match/selection (or whole slip) using light SSOT promo + near-miss stage/reason |
 | `/bankroll-tune` | Capital tune | secure/phase/unit/regime proposal → `scripts/mc_phase_progression.py` + `capital` CLI |
@@ -470,9 +505,11 @@ User-scope skills in `%USERPROFILE%\.grok\skills\` — load **this file first**,
 | `docs/RESIDUAL_RISKS.md` | Honest remaining risks |
 | `artifacts/PACKAGE_VALIDATION_REPORT.md` | Success-metric validation |
 | `docs/CLOSED_LOOP_PHASE_REDESIGN_SUMMARY.md` | ControlSignals + Phase v5 |
-| `docs/DIVERSITY_AND_EXPLORE.md` | Virgin explore + diversify |
+| `docs/DIVERSITY_AND_EXPLORE.md` | Virgin explore + diversify · form_continuity · ranking_gap · explore_base_ev_min |
+| `docs/FORM_CONTINUITY_AND_ANTI_FLIP_HARDENING_2026-07-26.md` | Form continuity + anti-flip + ranking-gap + explore gate design |
 | `docs/RESEARCH_GATES.md` | Gate field design |
 | `docs/SETTLEMENT_LEARNING.md` | Settle + learn loop |
+| `docs/skills_mirror_daily-run.md` | Repo mirror of `~/.grok/skills/daily-run/SKILL.md` (dual-write) |
 
 ### Desktop (Flet)
 
