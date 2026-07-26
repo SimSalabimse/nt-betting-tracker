@@ -63,7 +63,7 @@ struct DeskSnapshot: Codable, Equatable {
     }
 }
 
-struct PendingBet: Codable, Equatable, Identifiable {
+struct PendingBet: Codable, Equatable, Hashable, Identifiable {
     var betId: String?
     var date: String?
     var match: String?
@@ -75,7 +75,8 @@ struct PendingBet: Codable, Equatable, Identifiable {
     var updatedAt: String?
 
     var id: String {
-        betId ?? "\(match ?? "")-\(selection ?? "")-\(updatedAt ?? "")"
+        if let betId, !betId.isEmpty { return betId }
+        return "\(match ?? "")-\(selection ?? "")-\(updatedAt ?? "")"
     }
 
     enum CodingKeys: String, CodingKey {
@@ -84,6 +85,14 @@ struct PendingBet: Codable, Equatable, Identifiable {
         case decimalOdds = "decimal_odds"
         case stakeNok = "stake_nok"
         case updatedAt = "updated_at"
+    }
+
+    /// Case-insensitive match against match / selection / sport / bet_id (PR-4 search).
+    func matchesSearch(_ query: String) -> Bool {
+        let q = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !q.isEmpty else { return true }
+        let fields = [match, selection, sport, betId]
+        return fields.contains { ($0 ?? "").localizedCaseInsensitiveContains(q) }
     }
 }
 

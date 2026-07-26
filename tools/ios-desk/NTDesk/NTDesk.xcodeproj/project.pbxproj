@@ -61,6 +61,10 @@
 		C31A1B2C3D4E5F6000000031 /* PLACE_THESE_2026-07-12.md in Resources */ = {isa = PBXBuildFile; fileRef = C31A1B2C3D4E5F6000000021 /* PLACE_THESE_2026-07-12.md */; };
 		C31A1B2C3D4E5F6000000032 /* PLACE_THESE_empty.md in Resources */ = {isa = PBXBuildFile; fileRef = C31A1B2C3D4E5F6000000022 /* PLACE_THESE_empty.md */; };
 		C31A1B2C3D4E5F6000000033 /* desk_sample_v1.json in Resources */ = {isa = PBXBuildFile; fileRef = C31A1B2C3D4E5F6000000023 /* desk_sample_v1.json */; };
+		C41A1B2C3D4E5F6000000001 /* PendingBetRoute.swift in Sources */ = {isa = PBXBuildFile; fileRef = C41A1B2C3D4E5F6000000011 /* PendingBetRoute.swift */; };
+		C41A1B2C3D4E5F6000000002 /* PendingBetRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = C41A1B2C3D4E5F6000000012 /* PendingBetRow.swift */; };
+		C41A1B2C3D4E5F6000000003 /* PendingBetDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C41A1B2C3D4E5F6000000013 /* PendingBetDetailView.swift */; };
+		C41A1B2C3D4E5F6000000004 /* PendingBetRouteTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C41A1B2C3D4E5F6000000014 /* PendingBetRouteTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -110,6 +114,10 @@
 		A21A1B2C3D4E5F6000000015 /* LegacyDeskTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegacyDeskTab.swift; sourceTree = "<group>"; };
 		A11A1B2C3D4E5F6000000017 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		B11A1B2C3D4E5F6000000011 /* PrivateHostPolicyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivateHostPolicyTests.swift; sourceTree = "<group>"; };
+		C41A1B2C3D4E5F6000000011 /* PendingBetRoute.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PendingBetRoute.swift; sourceTree = "<group>"; };
+		C41A1B2C3D4E5F6000000012 /* PendingBetRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PendingBetRow.swift; sourceTree = "<group>"; };
+		C41A1B2C3D4E5F6000000013 /* PendingBetDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PendingBetDetailView.swift; sourceTree = "<group>"; };
+		C41A1B2C3D4E5F6000000014 /* PendingBetRouteTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PendingBetRouteTests.swift; sourceTree = "<group>"; };
 		848437EA320F44D9A1F3E5AD /* NTDesk.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = NTDesk.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		B11A1B2C3D4E5F6000000020 /* NTDeskTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = NTDeskTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		14E671AE8ACD437DA6E95191 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -210,6 +218,7 @@
 				C31A1B2C3D4E5F6000000017 /* PlaceTheseParserTests.swift */,
 				C31A1B2C3D4E5F6000000018 /* PlaceTheseRowsPreviewTests.swift */,
 				C31A1B2C3D4E5F6000000040 /* Fixtures */,
+				C41A1B2C3D4E5F6000000014 /* PendingBetRouteTests.swift */,
 			);
 			path = NTDeskTests;
 			sourceTree = "<group>";
@@ -257,6 +266,7 @@
 				8AEB1BFA4F9E49408518F2F1 /* DeskSnapshot.swift */,
 				P21A1B2C3D4E5F6000000011 /* ConnectionProfile.swift */,
 				C31A1B2C3D4E5F6000000011 /* PlaceTheseDocument.swift */,
+				C41A1B2C3D4E5F6000000011 /* PendingBetRoute.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -317,6 +327,8 @@
 			isa = PBXGroup;
 			children = (
 				7D6E27D0C86F424B88EE82F2 /* PendingListView.swift */,
+				C41A1B2C3D4E5F6000000012 /* PendingBetRow.swift */,
+				C41A1B2C3D4E5F6000000013 /* PendingBetDetailView.swift */,
 			);
 			path = Pending;
 			sourceTree = "<group>";
@@ -490,6 +502,9 @@
 				C31A1B2C3D4E5F6000000004 /* SlipBetCard.swift in Sources */,
 				C31A1B2C3D4E5F6000000005 /* StatusDocumentView.swift in Sources */,
 				C31A1B2C3D4E5F6000000006 /* MarkdownFallbackView.swift in Sources */,
+				C41A1B2C3D4E5F6000000001 /* PendingBetRoute.swift in Sources */,
+				C41A1B2C3D4E5F6000000002 /* PendingBetRow.swift in Sources */,
+				C41A1B2C3D4E5F6000000003 /* PendingBetDetailView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -501,6 +516,7 @@
 				P21A1B2C3D4E5F6000000005 /* ConnectionProfileStoreTests.swift in Sources */,
 				C31A1B2C3D4E5F6000000007 /* PlaceTheseParserTests.swift in Sources */,
 				C31A1B2C3D4E5F6000000008 /* PlaceTheseRowsPreviewTests.swift in Sources */,
+				C41A1B2C3D4E5F6000000004 /* PendingBetRouteTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
