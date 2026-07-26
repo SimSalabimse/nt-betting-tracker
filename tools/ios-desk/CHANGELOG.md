@@ -6,6 +6,11 @@ Build = `CFBundleVersion` / `CURRENT_PROJECT_VERSION`.
 Requires **mobile-view `api_version` ≥ 1.1.1** for settlement equity, kickoff countdown, Secure A.  
 Older APIs still load; the app shows an **outdated API** warning.
 
+## [1.1.3] (build 5) — 2026-07-26
+
+### Changed
+- Require mobile-view **≥ 1.1.2** (Lumina-matched equity by match date)
+
 ## [1.1.2] (build 4) — 2026-07-26
 
 ### Added
