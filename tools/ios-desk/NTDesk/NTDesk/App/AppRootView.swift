@@ -6,16 +6,23 @@ struct AppRootView: View {
     @EnvironmentObject private var sync: SyncService
     @Environment(\.horizontalSizeClass) private var hSize
     @Environment(\.scenePhase) private var scenePhase
+    /// Single source of truth for content destination (compact TabView + regular sidebar).
     @State private var selectedTab: DeskTab = .desk
-    /// Sidebar selection must be Optional for `List(selection:)` on iOS.
-    @State private var sidebarSelection: DeskTab? = .desk
     @State private var showSettings = false
+
+    /// `List(selection:)` on iOS requires `Binding<SelectionValue?>`; keep it derived from `selectedTab`.
+    private var sidebarSelection: Binding<DeskTab?> {
+        Binding(
+            get: { selectedTab },
+            set: { if let tab = $0 { selectedTab = tab } }
+        )
+    }
 
     var body: some View {
         Group {
             if hSize == .regular {
                 NavigationSplitView {
-                    List(selection: $sidebarSelection) {
+                    List(selection: sidebarSelection) {
                         Label("Desk", systemImage: "gauge.with.dots.needle.33percent")
                             .tag(DeskTab.desk)
                         Label("Charts", systemImage: "chart.xyaxis.line")
@@ -28,7 +35,7 @@ struct AppRootView: View {
                     }
                     .navigationTitle("NT Desk")
                 } detail: {
-                    tabRoot(for: sidebarSelection ?? .desk)
+                    tabRoot(for: selectedTab)
                 }
             } else {
                 TabView(selection: $selectedTab) {
@@ -54,6 +61,14 @@ struct AppRootView: View {
         .sheet(isPresented: $showSettings) {
             NavigationStack {
                 SettingsView()
+                    .toolbar {
+                        ToolbarItem(placement: .topBarTrailing) {
+                            Button("Done") {
+                                showSettings = false
+                            }
+                            .accessibilityIdentifier("settings.done")
+                        }
+                    }
             }
         }
         .environment(\.openSettings, OpenSettingsAction { showSettings = true })

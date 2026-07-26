@@ -29,7 +29,7 @@ From repo root (or adapt path to your script):
 
 ```bash
 # Using the in-repo wrapper (mirrors Documents/GitHub/build_unsigned_ipa.sh pattern)
-# Defaults: SCHEME=NTDesk CONFIGURATION=Release (scaffold RootView)
+# Defaults: SCHEME=NTDesk CONFIGURATION=Release (redesign AppRootView)
 ./tools/ios-desk/build_unsigned_ipa.sh
 
 # Recovery IPA (LegacyRootView via NTDESK_USE_LEGACY_UI):
@@ -42,7 +42,7 @@ SCHEME=NTDesk-Legacy CONFIGURATION=LegacyRelease ./tools/ios-desk/build_unsigned
 
 Output: `tools/ios-desk/build_unsigned/NTDesk.ipa` (unsigned). Env: `SCHEME`, `CONFIGURATION` (product dir = `${CONFIGURATION}-iphoneos`).
 
-**Reminder:** after any visual change (theme tokens, App Icon, AccentColor, launch color, DesignSystem components), rebuild the unsigned IPA and re-sideload so the home-screen glyph and ink launch flash match what is in the tree. Smoke: open all five tabs, pull-to-refresh online, then kill mobile-view / network and confirm the stale (or empty) banner still appears and numbers do not invent equity offline.
+**Reminder:** after any visual change (theme tokens, App Icon, AccentColor, launch color, DesignSystem components), rebuild the unsigned IPA and re-sideload so the home-screen glyph and ink launch flash match what is in the tree. Smoke: open all four content tabs (Desk / Charts / Pending / Slip), open Settings via the gear (sheet), pull-to-refresh online, then kill mobile-view / network and confirm the stale (or empty) banner still appears and numbers do not invent equity offline.
 
 Open in Xcode once if schemes need regeneration:
 
@@ -56,10 +56,10 @@ open tools/ios-desk/NTDesk/NTDesk.xcodeproj
 
 | Scheme | Configuration | Root UI | Notes |
 |--------|---------------|---------|--------|
-| **NTDesk** (default) | Debug / Release | Scaffold `RootView` | Default IPA via `build_unsigned_ipa.sh` |
-| **NTDesk-Legacy** | LegacyDebug / LegacyRelease | `LegacyRootView` | Compile flag `NTDESK_USE_LEGACY_UI` |
+| **NTDesk** (default) | Debug / Release | Redesign `AppRootView` | 4 content tabs + Settings gear/sheet; default IPA via `build_unsigned_ipa.sh` |
+| **NTDesk-Legacy** | LegacyDebug / LegacyRelease | `LegacyRootView` | Compile flag `NTDESK_USE_LEGACY_UI`; five peer tabs including Settings |
 
-Both schemes build the **same** `NTDesk` app target. Scaffold `Views/*` and renamed `Legacy/*` **always compile** in one module; the flag only selects the root in `NTDeskApp.swift`. See [`NTDesk/Legacy/README.md`](NTDesk/NTDesk/Legacy/README.md).
+Both schemes build the **same** `NTDesk` app target. Redesign `App/` + `Features/**` and renamed `Legacy/*` **always compile** in one module; the flag only selects the root in `NTDeskApp.swift`. See [`NTDesk/Legacy/README.md`](NTDesk/NTDesk/Legacy/README.md).
 
 **Deployment target:** iOS **18.0** (app + `NTDeskTests`).
 
@@ -259,12 +259,13 @@ tools/ios-desk/
   NTDesk/
     NTDesk.xcodeproj            # schemes: NTDesk, NTDesk-Legacy
     NTDesk/
-      NTDeskApp.swift           # #if NTDESK_USE_LEGACY_UI → LegacyRootView else RootView
+      NTDeskApp.swift           # #if NTDESK_USE_LEGACY_UI → LegacyRootView else AppRootView
+      App/                      # AppRootView, DeskTab, DeskScreenChrome, openSettings
+      Features/                 # Desk, Charts, Pending, Slip, Settings (default scheme)
       Assets.xcassets/          # AppIcon, AccentColor, LaunchBackground
       DesignSystem/             # DeskTheme, spacing, type, formatters, components
       Models/…
       Services/…
-      Views/…                   # scaffold default UI (default scheme)
       Legacy/                   # renamed freeze (Legacy* types; always compiled)
     NTDeskTests/                # XCTest (PrivateHostPolicy smoke, …)
 ```
