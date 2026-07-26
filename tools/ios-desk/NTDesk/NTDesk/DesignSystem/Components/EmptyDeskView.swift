@@ -1,6 +1,7 @@
 import SwiftUI
 
 /// First-run / empty-cache guidance. Primary action uses `openSettings` (or an explicit callback).
+/// Built on HIG `ContentUnavailableView` with desk-night tokens.
 struct EmptyDeskView: View {
     @Environment(\.openSettings) private var openSettings
 
@@ -13,24 +14,25 @@ struct EmptyDeskView: View {
     var onOpenSettings: (() -> Void)?
 
     var body: some View {
-        VStack(spacing: DeskSpacing.s4) {
-            Image(systemName: systemImage)
-                .font(.system(size: 44, weight: .medium))
-                .foregroundStyle(DeskTheme.accent)
-                .accessibilityHidden(true)
-
-            Text(title)
-                .font(DeskTypography.sectionTitle)
-                .foregroundStyle(DeskTheme.text)
-                .multilineTextAlignment(.center)
-                .accessibilityAddTraits(.isHeader)
-
+        ContentUnavailableView {
+            Label {
+                Text(title)
+                    .font(DeskTypography.sectionTitle)
+                    .foregroundStyle(DeskTheme.text)
+                    .multilineTextAlignment(.center)
+            } icon: {
+                Image(systemName: systemImage)
+                    .font(.largeTitle.weight(.medium))
+                    .symbolRenderingMode(.hierarchical)
+                    .foregroundStyle(DeskTheme.accent)
+                    .accessibilityHidden(true)
+            }
+        } description: {
             Text(message)
                 .font(.subheadline)
                 .foregroundStyle(DeskTheme.textMuted)
                 .multilineTextAlignment(.center)
-                .fixedSize(horizontal: false, vertical: true)
-
+        } actions: {
             if showOpenSettings {
                 Button("Open Settings") {
                     if let onOpenSettings {
@@ -42,14 +44,50 @@ struct EmptyDeskView: View {
                 .buttonStyle(.borderedProminent)
                 .tint(DeskTheme.accent)
                 .controlSize(.large)
-                .padding(.top, DeskSpacing.s2)
                 .accessibilityLabel("Open Settings")
                 .accessibilityHint("Opens Settings to set the PC base URL")
             }
         }
-        .padding(DeskSpacing.s6)
         .frame(maxWidth: .infinity)
+        .padding(.vertical, DeskSpacing.s4)
         // Keep children separate so "Open Settings" remains an activatable VoiceOver control.
         .accessibilityElement(children: .contain)
+    }
+}
+
+/// Themed empty / unavailable chrome (HIG ContentUnavailable pattern, desk tokens).
+/// Use for no-data, no-search-match, and secondary empty states — not first-run connect
+/// (prefer `EmptyDeskView` for Settings CTA).
+struct DeskContentUnavailable: View {
+    var title: String
+    var systemImage: String
+    var description: String
+    /// Optional override; default combines title + description.
+    var accessibilityLabelText: String? = nil
+
+    var body: some View {
+        ContentUnavailableView {
+            Label {
+                Text(title)
+                    .font(DeskTypography.sectionTitle)
+                    .foregroundStyle(DeskTheme.text)
+                    .multilineTextAlignment(.center)
+            } icon: {
+                Image(systemName: systemImage)
+                    .font(.largeTitle.weight(.medium))
+                    .symbolRenderingMode(.hierarchical)
+                    .foregroundStyle(DeskTheme.textDim)
+                    .accessibilityHidden(true)
+            }
+        } description: {
+            Text(description)
+                .font(.subheadline)
+                .foregroundStyle(DeskTheme.textMuted)
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, DeskSpacing.s4)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(accessibilityLabelText ?? "\(title). \(description)")
     }
 }

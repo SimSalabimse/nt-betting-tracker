@@ -2,7 +2,6 @@ import SwiftUI
 
 struct DeskView: View {
     @EnvironmentObject private var sync: SyncService
-    @Environment(\.openSettings) private var openSettings
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     private var gridColumns: [GridItem] {
@@ -75,32 +74,27 @@ struct DeskView: View {
                             }
                         }
 
-                        Text("Generated \(s.generatedAt ?? "—")")
-                            .font(DeskTypography.caption)
-                            .foregroundStyle(DeskTheme.textDim)
-                            .padding(.top, DeskSpacing.s1)
-                            .accessibilityLabel("Snapshot generated \(s.generatedAt ?? "unknown")")
-                    } else {
-                        EmptyDeskView {
-                            openSettings()
+                        TimelineView(.periodic(from: .now, by: 60)) { context in
+                            let relative = DeskFormatters.relativeTime(
+                                s.generatedAt,
+                                relativeTo: context.date
+                            )
+                            Text("Generated \(relative)")
+                                .font(DeskTypography.caption)
+                                .foregroundStyle(DeskTheme.textDim)
+                                .padding(.top, DeskSpacing.s1)
+                                .accessibilityLabel("Snapshot generated \(relative)")
                         }
-                        .frame(maxWidth: .infinity)
-                        .padding(.top, DeskSpacing.s6)
+                    } else {
+                        EmptyDeskView()
+                            .frame(maxWidth: .infinity)
+                            .padding(.top, DeskSpacing.s6)
                     }
                 }
                 .padding(DeskSpacing.contentPad)
             }
             .background(DeskTheme.bg.ignoresSafeArea())
             .refreshable { await sync.sync() }
-            .toolbar {
-                if sync.isSyncing {
-                    ToolbarItem(placement: .topBarLeading) {
-                        ProgressView()
-                            .tint(DeskTheme.accent)
-                            .accessibilityLabel("Syncing desk snapshot")
-                    }
-                }
-            }
         }
     }
 

@@ -44,9 +44,16 @@ struct LegacySettingsView: View {
 
                 Section {
                     LabeledContent("Last success") {
-                        Text(sync.lastSuccessSyncAt ?? "—")
+                        TimelineView(.periodic(from: .now, by: 60)) { context in
+                            Text(
+                                DeskFormatters.relativeTime(
+                                    sync.lastSuccessSyncAt,
+                                    relativeTo: context.date
+                                )
+                            )
                             .font(.system(.body, design: .monospaced))
                             .foregroundStyle(DeskTheme.textMuted)
+                        }
                     }
                     LabeledContent("Freshness") {
                         Text(sync.freshness.rawValue)

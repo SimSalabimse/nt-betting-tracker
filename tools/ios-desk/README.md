@@ -206,9 +206,9 @@ Full brief: design doc §5 App Icon.
 
 ---
 
-## Accessibility checklist
+## HIG chrome checklist
 
-NT Desk targets personal sideload quality (HIG), not App Store review. Use this checklist after UI or privacy-string changes.
+NT Desk targets personal sideload quality (HIG), not App Store review. Use this checklist after UI, chrome, or privacy-string changes.
 
 ### VoiceOver
 
@@ -218,14 +218,43 @@ NT Desk targets personal sideload quality (HIG), not App Store review. Use this 
 - [ ] Charts: drag/scrub with a finger shows day (or sport) detail callout + rule mark
 - [ ] Risk gauge, status pill, freshness banners, and empty states have explicit labels
 - [ ] Section titles use header traits where useful; decorative rails/icons are `accessibilityHidden`
-- [ ] Empty-state primary control remains activatable (children `.contain`, not over-combined)
+- [ ] Empty-state primary control remains activatable (children `.contain`, not over-combined) — `EmptyDeskView` Open Settings
+- [ ] Live toolbar checkmark (`checkmark.circle.fill`) announces “Live data”; sync spinner “Syncing desk snapshot”
 
 ### Dynamic Type
 
 - [ ] Prefer semantic / system fonts via `DeskTypography` (no fixed `Font.system(size:)` for body/KPI roles)
+- [ ] Empty / unavailable icons use `.largeTitle` (scales with Dynamic Type), not fixed pt sizes
 - [ ] Desk KPI grid collapses to **1 column** at accessibility sizes (`dynamicTypeSize.isAccessibilitySize`)
 - [ ] KPI values keep `.minimumScaleFactor` + `.lineLimit(1)`; long phase text goes in subtitle
 - [ ] Spot-check Accessibility Inspector at **AX3** and **AX5** if available
+
+### Relative time & freshness
+
+- [ ] Stale banner shows **relative** last sync via `RelativeDateTimeFormatter` (`DeskFormatters.relativeTime`) — not raw ISO only
+- [ ] Desk “Generated …” and Settings “Last success” use the same relative helper
+- [ ] `TimelineView` refreshes relative labels (~60s; longer when Reduce Motion is on for the banner)
+- [ ] `.fresh` hides the banner; optional toolbar checkmark signals live
+- [ ] `.staleMismatch` / `.liveNotPersisted` / `.empty` keep distinct copy + a11y labels
+
+### contentUnavailable / empty states
+
+- [ ] First-run empty uses `EmptyDeskView` → HIG `ContentUnavailableView` + Open Settings CTA
+- [ ] Secondary empties use `DeskContentUnavailable` (pending empty / search miss, charts no data, no PLACE_THESE)
+- [ ] Cards stay solid `surfaceElev`; empty chrome is not a second invent-of-equity path
+
+### Materials (chrome only)
+
+- [ ] Navigation bars (DeskScreenChrome + expanded chart) use `.ultraThinMaterial` + `.visible`
+- [ ] Tab bar uses `.ultraThinMaterial` + `.visible` (compact)
+- [ ] Freshness banners fill with material + light semantic tint; KPI cards remain solid ink surfaces
+- [ ] Reduce Transparency: solid desk night tokens still provide contrast under material
+
+### Reduce Motion
+
+- [ ] Chart selection callouts honor `accessibilityReduceMotion` (no springy chrome)
+- [ ] Freshness `TimelineView` period lengthens under Reduce Motion (less frequent label churn)
+- [ ] No decorative loops on banners/toolbars
 
 ### Local Network permission
 
@@ -237,10 +266,11 @@ NT Desk targets personal sideload quality (HIG), not App Store review. Use this 
 
 | Area | Behavior |
 |------|----------|
-| **Reduce Motion** | No decorative animations in v1; charts are static |
-| **Contrast** | Fixed dark ink theme; KPI values use profit / loss / accent on elevated surfaces |
+| **Reduce Motion** | Chart selection respects Reduce Motion; freshness timeline slows; no decorative banner animation |
+| **Contrast** | Fixed dark ink theme; KPI values use profit / loss / accent on elevated solid surfaces |
 | **Touch** | System tab bar + standard controls; empty-state primary uses large control size |
 | **PrivacyInfo** | Optional `PrivacyInfo.xcprivacy` with tracking off and empty collected-data / API-reason arrays (sideload hygiene; expand if Xcode warns) |
+| **Chrome-only rule** | HIG polish must not rewrite chart data builders, slip parse, or pending route/search logic |
 
 ---
 

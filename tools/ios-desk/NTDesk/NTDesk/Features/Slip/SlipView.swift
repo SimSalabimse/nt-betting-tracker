@@ -113,16 +113,12 @@ struct SlipView: View {
 
     private var emptyPlaceThese: some View {
         DeskCard {
-            VStack(alignment: .leading, spacing: DeskSpacing.s2) {
-                Label("No PLACE_THESE.md", systemImage: "doc.plaintext")
-                    .font(DeskTypography.sectionTitle)
-                    .foregroundStyle(DeskTheme.text)
-                Text("View-only — place bets on the PC desk. Sync when the PC is reachable.")
-                    .font(.subheadline)
-                    .foregroundStyle(DeskTheme.textMuted)
-            }
+            DeskContentUnavailable(
+                title: "No PLACE_THESE.md",
+                systemImage: "doc.plaintext",
+                description: "View-only — place bets on the PC desk. Sync when the PC is reachable.",
+                accessibilityLabelText: "No PLACE_THESE file. View-only — place bets on the PC desk. Sync when the PC is reachable."
+            )
         }
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("No PLACE_THESE file. View-only — place bets on the PC desk. Sync when the PC is reachable.")
     }
 }

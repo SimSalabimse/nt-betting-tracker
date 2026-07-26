@@ -54,7 +54,8 @@ struct AppRootView: View {
                         .tag(DeskTab.slip)
                 }
                 .tint(DeskTheme.accent)
-                .toolbarBackground(DeskTheme.surface, for: .tabBar)
+                .toolbarBackground(.ultraThinMaterial, for: .tabBar)
+                .toolbarBackground(.visible, for: .tabBar)
                 .background(DeskTheme.bg)
             }
         }

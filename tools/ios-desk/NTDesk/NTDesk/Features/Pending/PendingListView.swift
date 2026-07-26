@@ -3,7 +3,6 @@ import UIKit
 
 struct PendingListView: View {
     @EnvironmentObject private var sync: SyncService
-    @Environment(\.openSettings) private var openSettings
     @State private var searchText = ""
 
     private var allBets: [PendingBet] {
@@ -21,11 +20,9 @@ struct PendingListView: View {
                     ScrollView {
                         VStack(alignment: .leading, spacing: DeskSpacing.s3) {
                             FreshnessBanner()
-                            EmptyDeskView {
-                                openSettings()
-                            }
-                            .frame(maxWidth: .infinity)
-                            .padding(.top, DeskSpacing.s4)
+                            EmptyDeskView()
+                                .frame(maxWidth: .infinity)
+                                .padding(.top, DeskSpacing.s4)
                         }
                         .padding(DeskSpacing.contentPad)
                     }
@@ -58,19 +55,23 @@ struct PendingListView: View {
                 .listRowSeparator(.hidden)
 
             if allBets.isEmpty {
-                Text("No open pending / confirmed bets")
-                    .font(.subheadline)
-                    .foregroundStyle(DeskTheme.textMuted)
-                    .listRowBackground(Color.clear)
-                    .listRowSeparator(.hidden)
-                    .accessibilityLabel("No open pending or confirmed bets")
+                DeskContentUnavailable(
+                    title: "No open bets",
+                    systemImage: "list.bullet.rectangle",
+                    description: "No pending or confirmed-placed tickets right now.",
+                    accessibilityLabelText: "No open pending or confirmed bets"
+                )
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
             } else if filteredBets.isEmpty {
-                Text("No bets match “\(searchText)”")
-                    .font(.subheadline)
-                    .foregroundStyle(DeskTheme.textMuted)
-                    .listRowBackground(Color.clear)
-                    .listRowSeparator(.hidden)
-                    .accessibilityLabel("No bets match search")
+                DeskContentUnavailable(
+                    title: "No matches",
+                    systemImage: "magnifyingglass",
+                    description: "No bets match “\(searchText)”.",
+                    accessibilityLabelText: "No bets match search"
+                )
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
             } else {
                 ForEach(filteredBets) { bet in
                     NavigationLink(value: PendingBetRoute.make(from: bet)) {

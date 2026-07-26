@@ -202,31 +202,13 @@ struct ChartsView: View {
     }
 
     private var emptyState: some View {
-        VStack(spacing: DeskSpacing.s4) {
-            Image(systemName: "chart.xyaxis.line")
-                .font(.system(size: 40))
-                .foregroundStyle(DeskTheme.textDim)
-                .accessibilityHidden(true)
-            Text("No chart data")
-                .font(DeskTypography.sectionTitle)
-                .foregroundStyle(DeskTheme.text)
-            Text("Pull to refresh after syncing settled history from the PC.")
-                .font(DeskTypography.caption)
-                .foregroundStyle(DeskTheme.textMuted)
-                .multilineTextAlignment(.center)
+        DeskCard {
+            DeskContentUnavailable(
+                title: "No chart data",
+                systemImage: "chart.xyaxis.line",
+                description: "Pull to refresh after syncing settled history from the PC.",
+                accessibilityLabelText: "No chart data. Pull to refresh after syncing settled history from the PC."
+            )
         }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, DeskSpacing.s7)
-        .padding(.horizontal, DeskSpacing.s4)
-        .background(
-            RoundedRectangle(cornerRadius: DeskSpacing.radius)
-                .fill(DeskTheme.surfaceElev)
-                .overlay(
-                    RoundedRectangle(cornerRadius: DeskSpacing.radius)
-                        .stroke(DeskTheme.borderSoft, lineWidth: 1)
-                )
-        )
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("No chart data. Pull to refresh after syncing settled history from the PC.")
     }
 }

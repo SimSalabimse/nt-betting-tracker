@@ -49,6 +49,7 @@
 		P21A1B2C3D4E5F6000000003 /* ConnectionSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = P21A1B2C3D4E5F6000000013 /* ConnectionSettingsView.swift */; };
 		P21A1B2C3D4E5F6000000004 /* ProfilesListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = P21A1B2C3D4E5F6000000014 /* ProfilesListView.swift */; };
 		P21A1B2C3D4E5F6000000005 /* ConnectionProfileStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = P21A1B2C3D4E5F6000000015 /* ConnectionProfileStoreTests.swift */; };
+		D71A1B2C3D4E5F6000000001 /* DeskFormattersTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D71A1B2C3D4E5F6000000011 /* DeskFormattersTests.swift */; };
 
 		C31A1B2C3D4E5F6000000001 /* PlaceTheseDocument.swift in Sources */ = {isa = PBXBuildFile; fileRef = C31A1B2C3D4E5F6000000011 /* PlaceTheseDocument.swift */; };
 		C31A1B2C3D4E5F6000000002 /* PlaceTheseParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = C31A1B2C3D4E5F6000000012 /* PlaceTheseParser.swift */; };
@@ -133,6 +134,7 @@
 		A21A1B2C3D4E5F6000000015 /* LegacyDeskTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegacyDeskTab.swift; sourceTree = "<group>"; };
 		A11A1B2C3D4E5F6000000017 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		B11A1B2C3D4E5F6000000011 /* PrivateHostPolicyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivateHostPolicyTests.swift; sourceTree = "<group>"; };
+		D71A1B2C3D4E5F6000000011 /* DeskFormattersTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeskFormattersTests.swift; sourceTree = "<group>"; };
 		C41A1B2C3D4E5F6000000011 /* PendingBetRoute.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PendingBetRoute.swift; sourceTree = "<group>"; };
 		C41A1B2C3D4E5F6000000012 /* PendingBetRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PendingBetRow.swift; sourceTree = "<group>"; };
 		C41A1B2C3D4E5F6000000013 /* PendingBetDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PendingBetDetailView.swift; sourceTree = "<group>"; };
@@ -262,6 +264,7 @@
 			children = (
 				B11A1B2C3D4E5F6000000011 /* PrivateHostPolicyTests.swift */,
 				P21A1B2C3D4E5F6000000015 /* ConnectionProfileStoreTests.swift */,
+				D71A1B2C3D4E5F6000000011 /* DeskFormattersTests.swift */,
 				C31A1B2C3D4E5F6000000017 /* PlaceTheseParserTests.swift */,
 				C31A1B2C3D4E5F6000000018 /* PlaceTheseRowsPreviewTests.swift */,
 				C31A1B2C3D4E5F6000000040 /* Fixtures */,
@@ -595,6 +598,7 @@
 			files = (
 				B11A1B2C3D4E5F6000000001 /* PrivateHostPolicyTests.swift in Sources */,
 				P21A1B2C3D4E5F6000000005 /* ConnectionProfileStoreTests.swift in Sources */,
+				D71A1B2C3D4E5F6000000001 /* DeskFormattersTests.swift in Sources */,
 				C31A1B2C3D4E5F6000000007 /* PlaceTheseParserTests.swift in Sources */,
 				C31A1B2C3D4E5F6000000008 /* PlaceTheseRowsPreviewTests.swift in Sources */,
 				C41A1B2C3D4E5F6000000004 /* PendingBetRouteTests.swift in Sources */,

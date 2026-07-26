@@ -68,12 +68,22 @@ struct SettingsView: View {
 
             Section {
                 LabeledContent("Last success") {
-                    Text(sync.lastSuccessSyncAt ?? "—")
+                    TimelineView(.periodic(from: .now, by: 60)) { context in
+                        Text(
+                            DeskFormatters.relativeTime(
+                                sync.lastSuccessSyncAt,
+                                relativeTo: context.date
+                            )
+                        )
                         .font(.system(.body, design: .monospaced))
                         .foregroundStyle(DeskTheme.textMuted)
+                        .accessibilityLabel(
+                            "Last success \(DeskFormatters.relativeTime(sync.lastSuccessSyncAt, relativeTo: context.date))"
+                        )
+                    }
                 }
                 LabeledContent("Freshness") {
-                    Text(sync.freshness.rawValue)
+                    Text(freshnessDisplayLabel)
                         .foregroundStyle(freshnessColor)
                 }
                 if let err = sync.lastError {
@@ -186,6 +196,16 @@ struct SettingsView: View {
             get: { appLock.isEnabled },
             set: { appLock.setEnabled($0) }
         )
+    }
+
+    private var freshnessDisplayLabel: String {
+        switch sync.freshness {
+        case .fresh: return "Live"
+        case .stale: return "Stale"
+        case .staleMismatch: return "URL mismatch"
+        case .liveNotPersisted: return "Live (not saved)"
+        case .empty: return "Empty"
+        }
     }
 
     private var freshnessColor: Color {

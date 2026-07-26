@@ -75,11 +75,17 @@ struct LegacyDeskView: View {
                             }
                         }
 
-                        Text("Generated \(s.generatedAt ?? "—")")
-                            .font(DeskTypography.caption)
-                            .foregroundStyle(DeskTheme.textDim)
-                            .padding(.top, DeskSpacing.s1)
-                            .accessibilityLabel("Snapshot generated \(s.generatedAt ?? "unknown")")
+                        TimelineView(.periodic(from: .now, by: 60)) { context in
+                            let relative = DeskFormatters.relativeTime(
+                                s.generatedAt,
+                                relativeTo: context.date
+                            )
+                            Text("Generated \(relative)")
+                                .font(DeskTypography.caption)
+                                .foregroundStyle(DeskTheme.textDim)
+                                .padding(.top, DeskSpacing.s1)
+                                .accessibilityLabel("Snapshot generated \(relative)")
+                        }
                     } else {
                         EmptyDeskView {
                             selectedTab = .settings
