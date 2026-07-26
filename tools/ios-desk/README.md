@@ -110,15 +110,19 @@ Minimal smoke today: `NTDeskTests` / `PrivateHostPolicy` allow/deny + normalize/
 ## Optional app lock (Face ID) + App Intent Sync
 | Feature | Default | Notes |
 |---------|---------|--------|
-| **App lock** | **Off** (`app_lock_enabled` = false) | Settings → “Require Face ID / Touch ID”. UI gate only; does not place/settle. |
+| **App lock** | **Off** (`app_lock_enabled` = false) | Redesign Settings → “Require Face ID / Touch ID”. UI gate only; does not place/settle. |
 | **Biometrics** | System LAContext | Face ID / Touch ID / device passcode fallback. `NSFaceIDUsageDescription` in `Info.plist`. |
 | **Cache file protection** | Applied when lock **on** after each successful cache write | `URLFileProtection.completeUntilFirstUserAuthentication` on the envelope file (not “encrypted because Application Support” alone). |
 | **App Intent** | `Sync Desk` | Read-only `SyncService.sync()` via Shortcuts / Siri phrases. No write/place APIs. |
 **Frameworks:** uses system **LocalAuthentication** + **AppIntents** (shipped with iOS 18 SDK). No third-party packages. If a future Xcode drops App Intents for the chosen deploy target, remove `Intents/SyncDeskIntent.swift` from the target and keep app lock; document the skip in this section.
 **Operator notes:**
 - App lock is **opt-in**. Cold launch / return from background re-prompts when enabled.
+
+- App lock is **opt-in**. Cold launch / return from **background** re-prompts when enabled (in-flight Face ID is invalidated on lock).
+- **Settings toggle is redesign-only** (`Features/Settings/SettingsView`). Legacy scheme (`NTDesk-Legacy` / `LegacySettingsView`) still honors the gate if `app_lock_enabled` was set earlier, but has no on/off control — use the redesign scheme to change the preference, or set UserDefaults key `app_lock_enabled`.
+- When lock is enabled, inactive/background scenes show a solid privacy cover for app-switcher snapshots; VoiceOver cannot reach desk content under the lock gate.
 - Sideload / unsigned IPA: Face ID works on device like any personal app; Simulator has limited biometrics (Features → Face ID).
-- Shortcuts “Sync Desk” refreshes the configured default profile URL; it never invents equity offline.
+- Shortcuts “Sync Desk” refreshes the configured default profile URL; it never invents equity offline. Intent is status dialog only (no desk numbers).
 
 ---
 

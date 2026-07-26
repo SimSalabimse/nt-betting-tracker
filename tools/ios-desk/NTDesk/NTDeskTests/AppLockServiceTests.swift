@@ -54,16 +54,34 @@ final class AppLockServiceTests: XCTestCase {
         XCTAssertTrue(lock.isUnlocked)
 
         lock.setEnabled(true)
-        // Enabling already locks; unlock via private state by disabling then re-enable cycle:
-        // simulate unlocked session then background lock.
+        XCTAssertTrue(lock.isLocked)
+
+        // When disabled, lockIfNeeded is a no-op for the gate.
         lock.setEnabled(false)
+        lock.lockIfNeeded()
+        XCTAssertFalse(lock.isLocked)
+    }
+
+    /// Background re-lock after a successful (simulated) unlock session.
+    func testLockIfNeededAfterUnlockedSession_relocks() {
         lock.setEnabled(true)
         XCTAssertTrue(lock.isLocked)
 
-        // Simulate authenticated session by disabling lock semantics then re-reading:
-        // When disabled, lockIfNeeded is a no-op for gate.
-        lock.setEnabled(false)
+        lock.simulateUnlockedSessionForTesting()
+        XCTAssertFalse(lock.isLocked)
+        XCTAssertTrue(lock.isUnlocked)
+        XCTAssertTrue(lock.isEnabled)
+
         lock.lockIfNeeded()
+        XCTAssertTrue(lock.isLocked)
+        XCTAssertFalse(lock.isUnlocked)
+        XCTAssertTrue(lock.isEnabled)
+    }
+
+    func testSimulateUnlock_isNoOpWhenDisabled() {
+        XCTAssertFalse(lock.isEnabled)
+        lock.simulateUnlockedSessionForTesting()
+        XCTAssertTrue(lock.isUnlocked)
         XCTAssertFalse(lock.isLocked)
     }
 

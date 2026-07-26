@@ -19,6 +19,10 @@ final class AppLockService: ObservableObject {
 
     private let defaults: UserDefaults
     private var authTask: Task<Void, Never>?
+    /// Bumped on every lock / new auth attempt so a late `evaluatePolicy` success cannot unlock.
+    private var authGeneration: UInt = 0
+    /// Active LA context so background re-lock can `invalidate()` in-flight prompts.
+    private var activeContext: LAContext?
 
     /// Content should be covered by the lock gate.
     var isLocked: Bool { isEnabled && !isUnlocked }
@@ -42,20 +46,22 @@ final class AppLockService: ObservableObject {
         defaults.set(enabled, forKey: Self.enabledKey)
         lastError = nil
         if enabled {
+            invalidateInFlightAuthentication()
             isUnlocked = false
             CacheStore.applyFileProtectionToDefaultCacheIfPresent()
         } else {
+            invalidateInFlightAuthentication()
             isUnlocked = true
-            authTask?.cancel()
-            isAuthenticating = false
         }
     }
 
     // MARK: - Lifecycle
 
     /// Call when app enters background so returning requires biometrics again.
+    /// Cancels / invalidates any in-flight Face ID so a late success cannot unlock after lock.
     func lockIfNeeded() {
         guard isEnabled else { return }
+        invalidateInFlightAuthentication()
         isUnlocked = false
         lastError = nil
     }
@@ -97,16 +103,30 @@ final class AppLockService: ObservableObject {
         guard !isAuthenticating else { return }
 
         authTask?.cancel()
-        authTask = Task { await performAuthentication() }
+        authGeneration &+= 1
+        let generation = authGeneration
+        authTask = Task { await performAuthentication(generation: generation) }
     }
 
-    private func performAuthentication() async {
+    private func performAuthentication(generation: UInt) async {
         isAuthenticating = true
         lastError = nil
-        defer { isAuthenticating = false }
+        defer {
+            // Only clear the flag if this attempt is still current.
+            if generation == authGeneration {
+                isAuthenticating = false
+            }
+        }
 
         let context = LAContext()
         context.localizedCancelTitle = "Cancel"
+        activeContext = context
+        defer {
+            if activeContext === context {
+                activeContext = nil
+            }
+        }
+
         var error: NSError?
         // Prefer biometrics; fall back to device passcode when biometrics unavailable.
         let policy: LAPolicy
@@ -115,6 +135,7 @@ final class AppLockService: ObservableObject {
         } else if context.canEvaluatePolicy(.deviceOwnerAuthentication, error: &error) {
             policy = .deviceOwnerAuthentication
         } else {
+            guard generation == authGeneration, isEnabled else { return }
             lastError = error?.localizedDescription ?? "Biometrics unavailable on this device."
             return
         }
@@ -122,6 +143,8 @@ final class AppLockService: ObservableObject {
         let reason = "Unlock NT Desk to view your cached desk snapshot."
         do {
             let ok = try await context.evaluatePolicy(policy, localizedReason: reason)
+            // Reject late success after background re-lock or a newer auth attempt.
+            guard generation == authGeneration, isEnabled, !Task.isCancelled else { return }
             if ok {
                 isUnlocked = true
                 lastError = nil
@@ -129,13 +152,36 @@ final class AppLockService: ObservableObject {
                 lastError = "Authentication did not succeed."
             }
         } catch {
+            guard generation == authGeneration, isEnabled else { return }
             // User cancel is common — keep locked without a loud error.
             let ns = error as NSError
-            if ns.domain == LAErrorDomain, ns.code == LAError.userCancel.rawValue {
+            if ns.domain == LAErrorDomain,
+               ns.code == LAError.userCancel.rawValue || ns.code == LAError.appCancel.rawValue {
                 lastError = nil
             } else {
                 lastError = error.localizedDescription
             }
         }
+    }
+
+    /// Cancel Task, invalidate LAContext, bump generation so in-flight success cannot unlock.
+    private func invalidateInFlightAuthentication() {
+        authGeneration &+= 1
+        authTask?.cancel()
+        authTask = nil
+        activeContext?.invalidate()
+        activeContext = nil
+        isAuthenticating = false
+    }
+
+    // MARK: - Testing
+
+    /// Test support: simulate a successful unlock without LocalAuthentication.
+    /// Used by `AppLockServiceTests` to prove background `lockIfNeeded` after a session.
+    func simulateUnlockedSessionForTesting() {
+        guard isEnabled else { return }
+        invalidateInFlightAuthentication()
+        isUnlocked = true
+        lastError = nil
     }
 }
