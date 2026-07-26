@@ -1295,7 +1295,28 @@ def build_portfolio(
     rg_soft_on = bool(rg_cfg.get("enabled", False))
     max_rg = int(rg_cfg.get("max_per_slip", 1) or 1)
     rg_ev_slack = float(rg_cfg.get("ev_slack", 0.015) or 0.015)
+    # Prefer config soft_skip_reason; interpolate max_rg when default/missing
+    _rg_skip_base = str(
+        rg_cfg.get("soft_skip_reason")
+        or f"ranking_gap_hc: soft cap {max_rg} per slip"
+    ).strip()
+    if "prefer other" not in _rg_skip_base.lower():
+        rg_gate_b_reason = (
+            f"{_rg_skip_base} — prefer other market types / non-gap edges"
+        )
+    else:
+        rg_gate_b_reason = _rg_skip_base
     ranking_gap_counts = 0
+
+    # Soft script families that _try_accept hard-caps (peer snapshot must match)
+    _SCRIPT_SOFT_RG = {
+        "totals_under",
+        "totals_over",
+        "btts_no",
+        "btts_yes",
+        "clean_sheet",
+        "handicap",
+    }
 
     picked_keys: set[tuple[str, str]] = set()
     combo_leg_keys: set[tuple[str, str]] = set()
@@ -1304,7 +1325,11 @@ def build_portfolio(
         return float(r.sort_ev if r.sort_ev is not None else r.ev)
 
     def _would_clear_diversify_at_min_stake(other: Recommendation) -> bool:
-        """Peer snapshot: would still clear hard diversify counts at min_stake."""
+        """
+        Peer snapshot: would still clear the same hard diversify blocks that
+        `_try_accept` enforces at min_stake (match/sport/market/band/high-odds
+        plus league / script-family / KO-window soft-correlation caps).
+        """
         if (other.match, other.selection) in picked_keys:
             return False
         if (other.match, other.selection) in combo_leg_keys:
@@ -1332,6 +1357,20 @@ def build_portfolio(
             return False
         if other.high_odds and high_odds_count >= max_high:
             return False
+        # Soft correlation (must match _try_accept hard-reject paths)
+        lg_o = (other.league_key or "unknown").strip() or "unknown"
+        if lg_o != "unknown" and league_counts.get(lg_o, 0) >= max_league:
+            return False
+        sf_o = (other.script_family or "other").strip() or "other"
+        if sf_o in _SCRIPT_SOFT_RG and script_counts.get(sf_o, 0) >= max_script:
+            return False
+        cand_h_o = parse_kickoff_hour(other.kickoff or "")
+        if cand_h_o is not None:
+            n_ko_o = count_ko_window(
+                cand_h_o, open_ko_hours, window_hours=ko_window_h
+            )
+            if n_ko_o >= max_ko_window:
+                return False
         return True
 
     def _has_same_match_competitive_non_hc(cand: Recommendation) -> bool:
@@ -1545,10 +1584,7 @@ def build_portfolio(
                     {
                         "match": rec.match,
                         "selection": rec.selection,
-                        "reason": (
-                            "ranking_gap_hc: soft cap 1 per slip — prefer other "
-                            "market types / non-gap edges"
-                        ),
+                        "reason": rg_gate_b_reason,
                         "near_miss": True,
                     }
                 )

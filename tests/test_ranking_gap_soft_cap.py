@@ -206,7 +206,9 @@ def test_gate_a_higher_sort_ev_rg_skipped_for_same_match_non_hc():
     Same match: RG HC has higher sort_ev; non-HC within ev_slack.
     Pass 1/2 soft-skips RG with prefer same-match non-HC and accepts non-HC.
 
-    EV math (haircut 0.05): RG p=0.64@1.80 → ~0.094; non p=0.635@1.80 → ~0.085
+    EV math (subtractive haircut 0.05 via ev_after_haircut):
+      RG  p=0.64@1.80 → (0.64-0.05)*1.80-1 ≈ 0.062
+      non p=0.635@1.80 → (0.635-0.05)*1.80-1 ≈ 0.053
     delta ≈ 0.009 < ev_slack 0.015 so non is competitive.
     """
     match = "Milwaukee Brewers vs Colorado Rockies"

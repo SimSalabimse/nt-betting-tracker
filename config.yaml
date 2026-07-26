@@ -360,6 +360,7 @@ learning:
       enabled: true
       max_per_slip: 1
       ev_slack: 0.015
+      soft_skip_reason: "ranking_gap_hc: soft cap 1 per slip"
   # P1: process_error settle tags → temporary min_ev raise
   process_gate:
     enabled: true
