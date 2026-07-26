@@ -492,35 +492,78 @@ def _place_these(path: Path) -> dict[str, Any]:
     }
 
 
-def _equity_curve(rows: list[dict[str, str]], baseline: float) -> list[dict[str, Any]]:
-    """End-of-day equity — **same rules as Lumina** (`nt.analytics.equity_series`).
+# Open risk never moves equity (same as bankroll.settled_pl_sum / is_open_risk).
+_OPEN_RISK = frozenset({"Pending", "ConfirmedPlaced"})
+# Terminal outcomes that belong on the equity curve.
+_EQUITY_RESULTS = frozenset({"Win", "Loss", "Refunded", "Abandoned"})
 
-    - Bucket by ledger **match date** (``date`` column = kickoff calendar day).
-    - Include every non-Pending row (Win / Loss / Refunded / …).
-    - Equity = baseline + cumulative day P/L (Refunded P/L 0 keeps equity at baseline).
-    - No settlement-day remap and no empty-day fill (those diverged from the PC Book chart).
 
-    Example: one Refunded on 2026-07-25 → point (25th, 500); wins/losses on 26th → next point.
+def _resolve_baseline(bankroll: dict[str, Any] | None) -> float:
+    """Baseline for equity curve — must match Lumina / bankroll.json.
+
+    Prefer ``baseline_nok``. If missing/zero but realized+equity present, back out
+    baseline so a refund-only first day still shows **500** not a garbage level.
     """
-    # Match desktop equity_series: result != "Pending"
-    settled = [r for r in rows if (r.get("result") or "").strip() != "Pending"]
-    settled.sort(key=lambda r: (r.get("date") or "", r.get("updated_at") or r.get("created_at") or ""))
-    by_date: dict[str, list[dict[str, str]]] = defaultdict(list)
-    for r in settled:
-        d = (r.get("date") or "").strip()
-        if d:
-            by_date[d].append(r)
+    b = bankroll or {}
+    raw = _fnum(b.get("baseline_nok"))
+    if raw is not None and raw > 0:
+        return float(raw)
+    equity = _fnum(b.get("equity_nok"))
+    realized = _fnum(b.get("realized_pl_nok"))
+    if equity is not None and realized is not None:
+        back = round(float(equity) - float(realized), 2)
+        if back > 0:
+            return back
+    # Clean-restart default used in this project
+    return 500.0
+
+
+def _equity_curve(rows: list[dict[str, str]], baseline: float) -> list[dict[str, Any]]:
+    """End-of-day equity by **match date** — aligned with bankroll + Lumina Book.
+
+    - Bucket by ledger ``date`` (match / kickoff calendar day), like ``equity_series``.
+    - Only **terminal** rows: Win / Loss / Refunded / Abandoned (never Pending /
+      ConfirmedPlaced — open tickets must not move equity).
+    - Refunded / Abandoned with empty p_l count as **0** (day stays at baseline).
+    - Equity[day] = baseline + cumulative day P/L through that match date.
+
+    Example: one Refunded on 2026-07-25 → ``{date: 25, equity: 500, day_pl: 0}``;
+    settled bets on 26th accumulate from there.
+    """
+    by_date: dict[str, float] = defaultdict(float)
+    for r in rows:
+        res = (r.get("result") or "").strip()
+        if not res or res in _OPEN_RISK:
+            continue
+        if res not in _EQUITY_RESULTS:
+            # Unknown status: only count if a numeric p_l is present (fail-safe).
+            pl_unknown = _fnum(r.get("p_l_nok"))
+            if pl_unknown is None:
+                continue
+            pl = pl_unknown
+        else:
+            pl = _fnum(r.get("p_l_nok"))
+            if pl is None:
+                # Refunded/Abandoned should be 0; skip Win/Loss with missing p_l.
+                if res in ("Refunded", "Abandoned"):
+                    pl = 0.0
+                else:
+                    continue
+        d = (r.get("date") or "").strip()[:10]
+        if len(d) < 10:
+            continue
+        by_date[d] += float(pl)
+
     out: list[dict[str, Any]] = []
     running_pl = 0.0
     for d in sorted(by_date.keys()):
-        day_rows = by_date[d]
-        day_pl = sum(_fnum(r.get("p_l_nok")) or 0.0 for r in day_rows)
+        day_pl = round(by_date[d], 2)
         running_pl = round(running_pl + day_pl, 2)
         out.append(
             {
                 "date": d,
                 "equity": round(baseline + running_pl, 2),
-                "day_pl": round(day_pl, 2),
+                "day_pl": day_pl,
                 "cum_pl": running_pl,
             }
         )
@@ -598,10 +641,15 @@ def build_charts(root: Path, bankroll: dict[str, Any] | None) -> dict[str, Any]:
     """Simple Book-aligned chart series for mobile (most important stats only).
 
     Full era series always returned; clients may filter by date for range chips.
+    Equity levels use bankroll baseline so a refund-only day stays at baseline.
     """
     rows = _load_bets_csv(root / "data" / "bets.csv")
-    baseline = float((bankroll or {}).get("baseline_nok") or 0.0)
+    baseline = _resolve_baseline(bankroll)
     curve = _equity_curve(rows, baseline)
+    # Reconcile last point to bankroll equity when state is present (tiny float drift only).
+    bank_eq = _fnum((bankroll or {}).get("equity_nok"))
+    if curve and bank_eq is not None and abs(curve[-1]["equity"] - float(bank_eq)) <= 0.02:
+        curve[-1]["equity"] = round(float(bank_eq), 2)
     dd = _drawdown_series(curve)
     max_dd = max((p["drawdown"] for p in dd), default=0.0)
     daily = [
@@ -611,6 +659,7 @@ def build_charts(root: Path, bankroll: dict[str, Any] | None) -> dict[str, Any]:
     return {
         "range_label": "All time (era)",
         "range_key": "all",
+        "baseline_nok": baseline,
         "overall": _overall_stats(rows),
         "equity_curve": curve,
         "daily": daily,

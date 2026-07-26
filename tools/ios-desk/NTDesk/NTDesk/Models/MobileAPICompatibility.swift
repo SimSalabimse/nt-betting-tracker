@@ -10,7 +10,7 @@ enum MobileAPICompatibility: Equatable {
     case outdated(running: String?)
 
     /// Minimum `api_version` this app expects (Lumina-matched equity, kickoff, product map).
-    static let minimumRequired = "1.1.2"
+    static let minimumRequired = "1.1.3"
 
     var isOutdated: Bool {
         if case .outdated = self { return true }

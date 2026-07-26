@@ -3,20 +3,20 @@ import XCTest
 
 final class ChartDataBuilderTests: XCTestCase {
 
-    // MARK: - parseDay → UTC midnight
+    // MARK: - parseDay → Europe/Oslo noon
 
-    func testParseDay_validUTCMidnight() {
+    func testParseDay_validOsloNoon() {
         let day = ChartDataBuilder.parseDay("2026-07-18")
         XCTAssertNotNil(day)
         XCTAssertEqual(day?.raw, "2026-07-18")
 
         var cal = Calendar(identifier: .gregorian)
-        cal.timeZone = TimeZone(secondsFromGMT: 0)!
+        cal.timeZone = TimeZone(identifier: "Europe/Oslo") ?? TimeZone(secondsFromGMT: 0)!
         let comps = cal.dateComponents([.year, .month, .day, .hour, .minute, .second], from: day!.date)
         XCTAssertEqual(comps.year, 2026)
         XCTAssertEqual(comps.month, 7)
         XCTAssertEqual(comps.day, 18)
-        XCTAssertEqual(comps.hour, 0)
+        XCTAssertEqual(comps.hour, 12)
         XCTAssertEqual(comps.minute, 0)
         XCTAssertEqual(comps.second, 0)
     }
@@ -204,9 +204,10 @@ final class ChartDataBuilderTests: XCTestCase {
             EquityPoint(date: "2026-07-18", equity: 496.92, dayPl: -3.08, cumPl: -3.08),
         ])
         let lines = ChartDataBuilder.equityDetailLines(pts, selected: "2026-07-18")
-        XCTAssertEqual(lines.count, 3)
+        XCTAssertEqual(lines.count, 4)
         XCTAssertTrue(lines[0].contains("496.92"))
         XCTAssertTrue(lines[1].contains("-3.08"))
+        XCTAssertTrue(lines[3].localizedCaseInsensitiveContains("match date"))
         XCTAssertEqual(ChartDataBuilder.equityDetailLines(pts, selected: nil), [])
         XCTAssertEqual(ChartDataBuilder.equityDetailLines(pts, selected: "2099-01-01"), [])
     }

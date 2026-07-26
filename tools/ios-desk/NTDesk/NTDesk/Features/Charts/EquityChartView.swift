@@ -52,7 +52,7 @@ struct EquityChartView: View {
         } else {
             VStack(alignment: .leading, spacing: DeskSpacing.s2) {
                 ChartSelectionCallout(
-                    title: selectedRawDay.map { "Equity · \($0)" } ?? "Equity",
+                    title: selectedRawDay.map { "EOD equity · \($0)" } ?? "Equity (match date)",
                     lines: ChartDataBuilder.equityDetailLines(points, selected: selectedRawDay),
                     isActive: selectedRawDay != nil,
                     onDismiss: { clearSelection() }

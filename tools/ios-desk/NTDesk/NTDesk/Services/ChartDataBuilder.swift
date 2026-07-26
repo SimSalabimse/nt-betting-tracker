@@ -4,15 +4,19 @@ import Foundation
 /// Display-only: no recompute of equity/P/L/drawdown.
 enum ChartDataBuilder {
 
-    // MARK: - Day parse (UTC midnight)
+    // MARK: - Day parse (Europe/Oslo noon)
 
-    /// Shared formatter: `yyyy-MM-dd` in UTC / Gregorian / en_US_POSIX.
-    /// **Main-thread only** — `DateFormatter` is not thread-safe; call from UI / tests.
+    /// Operator ledger days are calendar keys (match date). Position at **Oslo noon**
+    /// so axis labels / scrubbing stay on the intended day (UTC midnight can shift
+    /// the label to the previous evening in western zones).
+    private static let chartTimeZone: TimeZone =
+        TimeZone(identifier: "Europe/Oslo") ?? TimeZone(secondsFromGMT: 0)!
+
     private static let dayFormatter: DateFormatter = {
         let f = DateFormatter()
         f.calendar = Calendar(identifier: .gregorian)
         f.locale = Locale(identifier: "en_US_POSIX")
-        f.timeZone = TimeZone(secondsFromGMT: 0)!
+        f.timeZone = chartTimeZone
         f.dateFormat = "yyyy-MM-dd"
         f.isLenient = false
         return f
@@ -20,11 +24,11 @@ enum ChartDataBuilder {
 
     private static let utcCalendar: Calendar = {
         var cal = Calendar(identifier: .gregorian)
-        cal.timeZone = TimeZone(secondsFromGMT: 0)!
+        cal.timeZone = chartTimeZone
         return cal
     }()
 
-    /// Parse ledger day string → `ChartDay` at UTC midnight. Rejects garbage / empty.
+    /// Parse ledger day string → `ChartDay` at Europe/Oslo 12:00. Rejects garbage / empty.
     static func parseDay(_ raw: String?) -> ChartDay? {
         guard let raw else { return nil }
         let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -33,9 +37,11 @@ enum ChartDataBuilder {
         guard trimmed.range(of: #"^\d{4}-\d{2}-\d{2}$"#, options: .regularExpression) != nil else {
             return nil
         }
-        guard let date = dayFormatter.date(from: trimmed) else { return nil }
+        guard let midnight = dayFormatter.date(from: trimmed) else { return nil }
         // Reject rollover of invalid calendar days even if formatter is lenient.
-        guard dayFormatter.string(from: date) == trimmed else { return nil }
+        guard dayFormatter.string(from: midnight) == trimmed else { return nil }
+        // Noon avoids DST edge cases and keeps the mark on `trimmed` for all zones.
+        let date = utcCalendar.date(bySettingHour: 12, minute: 0, second: 0, of: midnight) ?? midnight
         return ChartDay(raw: trimmed, date: date)
     }
 
@@ -183,6 +189,7 @@ enum ChartDataBuilder {
     static func equityDetailLines(_ pts: [EquityChartPoint], selected raw: String?) -> [String] {
         guard let raw, let p = pts.first(where: { $0.day.raw == raw }) else { return [] }
         var lines: [String] = []
+        // EOD equity after that match-date’s settled P/L (same as Lumina hover).
         lines.append("Equity  \(DeskFormatters.nok(p.equity))")
         if p.dayPl != nil {
             lines.append("Day P/L \(DeskFormatters.nok(p.dayPl, signed: true))")
@@ -190,6 +197,7 @@ enum ChartDataBuilder {
         if p.cumPl != nil {
             lines.append("Cum P/L \(DeskFormatters.nok(p.cumPl, signed: true))")
         }
+        lines.append("Match date (not place time)")
         return lines
     }
 

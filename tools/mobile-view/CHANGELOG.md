@@ -5,6 +5,12 @@ Wire shape = `schema_version` (still **1** unless a breaking change).
 
 Format: [Keep a Changelog](https://keepachangelog.com/)-style.
 
+## [1.1.3] — 2026-07-26
+
+### Fixed
+- Equity curve: only **terminal** P/L (never ConfirmedPlaced/Pending); baseline from bankroll
+  so a refund-only match day stays at **baseline (500)** like Lumina cumulative equity
+
 ## [1.1.2] — 2026-07-26
 
 ### Fixed
