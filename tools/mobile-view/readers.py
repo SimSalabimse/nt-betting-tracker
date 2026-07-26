@@ -208,13 +208,33 @@ class _DeskMemoryCache:
     body: dict[str, Any]
 
 
+@dataclass
+class _OddsIndexParseCache:
+    """Parsed kickoff index; key = sorted per-file (path, mtime_ns, size) of candidates."""
+
+    fingerprint: tuple[tuple[str, int, int], ...]
+    index: dict[str, str]
+
+
+@dataclass
+class _PlaceTheseParseCache:
+    """Parsed place_these dict; key = that file's (path, mtime_ns, size)."""
+
+    fingerprint: tuple[str, int, int]
+    place: dict[str, Any]
+
+
 _desk_memory: _DeskMemoryCache | None = None
+_odds_index_cache: _OddsIndexParseCache | None = None
+_place_these_cache: _PlaceTheseParseCache | None = None
 
 
 def clear_desk_cache() -> None:
-    """Drop in-process full-snapshot cache (tests / process restart simulation)."""
-    global _desk_memory
+    """Drop in-process full-snapshot + parse caches (tests / process restart simulation)."""
+    global _desk_memory, _odds_index_cache, _place_these_cache
     _desk_memory = None
+    _odds_index_cache = None
+    _place_these_cache = None
 
 
 def _debug_log(msg: str) -> None:
@@ -369,8 +389,26 @@ def _index_odds_text(text: str, index: dict[str, str]) -> None:
                     index.setdefault(f"side:{side}", ko)
 
 
+def _odds_candidates_fingerprint(root: Path) -> tuple[tuple[str, int, int], ...]:
+    """Sorted per-file (path, mtime_ns, size) for odds candidates — never directory mtime."""
+    return tuple(sorted(_file_stat_tuple(p) for p in _odds_candidate_paths(root)))
+
+
 def _kickoff_index_from_odds_files(root: Path) -> dict[str, str]:
-    """Scan inbox / outbox odds dumps (desktop odds list source) for Kick-off times."""
+    """Scan inbox / outbox odds dumps (desktop odds list source) for Kick-off times.
+
+    Caches the **parsed** index keyed on per-file fingerprints of the candidate set
+    (same selection as the scanner: top 60 by mtime, allowed suffixes). In-place
+    rewrite / create / delete invalidate; directory mtime alone does not.
+    """
+    global _odds_index_cache
+    root = Path(root)
+    fp = _odds_candidates_fingerprint(root)
+    if _odds_index_cache is not None and _odds_index_cache.fingerprint == fp:
+        _debug_log("odds_parse_cache_hit")
+        return dict(_odds_index_cache.index)
+
+    _debug_log("odds_parse_cache_miss")
     index: dict[str, str] = {}
     for p in _odds_candidate_paths(root):
         try:
@@ -382,7 +420,8 @@ def _kickoff_index_from_odds_files(root: Path) -> dict[str, str]:
         if "kick" not in text.lower() and "kickoff" not in text.lower():
             continue
         _index_odds_text(text, index)
-    return index
+    _odds_index_cache = _OddsIndexParseCache(fingerprint=fp, index=index)
+    return dict(index)
 
 
 def _resolve_kickoff(
@@ -634,8 +673,17 @@ def _parse_rows_preview(text: str) -> list[dict[str, Any]]:
 
 
 def _place_these(path: Path) -> dict[str, Any]:
+    """Parse PLACE_THESE.md; cache by that file's (path, mtime_ns, size)."""
+    global _place_these_cache
+    path = Path(path)
+    fp = _file_stat_tuple(path)
+    if _place_these_cache is not None and _place_these_cache.fingerprint == fp:
+        _debug_log("place_these_parse_cache_hit")
+        return copy.deepcopy(_place_these_cache.place)
+
+    _debug_log("place_these_parse_cache_miss")
     if not path.is_file():
-        return {
+        place: dict[str, Any] = {
             "exists": False,
             "mtime": None,
             "title": None,
@@ -643,6 +691,8 @@ def _place_these(path: Path) -> dict[str, Any]:
             "text_excerpt": None,
             "rows_preview": [],
         }
+        _place_these_cache = _PlaceTheseParseCache(fingerprint=fp, place=place)
+        return copy.deepcopy(place)
     try:
         mtime = datetime.fromtimestamp(path.stat().st_mtime, tz=timezone.utc)
         mtime_s = mtime.replace(microsecond=0).isoformat().replace("+00:00", "Z")
@@ -658,7 +708,7 @@ def _place_these(path: Path) -> dict[str, Any]:
     summary = next((ln for ln in lines[1:] if ln and not ln.startswith("#")), None)
     # Prefer full file so late table rows are not lost to excerpt cap.
     rows_preview = _parse_rows_preview(full_text)
-    return {
+    place = {
         "exists": True,
         "mtime": mtime_s,
         "title": title,
@@ -666,6 +716,8 @@ def _place_these(path: Path) -> dict[str, Any]:
         "text_excerpt": text,
         "rows_preview": rows_preview,
     }
+    _place_these_cache = _PlaceTheseParseCache(fingerprint=fp, place=place)
+    return copy.deepcopy(place)
 
 
 # Open risk never moves equity (same as bankroll.settled_pl_sum / is_open_risk).

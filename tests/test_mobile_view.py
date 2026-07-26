@@ -625,3 +625,209 @@ def test_if_none_match_helper_strips_weak_prefix(server_mod):
     assert hits("", etag) is False
     assert hits(f'"other", {etag}', etag) is True
 
+
+# ---------------------------------------------------------------------------
+# PR-4: odds kickoff index + PLACE_THESE parse caches (per-file fingerprints)
+# ---------------------------------------------------------------------------
+
+# Match title + Kick-off must share a blank-line block for _index_odds_text.
+_ODDS_SNIPPET_A = (
+    "Team Alpha vs Team Beta\n"
+    "Kick-off: 2026-07-26 18:00\n"
+    "\n"
+    "Team Alpha\n"
+    "2.10\n"
+    "Team Beta\n"
+    "1.85\n"
+)
+
+_ODDS_SNIPPET_B = (
+    "Team Alpha vs Team Beta\n"
+    "Kick-off: 2026-07-26 20:30\n"
+    "\n"
+    "Team Alpha\n"
+    "2.05\n"
+    "Team Beta\n"
+    "1.90\n"
+)
+
+
+def _write_odds_file(root: Path, name: str, text: str) -> Path:
+    folder = root / "inbox"
+    folder.mkdir(parents=True, exist_ok=True)
+    p = folder / name
+    p.write_text(text, encoding="utf-8")
+    return p
+
+
+def test_odds_parse_cache_hit_skips_reread(readers_mod, tmp_path, monkeypatch):
+    """Unchanged candidate fingerprints reuse the parsed kickoff index."""
+    readers_mod.clear_desk_cache()
+    root = tmp_path / "desk_root"
+    _write_odds_file(root, "odds_a.txt", _ODDS_SNIPPET_A)
+    reads = {"n": 0}
+    real_read = Path.read_bytes
+
+    def counting_read(self):
+        try:
+            if self.resolve().is_relative_to(root.resolve()):
+                reads["n"] += 1
+        except (OSError, ValueError):
+            pass
+        return real_read(self)
+
+    monkeypatch.setattr(Path, "read_bytes", counting_read)
+    idx1 = readers_mod._kickoff_index_from_odds_files(root)
+    assert idx1.get("team alpha vs team beta") == "2026-07-26 18:00"
+    assert reads["n"] >= 1
+    n_after_first = reads["n"]
+    cache_obj = readers_mod._odds_index_cache
+    assert cache_obj is not None
+
+    idx2 = readers_mod._kickoff_index_from_odds_files(root)
+    assert idx2 == idx1
+    assert reads["n"] == n_after_first  # no re-read
+    assert readers_mod._odds_index_cache is cache_obj
+
+
+def test_odds_parse_cache_invalidates_on_inplace_rewrite(readers_mod, tmp_path):
+    """In-place rewrite (same path, new mtime/size) must re-parse."""
+    readers_mod.clear_desk_cache()
+    root = tmp_path / "desk_root"
+    p = _write_odds_file(root, "odds_a.txt", _ODDS_SNIPPET_A)
+    idx1 = readers_mod._kickoff_index_from_odds_files(root)
+    assert idx1.get("team alpha vs team beta") == "2026-07-26 18:00"
+    fp1 = readers_mod._odds_index_cache.fingerprint
+
+    time.sleep(0.02)
+    p.write_text(_ODDS_SNIPPET_B, encoding="utf-8")
+    idx2 = readers_mod._kickoff_index_from_odds_files(root)
+    assert idx2.get("team alpha vs team beta") == "2026-07-26 20:30"
+    assert readers_mod._odds_index_cache.fingerprint != fp1
+
+
+def test_odds_parse_cache_invalidates_on_create_and_delete(readers_mod, tmp_path):
+    """Create/delete of an odds candidate invalidates the parse cache."""
+    readers_mod.clear_desk_cache()
+    root = tmp_path / "desk_root"
+    p1 = _write_odds_file(root, "odds_a.txt", _ODDS_SNIPPET_A)
+    idx1 = readers_mod._kickoff_index_from_odds_files(root)
+    assert "team alpha vs team beta" in idx1
+    fp1 = readers_mod._odds_index_cache.fingerprint
+
+    time.sleep(0.02)
+    _write_odds_file(
+        root,
+        "odds_b.txt",
+        "Team Gamma vs Team Delta\nKick-off: 2026-07-27 15:00\n",
+    )
+    idx2 = readers_mod._kickoff_index_from_odds_files(root)
+    assert "team gamma vs team delta" in idx2
+    assert readers_mod._odds_index_cache.fingerprint != fp1
+    fp2 = readers_mod._odds_index_cache.fingerprint
+
+    time.sleep(0.02)
+    p1.unlink()
+    idx3 = readers_mod._kickoff_index_from_odds_files(root)
+    assert "team alpha vs team beta" not in idx3
+    assert "team gamma vs team delta" in idx3
+    assert readers_mod._odds_index_cache.fingerprint != fp2
+
+
+def test_odds_parse_cache_ignores_directory_mtime_only(readers_mod, tmp_path):
+    """Directory mtime bump without file fingerprint change must not re-parse."""
+    readers_mod.clear_desk_cache()
+    root = tmp_path / "desk_root"
+    _write_odds_file(root, "odds_a.txt", _ODDS_SNIPPET_A)
+    idx1 = readers_mod._kickoff_index_from_odds_files(root)
+    cache_obj = readers_mod._odds_index_cache
+    fp1 = cache_obj.fingerprint
+
+    inbox = root / "inbox"
+    now = time.time() + 30
+    __import__("os").utime(inbox, (now, now))
+    outbox = root / "outbox"
+    outbox.mkdir(parents=True, exist_ok=True)
+    __import__("os").utime(outbox, (now, now))
+
+    idx2 = readers_mod._kickoff_index_from_odds_files(root)
+    assert idx2 == idx1
+    assert readers_mod._odds_index_cache is cache_obj
+    assert readers_mod._odds_index_cache.fingerprint == fp1
+
+
+def test_place_these_parse_cache_hit_and_invalidate(readers_mod, tmp_path, monkeypatch):
+    """PLACE_THESE parse cache hits on stable mtime/size; invalidates on change."""
+    readers_mod.clear_desk_cache()
+    root = tmp_path / "desk_root"
+    (root / "outbox").mkdir(parents=True, exist_ok=True)
+    path = root / "outbox" / "PLACE_THESE.md"
+    path.write_text("# Bets to place — v1\n\nPhase **1B**\n", encoding="utf-8")
+
+    reads = {"n": 0}
+    real_read_text = readers_mod._read_text
+
+    def counting_read_text(p, *args, **kwargs):
+        reads["n"] += 1
+        return real_read_text(p, *args, **kwargs)
+
+    monkeypatch.setattr(readers_mod, "_read_text", counting_read_text)
+
+    p1 = readers_mod._place_these(path)
+    assert p1["exists"] is True
+    assert p1["title"] == "Bets to place — v1"
+    assert reads["n"] >= 1
+    n_after_first = reads["n"]
+    cache_obj = readers_mod._place_these_cache
+    assert cache_obj is not None
+
+    p2 = readers_mod._place_these(path)
+    assert p2["title"] == p1["title"]
+    assert reads["n"] == n_after_first
+    assert readers_mod._place_these_cache is cache_obj
+
+    time.sleep(0.02)
+    path.write_text("# Bets to place — v2\n\nPhase **1C**\n", encoding="utf-8")
+    p3 = readers_mod._place_these(path)
+    assert p3["title"] == "Bets to place — v2"
+    assert reads["n"] > n_after_first
+    assert readers_mod._place_these_cache is not cache_obj
+
+
+def test_place_these_parse_cache_ignores_parent_dir_mtime(readers_mod, tmp_path):
+    """Parent directory mtime alone must not invalidate PLACE_THESE parse cache."""
+    readers_mod.clear_desk_cache()
+    root = tmp_path / "desk_root"
+    (root / "outbox").mkdir(parents=True, exist_ok=True)
+    path = root / "outbox" / "PLACE_THESE.md"
+    path.write_text("# Place\n\nsummary\n", encoding="utf-8")
+
+    p1 = readers_mod._place_these(path)
+    cache_obj = readers_mod._place_these_cache
+    fp1 = cache_obj.fingerprint
+
+    now = time.time() + 30
+    __import__("os").utime(root / "outbox", (now, now))
+
+    p2 = readers_mod._place_these(path)
+    assert p2 == p1
+    assert readers_mod._place_these_cache is cache_obj
+    assert readers_mod._place_these_cache.fingerprint == fp1
+
+
+def test_clear_desk_cache_clears_parse_caches(readers_mod, tmp_path):
+    readers_mod.clear_desk_cache()
+    root = tmp_path / "desk_root"
+    _write_odds_file(root, "odds_a.txt", _ODDS_SNIPPET_A)
+    (root / "outbox").mkdir(parents=True, exist_ok=True)
+    place_path = root / "outbox" / "PLACE_THESE.md"
+    place_path.write_text("# Place\n", encoding="utf-8")
+
+    readers_mod._kickoff_index_from_odds_files(root)
+    readers_mod._place_these(place_path)
+    assert readers_mod._odds_index_cache is not None
+    assert readers_mod._place_these_cache is not None
+
+    readers_mod.clear_desk_cache()
+    assert readers_mod._odds_index_cache is None
+    assert readers_mod._place_these_cache is None
