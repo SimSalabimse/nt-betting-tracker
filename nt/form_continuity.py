@@ -81,6 +81,7 @@ _DEFAULT_HEAVY_LINE: dict[str, float] = {
 }
 
 # Weak phrase blocklist (EN + NO) — missing phrases alone never grant escape.
+# Public alias for Stage 2 pack helper / skill warn path (keep in sync with engine S2).
 _DEFAULT_WEAK_PHRASES: tuple[str, ...] = (
     # English
     "easier line",
@@ -107,6 +108,12 @@ _DEFAULT_WEAK_PHRASES: tuple[str, ...] = (
     "fade favoritt",
     "tilbakefall",
 )
+WEAK_PHRASES: tuple[str, ...] = _DEFAULT_WEAK_PHRASES
+
+
+def weak_phrases() -> tuple[str, ...]:
+    """Public SSOT for weak-phrase substrings used by form_continuity S2 and pack helper warns."""
+    return WEAK_PHRASES
 
 _CONVINCING_WIN_TOKENS: tuple[str, ...] = (
     "multi-run",
@@ -643,7 +650,7 @@ def in_series_window(
 
 def _blob_has_weak_phrase(text: str, extra: Sequence[str] | None = None) -> bool:
     blob = (text or "").lower()
-    phrases = list(_DEFAULT_WEAK_PHRASES)
+    phrases = list(weak_phrases())
     if extra:
         phrases.extend(str(p).lower() for p in extra if p)
     return any(p in blob for p in phrases if p)

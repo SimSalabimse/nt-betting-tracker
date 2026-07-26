@@ -35,11 +35,17 @@ Write-Host "Python: $(python --version 2>&1)"
 # 0) Skills installed
 Invoke-Step "skill_list" {
     & "$PSScriptRoot\skill_list.ps1"
-    $names = @("daily-run","missed-audit","chain-explain","bankroll-tune","learning-rootcause")
+    $names = @("daily-run","missed-audit","chain-explain","bankroll-tune","learning-rootcause","deep-research")
     foreach ($n in $names) {
         $p = Join-Path $env:USERPROFILE ".grok\skills\$n\SKILL.md"
         if (-not (Test-Path $p)) { throw "missing $p" }
     }
+}
+
+# 0b) Deep-research helper CLI present
+Invoke-Step "write_deep_research_pack --help" {
+    python scripts/write_deep_research_pack.py --help | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw "write_deep_research_pack --help failed" }
 }
 
 # 1) Coverage floor Mechanism A/B

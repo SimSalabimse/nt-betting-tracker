@@ -340,6 +340,10 @@ _MIN_TAKEAWAY_CHARS = 8
 _MIN_ONE_LINER_CHARS = 20
 _MIN_SOURCES_WITH_TAKEAWAY = 4
 _MIN_WHY_FLIP_CHARS = 20
+_MIN_SUMMARY_CHARS = 40
+_MIN_FAILURE_MODES_CHARS = 10
+_MIN_SECTION_CHARS = 8
+_VERDICT_LABELS: frozenset[str] = frozenset({"Strong", "Acceptable", "Weak", "Reject"})
 _ESR_OVERLAY_KEYS: tuple[str, ...] = (
     "opposite_side_check",
     "form_continuity",
@@ -365,12 +369,44 @@ def _takeaway_ok(src: Any) -> bool:
     return len(t) >= _MIN_TAKEAWAY_CHARS
 
 
+def _section_content_ok(value: Any) -> bool:
+    """True if a deep_research section is not a hollow shell."""
+    if value is None:
+        return False
+    if isinstance(value, str):
+        return len(value.strip()) >= _MIN_SECTION_CHARS
+    if isinstance(value, list):
+        if not value:
+            return False
+        return any(
+            (isinstance(x, str) and len(x.strip()) >= 3)
+            or (isinstance(x, dict) and _section_content_ok(x))
+            or (not isinstance(x, (str, dict, list)) and x is not None)
+            for x in value
+        )
+    if isinstance(value, dict):
+        if not value:
+            return False
+        # At least one leaf string/number with real content
+        for v in value.values():
+            if isinstance(v, str) and len(v.strip()) >= 3:
+                return True
+            if isinstance(v, (int, float, bool)) and v is not None:
+                return True
+            if isinstance(v, (list, dict)) and _section_content_ok(v):
+                return True
+        return False
+    if isinstance(value, (int, float, bool)):
+        return True
+    return bool(value)
+
+
 def _weak_phrase_hits(text: str) -> list[str]:
     """Return weak-phrase substrings found (warn-only; never hard-fail)."""
-    from nt.form_continuity import _DEFAULT_WEAK_PHRASES
+    from nt.form_continuity import weak_phrases
 
     blob = (text or "").lower()
-    return [p for p in _DEFAULT_WEAK_PHRASES if p and p in blob]
+    return [p for p in weak_phrases() if p and p in blob]
 
 
 def validate_deep_research_payload(payload: dict[str, Any]) -> dict[str, Any]:
@@ -403,6 +439,17 @@ def validate_deep_research_payload(payload: dict[str, Any]) -> dict[str, Any]:
                 errors.append("p_model must be between 0.01 and 0.99")
         except (TypeError, ValueError):
             errors.append("p_model must be a number")
+
+    summary = str(payload.get("summary") or "").strip()
+    if len(summary) < _MIN_SUMMARY_CHARS:
+        errors.append(
+            f"summary must be ≥{_MIN_SUMMARY_CHARS} chars (got {len(summary)})"
+        )
+    failure_modes = str(payload.get("failure_modes") or "").strip()
+    if len(failure_modes) < _MIN_FAILURE_MODES_CHARS:
+        errors.append(
+            f"failure_modes must be ≥{_MIN_FAILURE_MODES_CHARS} chars (got {len(failure_modes)})"
+        )
 
     avail = str(payload.get("availability_status") or "predicted").strip().lower()
     if avail not in GATE_AVAILABILITY_STATUSES:
@@ -466,23 +513,46 @@ def validate_deep_research_payload(payload: dict[str, Any]) -> dict[str, Any]:
         ):
             if key not in dr:
                 errors.append(f"deep_research.{key} is required")
+            elif not _section_content_ok(dr.get(key)):
+                errors.append(f"deep_research.{key} must not be empty/hollow")
 
-    fc = payload.get("form_continuity")
-    flip_risk = False
-    if isinstance(fc, dict):
-        flip_risk = bool(fc.get("flip_risk_suspected") or fc.get("form_continuity_triggered"))
-        if flip_risk:
-            if fc.get("checked") is not True:
+        verdict = dr.get("verdict") if isinstance(dr.get("verdict"), dict) else None
+        if isinstance(verdict, dict) and _section_content_ok(verdict):
+            label = str(verdict.get("label") or "").strip()
+            if label not in _VERDICT_LABELS:
                 errors.append(
-                    "form_continuity.checked must be true when flip risk is suspected/triggered"
+                    f"deep_research.verdict.label must be one of "
+                    f"{sorted(_VERDICT_LABELS)} (got {label!r})"
                 )
+            if "form_continuity_triggered" not in verdict:
+                errors.append("deep_research.verdict.form_continuity_triggered is required")
+            if "base_ev_estimate" not in verdict:
+                errors.append("deep_research.verdict.base_ev_estimate is required")
+            else:
+                try:
+                    float(verdict["base_ev_estimate"])
+                except (TypeError, ValueError):
+                    errors.append("deep_research.verdict.base_ev_estimate must be a number")
+
+    # form_continuity required on every process-bar pack (checked=true always).
+    fc = payload.get("form_continuity")
+    if not isinstance(fc, dict):
+        errors.append(
+            "form_continuity is required with checked=true "
+            "(set flip_risk_suspected=false when no live anchor)"
+        )
+    else:
+        if fc.get("checked") is not True:
+            errors.append("form_continuity.checked must be true (min pack bar)")
+        flip_risk = bool(
+            fc.get("flip_risk_suspected") or fc.get("form_continuity_triggered")
+        )
+        if flip_risk:
             why = str(fc.get("why_flip") or "").strip()
             if len(why) < _MIN_WHY_FLIP_CHARS:
                 errors.append(
                     f"form_continuity.why_flip must be ≥{_MIN_WHY_FLIP_CHARS} chars when flip risk"
                 )
-    elif flip_risk:
-        errors.append("form_continuity object required when flip risk")
 
     # Weak-phrase warn (never hard-fail) on why_flip / one_liner / summary
     check_blobs: list[tuple[str, str]] = [
@@ -644,10 +714,15 @@ def write_deep_research_pack(
         "lineup_notes": pack["lineup_notes"],
     }
     cl = pack.get("checklist") or {}
+    # Only mark checklist bits true when content honestly supports them.
+    fm_ok = len(failure_modes.strip()) >= _MIN_FAILURE_MODES_CHARS
     for k in cl:
-        if k in (
-            "failure_modes_written",
-            "p_model_calibrated_not_forced",
+        if k == "failure_modes_written":
+            cl[k] = fm_ok
+        elif k == "p_model_calibrated_not_forced":
+            # p_model required by validator; agent-supplied, not force-fitted here.
+            cl[k] = True
+        elif k in (
             "script_lean_vs_selection_check",
             "base_rate_vs_selection_check",
             "lineup_or_availability",

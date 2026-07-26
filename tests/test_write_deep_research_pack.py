@@ -230,3 +230,52 @@ def test_flip_risk_requires_why_flip():
     v = validate_deep_research_payload(payload)
     assert v["ok"] is False
     assert any("why_flip" in e for e in v["errors"])
+
+
+def test_rejects_empty_summary_and_failure_modes():
+    payload = _good_payload(summary="", failure_modes="")
+    v = validate_deep_research_payload(payload)
+    assert v["ok"] is False
+    assert any("summary" in e for e in v["errors"])
+    assert any("failure_modes" in e for e in v["errors"])
+
+
+def test_rejects_hollow_deep_research_sections():
+    payload = _good_payload()
+    payload["deep_research"] = {
+        "schema_version": "deep_research_v1",
+        "match_context": {},
+        "recent_form": "",
+        "h2h": "   ",
+        "ranking_strength_gap": {},
+        "natural_markets": "",
+        "key_risks": [],
+        "verdict": {},
+    }
+    v = validate_deep_research_payload(payload)
+    assert v["ok"] is False
+    assert any("hollow" in e or "empty" in e for e in v["errors"])
+
+
+def test_rejects_missing_form_continuity_checked():
+    payload = _good_payload()
+    del payload["form_continuity"]
+    v = validate_deep_research_payload(payload)
+    assert v["ok"] is False
+    assert any("form_continuity" in e for e in v["errors"])
+
+    payload = _good_payload()
+    payload["form_continuity"] = {"checked": False, "flip_risk_suspected": False}
+    v = validate_deep_research_payload(payload)
+    assert v["ok"] is False
+    assert any("checked" in e for e in v["errors"])
+
+
+def test_checklist_failure_modes_written_honest(tmp_path: Path):
+    """Validator rejects empty failure_modes; good pack sets checklist true."""
+    cfg = load_config()
+    cfg = {**cfg, "paths": {**(cfg.get("paths") or {}), "evidence": str(tmp_path / "evidence")}}
+    res = write_deep_research_pack(cfg, _good_payload())
+    assert res["ok"] is True
+    data = json.loads(Path(res["path"]).read_text(encoding="utf-8"))
+    assert data["checklist"].get("failure_modes_written") is True

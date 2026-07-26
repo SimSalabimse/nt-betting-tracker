@@ -10,7 +10,7 @@ Real-money capital desk. Engines in `nt/` are law. UI (LuminaNT, Flet desktop) p
 > | **Secure Variant A** soft 1.25×/15% · hard 1.50×/30% | Hard replaces soft — never stacked |
 > | **Coverage floor (A)** + **`temp_ev_relax` (B)** | Floor never invents `p_model`; relax is allowlisted safety net only |
 > | **Settlement taxonomy** `learning_weight` · CS gate ≥**0.5** | [`docs/SETTLEMENT_LEARNING.md`](docs/SETTLEMENT_LEARNING.md) |
-> | **Desk skills** `/daily-run` · `/missed-audit` · `/chain-explain` · `/bankroll-tune` · `/learning-rootcause` | [`docs/DESK_SKILLS.md`](docs/DESK_SKILLS.md) |
+> | **Desk skills** `/daily-run` · `/deep-research` · `/missed-audit` · `/chain-explain` · `/bankroll-tune` · `/learning-rootcause` | [`docs/DESK_SKILLS.md`](docs/DESK_SKILLS.md) |
 > | **Reasoning chains** on recommend | `data/state/reasoning_chains.jsonl` + `## Reasoning` + `## Near-miss / Rejected` in `PLACE_THESE.md` (empty/blocked too) |
 > | **Form continuity / anti-flip** | Soft `sort_ev` + narrow soft-reject prefix **`form_continuity:` only** · ranking-gap HC soft max 1 · explore boost gated on base_ev · opposite-side always in PLACE_THESE |
 >
@@ -122,7 +122,7 @@ Two orthogonal mechanisms. Operators see both on **`data/state/status.md`** → 
    Work the **primary worklist** (multi-agent shortlist ∪ `coverage_critical`; hard cap **≤15**). Fallback when multi-agent all-fail: engine **`deep_queue` head** (still capped). Use web search / page open aggressively (Sofascore, FBref, HLTV, ATP/WTA, Flashscore, official sites, etc.).  
    Quality over quantity. Multi-sport shortlist **and** market-scan interesting lines.
 
-   **Stage 2 scope law (ESR multi-agent desk) — supersedes deep_queue-first prose when a multi-agent shortlist exists:** deep research runs on the **primary worklist ≤15 only** — multi-agent shortlist ∪ `coverage_critical`. **Never** the full odds board. **Not** inside scan agents A/B/C (those stay shallow; no Exa packs there). Engine `deep_queue` remains Stage 1 construction SSOT + composition target + all-fail fallback — not the default primary deep order on multi-agent days. Design + pack contract: [`docs/DEEP_RESEARCH_SKILL_ESR_2026-07-26.md`](docs/DEEP_RESEARCH_SKILL_ESR_2026-07-26.md). When installed, invoke **`/deep-research`** for this step (see [`docs/DESK_SKILLS.md`](docs/DESK_SKILLS.md)); until then, main agent runs Stage 2 with the same scope law. **Interim (until atomic helper / skill PR):** prefer a **single final** pack write per line; do **not** re-run bare `research write-pack` after ESR hand-edits (`opposite_side_check`, form_continuity, takeaways) — CLI full-rebuild wipes them.
+   **Stage 2 scope law (ESR multi-agent desk) — supersedes deep_queue-first prose when a multi-agent shortlist exists:** deep research runs on the **primary worklist ≤15 only** — multi-agent shortlist ∪ `coverage_critical`. **Never** the full odds board. **Not** inside scan agents A/B/C (those stay shallow; no Exa packs there). Engine `deep_queue` remains Stage 1 construction SSOT + composition target + all-fail fallback — not the default primary deep order on multi-agent days. Design + pack contract: [`docs/DEEP_RESEARCH_SKILL_ESR_2026-07-26.md`](docs/DEEP_RESEARCH_SKILL_ESR_2026-07-26.md). Invoke **`/deep-research`** for this step (see [`docs/DESK_SKILLS.md`](docs/DESK_SKILLS.md)). **Final pack write = `python scripts/write_deep_research_pack.py` only** (atomic complete deep_research_v1 pack). Bare `research write-pack` is scaffold/legacy — **never** the final Stage 2 step (it rebuilds JSON and wipes ESR keys / takeaways). Re-research = edit payload → re-run the helper.
 
 ### Multi-sport research gates (engine-enforced)
 
@@ -476,25 +476,27 @@ User-scope skills in `%USERPROFILE%\.grok\skills\` — load **this file first**,
 | `/chain-explain` | Reasoning Chain | forensic justify one match/selection (or whole slip) using light SSOT promo + near-miss stage/reason |
 | `/bankroll-tune` | Capital tune | secure/phase/unit/regime proposal → `scripts/mc_phase_progression.py` + `capital` CLI |
 | `/learning-rootcause` | Taxonomy | predictability + variance_class + learning_weight; safe backfill (proposed unless `--apply`) |
+| `/deep-research` | Stage 2 packs | Primary worklist ≤15 only (shortlist ∪ coverage_critical); Exa both-sides; refuse full-board; final write via `scripts/write_deep_research_pack.py`. Design: [`docs/DEEP_RESEARCH_SKILL_ESR_2026-07-26.md`](docs/DEEP_RESEARCH_SKILL_ESR_2026-07-26.md) · mirror: [`docs/skills_mirror_deep-research.md`](docs/skills_mirror_deep-research.md) · pointer: [`docs/DESK_SKILLS.md`](docs/DESK_SKILLS.md) |
 
 ### Planned (not installed — do not slash-invoke yet)
 
 | Slash | Status | When ready |
 |-------|--------|------------|
-| `/deep-research` | **Planned** (skill + atomic helper PR) | Stage 2 packs on primary worklist ≤15 only (shortlist ∪ coverage_critical); Exa both-sides; refuse full-board. Design: [`docs/DEEP_RESEARCH_SKILL_ESR_2026-07-26.md`](docs/DEEP_RESEARCH_SKILL_ESR_2026-07-26.md) · pointer: [`docs/DESK_SKILLS.md`](docs/DESK_SKILLS.md) |
+| *(none currently)* | — | `/deep-research` is **installed** (atomic helper + dual-write skill) |
 
 ```powershell
 # Grok (CWD = tracker root)
 # /daily-run
+# /deep-research
 # /missed-audit
 # /chain-explain <match> | <selection>
 # /bankroll-tune
 # /learning-rootcause
-# (do not invoke /deep-research until skill PR installs it)
 
 # PowerShell helpers
 .\scripts\skill_list.ps1
 .\scripts\skill_invoke.ps1 daily-run
+.\scripts\skill_invoke.ps1 deep-research
 .\scripts\skill_smoke.ps1
 ```
 
@@ -523,6 +525,7 @@ User-scope skills in `%USERPROFILE%\.grok\skills\` — load **this file first**,
 | `docs/RESEARCH_GATES.md` | Gate field design |
 | `docs/SETTLEMENT_LEARNING.md` | Settle + learn loop |
 | `docs/skills_mirror_daily-run.md` | Repo mirror of `~/.grok/skills/daily-run/SKILL.md` (dual-write) |
+| `docs/skills_mirror_deep-research.md` | Repo mirror of `~/.grok/skills/deep-research/SKILL.md` (dual-write) |
 
 ### Desktop (Flet)
 
