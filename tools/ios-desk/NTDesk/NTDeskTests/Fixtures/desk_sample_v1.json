@@ -1,0 +1,229 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-07-24T18:42:42Z",
+  "project_root": "/Users/simsalabim/nt-betting-tracker",
+  "view_only": true,
+  "stale": false,
+  "warnings": [],
+  "equity_nok": 550.99,
+  "liquid_nok": 516.99,
+  "pending_at_risk_nok": 34.0,
+  "realized_pl_nok": 50.99,
+  "baseline_nok": 500.0,
+  "settled_count": 28,
+  "pending_count": 3,
+  "bankroll_updated_at": "2026-07-21T21:23:33Z",
+  "phase_id": "1A",
+  "phase_label": "Protect",
+  "can_bet": false,
+  "size_mode": "NORMAL",
+  "stopped": false,
+  "freeze": false,
+  "remaining_risk_nok": 8.0,
+  "daily_risk_cap_nok": 42.0,
+  "open_pending_risk_nok": 34.0,
+  "today_realized_pl_nok": 22.88,
+  "unit_size_nok": 10.0,
+  "risk_reasons": [],
+  "pending_bets": [
+    {
+      "bet_id": "6dfdf58f2642",
+      "date": "2026-07-21",
+      "match": "Brockmann, Tessa Johanna vs Jacquemot, Elsa",
+      "selection": "Game handikap 3.5: Brockmann, Tessa Johanna +3.5",
+      "decimal_odds": 1.87,
+      "stake_nok": 10.0,
+      "result": "Pending",
+      "sport": "tennis",
+      "updated_at": "2026-07-21T17:06:00Z"
+    },
+    {
+      "bet_id": "58132200bc98",
+      "date": "2026-07-21",
+      "match": "van Gerwen, Michael vs van Duijvenbode, Dirk",
+      "selection": "Vinner: van Gerwen, Michael",
+      "decimal_odds": 1.5,
+      "stake_nok": 12.0,
+      "result": "Pending",
+      "sport": "darts",
+      "updated_at": "2026-07-21T16:02:25Z"
+    },
+    {
+      "bet_id": "dc3e8d63f433",
+      "date": "2026-07-21",
+      "match": "Clayton, Jonny vs Anderson, Gary",
+      "selection": "Totalt antall runder 18.5: Over 18.5",
+      "decimal_odds": 1.8,
+      "stake_nok": 12.0,
+      "result": "Pending",
+      "sport": "darts",
+      "updated_at": "2026-07-21T16:02:25Z"
+    }
+  ],
+  "place_these": {
+    "exists": true,
+    "mtime": "2026-07-24T18:38:37Z",
+    "title": "Bets to place \u2014 2026-07-21",
+    "summary_line": "Phase **1A** | Equity **550.99** | Remaining risk **8.00** / cap **42.00**",
+    "text_excerpt": "# Bets to place \u2014 2026-07-21\n\nPhase **1A** | Equity **550.99** | Remaining risk **8.00** / cap **42.00**\n\nResearch coverage: 0/1 candidates have p_model.\n\nHigh odds (>2.5) appear only with grade **A** evidence + elevated EV \u2014 never auto-banned.\n\n| # | Match | Selection | Odds | Stake NOK | EV | Grade | Band |\n|---|-------|-----------|------|-----------|----|-------|------|\n| \u2014 | **NO BETS** | empty slip is success (after research) | \u2014 | \u2014 | \u2014 | \u2014 | \u2014 |\n\n## Notes\n\n",
+    "rows_preview": []
+  },
+  "status_excerpt": "# NT Status (auto-generated)\n\n## Bankroll\n- **Equity**: 550.99 NOK\n- Realized P/L: +50.99 NOK (baseline 500.0)\n- Pending risk: 34.00 NOK\n- Liquid: 516.99 NOK\n- Ledger: 31 bets (0 archive + 31 later)\n\n## Phase (auto)\n- **1A** \u2014 Protect\n- Stake band: 10\u201312 NOK\n- Max bets/round: 4 | Max doubles: 0\n- Rolling ROI: 16.6%\n\n## Daily risk (auto \u2014 changes with equity/phase)\n- Cap: **42.00 NOK** (`capital_v2 fail-closed: L0 freeze \u2192 L1 DD(15% REDUCED/25% FROZEN) \u2192 L2 weekly(8%|6u) \u2192 L3 daily(4%|3u) \u2192 remaining=min(phase_cap\u2212open[\u2212day_loss], portfolio_open_room 18% liquid); settlement-day P/L Europe/Oslo; working=equity\u2212secure`)\n- Open pending: 34.00\n- Remaining today: **8.00 NOK**\n- Today P/L: +22.88 | Stop if \u2264 -21.08\n- Can bet: **False**\n\n## High odds policy\n- Odds **> 2.5 are allowed** when evidence grade **A**, EV \u2265 high-odds min after haircut, and stake uses high-odds multiplier.\n- Historical bad band ROI raises the EV bar further \u2014 it does not hard-ban the band.\n\n## ROI by odds band (this era ledger)\n| Band | n | ROI | P/L |\n|------|---|-----|-----|\n| 1.5-1.8 | 13 | -7.4% | -10.3 |\n| 1.8-2.2 | 13 | 29.4% | +43.2 |\n| 2.2-2.5 | 1 | 140.0% | +14.0 |\n| <1.5 | 1 | 37.0% | +4.1 |\n\n## Open pending\n- [Pending] 2026-07-21: van Gerwen, Michael vs van Duijvenbode, Dirk / Vinner: van Gerwen, Michael @ 1.5 stake 12\n- [Pending] 2026-07-21: Clayton, Jonny vs Anderson, Gary / Totalt antall runder 18.5: Over 18.5 @ 1.8 stake 12\n- [Pending] 2026-07-21: Brockmann, Tessa Johanna vs Jacquemot, Elsa / Game handikap 3.5: Brockmann, Tessa Johanna +3.5 @ 1.87 stake 10\n\n## Your workflow\n1. Research \u2192 `evidence/*.json` (see `nt research scaffold`)\n2. Put odds in `inbox/`\n3. `python run_nt.py recommend --odds inbox/YOURFILE.txt`\n4. Place bets from `outbox/PLACE_THESE.md`\n5. Put results in `inbox/` \u2192 `python run_nt.py settle --results \u2026`\n6. Review: `python run_nt.py analyze` \u00b7 `learn` \u00b7 `edges`\n\nOptional: `project` (bankroll sim) \u00b7 `agent ask` (assist only)\n\nUpdated: 2026-07-21T21:23:33Z\n",
+  "charts": {
+    "range_label": "All time (era)",
+    "overall": {
+      "n_settled": 28.0,
+      "n_pending": 3.0,
+      "wins": 17.0,
+      "losses": 9.0,
+      "stake": 307.0,
+      "pl": 50.99,
+      "roi": 0.16609120521172638,
+      "winrate": 0.6538461538461539
+    },
+    "equity_curve": [
+      {
+        "date": "2026-07-18",
+        "equity": 496.92,
+        "day_pl": -3.08,
+        "cum_pl": -3.08
+      },
+      {
+        "date": "2026-07-19",
+        "equity": 521.63,
+        "day_pl": 24.71,
+        "cum_pl": 21.63
+      },
+      {
+        "date": "2026-07-20",
+        "equity": 525.11,
+        "day_pl": 3.48,
+        "cum_pl": 25.11
+      },
+      {
+        "date": "2026-07-21",
+        "equity": 550.99,
+        "day_pl": 25.88,
+        "cum_pl": 50.99
+      }
+    ],
+    "daily": [
+      {
+        "date": "2026-07-18",
+        "pl": -3.08,
+        "equity": 496.92
+      },
+      {
+        "date": "2026-07-19",
+        "pl": 24.71,
+        "equity": 521.63
+      },
+      {
+        "date": "2026-07-20",
+        "pl": 3.48,
+        "equity": 525.11
+      },
+      {
+        "date": "2026-07-21",
+        "pl": 25.88,
+        "equity": 550.99
+      }
+    ],
+    "drawdown": [
+      {
+        "date": "2026-07-18",
+        "equity": 496.92,
+        "drawdown": 0.0,
+        "drawdown_pct": 0.0,
+        "peak": 496.92
+      },
+      {
+        "date": "2026-07-19",
+        "equity": 521.63,
+        "drawdown": 0.0,
+        "drawdown_pct": 0.0,
+        "peak": 521.63
+      },
+      {
+        "date": "2026-07-20",
+        "equity": 525.11,
+        "drawdown": 0.0,
+        "drawdown_pct": 0.0,
+        "peak": 525.11
+      },
+      {
+        "date": "2026-07-21",
+        "equity": 550.99,
+        "drawdown": 0.0,
+        "drawdown_pct": 0.0,
+        "peak": 550.99
+      }
+    ],
+    "max_drawdown": 0.0,
+    "by_sport": {
+      "tennis": {
+        "n": 5.0,
+        "wins": 4.0,
+        "losses": 0.0,
+        "stake": 57.0,
+        "pl": 35.21,
+        "roi": 0.617719298245614,
+        "winrate": 1.0
+      },
+      "baseball": {
+        "n": 5.0,
+        "wins": 2.0,
+        "losses": 3.0,
+        "stake": 53.0,
+        "pl": -14.06,
+        "roi": -0.26528301886792455,
+        "winrate": 0.4
+      },
+      "snooker": {
+        "n": 3.0,
+        "wins": 1.0,
+        "losses": 2.0,
+        "stake": 31.0,
+        "pl": -14.0,
+        "roi": -0.45161290322580644,
+        "winrate": 0.3333333333333333
+      },
+      "darts": {
+        "n": 5.0,
+        "wins": 1.0,
+        "losses": 3.0,
+        "stake": 56.0,
+        "pl": -23.65,
+        "roi": -0.42232142857142857,
+        "winrate": 0.25
+      },
+      "basketball": {
+        "n": 2.0,
+        "wins": 2.0,
+        "losses": 0.0,
+        "stake": 22.0,
+        "pl": 17.9,
+        "roi": 0.8136363636363636,
+        "winrate": 1.0
+      },
+      "football": {
+        "n": 7.0,
+        "wins": 6.0,
+        "losses": 1.0,
+        "stake": 76.0,
+        "pl": 42.75,
+        "roi": 0.5625,
+        "winrate": 0.8571428571428571
+      },
+      "esports": {
+        "n": 1.0,
+        "wins": 1.0,
+        "losses": 0.0,
+        "stake": 12.0,
+        "pl": 6.84,
+        "roi": 0.57,
+        "winrate": 1.0
+      }
+    }
+  }
+}

@@ -49,6 +49,18 @@
 		P21A1B2C3D4E5F6000000003 /* ConnectionSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = P21A1B2C3D4E5F6000000013 /* ConnectionSettingsView.swift */; };
 		P21A1B2C3D4E5F6000000004 /* ProfilesListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = P21A1B2C3D4E5F6000000014 /* ProfilesListView.swift */; };
 		P21A1B2C3D4E5F6000000005 /* ConnectionProfileStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = P21A1B2C3D4E5F6000000015 /* ConnectionProfileStoreTests.swift */; };
+
+		C31A1B2C3D4E5F6000000001 /* PlaceTheseDocument.swift in Sources */ = {isa = PBXBuildFile; fileRef = C31A1B2C3D4E5F6000000011 /* PlaceTheseDocument.swift */; };
+		C31A1B2C3D4E5F6000000002 /* PlaceTheseParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = C31A1B2C3D4E5F6000000012 /* PlaceTheseParser.swift */; };
+		C31A1B2C3D4E5F6000000003 /* SlipMetaHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = C31A1B2C3D4E5F6000000013 /* SlipMetaHeader.swift */; };
+		C31A1B2C3D4E5F6000000004 /* SlipBetCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = C31A1B2C3D4E5F6000000014 /* SlipBetCard.swift */; };
+		C31A1B2C3D4E5F6000000005 /* StatusDocumentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C31A1B2C3D4E5F6000000015 /* StatusDocumentView.swift */; };
+		C31A1B2C3D4E5F6000000006 /* MarkdownFallbackView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C31A1B2C3D4E5F6000000016 /* MarkdownFallbackView.swift */; };
+		C31A1B2C3D4E5F6000000007 /* PlaceTheseParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C31A1B2C3D4E5F6000000017 /* PlaceTheseParserTests.swift */; };
+		C31A1B2C3D4E5F6000000008 /* PlaceTheseRowsPreviewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C31A1B2C3D4E5F6000000018 /* PlaceTheseRowsPreviewTests.swift */; };
+		C31A1B2C3D4E5F6000000031 /* PLACE_THESE_2026-07-12.md in Resources */ = {isa = PBXBuildFile; fileRef = C31A1B2C3D4E5F6000000021 /* PLACE_THESE_2026-07-12.md */; };
+		C31A1B2C3D4E5F6000000032 /* PLACE_THESE_empty.md in Resources */ = {isa = PBXBuildFile; fileRef = C31A1B2C3D4E5F6000000022 /* PLACE_THESE_empty.md */; };
+		C31A1B2C3D4E5F6000000033 /* desk_sample_v1.json in Resources */ = {isa = PBXBuildFile; fileRef = C31A1B2C3D4E5F6000000023 /* desk_sample_v1.json */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -108,6 +120,18 @@
 		P21A1B2C3D4E5F6000000013 /* ConnectionSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionSettingsView.swift; sourceTree = "<group>"; };
 		P21A1B2C3D4E5F6000000014 /* ProfilesListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfilesListView.swift; sourceTree = "<group>"; };
 		P21A1B2C3D4E5F6000000015 /* ConnectionProfileStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionProfileStoreTests.swift; sourceTree = "<group>"; };
+
+		C31A1B2C3D4E5F6000000011 /* PlaceTheseDocument.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaceTheseDocument.swift; sourceTree = "<group>"; };
+		C31A1B2C3D4E5F6000000012 /* PlaceTheseParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaceTheseParser.swift; sourceTree = "<group>"; };
+		C31A1B2C3D4E5F6000000013 /* SlipMetaHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SlipMetaHeader.swift; sourceTree = "<group>"; };
+		C31A1B2C3D4E5F6000000014 /* SlipBetCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SlipBetCard.swift; sourceTree = "<group>"; };
+		C31A1B2C3D4E5F6000000015 /* StatusDocumentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusDocumentView.swift; sourceTree = "<group>"; };
+		C31A1B2C3D4E5F6000000016 /* MarkdownFallbackView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownFallbackView.swift; sourceTree = "<group>"; };
+		C31A1B2C3D4E5F6000000017 /* PlaceTheseParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaceTheseParserTests.swift; sourceTree = "<group>"; };
+		C31A1B2C3D4E5F6000000018 /* PlaceTheseRowsPreviewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaceTheseRowsPreviewTests.swift; sourceTree = "<group>"; };
+		C31A1B2C3D4E5F6000000021 /* PLACE_THESE_2026-07-12.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "PLACE_THESE_2026-07-12.md"; sourceTree = "<group>"; };
+		C31A1B2C3D4E5F6000000022 /* PLACE_THESE_empty.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = PLACE_THESE_empty.md; sourceTree = "<group>"; };
+		C31A1B2C3D4E5F6000000023 /* desk_sample_v1.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = desk_sample_v1.json; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -183,8 +207,21 @@
 			children = (
 				B11A1B2C3D4E5F6000000011 /* PrivateHostPolicyTests.swift */,
 				P21A1B2C3D4E5F6000000015 /* ConnectionProfileStoreTests.swift */,
+				C31A1B2C3D4E5F6000000017 /* PlaceTheseParserTests.swift */,
+				C31A1B2C3D4E5F6000000018 /* PlaceTheseRowsPreviewTests.swift */,
+				C31A1B2C3D4E5F6000000040 /* Fixtures */,
 			);
 			path = NTDeskTests;
+			sourceTree = "<group>";
+		};
+		C31A1B2C3D4E5F6000000040 /* Fixtures */ = {
+			isa = PBXGroup;
+			children = (
+				C31A1B2C3D4E5F6000000021 /* PLACE_THESE_2026-07-12.md */,
+				C31A1B2C3D4E5F6000000022 /* PLACE_THESE_empty.md */,
+				C31A1B2C3D4E5F6000000023 /* desk_sample_v1.json */,
+			);
+			path = Fixtures;
 			sourceTree = "<group>";
 		};
 		D3378FDD6A4C4B45B645117A /* DesignSystem */ = {
@@ -219,6 +256,7 @@
 				89153251FF794878B656A195 /* CacheEnvelope.swift */,
 				8AEB1BFA4F9E49408518F2F1 /* DeskSnapshot.swift */,
 				P21A1B2C3D4E5F6000000011 /* ConnectionProfile.swift */,
+				C31A1B2C3D4E5F6000000011 /* PlaceTheseDocument.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -231,6 +269,7 @@
 				1F73ED04DEF54036AFB8EC70 /* PrivateHostPolicy.swift */,
 				C75282348639400EB6DDC42C /* SyncService.swift */,
 				P21A1B2C3D4E5F6000000012 /* ConnectionProfileStore.swift */,
+				C31A1B2C3D4E5F6000000012 /* PlaceTheseParser.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -286,6 +325,10 @@
 			isa = PBXGroup;
 			children = (
 				BE027349E12B4BDFB67B3DBA /* SlipView.swift */,
+				C31A1B2C3D4E5F6000000013 /* SlipMetaHeader.swift */,
+				C31A1B2C3D4E5F6000000014 /* SlipBetCard.swift */,
+				C31A1B2C3D4E5F6000000015 /* StatusDocumentView.swift */,
+				C31A1B2C3D4E5F6000000016 /* MarkdownFallbackView.swift */,
 			);
 			path = Slip;
 			sourceTree = "<group>";
@@ -326,6 +369,7 @@
 			buildPhases = (
 				B11A1B2C3D4E5F6000000080 /* Sources */,
 				B11A1B2C3D4E5F6000000040 /* Frameworks */,
+				C31A1B2C3D4E5F6000000099 /* Resources */,
 			);
 			buildRules = (
 			);
@@ -385,6 +429,16 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		C31A1B2C3D4E5F6000000099 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C31A1B2C3D4E5F6000000031 /* PLACE_THESE_2026-07-12.md in Resources */,
+				C31A1B2C3D4E5F6000000032 /* PLACE_THESE_empty.md in Resources */,
+				C31A1B2C3D4E5F6000000033 /* desk_sample_v1.json in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -430,6 +484,12 @@
 				P21A1B2C3D4E5F6000000002 /* ConnectionProfileStore.swift in Sources */,
 				P21A1B2C3D4E5F6000000003 /* ConnectionSettingsView.swift in Sources */,
 				P21A1B2C3D4E5F6000000004 /* ProfilesListView.swift in Sources */,
+				C31A1B2C3D4E5F6000000001 /* PlaceTheseDocument.swift in Sources */,
+				C31A1B2C3D4E5F6000000002 /* PlaceTheseParser.swift in Sources */,
+				C31A1B2C3D4E5F6000000003 /* SlipMetaHeader.swift in Sources */,
+				C31A1B2C3D4E5F6000000004 /* SlipBetCard.swift in Sources */,
+				C31A1B2C3D4E5F6000000005 /* StatusDocumentView.swift in Sources */,
+				C31A1B2C3D4E5F6000000006 /* MarkdownFallbackView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -439,6 +499,8 @@
 			files = (
 				B11A1B2C3D4E5F6000000001 /* PrivateHostPolicyTests.swift in Sources */,
 				P21A1B2C3D4E5F6000000005 /* ConnectionProfileStoreTests.swift in Sources */,
+				C31A1B2C3D4E5F6000000007 /* PlaceTheseParserTests.swift in Sources */,
+				C31A1B2C3D4E5F6000000008 /* PlaceTheseRowsPreviewTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

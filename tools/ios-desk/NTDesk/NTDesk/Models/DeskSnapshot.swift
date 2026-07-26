@@ -93,13 +93,91 @@ struct PlaceThese: Codable, Equatable {
     var title: String?
     var summaryLine: String?
     var textExcerpt: String?
-    var rowsPreview: [String]?
+    /// Object-shaped rows when PC sends them (PR-8). Empty for `[]`, string arrays, or bad payloads.
+    /// Never fails whole-desk decode — see custom `init(from:)`.
+    var rowsPreview: [PlaceTheseRowPreview]
 
     enum CodingKeys: String, CodingKey {
         case exists, mtime, title
         case summaryLine = "summary_line"
         case textExcerpt = "text_excerpt"
         case rowsPreview = "rows_preview"
+    }
+
+    init(
+        exists: Bool? = nil,
+        mtime: String? = nil,
+        title: String? = nil,
+        summaryLine: String? = nil,
+        textExcerpt: String? = nil,
+        rowsPreview: [PlaceTheseRowPreview] = []
+    ) {
+        self.exists = exists
+        self.mtime = mtime
+        self.title = title
+        self.summaryLine = summaryLine
+        self.textExcerpt = textExcerpt
+        self.rowsPreview = rowsPreview
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        exists = try c.decodeIfPresent(Bool.self, forKey: .exists)
+        mtime = try c.decodeIfPresent(String.self, forKey: .mtime)
+        title = try c.decodeIfPresent(String.self, forKey: .title)
+        summaryLine = try c.decodeIfPresent(String.self, forKey: .summaryLine)
+        textExcerpt = try c.decodeIfPresent(String.self, forKey: .textExcerpt)
+        rowsPreview = Self.decodeRowsPreview(from: c)
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encodeIfPresent(exists, forKey: .exists)
+        try c.encodeIfPresent(mtime, forKey: .mtime)
+        try c.encodeIfPresent(title, forKey: .title)
+        try c.encodeIfPresent(summaryLine, forKey: .summaryLine)
+        try c.encodeIfPresent(textExcerpt, forKey: .textExcerpt)
+        try c.encode(rowsPreview, forKey: .rowsPreview)
+    }
+
+    /// Tolerant: `[]`, `[String]`, `[{…}]`, missing, null, or junk → never throws; junk → `[]`.
+    private static func decodeRowsPreview(from c: KeyedDecodingContainer<CodingKeys>) -> [PlaceTheseRowPreview] {
+        guard c.contains(.rowsPreview) else { return [] }
+        if (try? c.decodeNil(forKey: .rowsPreview)) == true { return [] }
+        if let objects = try? c.decode([PlaceTheseRowPreview].self, forKey: .rowsPreview) {
+            return objects
+        }
+        if (try? c.decode([String].self, forKey: .rowsPreview)) != nil {
+            return []
+        }
+        if var unkeyed = try? c.nestedUnkeyedContainer(forKey: .rowsPreview) {
+            var collected: [PlaceTheseRowPreview] = []
+            while !unkeyed.isAtEnd {
+                if let row = try? unkeyed.decode(PlaceTheseRowPreview.self) {
+                    collected.append(row)
+                } else if (try? unkeyed.decode(String.self)) != nil {
+                    continue
+                } else {
+                    _ = try? unkeyed.decode(DropSelf.self)
+                }
+            }
+            return collected
+        }
+        return []
+    }
+}
+
+/// Decodes any single JSON value and discards it (lossy array walk).
+private struct DropSelf: Decodable {
+    init(from decoder: Decoder) throws {
+        let c = try decoder.singleValueContainer()
+        if c.decodeNil() { return }
+        if (try? c.decode(Bool.self)) != nil { return }
+        if (try? c.decode(Int.self)) != nil { return }
+        if (try? c.decode(Double.self)) != nil { return }
+        if (try? c.decode(String.self)) != nil { return }
+        if (try? c.decode([String: DropSelf].self)) != nil { return }
+        if (try? c.decode([DropSelf].self)) != nil { return }
     }
 }
 

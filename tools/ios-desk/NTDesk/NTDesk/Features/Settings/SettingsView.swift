@@ -73,6 +73,19 @@ struct SettingsView: View {
             }
 
             Section {
+                Toggle("Structured slip", isOn: Binding(
+                    get: { DeskPreferences.useStructuredSlip },
+                    set: { DeskPreferences.useStructuredSlip = $0 }
+                ))
+                .tint(DeskTheme.accent)
+                .accessibilityHint("When on, PLACE_THESE is shown as cards; when off, Markdown source is shown")
+            } header: {
+                Text("Display")
+            } footer: {
+                Text("Structured slip parses PLACE_THESE into bet cards. Turn off to always show Markdown source.")
+            }
+
+            Section {
                 Button("Sync now") {
                     Task { await sync.sync() }
                 }
