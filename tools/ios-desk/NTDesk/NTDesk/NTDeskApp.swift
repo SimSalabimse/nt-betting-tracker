@@ -6,9 +6,15 @@ struct NTDeskApp: App {
 
     var body: some Scene {
         WindowGroup {
+            #if NTDESK_USE_LEGACY_UI
+            LegacyRootView()
+                .environmentObject(sync)
+                .preferredColorScheme(.dark)
+            #else
             RootView()
                 .environmentObject(sync)
                 .preferredColorScheme(.dark)
+            #endif
         }
     }
 }

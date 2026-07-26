@@ -48,6 +48,50 @@ open tools/ios-desk/NTDesk/NTDesk.xcodeproj
 
 ---
 
+## Schemes, Legacy UI, and git tag
+
+| Scheme | Configuration | Root UI | Notes |
+|--------|---------------|---------|--------|
+| **NTDesk** (default) | Debug / Release | Scaffold `RootView` | Default IPA via `build_unsigned_ipa.sh` |
+| **NTDesk-Legacy** | LegacyDebug / LegacyRelease | `LegacyRootView` | Compile flag `NTDESK_USE_LEGACY_UI` |
+
+Both schemes build the **same** `NTDesk` app target. Scaffold `Views/*` and renamed `Legacy/*` **always compile** in one module; the flag only selects the root in `NTDeskApp.swift`. See [`NTDesk/Legacy/README.md`](NTDesk/NTDesk/Legacy/README.md).
+
+**Deployment target:** iOS **18.0** (app + `NTDeskTests`).
+
+### Pre-redesign git tag
+
+Before merging HIG redesign work, tag the tree so full rollback is one checkout:
+
+```bash
+# From repo root, on the commit that freezes pre-HIG scaffold behavior:
+git tag -a ios-desk-pre-hig-redesign -m "NT Desk iOS freeze before HIG redesign"
+git push origin ios-desk-pre-hig-redesign
+```
+
+If you lack tag-create permission, still document the name `ios-desk-pre-hig-redesign` and have an operator with rights create it from the agreed commit.
+
+**Rollback options if redesign regresses:**
+
+1. Ship an IPA built with scheme **NTDesk-Legacy**.
+2. Check out tag `ios-desk-pre-hig-redesign`.
+3. Cache format is unchanged (raw desk JSON envelope).
+
+### Unit tests
+
+```bash
+xcodebuild -project tools/ios-desk/NTDesk/NTDesk.xcodeproj \
+  -scheme NTDesk \
+  -destination 'platform=iOS Simulator,name=iPhone 16' \
+  -configuration Debug \
+  CODE_SIGNING_ALLOWED=NO \
+  test
+```
+
+Minimal smoke today: `NTDeskTests` / `PrivateHostPolicy` allow/deny. Expand in later PRs (parser, charts builders).
+
+---
+
 ## Theme source of truth (desktop ↔ iOS)
 
 | Role | Path |
@@ -90,14 +134,14 @@ Related assets (must stay in brand):
 | `AccentColor.colorset` | `#E8A317` (system `Color.accentColor`, chart accents) |
 | `LaunchBackground.colorset` | `#0B0D12` (`UILaunchScreen` → `UIColorName`) |
 
-### Token tests (opt-out)
+### Token tests
 
-There is **no** `NTDeskTests` XCTest target today. Hex parity is enforced by:
+`NTDeskTests` exists (iOS 18+) with policy smoke tests. Hex palette parity is still primarily enforced by:
 
 1. SoT comments in `DeskTheme.swift` / this README table
 2. Manual greppability of hex constants against `desktop/theme.py`
 
-If a test target is added later, prefer assertions on BG / ACCENT / PROFIT / LOSS integer hex values (see design doc §PR-2). Until then, do not invent a CI gate that does not exist.
+Prefer adding token assertions (BG / ACCENT / PROFIT / LOSS integer hex) in a later PR; do not invent a CI gate that does not run on Windows runners.
 
 ---
 
@@ -198,14 +242,16 @@ tools/ios-desk/
   build_unsigned_ipa.sh
   fixtures/desk_sample_v1.json
   NTDesk/
-    NTDesk.xcodeproj
+    NTDesk.xcodeproj            # schemes: NTDesk, NTDesk-Legacy
     NTDesk/
-      NTDeskApp.swift
+      NTDeskApp.swift           # #if NTDESK_USE_LEGACY_UI → LegacyRootView else RootView
       Assets.xcassets/          # AppIcon, AccentColor, LaunchBackground
-      DesignSystem/            # DeskTheme, spacing, type, formatters, components
+      DesignSystem/             # DeskTheme, spacing, type, formatters, components
       Models/…
       Services/…
-      Views/…
+      Views/…                   # scaffold default UI (default scheme)
+      Legacy/                   # renamed freeze (Legacy* types; always compiled)
+    NTDeskTests/                # XCTest (PrivateHostPolicy smoke, …)
 ```
 
 ## CI note

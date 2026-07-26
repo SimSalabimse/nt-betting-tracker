@@ -33,7 +33,24 @@
 		38C4C7F4264144B084C95275 /* FreshnessBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8BABF7F3046C4854B0C6B736 /* FreshnessBanner.swift */; };
 		A1B2C3D4E5F6471890ABCDEF /* RiskGaugeCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1E2D3C4B5A6978800112233 /* RiskGaugeCard.swift */; };
 		A7C3E91F4B2D4E6A9F1C8D05 /* EmptyDeskView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8D4F025C3E4F7B0A2D9E160 /* EmptyDeskView.swift */; };
+		A11A1B2C3D4E5F6000000001 /* LegacyRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11A1B2C3D4E5F6000000011 /* LegacyRootView.swift */; };
+		A11A1B2C3D4E5F6000000002 /* LegacyDeskView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11A1B2C3D4E5F6000000012 /* LegacyDeskView.swift */; };
+		A11A1B2C3D4E5F6000000003 /* LegacyChartsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11A1B2C3D4E5F6000000013 /* LegacyChartsView.swift */; };
+		A11A1B2C3D4E5F6000000004 /* LegacyPendingListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11A1B2C3D4E5F6000000014 /* LegacyPendingListView.swift */; };
+		A11A1B2C3D4E5F6000000005 /* LegacySlipView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11A1B2C3D4E5F6000000015 /* LegacySlipView.swift */; };
+		A11A1B2C3D4E5F6000000006 /* LegacySettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11A1B2C3D4E5F6000000016 /* LegacySettingsView.swift */; };
+		B11A1B2C3D4E5F6000000001 /* PrivateHostPolicyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B11A1B2C3D4E5F6000000011 /* PrivateHostPolicyTests.swift */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		B11A1B2C3D4E5F6000000030 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 7E41CA327F494F449F259CA3 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 880089C8FF214801869BF38E;
+			remoteInfo = NTDesk;
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
 		89153251FF794878B656A195 /* CacheEnvelope.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CacheEnvelope.swift; sourceTree = "<group>"; };
@@ -60,7 +77,16 @@
 		8BABF7F3046C4854B0C6B736 /* FreshnessBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FreshnessBanner.swift; sourceTree = "<group>"; };
 		F1E2D3C4B5A6978800112233 /* RiskGaugeCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RiskGaugeCard.swift; sourceTree = "<group>"; };
 		B8D4F025C3E4F7B0A2D9E160 /* EmptyDeskView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmptyDeskView.swift; sourceTree = "<group>"; };
+		A11A1B2C3D4E5F6000000011 /* LegacyRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegacyRootView.swift; sourceTree = "<group>"; };
+		A11A1B2C3D4E5F6000000012 /* LegacyDeskView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegacyDeskView.swift; sourceTree = "<group>"; };
+		A11A1B2C3D4E5F6000000013 /* LegacyChartsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegacyChartsView.swift; sourceTree = "<group>"; };
+		A11A1B2C3D4E5F6000000014 /* LegacyPendingListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegacyPendingListView.swift; sourceTree = "<group>"; };
+		A11A1B2C3D4E5F6000000015 /* LegacySlipView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegacySlipView.swift; sourceTree = "<group>"; };
+		A11A1B2C3D4E5F6000000016 /* LegacySettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegacySettingsView.swift; sourceTree = "<group>"; };
+		A11A1B2C3D4E5F6000000017 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		B11A1B2C3D4E5F6000000011 /* PrivateHostPolicyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivateHostPolicyTests.swift; sourceTree = "<group>"; };
 		848437EA320F44D9A1F3E5AD /* NTDesk.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = NTDesk.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B11A1B2C3D4E5F6000000020 /* NTDeskTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = NTDeskTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		14E671AE8ACD437DA6E95191 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		B5E4BCA51612EB4937DB848A /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		C1D2E3F4A5B60718293A4B5C /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
@@ -74,6 +100,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		B11A1B2C3D4E5F6000000040 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -81,6 +114,7 @@
 			isa = PBXGroup;
 			children = (
 				A8F4DE00B463499C98F24529 /* NTDesk */,
+				B11A1B2C3D4E5F6000000050 /* NTDeskTests */,
 				A33091FEC3134DA2BACC85B6 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -89,6 +123,7 @@
 			isa = PBXGroup;
 			children = (
 				848437EA320F44D9A1F3E5AD /* NTDesk.app */,
+				B11A1B2C3D4E5F6000000020 /* NTDeskTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -101,11 +136,34 @@
 				5A43CDD0A1EB45ECBB96D3A7 /* Models */,
 				2D1A3137E6B74250BCCE8A09 /* Services */,
 				231DA40782AF4C789E9F251F /* Views */,
+				A11A1B2C3D4E5F6000000060 /* Legacy */,
 				B5E4BCA51612EB4937DB848A /* Assets.xcassets */,
 				14E671AE8ACD437DA6E95191 /* Info.plist */,
 				C1D2E3F4A5B60718293A4B5C /* PrivacyInfo.xcprivacy */,
 			);
 			path = NTDesk;
+			sourceTree = "<group>";
+		};
+		A11A1B2C3D4E5F6000000060 /* Legacy */ = {
+			isa = PBXGroup;
+			children = (
+				A11A1B2C3D4E5F6000000011 /* LegacyRootView.swift */,
+				A11A1B2C3D4E5F6000000012 /* LegacyDeskView.swift */,
+				A11A1B2C3D4E5F6000000013 /* LegacyChartsView.swift */,
+				A11A1B2C3D4E5F6000000014 /* LegacyPendingListView.swift */,
+				A11A1B2C3D4E5F6000000015 /* LegacySlipView.swift */,
+				A11A1B2C3D4E5F6000000016 /* LegacySettingsView.swift */,
+				A11A1B2C3D4E5F6000000017 /* README.md */,
+			);
+			path = Legacy;
+			sourceTree = "<group>";
+		};
+		B11A1B2C3D4E5F6000000050 /* NTDeskTests */ = {
+			isa = PBXGroup;
+			children = (
+				B11A1B2C3D4E5F6000000011 /* PrivateHostPolicyTests.swift */,
+			);
+			path = NTDeskTests;
 			sourceTree = "<group>";
 		};
 		D3378FDD6A4C4B45B645117A /* DesignSystem */ = {
@@ -187,6 +245,23 @@
 			productReference = 848437EA320F44D9A1F3E5AD /* NTDesk.app */;
 			productType = "com.apple.product-type.application";
 		};
+		B11A1B2C3D4E5F6000000070 /* NTDeskTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = B11A1B2C3D4E5F6000000090 /* Build configuration list for PBXNativeTarget "NTDeskTests" */;
+			buildPhases = (
+				B11A1B2C3D4E5F6000000080 /* Sources */,
+				B11A1B2C3D4E5F6000000040 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				B11A1B2C3D4E5F60000000A0 /* PBXTargetDependency */,
+			);
+			name = NTDeskTests;
+			productName = NTDeskTests;
+			productReference = B11A1B2C3D4E5F6000000020 /* NTDeskTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -199,6 +274,10 @@
 				TargetAttributes = {
 					880089C8FF214801869BF38E = {
 						CreatedOnToolsVersion = 15.0;
+					};
+					B11A1B2C3D4E5F6000000070 = {
+						CreatedOnToolsVersion = 15.0;
+						TestTargetID = 880089C8FF214801869BF38E;
 					};
 				};
 			};
@@ -216,6 +295,7 @@
 			projectRoot = "";
 			targets = (
 				880089C8FF214801869BF38E /* NTDesk */,
+				B11A1B2C3D4E5F6000000070 /* NTDeskTests */,
 			);
 		};
 /* End PBXProject section */
@@ -250,6 +330,12 @@
 				86A1EAEF46144C9EA4903E56 /* RootView.swift in Sources */,
 				D2EB199DB8424737B2E17533 /* SettingsView.swift in Sources */,
 				43074185315343D497370947 /* SlipView.swift in Sources */,
+				A11A1B2C3D4E5F6000000001 /* LegacyRootView.swift in Sources */,
+				A11A1B2C3D4E5F6000000002 /* LegacyDeskView.swift in Sources */,
+				A11A1B2C3D4E5F6000000003 /* LegacyChartsView.swift in Sources */,
+				A11A1B2C3D4E5F6000000004 /* LegacyPendingListView.swift in Sources */,
+				A11A1B2C3D4E5F6000000005 /* LegacySlipView.swift in Sources */,
+				A11A1B2C3D4E5F6000000006 /* LegacySettingsView.swift in Sources */,
 				433FAE3AD3044C65A3768EA6 /* Color+Hex.swift in Sources */,
 				3C9087B488054EE288DC4DAC /* DeskTheme.swift in Sources */,
 				DE90BB1B9CC04018B9BC8B05 /* DeskSpacing.swift in Sources */,
@@ -264,7 +350,23 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		B11A1B2C3D4E5F6000000080 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B11A1B2C3D4E5F6000000001 /* PrivateHostPolicyTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		B11A1B2C3D4E5F60000000A0 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 880089C8FF214801869BF38E /* NTDesk */;
+			targetProxy = B11A1B2C3D4E5F6000000030 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		8E5DC41DD454486EB2856082 /* Debug */ = {
@@ -276,7 +378,7 @@
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_OPTIMIZATION_LEVEL = 0;
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
@@ -291,12 +393,44 @@
 				CLANG_ENABLE_MODULES = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				SDKROOT = iphoneos;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				VALIDATE_PRODUCT = YES;
 			};
 			name = Release;
+		};
+		C11A1B2C3D4E5F6000000001 /* LegacyDebug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG NTDESK_USE_LEGACY_UI";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = LegacyDebug;
+		};
+		C11A1B2C3D4E5F6000000002 /* LegacyRelease */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = NTDESK_USE_LEGACY_UI;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = LegacyRelease;
 		};
 		F320446E1AF141E78C280BAB /* Debug */ = {
 			isa = XCBuildConfiguration;
@@ -310,9 +444,11 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_PREVIEWS = YES;
+				ENABLE_TESTABILITY = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = NTDesk/Info.plist;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -340,9 +476,11 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_PREVIEWS = YES;
+				ENABLE_TESTABILITY = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = NTDesk/Info.plist;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -358,6 +496,188 @@
 			};
 			name = Release;
 		};
+		C11A1B2C3D4E5F6000000003 /* LegacyDebug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGNING_REQUIRED = NO;
+				CODE_SIGN_IDENTITY = "";
+				CODE_SIGN_STYLE = Manual;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_PREVIEWS = YES;
+				ENABLE_TESTABILITY = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = NTDesk/Info.plist;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.simsalabim.ntdesk;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG NTDESK_USE_LEGACY_UI";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = LegacyDebug;
+		};
+		C11A1B2C3D4E5F6000000004 /* LegacyRelease */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGNING_REQUIRED = NO;
+				CODE_SIGN_IDENTITY = "";
+				CODE_SIGN_STYLE = Manual;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_PREVIEWS = YES;
+				ENABLE_TESTABILITY = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = NTDesk/Info.plist;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.simsalabim.ntdesk;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = NTDESK_USE_LEGACY_UI;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = LegacyRelease;
+		};
+		B11A1B2C3D4E5F60000000B0 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGNING_REQUIRED = NO;
+				CODE_SIGN_IDENTITY = "";
+				CODE_SIGN_STYLE = Manual;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.simsalabim.ntdesk.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/NTDesk.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/NTDesk";
+			};
+			name = Debug;
+		};
+		B11A1B2C3D4E5F60000000B1 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGNING_REQUIRED = NO;
+				CODE_SIGN_IDENTITY = "";
+				CODE_SIGN_STYLE = Manual;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.simsalabim.ntdesk.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/NTDesk.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/NTDesk";
+			};
+			name = Release;
+		};
+		B11A1B2C3D4E5F60000000B2 /* LegacyDebug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGNING_REQUIRED = NO;
+				CODE_SIGN_IDENTITY = "";
+				CODE_SIGN_STYLE = Manual;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.simsalabim.ntdesk.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/NTDesk.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/NTDesk";
+			};
+			name = LegacyDebug;
+		};
+		B11A1B2C3D4E5F60000000B3 /* LegacyRelease */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGNING_REQUIRED = NO;
+				CODE_SIGN_IDENTITY = "";
+				CODE_SIGN_STYLE = Manual;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.simsalabim.ntdesk.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/NTDesk.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/NTDesk";
+			};
+			name = LegacyRelease;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -366,6 +686,8 @@
 			buildConfigurations = (
 				8E5DC41DD454486EB2856082 /* Debug */,
 				C47CC76CCD45442483CD0210 /* Release */,
+				C11A1B2C3D4E5F6000000001 /* LegacyDebug */,
+				C11A1B2C3D4E5F6000000002 /* LegacyRelease */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -375,6 +697,19 @@
 			buildConfigurations = (
 				F320446E1AF141E78C280BAB /* Debug */,
 				1D24D7336528444AAEDF924F /* Release */,
+				C11A1B2C3D4E5F6000000003 /* LegacyDebug */,
+				C11A1B2C3D4E5F6000000004 /* LegacyRelease */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		B11A1B2C3D4E5F6000000090 /* Build configuration list for PBXNativeTarget "NTDeskTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B11A1B2C3D4E5F60000000B0 /* Debug */,
+				B11A1B2C3D4E5F60000000B1 /* Release */,
+				B11A1B2C3D4E5F60000000B2 /* LegacyDebug */,
+				B11A1B2C3D4E5F60000000B3 /* LegacyRelease */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
