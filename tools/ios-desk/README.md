@@ -297,6 +297,20 @@ LAN-bound mobile-view is readable by anyone on the same L2 who can reach TCP **8
 
 ---
 
+## Home Screen widget (deferred)
+
+**No WidgetKit extension in this tree.** Optional glance KPIs are deferred because App Groups + multi-target signing clash with the **unsigned IPA / sideload** path (entitlements often strip or mismatch; widget cannot read the main app sandbox without a shared container).
+
+| Today | Future (operator-ready) |
+|-------|-------------------------|
+| Cache in app Application Support only (`CacheStore`) | Same envelope in an **App Group** container |
+| Desk tab shows KPIs + stale banner | Widget **read-only** KPIs from that envelope |
+| No appex / no App Group entitlement | Small/medium widget; no writes; no invented equity |
+
+Full rationale, design sketch, and acceptance checklist: **[`docs/WIDGET.md`](docs/WIDGET.md)**.
+
+---
+
 ## PC side
 
 ```powershell
@@ -316,6 +330,7 @@ LAN-bound mobile-view is readable by anyone on the same L2 who can reach TCP **8
 ```
 tools/ios-desk/
   README.md
+  docs/WIDGET.md                # Home Screen widget — deferred (App Group / sideload)
   build_unsigned_ipa.sh
   fixtures/desk_sample_v1.json
   NTDesk/
