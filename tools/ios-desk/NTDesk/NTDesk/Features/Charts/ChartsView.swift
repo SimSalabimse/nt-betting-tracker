@@ -12,7 +12,7 @@ struct ChartsView: View {
     @State private var sportSelection: String?
 
     var body: some View {
-        NavigationStack {
+        DeskScreenChrome(title: "Charts") {
             ScrollView {
                 VStack(alignment: .leading, spacing: DeskSpacing.s5) {
                     FreshnessBanner()
@@ -241,8 +241,6 @@ struct ChartsView: View {
                 .padding(DeskSpacing.contentPad)
             }
             .background(DeskTheme.bg.ignoresSafeArea())
-            .navigationTitle("Charts")
-            .toolbarBackground(DeskTheme.surface, for: .navigationBar)
             .refreshable { await sync.sync() }
             .onChange(of: sync.snapshot?.generatedAt) { _, _ in
                 // Clear stale scrubbers when desk payload refreshes

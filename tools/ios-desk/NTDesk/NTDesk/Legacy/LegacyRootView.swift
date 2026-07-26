@@ -1,28 +1,28 @@
 import SwiftUI
 
-/// Frozen pre-HIG root shell. Shares `DeskTab` with scaffold `RootView` (same five tabs).
+/// Frozen pre-HIG root shell. Uses `LegacyDeskTab` (five tabs including Settings).
 struct LegacyRootView: View {
     @EnvironmentObject private var sync: SyncService
     @Environment(\.scenePhase) private var scenePhase
-    @State private var selectedTab: DeskTab = .desk
+    @State private var selectedTab: LegacyDeskTab = .desk
 
     var body: some View {
         TabView(selection: $selectedTab) {
             LegacyDeskView(selectedTab: $selectedTab)
                 .tabItem { Label("Desk", systemImage: "gauge.with.dots.needle.33percent") }
-                .tag(DeskTab.desk)
+                .tag(LegacyDeskTab.desk)
             LegacyChartsView()
                 .tabItem { Label("Charts", systemImage: "chart.xyaxis.line") }
-                .tag(DeskTab.charts)
+                .tag(LegacyDeskTab.charts)
             LegacyPendingListView(selectedTab: $selectedTab)
                 .tabItem { Label("Pending", systemImage: "list.bullet.rectangle") }
-                .tag(DeskTab.pending)
+                .tag(LegacyDeskTab.pending)
             LegacySlipView()
                 .tabItem { Label("Slip", systemImage: "doc.plaintext") }
-                .tag(DeskTab.slip)
+                .tag(LegacyDeskTab.slip)
             LegacySettingsView()
                 .tabItem { Label("Settings", systemImage: "gearshape") }
-                .tag(DeskTab.settings)
+                .tag(LegacyDeskTab.settings)
         }
         .tint(DeskTheme.accent)
         .toolbarBackground(DeskTheme.surface, for: .tabBar)

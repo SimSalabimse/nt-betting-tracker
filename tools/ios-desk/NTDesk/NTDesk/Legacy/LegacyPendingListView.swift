@@ -2,7 +2,7 @@ import SwiftUI
 
 struct LegacyPendingListView: View {
     @EnvironmentObject private var sync: SyncService
-    @Binding var selectedTab: DeskTab
+    @Binding var selectedTab: LegacyDeskTab
 
     var body: some View {
         NavigationStack {

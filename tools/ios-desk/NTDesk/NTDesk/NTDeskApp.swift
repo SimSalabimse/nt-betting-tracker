@@ -11,7 +11,7 @@ struct NTDeskApp: App {
                 .environmentObject(sync)
                 .preferredColorScheme(.dark)
             #else
-            RootView()
+            AppRootView()
                 .environmentObject(sync)
                 .preferredColorScheme(.dark)
             #endif

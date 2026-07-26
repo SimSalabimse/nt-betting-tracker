@@ -2,17 +2,17 @@ import SwiftUI
 
 struct PendingListView: View {
     @EnvironmentObject private var sync: SyncService
-    @Binding var selectedTab: DeskTab
+    @Environment(\.openSettings) private var openSettings
 
     var body: some View {
-        NavigationStack {
+        DeskScreenChrome(title: "Pending") {
             Group {
                 if sync.snapshot == nil {
                     ScrollView {
                         VStack(alignment: .leading, spacing: DeskSpacing.s3) {
                             FreshnessBanner()
                             EmptyDeskView {
-                                selectedTab = .settings
+                                openSettings()
                             }
                             .frame(maxWidth: .infinity)
                             .padding(.top, DeskSpacing.s4)
@@ -24,7 +24,6 @@ struct PendingListView: View {
                 }
             }
             .background(DeskTheme.bg)
-            .navigationTitle("Pending")
             .refreshable { await sync.sync() }
         }
     }

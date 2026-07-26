@@ -2,8 +2,8 @@ import SwiftUI
 
 struct DeskView: View {
     @EnvironmentObject private var sync: SyncService
+    @Environment(\.openSettings) private var openSettings
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
-    @Binding var selectedTab: DeskTab
 
     private var gridColumns: [GridItem] {
         if dynamicTypeSize.isAccessibilitySize {
@@ -13,7 +13,7 @@ struct DeskView: View {
     }
 
     var body: some View {
-        NavigationStack {
+        DeskScreenChrome(title: "NT Desk") {
             ScrollView {
                 VStack(alignment: .leading, spacing: DeskSpacing.s3) {
                     FreshnessBanner()
@@ -82,7 +82,7 @@ struct DeskView: View {
                             .accessibilityLabel("Snapshot generated \(s.generatedAt ?? "unknown")")
                     } else {
                         EmptyDeskView {
-                            selectedTab = .settings
+                            openSettings()
                         }
                         .frame(maxWidth: .infinity)
                         .padding(.top, DeskSpacing.s6)
@@ -91,14 +91,14 @@ struct DeskView: View {
                 .padding(DeskSpacing.contentPad)
             }
             .background(DeskTheme.bg.ignoresSafeArea())
-            .navigationTitle("NT Desk")
-            .toolbarBackground(DeskTheme.surface, for: .navigationBar)
             .refreshable { await sync.sync() }
             .toolbar {
                 if sync.isSyncing {
-                    ProgressView()
-                        .tint(DeskTheme.accent)
-                        .accessibilityLabel("Syncing desk snapshot")
+                    ToolbarItem(placement: .topBarLeading) {
+                        ProgressView()
+                            .tint(DeskTheme.accent)
+                            .accessibilityLabel("Syncing desk snapshot")
+                    }
                 }
             }
         }

@@ -4,7 +4,7 @@ struct SlipView: View {
     @EnvironmentObject private var sync: SyncService
 
     var body: some View {
-        NavigationStack {
+        DeskScreenChrome(title: "Slip") {
             ScrollView {
                 VStack(alignment: .leading, spacing: DeskSpacing.s3) {
                     FreshnessBanner()
@@ -56,7 +56,6 @@ struct SlipView: View {
                 .padding(DeskSpacing.contentPad)
             }
             .background(DeskTheme.bg)
-            .navigationTitle("Slip")
             .refreshable { await sync.sync() }
         }
     }

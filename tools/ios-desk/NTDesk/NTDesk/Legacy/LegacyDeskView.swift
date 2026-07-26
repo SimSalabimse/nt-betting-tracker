@@ -3,7 +3,7 @@ import SwiftUI
 struct LegacyDeskView: View {
     @EnvironmentObject private var sync: SyncService
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
-    @Binding var selectedTab: DeskTab
+    @Binding var selectedTab: LegacyDeskTab
 
     private var gridColumns: [GridItem] {
         if dynamicTypeSize.isAccessibilitySize {
