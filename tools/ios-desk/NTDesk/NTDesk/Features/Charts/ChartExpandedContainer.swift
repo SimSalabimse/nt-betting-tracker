@@ -1,13 +1,15 @@
 import SwiftUI
 
 /// Full-screen expanded chart shell (design: plot height 280–360pt).
+/// Expanded plot height within design band 280–360.
+enum ChartExpandedMetrics {
+    static let chartHeight: CGFloat = 320
+}
+
 struct ChartExpandedContainer<Content: View>: View {
     let title: String
     @ViewBuilder var content: () -> Content
     var onDismiss: () -> Void
-
-    /// Expanded plot height within design band 280–360.
-    static let chartHeight: CGFloat = 320
 
     var body: some View {
         NavigationStack {

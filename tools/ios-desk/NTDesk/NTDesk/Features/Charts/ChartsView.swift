@@ -108,25 +108,25 @@ struct ChartsView: View {
             EquityChartView(
                 points: equityPoints,
                 selectedRawDay: $equitySelection,
-                height: ChartExpandedContainer.chartHeight
+                height: ChartExpandedMetrics.chartHeight
             )
         case .daily:
             DailyPLChartView(
                 points: dailyPoints,
                 selectedRawDay: $dailySelection,
-                height: ChartExpandedContainer.chartHeight
+                height: ChartExpandedMetrics.chartHeight
             )
         case .drawdown:
             DrawdownChartView(
                 points: drawdownPoints,
                 selectedRawDay: $drawdownSelection,
-                height: ChartExpandedContainer.chartHeight
+                height: ChartExpandedMetrics.chartHeight
             )
         case .sport:
             SportChartView(
                 sports: sportPoints,
                 selectedSport: $sportSelection,
-                chartHeight: ChartExpandedContainer.chartHeight
+                chartHeight: ChartExpandedMetrics.chartHeight
             )
         }
     }
