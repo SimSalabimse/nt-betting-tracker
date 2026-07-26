@@ -355,9 +355,9 @@ learning:
         darts: 2.5
         esports: 1.5
         default: 1.5
-    # Ranking-gap HC soft cap (PR4 wire-up — enabled false)
+    # Ranking-gap HC soft cap (PR4 — soft max 1 with EV-slack peers)
     ranking_gap_hc:
-      enabled: false
+      enabled: true
       max_per_slip: 1
       ev_slack: 0.015
   # P1: process_error settle tags → temporary min_ev raise

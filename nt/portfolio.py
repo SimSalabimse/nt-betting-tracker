@@ -1290,7 +1290,96 @@ def build_portfolio(
     def _is_football(sp: str) -> bool:
         return normalize_sport(sp, default="unknown") == "football"
 
-    def _try_accept(rec: Recommendation, *, soft_football_cap: bool = False) -> str:
+    # Ranking-gap HC soft cap (PR4 Rule 3.2): slip preference only; Pass 3 force-accept
+    rg_cfg = dict(div_lim.get("ranking_gap_hc") or {})
+    rg_soft_on = bool(rg_cfg.get("enabled", False))
+    max_rg = int(rg_cfg.get("max_per_slip", 1) or 1)
+    rg_ev_slack = float(rg_cfg.get("ev_slack", 0.015) or 0.015)
+    ranking_gap_counts = 0
+
+    picked_keys: set[tuple[str, str]] = set()
+    combo_leg_keys: set[tuple[str, str]] = set()
+
+    def _sort_ev_of(r: Recommendation) -> float:
+        return float(r.sort_ev if r.sort_ev is not None else r.ev)
+
+    def _would_clear_diversify_at_min_stake(other: Recommendation) -> bool:
+        """Peer snapshot: would still clear hard diversify counts at min_stake."""
+        if (other.match, other.selection) in picked_keys:
+            return False
+        if (other.match, other.selection) in combo_leg_keys:
+            return False
+        if remaining < min_stake or len(picked) >= max_bets:
+            return False
+        om = (other.match or "").strip()
+        if match_counts.get(om, 0) >= max_match:
+            return False
+        if any(
+            is_open_risk(r.get("result"))
+            and (r.get("match") or "").strip() == other.match
+            and (r.get("selection") or "").strip() == other.selection
+            for r in (historical_rows or [])
+        ):
+            return False
+        sp_o = normalize_sport(other.sport, default="unknown")
+        mk_o = other.market_key or infer_market(other.selection, other.market_type)
+        bd_o = other.odds_band or ""
+        if sport_counts.get(sp_o, 0) >= max_sport:
+            return False
+        if market_counts.get(mk_o, 0) >= max_market:
+            return False
+        if bd_o and band_counts.get(bd_o, 0) >= max_band:
+            return False
+        if other.high_odds and high_odds_count >= max_high:
+            return False
+        return True
+
+    def _has_same_match_competitive_non_hc(cand: Recommendation) -> bool:
+        """
+        Gate (A): competitive same-match non-RG peer within EV-slack that still
+        clears diversify. Runs for the FIRST ranking-gap seat too (max_per_match:1).
+        """
+        m = (cand.match or "").strip()
+        if not m:
+            return False
+        se_c = _sort_ev_of(cand)
+        for other in scored:
+            if other is cand or (other.match, other.selection) in picked_keys:
+                continue
+            if (other.match or "").strip() != m:
+                continue
+            if other.ranking_gap_hc:
+                continue
+            if (other.reject_reason or "").startswith("form_continuity:"):
+                continue
+            if _sort_ev_of(other) + 1e-12 < se_c - rg_ev_slack:
+                continue
+            if _would_clear_diversify_at_min_stake(other):
+                return True
+        return False
+
+    def _has_competitive_non_rg_peer(cand: Recommendation) -> bool:
+        """Gate (B): any not-yet-picked non-RG peer competitive within slack + diversify."""
+        se_c = _sort_ev_of(cand)
+        for other in scored:
+            if other is cand or (other.match, other.selection) in picked_keys:
+                continue
+            if other.ranking_gap_hc:
+                continue
+            if (other.reject_reason or "").startswith("form_continuity:"):
+                continue
+            if _sort_ev_of(other) + 1e-12 < se_c - rg_ev_slack:
+                continue
+            if _would_clear_diversify_at_min_stake(other):
+                return True
+        return False
+
+    def _try_accept(
+        rec: Recommendation,
+        *,
+        soft_football_cap: bool = False,
+        soft_ranking_gap_cap: bool = False,
+    ) -> str:
         """
         Try to add rec. Returns 'ok' | 'skip' | 'reject'.
 
@@ -1299,8 +1388,12 @@ def build_portfolio(
             (not reject) so the fill-up pass can still take good football
             (e.g. Racing BTTS Nei) when non-football cannot fill remaining seats.
             Hard ceiling remains max_per_sport (pending + this slip).
+
+        soft_ranking_gap_cap:
+            Soft-prefer ≤ max_per_slip ranking-gap HCs and same-match non-HC
+            over first RG seat (EV-slack peers). Pass 3 force-accepts with False.
         """
-        nonlocal remaining, high_odds_count
+        nonlocal remaining, high_odds_count, ranking_gap_counts
         if len(picked) >= max_bets or remaining < min_stake:
             return "skip"
         m = (rec.match or "").strip()
@@ -1429,6 +1522,38 @@ def build_portfolio(
                 )
                 return "reject"
 
+        # Ranking-gap soft cap (after hard diversify; skip so Pass 3 can force-accept)
+        if (
+            soft_ranking_gap_cap
+            and rg_soft_on
+            and rec.ranking_gap_hc
+        ):
+            # (A) ALWAYS prefer same-match non-HC when competitive — even first RG seat
+            if _has_same_match_competitive_non_hc(rec):
+                rejects.append(
+                    {
+                        "match": rec.match,
+                        "selection": rec.selection,
+                        "reason": "ranking_gap_hc: prefer same-match non-HC",
+                        "near_miss": True,
+                    }
+                )
+                return "skip"
+            # (B) soft max RG per slip when any competitive non-RG remains
+            if ranking_gap_counts >= max_rg and _has_competitive_non_rg_peer(rec):
+                rejects.append(
+                    {
+                        "match": rec.match,
+                        "selection": rec.selection,
+                        "reason": (
+                            "ranking_gap_hc: soft cap 1 per slip — prefer other "
+                            "market types / non-gap edges"
+                        ),
+                        "near_miss": True,
+                    }
+                )
+                return "skip"
+
         stake = min(rec.stake_nok, remaining)
         stake = float(int(stake))
         if stake < min_stake:
@@ -1447,19 +1572,27 @@ def build_portfolio(
             league_counts[lg] = league_counts.get(lg, 0) + 1
         script_counts[sf] = script_counts.get(sf, 0) + 1
         open_ko_hours.append(cand_h)
+        if rec.ranking_gap_hc:
+            ranking_gap_counts += 1
         return "ok"
 
-    picked_keys: set[tuple[str, str]] = set()
-    combo_leg_keys: set[tuple[str, str]] = set()
-
-    def _take(rec: Recommendation, *, soft_football_cap: bool = False) -> bool:
+    def _take(
+        rec: Recommendation,
+        *,
+        soft_football_cap: bool = False,
+        soft_ranking_gap_cap: bool = False,
+    ) -> bool:
         if (rec.match, rec.selection) in picked_keys:
             return False
         # Don't re-place legs already used in a combo this round
         if (rec.match, rec.selection) in combo_leg_keys:
             return False
         # Combo tickets skip diversify sport counts as multi
-        status = _try_accept(rec, soft_football_cap=soft_football_cap)
+        status = _try_accept(
+            rec,
+            soft_football_cap=soft_football_cap,
+            soft_ranking_gap_cap=soft_ranking_gap_cap,
+        )
         if status == "ok":
             picked_keys.add((rec.match, rec.selection))
             return True
@@ -1595,26 +1728,28 @@ def build_portfolio(
 
     def _fill_passes() -> None:
         # Pass 1: non-football first (build sample for thin sports)
+        # Ranking-gap soft cap active (A)+(B)
         for rec in scored:
             if len(picked) >= max_bets or remaining < min_stake:
                 break
             if _is_football(rec.sport or ""):
                 continue
-            _take(rec, soft_football_cap=False)
+            _take(rec, soft_football_cap=False, soft_ranking_gap_cap=True)
 
         # Pass 2: limited football first (max_football is a soft preference only)
+        # Ranking-gap soft cap still active (A)+(B)
         for rec in scored:
             if len(picked) >= max_bets or remaining < min_stake:
                 break
             if not _is_football(rec.sport or ""):
                 continue
-            _take(rec, soft_football_cap=True)
+            _take(rec, soft_football_cap=True, soft_ranking_gap_cap=True)
 
-        # Pass 3: fill remaining seats
+        # Pass 3: fill remaining seats — force-accept RG if peers gone / seats empty
         for rec in scored:
             if len(picked) >= max_bets or remaining < min_stake:
                 break
-            _take(rec, soft_football_cap=False)
+            _take(rec, soft_football_cap=False, soft_ranking_gap_cap=False)
 
     def _count_extra_eligible() -> int:
         """How many more scored candidates could still clear diversify at min_stake."""
