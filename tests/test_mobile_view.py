@@ -355,7 +355,7 @@ def test_content_identity_stable_and_durable(readers_mod, tmp_path, isolated_ide
 def test_content_identity_changes_when_stake_mutates(readers_mod, tmp_path, isolated_identity, monkeypatch):
     root = tmp_path / "desk_root"
     _write_minimal_desk_fixture(root, stake="18")
-    times = iter(["2026-07-26T12:00:00Z", "2026-07-26T12:00:05Z"])
+    times = iter(["2026-07-26T12:00:00.000Z", "2026-07-26T12:00:05.000Z"])
     monkeypatch.setattr(readers_mod, "_now_iso", lambda: next(times))
     s1 = readers_mod.build_desk_snapshot(root)
 
@@ -367,8 +367,27 @@ def test_content_identity_changes_when_stake_mutates(readers_mod, tmp_path, isol
     s2 = readers_mod.build_desk_snapshot(root)
     assert s2["content_hash"] != s1["content_hash"]
     assert s2["generated_at"] != s1["generated_at"]
-    assert s1["generated_at"] == "2026-07-26T12:00:00Z"
-    assert s2["generated_at"] == "2026-07-26T12:00:05Z"
+    assert s1["generated_at"] == "2026-07-26T12:00:00.000Z"
+    assert s2["generated_at"] == "2026-07-26T12:00:05.000Z"
+
+
+def test_generated_at_unique_when_clock_returns_same_stamp(
+    readers_mod, tmp_path, isolated_identity, monkeypatch
+):
+    """Two content changes with identical _now_iso() still get distinct generated_at."""
+    root = tmp_path / "desk_root"
+    _write_minimal_desk_fixture(root, stake="18")
+    monkeypatch.setattr(readers_mod, "_now_iso", lambda: "2026-07-26T12:00:00.000Z")
+    s1 = readers_mod.build_desk_snapshot(root)
+    assert s1["generated_at"] == "2026-07-26T12:00:00.000Z"
+
+    _write_minimal_desk_fixture(root, stake="25")
+    time.sleep(0.02)
+    readers_mod.clear_desk_cache()
+    s2 = readers_mod.build_desk_snapshot(root)
+    assert s2["content_hash"] != s1["content_hash"]
+    assert s2["generated_at"] != s1["generated_at"]
+    assert s2["generated_at"] == "2026-07-26T12:00:00.001Z"
 
 
 def test_content_identity_stable_across_wall_clock(readers_mod, tmp_path, isolated_identity, monkeypatch):
@@ -378,9 +397,9 @@ def test_content_identity_stable_across_wall_clock(readers_mod, tmp_path, isolat
 
     times = iter(
         [
-            "2026-07-26T10:00:00Z",
-            "2026-07-26T10:05:00Z",
-            "2026-07-26T11:00:00Z",
+            "2026-07-26T10:00:00.000Z",
+            "2026-07-26T10:05:00.000Z",
+            "2026-07-26T11:00:00.000Z",
         ]
     )
 
@@ -391,14 +410,14 @@ def test_content_identity_stable_across_wall_clock(readers_mod, tmp_path, isolat
     s1 = readers_mod.build_desk_snapshot(root)
     # Memory hit should not call _now_iso again
     s2 = readers_mod.build_desk_snapshot(root)
-    assert s1["generated_at"] == "2026-07-26T10:00:00Z"
+    assert s1["generated_at"] == "2026-07-26T10:00:00.000Z"
     assert s2["generated_at"] == s1["generated_at"]
     assert s2["content_hash"] == s1["content_hash"]
 
     # After memory clear, durable identity reuses first-seen time (not next wall clock).
     readers_mod.clear_desk_cache()
     s3 = readers_mod.build_desk_snapshot(root)
-    assert s3["generated_at"] == "2026-07-26T10:00:00Z"
+    assert s3["generated_at"] == "2026-07-26T10:00:00.000Z"
     assert s3["content_hash"] == s1["content_hash"]
 
 
@@ -419,6 +438,52 @@ def test_memory_cache_skips_rebuild(readers_mod, tmp_path, isolated_identity, mo
     readers_mod.clear_desk_cache()
     readers_mod.build_desk_snapshot(root)
     assert calls["n"] == 2
+
+
+def test_memory_cache_invalidates_on_file_mtime_without_clear(
+    readers_mod, tmp_path, isolated_identity, monkeypatch
+):
+    """Input fingerprint mtime/size change rebuilds without clear_desk_cache()."""
+    root = tmp_path / "desk_root"
+    _write_minimal_desk_fixture(root, stake="18")
+    calls = {"n": 0}
+    real_build = readers_mod._build_desk_body
+
+    def counting_build(r):
+        calls["n"] += 1
+        return real_build(r)
+
+    monkeypatch.setattr(readers_mod, "_build_desk_body", counting_build)
+    s1 = readers_mod.build_desk_snapshot(root)
+    assert calls["n"] == 1
+
+    # Mutate core input files; do **not** clear memory cache — fingerprint must miss.
+    _write_minimal_desk_fixture(root, stake="25")
+    time.sleep(0.02)
+    s2 = readers_mod.build_desk_snapshot(root)
+    assert calls["n"] == 2
+    assert s2["content_hash"] != s1["content_hash"]
+    assert s2["generated_at"] != s1["generated_at"]
+
+    # Directory-only mtime bump must not force rebuild (fingerprint is per-file).
+    state_dir = root / "data" / "state"
+    os_utime = __import__("os").utime
+    now = time.time() + 10
+    os_utime(state_dir, (now, now))
+    s3 = readers_mod.build_desk_snapshot(root)
+    assert calls["n"] == 2
+    assert s3["content_hash"] == s2["content_hash"]
+
+
+def test_memory_cache_return_is_deep_copy(readers_mod, tmp_path, isolated_identity):
+    root = tmp_path / "desk_root"
+    _write_minimal_desk_fixture(root)
+    s1 = readers_mod.build_desk_snapshot(root)
+    s1["pending_bets"].append({"match": "mutated"})
+    s1["warnings"].append("mutated")
+    s2 = readers_mod.build_desk_snapshot(root)
+    assert all(b.get("match") != "mutated" for b in s2["pending_bets"])
+    assert "mutated" not in s2["warnings"]
 
 
 def test_no_writes_under_data_state(readers_mod, tmp_path, isolated_identity):

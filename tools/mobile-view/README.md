@@ -25,7 +25,9 @@ is gitignored. Run with a **single uvicorn worker** (`reload=False`); identity/c
 | `GET /api/health` | `ok`, `service`, **`api_version`**, **`schema_version`**, `project_root` |
 | `GET /api/desk` | Full snapshot (`schema_version` + `api_version` + stable `generated_at` + `content_hash` + KPIs + …) |
 | `GET /` | Dark HTML desk |
-| writes | **405** (except the package-local identity cache above) |
+| `POST` / `PUT` / … | **405** always (HTTP write methods blocked) |
+
+Identity persistence is a **GET side-effect** only (see reads-only exception above), not an allowed write method.
 
 ## Install / run
 

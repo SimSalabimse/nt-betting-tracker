@@ -11,6 +11,7 @@ Versions:
 
 from __future__ import annotations
 
+import copy
 import csv
 import hashlib
 import json
@@ -19,7 +20,7 @@ import re
 import sys
 from collections import defaultdict
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
@@ -51,7 +52,49 @@ _ODDS_SUFFIXES = {".txt", ".md", ".csv", ".log", ".odds"}
 
 
 def _now_iso() -> str:
-    return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+    """UTC ISO-8601 with millisecond precision (Z suffix).
+
+    Whole-second truncation caused distinct content_hash values stamped in the same
+    UTC second to share one ``generated_at`` token, defeating client string-equality
+    skip (iOS 1.1.4). Milliseconds keep successive content changes unique under normal
+    wall clock; see ``_fresh_generated_at`` for mock-clock collisions.
+    """
+    return (
+        datetime.now(timezone.utc)
+        .isoformat(timespec="milliseconds")
+        .replace("+00:00", "Z")
+    )
+
+
+def _parse_iso_utc(value: str) -> datetime | None:
+    s = (value or "").strip()
+    if not s:
+        return None
+    if s.endswith("Z"):
+        s = s[:-1] + "+00:00"
+    try:
+        dt = datetime.fromisoformat(s)
+    except ValueError:
+        return None
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(timezone.utc)
+
+
+def _format_iso_utc(dt: datetime) -> str:
+    return dt.astimezone(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")
+
+
+def _fresh_generated_at(previous: str | None) -> str:
+    """Stamp for a **new** content_hash; never equal to the previous content token."""
+    now = _now_iso()
+    if previous is None or now != previous:
+        return now
+    # Same string as previous identity (mocked clock / sub-ms burst) — bump +1ms.
+    prev_dt = _parse_iso_utc(previous)
+    if prev_dt is not None:
+        return _format_iso_utc(prev_dt + timedelta(milliseconds=1))
+    return previous + "+1ms"
 
 
 def _canonical_json_bytes(obj: dict) -> bytes:
@@ -92,6 +135,7 @@ def _load_identity() -> tuple[str | None, str | None]:
 def _persist_identity(content_hash: str, generated_at: str) -> None:
     """Atomic write of package-local desk identity (temp + os.replace)."""
     path = _identity_file_path()
+    tmp = path.parent / f".desk_identity.{os.getpid()}.tmp"
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
         payload = json.dumps(
@@ -99,12 +143,17 @@ def _persist_identity(content_hash: str, generated_at: str) -> None:
             ensure_ascii=False,
             separators=(",", ":"),
         )
-        tmp = path.parent / f".desk_identity.{os.getpid()}.tmp"
         tmp.write_text(payload, encoding="utf-8")
         os.replace(tmp, path)
-    except OSError:
+    except OSError as exc:
+        _debug_log(f"identity_persist_failed: {exc}")
+        # Soft-warn always — operators with a non-writable package tree lose restart
+        # durability otherwise with no signal (fail-open is intentional for LAN desk).
+        print(
+            f"[mobile-view] warning: could not persist desk identity to {path}: {exc}",
+            file=sys.stderr,
+        )
         try:
-            tmp = path.parent / f".desk_identity.{os.getpid()}.tmp"
             if tmp.is_file():
                 tmp.unlink()
         except OSError:
@@ -903,8 +952,8 @@ def build_desk_snapshot(root: Path) -> dict[str, Any]:
     fp = _input_fingerprint(root)
     if _desk_memory is not None and _desk_memory.input_fingerprint == fp:
         _debug_log("cache_hit")
-        # Shallow copy so callers cannot mutate the cached body.
-        return dict(_desk_memory.body)
+        # Deep copy: nested lists/dicts must not be shared with callers.
+        return copy.deepcopy(_desk_memory.body)
 
     _debug_log("rebuild")
     body = _build_desk_body(root)
@@ -914,7 +963,8 @@ def build_desk_snapshot(root: Path) -> dict[str, Any]:
         generated_at = stored_g
         _debug_log("identity_reuse")
     else:
-        generated_at = _now_iso()
+        # New content: wall-clock stamp, guaranteed ≠ previous content token.
+        generated_at = _fresh_generated_at(stored_g)
         _persist_identity(content_hash, generated_at)
 
     # Assignment order: hash first, then generated_at (never hash a body that already
@@ -928,4 +978,4 @@ def build_desk_snapshot(root: Path) -> dict[str, Any]:
         generated_at=generated_at,
         body=body,
     )
-    return dict(body)
+    return copy.deepcopy(body)
