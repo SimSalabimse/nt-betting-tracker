@@ -573,6 +573,21 @@ def test_desk_if_none_match_returns_304(desk_http):
     assert r3.content == b""
     assert r3.headers.get("etag") == etag
 
+    # Multi-tag list: first tag misses, second hits → 304
+    r4 = client.get(
+        "/api/desk",
+        headers={"If-None-Match": f'"deadbeefdeadbeef", {etag}'},
+    )
+    assert r4.status_code == 304
+    assert r4.content == b""
+    assert r4.headers.get("etag") == etag
+
+    # RFC 9110: * matches any current representation
+    r5 = client.get("/api/desk", headers={"If-None-Match": "*"})
+    assert r5.status_code == 304
+    assert r5.content == b""
+    assert r5.headers.get("etag") == etag
+
 
 def test_desk_etag_changes_when_content_changes(desk_http):
     """Content mutation → 200 with a new ETag (If-None-Match of old tag does not 304)."""
@@ -604,6 +619,7 @@ def test_if_none_match_helper_strips_weak_prefix(server_mod):
     assert hits(f"W/{etag}", etag) is True
     assert hits(f"w/{etag}", etag) is True
     assert hits(f"W/ {etag}", etag) is True
+    assert hits("*", etag) is True
     assert hits('"deadbeefdeadbeef"', etag) is False
     assert hits(None, etag) is False
     assert hits("", etag) is False

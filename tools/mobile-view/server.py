@@ -25,7 +25,7 @@ from version_info import API_VERSION, SCHEMA_VERSION, SERVICE_NAME  # noqa: E402
 
 try:
     from fastapi import FastAPI, Request, Response
-    from fastapi.responses import HTMLResponse, JSONResponse
+    from fastapi.responses import HTMLResponse
 except ImportError as e:  # pragma: no cover
     raise SystemExit(
         "fastapi is required for mobile-view. Install: pip install -r tools/mobile-view/requirements.txt"
@@ -80,7 +80,9 @@ def _strong_etag(body_bytes: bytes) -> str:
 
 def _if_none_match_hits(header: str | None, etag: str) -> bool:
     """
-    True if If-None-Match matches etag.
+    True if If-None-Match matches etag (or is ``*``).
+
+    RFC 9110 §13.1.2: ``*`` matches any current representation for GET/HEAD.
     Strips weak W/ prefix for comparison leniency; compares opaque tags with quotes.
     """
     if not header:
@@ -90,7 +92,9 @@ def _if_none_match_hits(header: str | None, etag: str) -> bool:
         tag = part.strip()
         if not tag:
             continue
-        if tag[:2].upper() == "W/" or tag[:2] == "w/":
+        if tag == "*":
+            return True
+        if tag[:2].upper() == "W/":
             tag = tag[2:].lstrip()
         if tag == target:
             return True
