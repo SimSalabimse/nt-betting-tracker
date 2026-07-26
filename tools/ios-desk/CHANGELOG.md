@@ -13,11 +13,13 @@ Conditional GET (`If-None-Match` / **304**) needs mobile-view **≥ 1.2.0**; wit
 ### Performance — conditional GET + contact clock + silent poll
 - Send **`If-None-Match`** with stored ETag; **HTTP 304** is success (no throw)
 - **Contact clock** (`lastSuccessSyncAt`) refreshes on every successful desk result: 304, content-unchanged 200, or content-applied 200 — adaptive poll stays ~120s while PC idle
-- Prefer **`content_hash`** over `generated_at` for content-unchanged skip
+- Prefer **`content_hash`** over `generated_at` for content-unchanged skip (fall through to `generated_at` when prior hash empty)
 - No snapshot mutation / no cache write on 304 or content-unchanged
-- Silent background poll does not flip `isSyncing` (no nav ProgressView spinner)
+- Silent background poll does not flip `isSyncing` (no nav ProgressView spinner); user Sync during silent poll is queued
 - Throttled RTT chrome publish (every 30s / ≥10 ms change / every 3rd sample)
-- `clearCache` and base URL change clear stored ETag
+- Error fallback keeps contact clock (does not stomp with disk `cached_at`); poll may drop to 25s while `.stale` for faster retry
+- 304 / conditional GET only when snapshot is same-host (not `staleMismatch`)
+- `clearCache` clears ETag for the **current** base URL only (other profiles’ etags remain); base URL change clears in-memory ETag
 - `minimumRequired` API still **1.1.3**
 
 ## [1.1.4] (build 6) — 2026-07-26

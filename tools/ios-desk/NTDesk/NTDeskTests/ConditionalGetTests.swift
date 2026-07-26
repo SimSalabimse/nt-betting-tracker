@@ -9,6 +9,8 @@ final class DeskStubURLProtocol: URLProtocol {
         var statusCode: Int
         var headers: [String: String]
         var body: Data
+        /// When true, pause after `onRequestStarted` until `resumeHeldRequest()` (mid-flight asserts).
+        var holdUntilResume = false
     }
 
     /// Request path suffix → stub (e.g. "/api/desk").
@@ -16,11 +18,29 @@ final class DeskStubURLProtocol: URLProtocol {
     /// Captured request headers per path (last request wins).
     static var lastRequestHeaders: [String: [String: String]] = [:]
     static var requestCount: [String: Int] = [:]
+    /// Fired when a held request is ready for mid-flight checks.
+    static var onRequestStarted: ((String) -> Void)?
+    /// Completes the held request (set while holding; call `resumeHeldRequest()`).
+    private static var resumeHeld: (() -> Void)?
+    private static let lock = NSLock()
 
     static func reset() {
+        lock.lock()
         stubs = [:]
         lastRequestHeaders = [:]
         requestCount = [:]
+        onRequestStarted = nil
+        resumeHeld = nil
+        lock.unlock()
+    }
+
+    /// Resume a request that used `holdUntilResume` (safe from MainActor tests).
+    static func resumeHeldRequest() {
+        lock.lock()
+        let finish = resumeHeld
+        resumeHeld = nil
+        lock.unlock()
+        finish?()
     }
 
     override class func canInit(with request: URLRequest) -> Bool { true }
@@ -28,28 +48,45 @@ final class DeskStubURLProtocol: URLProtocol {
 
     override func startLoading() {
         let path = request.url?.path ?? ""
+        Self.lock.lock()
         Self.requestCount[path, default: 0] += 1
         var headers: [String: String] = [:]
         if let h = request.allHTTPHeaderFields {
             headers = h
         }
         Self.lastRequestHeaders[path] = headers
+        let stub = Self.stubs[path] ?? Self.stubs.values.first
+        let onStarted = Self.onRequestStarted
+        Self.lock.unlock()
 
-        guard let stub = Self.stubs[path] ?? Self.stubs.values.first else {
+        guard let stub else {
             client?.urlProtocol(self, didFailWithError: URLError(.badServerResponse))
             return
         }
-        let response = HTTPURLResponse(
-            url: request.url!,
-            statusCode: stub.statusCode,
-            httpVersion: "HTTP/1.1",
-            headerFields: stub.headers
-        )!
-        client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
-        if !stub.body.isEmpty {
-            client?.urlProtocol(self, didLoad: stub.body)
+
+        let complete: () -> Void = { [weak self] in
+            guard let self else { return }
+            let response = HTTPURLResponse(
+                url: request.url!,
+                statusCode: stub.statusCode,
+                httpVersion: "HTTP/1.1",
+                headerFields: stub.headers
+            )!
+            self.client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
+            if !stub.body.isEmpty {
+                self.client?.urlProtocol(self, didLoad: stub.body)
+            }
+            self.client?.urlProtocolDidFinishLoading(self)
         }
-        client?.urlProtocolDidFinishLoading(self)
+
+        if stub.holdUntilResume {
+            Self.lock.lock()
+            Self.resumeHeld = complete
+            Self.lock.unlock()
+            onStarted?(path)
+            return
+        }
+        complete()
     }
 
     override func stopLoading() {}
@@ -89,6 +126,19 @@ final class ContentUnchangedTests: XCTestCase {
         let diff = snap(generated: "2026-01-02T00:00:00Z")
         XCTAssertTrue(SyncService.isContentUnchanged(incoming: same, applied: applied, freshness: .fresh))
         XCTAssertFalse(SyncService.isContentUnchanged(incoming: diff, applied: applied, freshness: .fresh))
+    }
+
+    /// Prior cache without content_hash + incoming with hash + same generated_at → fall through → unchanged.
+    func testPriorHashEmpty_fallsThroughToGeneratedAt() {
+        let applied = snap(hash: nil, generated: "2026-01-01T00:00:00Z")
+        let incoming = snap(hash: "newhashfromserver", generated: "2026-01-01T00:00:00Z")
+        XCTAssertTrue(
+            SyncService.isContentUnchanged(incoming: incoming, applied: applied, freshness: .fresh)
+        )
+        let differentGen = snap(hash: "newhashfromserver", generated: "2026-01-02T00:00:00Z")
+        XCTAssertFalse(
+            SyncService.isContentUnchanged(incoming: differentGen, applied: applied, freshness: .fresh)
+        )
     }
 
     func testNotUnchangedWhenNotFresh() {
@@ -161,7 +211,6 @@ final class DeskAPIClientConditionalGetTests: XCTestCase {
         )
         _ = try await client.fetchDesk(baseURL: base, ifNoneMatch: "\"tag1\"")
         let headers = DeskStubURLProtocol.lastRequestHeaders["/api/desk"] ?? [:]
-        // URLSession may normalize header names
         let inm = headers["If-None-Match"] ?? headers["if-none-match"]
         XCTAssertEqual(inm, "\"tag1\"")
     }
@@ -254,6 +303,8 @@ final class SyncServiceConditionalGetTests: XCTestCase {
     }
 
     override func tearDown() {
+        // Release any held request so URLSession cannot hang the next test.
+        DeskStubURLProtocol.resumeHeldRequest()
         sync.stopPolling()
         cache.clear()
         DeskStubURLProtocol.reset()
@@ -270,19 +321,33 @@ final class SyncServiceConditionalGetTests: XCTestCase {
         """.utf8)
     }
 
-    private func stubDesk200(hash: String, generated: String, etag: String, equity: Double = 500) {
+    private func stubDesk200(hash: String, generated: String, etag: String, equity: Double = 500, hold: Bool = false) {
         DeskStubURLProtocol.stubs["/api/desk"] = .init(
             statusCode: 200,
             headers: ["ETag": etag, "Content-Type": "application/json"],
-            body: deskBody(hash: hash, generated: generated, equity: equity)
+            body: deskBody(hash: hash, generated: generated, equity: equity),
+            holdUntilResume: hold
         )
     }
 
-    private func stubDesk304(etag: String = "\"same\"") {
+    private func stubDesk304(etag: String? = "\"same\"", hold: Bool = false) {
+        var headers: [String: String] = ["Cache-Control": "private, no-cache"]
+        if let etag {
+            headers["ETag"] = etag
+        }
         DeskStubURLProtocol.stubs["/api/desk"] = .init(
             statusCode: 304,
-            headers: ["ETag": etag, "Cache-Control": "private, no-cache"],
-            body: Data()
+            headers: headers,
+            body: Data(),
+            holdUntilResume: hold
+        )
+    }
+
+    private func stubDeskError(_ code: Int = 503) {
+        DeskStubURLProtocol.stubs["/api/desk"] = .init(
+            statusCode: code,
+            headers: [:],
+            body: Data("err".utf8)
         )
     }
 
@@ -354,26 +419,64 @@ final class SyncServiceConditionalGetTests: XCTestCase {
         XCTAssertNil(defaults.string(forKey: key))
     }
 
-    func testBaseURLChangeClearsInMemoryETag() async {
+    func testBaseURLChangeClearsInMemoryETag_preservesPriorHostDefaults() async {
+        let hostA = "http://192.168.1.10:8787"
+        let hostB = "http://10.0.0.5:8787"
         stubHealth()
         stubDesk200(hash: "h1", generated: "t1", etag: "\"host-a\"")
         await sync.sync(waitForConnectivity: true, probeHealth: true)
         XCTAssertEqual(sync.lastETag, "\"host-a\"")
+        let keyA = SyncService.etagDefaultsKey(for: hostA)
+        XCTAssertEqual(defaults.string(forKey: keyA), "\"host-a\"")
 
         // Switch to another private host — must not keep prior ETag in memory.
-        sync.baseURLString = "http://10.0.0.5:8787"
+        sync.baseURLString = hostB
         XCTAssertNil(sync.lastETag)
+        // Prior host’s UserDefaults etag remains (per-URL keys).
+        XCTAssertEqual(defaults.string(forKey: keyA), "\"host-a\"")
+
+        // Poll on B with no stored etag → no If-None-Match.
+        stubDesk200(hash: "hb", generated: "tb", etag: "\"host-b\"")
+        await sync.sync(waitForConnectivity: false, probeHealth: false)
+        let headers = DeskStubURLProtocol.lastRequestHeaders["/api/desk"] ?? [:]
+        let inm = headers["If-None-Match"] ?? headers["if-none-match"]
+        XCTAssertNil(inm)
+        XCTAssertEqual(sync.lastETag, "\"host-b\"")
     }
 
-    func testSilentPollDoesNotSetIsSyncing() async {
+    func testSilentPollDoesNotSetIsSyncing_midFlight() async {
         stubHealth()
         stubDesk200(hash: "h1", generated: "t1", etag: "\"e\"")
         await sync.sync(waitForConnectivity: true, probeHealth: true)
 
-        stubDesk304()
-        // Observe isSyncing stays false around silent poll (completes quickly with stub).
+        stubDesk304(etag: "\"e\"", hold: true)
+        let started = expectation(description: "silent desk held")
+        DeskStubURLProtocol.onRequestStarted = { path in
+            if path == "/api/desk" { started.fulfill() }
+        }
+
+        let task = Task { await sync.sync(waitForConnectivity: false, probeHealth: false) }
+        await fulfillment(of: [started], timeout: 2)
+        XCTAssertFalse(sync.isSyncing, "silent poll must not flip isSyncing mid-flight")
+        DeskStubURLProtocol.resumeHeldRequest()
+        await task.value
         XCTAssertFalse(sync.isSyncing)
-        await sync.sync(waitForConnectivity: false, probeHealth: false)
+    }
+
+    func testManualSyncSetsIsSyncingMidFlight() async {
+        stubHealth()
+        stubDesk200(hash: "h1", generated: "t1", etag: "\"e\"", hold: true)
+
+        let started = expectation(description: "manual desk held")
+        DeskStubURLProtocol.onRequestStarted = { path in
+            if path == "/api/desk" { started.fulfill() }
+        }
+
+        let task = Task { await sync.sync(waitForConnectivity: true, probeHealth: true) }
+        await fulfillment(of: [started], timeout: 2)
+        XCTAssertTrue(sync.isSyncing, "manual sync should show spinner mid-flight")
+        DeskStubURLProtocol.resumeHeldRequest()
+        await task.value
         XCTAssertFalse(sync.isSyncing)
     }
 
@@ -413,5 +516,108 @@ final class SyncServiceConditionalGetTests: XCTestCase {
             XCTAssertEqual(sync.pollIntervalSeconds, 120)
             XCTAssertEqual(sync.freshness, .fresh)
         }
+    }
+
+    // MARK: - Issue 1: error path must not stomp contact clock
+
+    func testErrorPathPreservesContactClock() async {
+        stubHealth()
+        stubDesk200(hash: "h1", generated: "t1", etag: "\"e\"", equity: 100)
+        await sync.sync(waitForConnectivity: true, probeHealth: true)
+        XCTAssertEqual(sync.freshness, .fresh)
+
+        stubDesk304(etag: "\"e\"")
+        await sync.sync(waitForConnectivity: false, probeHealth: false)
+        let contactFresh = sync.lastSuccessSyncAt
+        XCTAssertNotNil(contactFresh)
+        XCTAssertEqual(sync.pollIntervalSeconds, 120)
+
+        // Force fetch error with cache present — must not rewrite contact from cached_at.
+        stubDeskError(503)
+        await sync.sync(waitForConnectivity: false, probeHealth: false)
+
+        XCTAssertEqual(sync.lastSuccessSyncAt, contactFresh, "contact clock must survive error + cache fallback")
+        XCTAssertEqual(sync.freshness, .stale)
+        // Intentional: stale → faster retry (25s), not contact-age adaptive schedule.
+        XCTAssertEqual(sync.pollIntervalSeconds, 25)
+        XCTAssertNotNil(sync.lastError)
+        XCTAssertEqual(sync.snapshot?.equityNok, 100)
+    }
+
+    // MARK: - Issue 2: staleMismatch forces full GET (no false-fresh via 304)
+
+    func testStaleMismatchDoesNotSendIfNoneMatch() async {
+        // Host A apply
+        stubHealth()
+        stubDesk200(hash: "ha", generated: "ta", etag: "\"etag-a\"", equity: 111)
+        await sync.sync(waitForConnectivity: true, probeHealth: true)
+        XCTAssertEqual(sync.freshness, .fresh)
+        XCTAssertEqual(sync.snapshot?.equityNok, 111)
+
+        // Pre-store host B etag (as if we synced B before)
+        let hostB = "http://10.0.0.5:8787"
+        defaults.set("\"etag-b\"", forKey: SyncService.etagDefaultsKey(for: hostB))
+
+        // Switch to B → single global cache is still A → staleMismatch; load B’s etag into memory
+        sync.baseURLString = hostB
+        XCTAssertEqual(sync.freshness, .staleMismatch)
+        XCTAssertEqual(sync.lastETag, "\"etag-b\"")
+        XCTAssertEqual(sync.snapshot?.equityNok, 111) // still A’s desk
+
+        // Poll B: must NOT send If-None-Match (force full body despite stored B etag)
+        stubDesk200(hash: "hb", generated: "tb", etag: "\"etag-b-new\"", equity: 222)
+        await sync.sync(waitForConnectivity: false, probeHealth: false)
+        let headers = DeskStubURLProtocol.lastRequestHeaders["/api/desk"] ?? [:]
+        let inm = headers["If-None-Match"] ?? headers["if-none-match"]
+        XCTAssertNil(inm, "staleMismatch must force unconditional GET")
+        XCTAssertEqual(sync.freshness, .fresh)
+        XCTAssertEqual(sync.snapshot?.equityNok, 222)
+    }
+
+    func test304WithoutResponseETagKeepsPrior() async {
+        stubHealth()
+        stubDesk200(hash: "h1", generated: "t1", etag: "\"keep-me\"")
+        await sync.sync(waitForConnectivity: true, probeHealth: true)
+        XCTAssertEqual(sync.lastETag, "\"keep-me\"")
+
+        stubDesk304(etag: nil) // no ETag header on 304
+        await sync.sync(waitForConnectivity: false, probeHealth: false)
+        XCTAssertEqual(sync.lastETag, "\"keep-me\"")
+        XCTAssertEqual(sync.freshness, .fresh)
+        XCTAssertNotNil(sync.lastSuccessSyncAt)
+    }
+
+    func testUserSyncQueuedDuringSilentPoll() async {
+        stubHealth()
+        stubDesk200(hash: "h1", generated: "t1", etag: "\"e\"")
+        await sync.sync(waitForConnectivity: true, probeHealth: true)
+
+        stubDesk304(etag: "\"e\"", hold: true)
+        let silentStarted = expectation(description: "silent held")
+        DeskStubURLProtocol.onRequestStarted = { path in
+            if path == "/api/desk" { silentStarted.fulfill() }
+        }
+        let silentTask = Task { await sync.sync(waitForConnectivity: false, probeHealth: false) }
+        await fulfillment(of: [silentStarted], timeout: 2)
+
+        // Queue user Sync while silent is in flight.
+        await sync.sync(waitForConnectivity: true, probeHealth: true)
+
+        // Prepare follow-up body before releasing silent.
+        stubHealth()
+        stubDesk200(hash: "h2", generated: "t2", etag: "\"e2\"", equity: 777)
+        DeskStubURLProtocol.onRequestStarted = nil
+        DeskStubURLProtocol.resumeHeldRequest()
+        await silentTask.value
+
+        // Follow-up Task is scheduled from defer — wait for content apply.
+        let deadline = Date().addingTimeInterval(3)
+        while Date() < deadline {
+            if sync.snapshot?.contentHash == "h2" { break }
+            try? await Task.sleep(nanoseconds: 30_000_000)
+        }
+        XCTAssertEqual(sync.snapshot?.contentHash, "h2", "queued user sync should apply after silent poll")
+        XCTAssertEqual(sync.snapshot?.equityNok, 777)
+        XCTAssertFalse(sync.isSyncing)
     }
 }

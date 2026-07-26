@@ -30,6 +30,7 @@ final class SyncService: ObservableObject {
     static let lastKnownGoodURLKey = "last_known_good_base_url"
     static let rttSamplesKey = "health_rtt_samples_ms"
     /// UserDefaults key prefix for stored desk ETag (suffix = normalized base URL).
+    /// `clearCache` clears only the **current** base URL’s key; other profiles’ etags remain.
     static let etagKeyPrefix = "desk_etag_"
     private static let maxRTTSamples = 5
     /// Throttle chrome RTT publish (D2.1 / C1).
@@ -70,6 +71,8 @@ final class SyncService: ObservableObject {
     private var isApplyingProfileURL = false
     /// Separate from `isSyncing` so silent background polls can skip chrome while still serializing work.
     private var syncInFlight = false
+    /// User tapped Sync (or probeHealth path) while a silent poll was in flight — run after.
+    private var followUpUserSync = false
     private var profileCancellable: AnyCancellable?
     private let defaults: UserDefaults
 
@@ -165,6 +168,7 @@ final class SyncService: ObservableObject {
     /// Battery-friendly adaptive poll (iPhone 14 Pro / 16 Pro).
     /// Fresh & recent → 2 min; fresh but aging → 45s; stale/empty → 25s.
     /// Contact clock (`lastSuccessSyncAt`) is refreshed on 304 / content-unchanged so idle PC stays at 120s.
+    /// After a failed fetch, freshness becomes `.stale` → 25s (intentional faster retry); contact clock is preserved for UI.
     var pollIntervalSeconds: TimeInterval {
         if !network.isSatisfied { return 90 }
         if freshness == .fresh, let age = lastSuccessAgeSeconds {
@@ -201,8 +205,8 @@ final class SyncService: ObservableObject {
             freshness = .empty
             return
         }
-        lastSuccessSyncAt = env.cachedAt
-        applyEnvelope(env, preferredURL: baseURLString)
+        // Cold start: no live contact yet — seed from cache wall clock.
+        applyEnvelope(env, preferredURL: baseURLString, updateContactFromCache: true)
     }
 
     func clearCache() {
@@ -213,6 +217,7 @@ final class SyncService: ObservableObject {
         serverApiVersion = nil
         apiCompatibility = .unknown
         freshness = .empty
+        // Clears ETag for the **current** base URL only (other profiles keep theirs).
         clearETagStorage()
     }
 
@@ -231,20 +236,34 @@ final class SyncService: ObservableObject {
     ///     Background polls set false and take RTT from the desk request only (half the
     ///     round-trips on the radio — matters on iPhone 14 Pro + LAN).
     func sync(waitForConnectivity: Bool, probeHealth: Bool = true) async {
-        guard !syncInFlight else { return }
+        // Silent background poll: no isSyncing chrome / ProgressView spinner.
+        let silent = !waitForConnectivity && !probeHealth
+
+        if syncInFlight {
+            // Coalesce: user Sync during silent poll → run a full sync after in-flight work.
+            if !silent {
+                followUpUserSync = true
+            }
+            return
+        }
+
         // Don't burn battery probing when the path is down — show cache.
         if !waitForConnectivity, !network.isSatisfied {
             if snapshot == nil { loadCacheOnly() }
             return
         }
 
-        // Silent background poll: no isSyncing chrome / ProgressView spinner.
-        let silent = !waitForConnectivity && !probeHealth
         syncInFlight = true
         if !silent { isSyncing = true }
         defer {
             syncInFlight = false
             if !silent { isSyncing = false }
+            if followUpUserSync {
+                followUpUserSync = false
+                Task { @MainActor in
+                    await self.sync(waitForConnectivity: true, probeHealth: true)
+                }
+            }
         }
 
         let syncedProfileID = profileStore.defaultProfile?.id
@@ -263,10 +282,15 @@ final class SyncService: ObservableObject {
                 recordRTT(health.rttMs)
                 noteServerAPIVersion(health.apiVersion)
             }
+
+            // Conditional GET only when local snapshot is trusted for this host.
+            // On staleMismatch / empty: force full body (never 304-promote foreign cache).
+            let ifNoneMatch = etagEligibleForConditionalGet ? lastETag : nil
+
             let fetch = try await client.fetchDesk(
                 baseURL: base,
                 waitForConnectivity: waitForConnectivity,
-                ifNoneMatch: lastETag
+                ifNoneMatch: ifNoneMatch
             )
             // Desk RTT always recorded (poll path has no separate health).
             if !probeHealth {
@@ -275,8 +299,14 @@ final class SyncService: ObservableObject {
 
             switch fetch.outcome {
             case .notModified:
+                // 304 with host-mismatched / empty snapshot must not become .fresh.
+                if !etagEligibleForConditionalGet {
+                    // Should be rare (we omit If-None-Match); keep mismatch, no false-fresh.
+                    lastError = nil
+                    return
+                }
                 // D2.1 contact path — no snapshot / cache mutation.
-                markContactSuccess(responseETag: fetch.etag)
+                markContactSuccess(responseETag: fetch.etag, promoteFresh: true)
                 if waitForConnectivity { Haptics.success() }
                 return
 
@@ -289,7 +319,7 @@ final class SyncService: ObservableObject {
 
                 // Prefer content_hash over generated_at for skip when present.
                 if isContentUnchanged(incoming: snap) {
-                    markContactSuccess(responseETag: fetch.etag)
+                    markContactSuccess(responseETag: fetch.etag, promoteFresh: true)
                     if waitForConnectivity { Haptics.success() }
                     return
                 }
@@ -301,7 +331,7 @@ final class SyncService: ObservableObject {
                     try await Task.detached(priority: .utility) {
                         try cacheStore.save(deskObject: raw, sourceBaseURL: sourceURL)
                     }.value
-                    markContactSuccess(responseETag: fetch.etag)
+                    markContactSuccess(responseETag: fetch.etag, promoteFresh: true)
                     if let syncedProfileID {
                         profileStore.markSuccess(profileID: syncedProfileID, at: lastSuccessSyncAt ?? "")
                     }
@@ -314,7 +344,7 @@ final class SyncService: ObservableObject {
                     if waitForConnectivity { Haptics.success() }
                 } catch {
                     // Live body applied — still refresh contact clock + ETag; no disk envelope.
-                    markContactSuccess(responseETag: fetch.etag)
+                    markContactSuccess(responseETag: fetch.etag, promoteFresh: false)
                     if snapshot != snap {
                         snapshot = snap
                     }
@@ -325,12 +355,29 @@ final class SyncService: ObservableObject {
             }
         } catch {
             lastError = error.localizedDescription
+            // Preserve contact clock (lastSuccessSyncAt). Cache wall must not stomp a
+            // recently refreshed live contact — that regressed adaptive-poll honesty.
             if let env = cache.load() {
-                applyEnvelope(env, preferredURL: base.absoluteString)
-            } else {
+                applyEnvelope(env, preferredURL: base.absoluteString, updateContactFromCache: false)
+            } else if snapshot == nil {
                 freshness = .empty
             }
+            // Intentional: freshness → .stale (or mismatch) so pollInterval drops to 25s for
+            // faster retry after failure; lastSuccessSyncAt stays at last real contact.
             if waitForConnectivity { Haptics.error() }
+        }
+    }
+
+    // MARK: - Host affinity / conditional GET eligibility
+
+    /// Snapshot is trusted for the active base URL (same-host cache or live).
+    /// Not for `staleMismatch` (foreign host’s desk) or `empty`.
+    private var etagEligibleForConditionalGet: Bool {
+        switch freshness {
+        case .fresh, .stale, .liveNotPersisted:
+            return snapshot != nil
+        case .staleMismatch, .empty:
+            return false
         }
     }
 
@@ -342,6 +389,7 @@ final class SyncService: ObservableObject {
     }
 
     /// Pure helper for tests / skip path (nonisolated — no actor state).
+    /// Prefer hash when both sides have one; if prior hash is empty, fall through to `generated_at`.
     nonisolated static func isContentUnchanged(
         incoming: DeskSnapshot,
         applied: DeskSnapshot?,
@@ -350,7 +398,10 @@ final class SyncService: ObservableObject {
         guard freshness == .fresh, applied != nil else { return false }
         if let h = incoming.contentHash?.trimmingCharacters(in: .whitespacesAndNewlines), !h.isEmpty {
             let prior = applied?.contentHash?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-            return !prior.isEmpty && h == prior
+            if !prior.isEmpty {
+                return h == prior
+            }
+            // Prior missing hash (old cache / pre-1.2.0 body) → fall through to generated_at.
         }
         if let g = incoming.generatedAt, !g.isEmpty {
             return g == applied?.generatedAt
@@ -360,13 +411,19 @@ final class SyncService: ObservableObject {
 
     // MARK: - Contact clock + ETag
 
-    /// D2.1: successful desk result without content apply (304 or content-unchanged 200).
-    private func markContactSuccess(responseETag: String?) {
+    /// Record successful desk contact + optional ETag store (304, content-unchanged, or applied).
+    private func markContactSuccess(responseETag: String?, promoteFresh: Bool) {
         lastError = nil
         let when = ISO8601DateFormatter().string(from: Date())
         lastSuccessSyncAt = when
-        if snapshot != nil {
-            freshness = .fresh
+        if promoteFresh, snapshot != nil {
+            // Never promote host-mismatched / empty snapshot to .fresh on 304.
+            switch freshness {
+            case .staleMismatch, .empty:
+                break
+            case .fresh, .stale, .liveNotPersisted:
+                freshness = .fresh
+            }
         }
         // 304 without ETag response: keep prior. New ETag: store.
         if let etag = responseETag?.trimmingCharacters(in: .whitespacesAndNewlines), !etag.isEmpty {
@@ -434,7 +491,13 @@ final class SyncService: ObservableObject {
         defaults.set(url, forKey: Self.lastKnownGoodURLKey)
     }
 
-    private func applyEnvelope(_ env: CacheEnvelope, preferredURL: String) {
+    /// Apply disk envelope for UI. Contact clock is the live success clock — only seed from
+    /// `cached_at` when `updateContactFromCache` is true (cold load). Error fallback must pass false.
+    private func applyEnvelope(
+        _ env: CacheEnvelope,
+        preferredURL: String,
+        updateContactFromCache: Bool
+    ) {
         let data = try? JSONSerialization.data(withJSONObject: env.desk.toFoundation())
         if let data, let snap = try? JSONDecoder().decode(DeskSnapshot.self, from: data) {
             snapshot = snap
@@ -446,7 +509,10 @@ final class SyncService: ObservableObject {
         } else {
             freshness = .staleMismatch
         }
-        lastSuccessSyncAt = env.cachedAt
+        if updateContactFromCache {
+            lastSuccessSyncAt = env.cachedAt
+        }
+        // else: preserve existing lastSuccessSyncAt (contact clock honesty)
     }
 
     private func noteServerAPIVersion(_ version: String?) {
