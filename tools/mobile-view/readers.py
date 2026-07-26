@@ -404,9 +404,11 @@ def _kickoff_index_from_odds_files(root: Path) -> dict[str, str]:
     global _odds_index_cache
     root = Path(root)
     fp = _odds_candidates_fingerprint(root)
-    if _odds_index_cache is not None and _odds_index_cache.fingerprint == fp:
+    # Bind once: another thread may replace the global between check and read.
+    cached_odds = _odds_index_cache
+    if cached_odds is not None and cached_odds.fingerprint == fp:
         _debug_log("odds_parse_cache_hit")
-        return dict(_odds_index_cache.index)
+        return dict(cached_odds.index)
 
     _debug_log("odds_parse_cache_miss")
     index: dict[str, str] = {}
@@ -677,9 +679,11 @@ def _place_these(path: Path) -> dict[str, Any]:
     global _place_these_cache
     path = Path(path)
     fp = _file_stat_tuple(path)
-    if _place_these_cache is not None and _place_these_cache.fingerprint == fp:
+    # Bind once: another thread may replace the global between check and read.
+    cached_place = _place_these_cache
+    if cached_place is not None and cached_place.fingerprint == fp:
         _debug_log("place_these_parse_cache_hit")
-        return copy.deepcopy(_place_these_cache.place)
+        return copy.deepcopy(cached_place.place)
 
     _debug_log("place_these_parse_cache_miss")
     if not path.is_file():
