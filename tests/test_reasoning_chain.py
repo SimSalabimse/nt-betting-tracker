@@ -647,18 +647,52 @@ def test_format_md_explore_withheld_and_form_continuity_text():
         sport="baseball",
         market_type="handicap",
         p_model=0.55,
-        notes="thin",
+        notes="thin; explore_boost=withheld (base_ev=+0.004<=min)",
         base_ev=0.004,
         explore_boost_applied=0.0,
         form_continuity_reason="form_continuity: Opposite side of recent successful A -1.5 — demoted",
         sort_ev=-0.02,
     )
+    # Optional portfolio field when present
+    try:
+        rec.explore_withhold_reason = "base_ev_min"  # type: ignore[attr-defined]
+    except Exception:
+        pass
     chain = build_chain_from_pick(rec, haircut=0.03)
     md = format_reasoning_md([chain])
     assert "explore_boost=withheld" in md
     assert "base_ev=+0.004" in md
     assert "form_continuity: Opposite side" in md
     assert "not evaluated" in md
+    assert chain.get("explore_withhold")
+
+
+def test_explore_zero_without_withhold_not_labeled_withheld():
+    """Ordinary non-explore seat: boost 0 shows +0.000, not withheld."""
+    pick = {
+        "match": "C vs D",
+        "selection": "Over 2.5",
+        "decimal_odds": 2.00,
+        "stake_nok": 12,
+        "ev": 0.05,
+        "grade": "B",
+        "sport": "football",
+        "market_type": "total",
+        "p_model": 0.55,
+        "notes": "solid edge",
+        "base_ev": 0.05,
+        "explore_boost_applied": 0.0,
+    }
+    chain = build_chain_from_pick(pick, haircut=0.03)
+    md = format_reasoning_md([chain])
+    assert "explore_boost=+0.000" in md
+    assert "withheld" not in md
+    # Dict without explore_boost_applied key → n/a
+    pick2 = {k: v for k, v in pick.items() if k != "explore_boost_applied"}
+    chain2 = build_chain_from_pick(pick2, haircut=0.03)
+    assert chain2.get("explore_boost_applied") is None
+    md2 = format_reasoning_md([chain2])
+    assert "explore_boost=n/a" in md2
 
 
 def test_near_miss_form_continuity_fields_and_process():
@@ -691,8 +725,9 @@ def test_near_miss_form_continuity_fields_and_process():
 
     md = format_reasoning_md([chain])
     assert "## Near-miss / Rejected" in md
-    assert "form_continuity" in md
-    assert "process: missing_opposite_side_check" in md or "Rockies" in md
+    # Both machine tags when FC reject + missing opposite-side process
+    assert " · form_continuity" in md
+    assert "process: missing_opposite_side_check" in md
 
 
 def test_soft_demotion_reason_split_into_pen_slots():
@@ -728,3 +763,41 @@ def test_soft_demotion_reason_split_into_pen_slots():
     assert "similar to recent" in md
     assert "lessons_soft" in md
     assert "form_continuity:" in md
+
+
+def test_multi_clause_form_continuity_soft_demotion_fallback():
+    """Brewers-style multi-clause FC reason must not truncate on bare ';'."""
+    fc_full = (
+        "form_continuity: Opposite side of recent successful Milwaukee Brewers -1.5 "
+        "— strong continuity penalty applied; weak flip justification — rejected"
+    )
+    pick = {
+        "match": "Milwaukee Brewers vs Colorado Rockies",
+        "selection": "Handikap 2-veis -2.5: Colorado Rockies +2.5",
+        "decimal_odds": 1.75,
+        "stake_nok": 10,
+        "ev": 0.02,
+        "grade": "B",
+        "sport": "baseball",
+        "market_type": "handicap",
+        "market_key": "baseball_handicap",
+        "p_model": 0.58,
+        "notes": "easier line",
+        "base_ev": 0.02,
+        "explore_boost_applied": 0.0,
+        "sort_ev": -0.04,
+        # No explicit form_continuity_reason — fallback from soft_demotion only
+        "soft_demotion_reason": (
+            "similar to recent baseball_handicap – demoted (1 in last 12); "
+            "lessons_soft: baseball_handicap (research_process_miss); "
+            + fc_full
+        ),
+    }
+    chain = build_chain_from_pick(pick, haircut=0.03)
+    assert chain["form_continuity_reason"] == fc_full
+    assert "weak flip justification — rejected" in chain["form_continuity_reason"]
+    assert "lessons_soft" in chain["lessons_soft_reason"]
+    assert "similar" in chain["similar_recent_reason"].lower()
+    md = format_reasoning_md([chain])
+    assert "weak flip justification — rejected" in md
+

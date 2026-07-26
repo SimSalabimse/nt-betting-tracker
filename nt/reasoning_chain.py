@@ -151,38 +151,100 @@ def _market_family_of(obj: Any) -> str:
     return ""
 
 
+# Peer soft-pen starts — do NOT split on bare ";" (FC reasons embed "; " clauses).
+_SOFT_PEER_START = re.compile(
+    r"(?:"
+    r"form_continuity\s*:"
+    r"|lessons_soft\s*:"
+    r"|similar_recent\s*:"
+    r"|similar\s+to\s+recent"
+    r"|similar\s*:"
+    r")",
+    re.IGNORECASE,
+)
+
+
+def _split_soft_peer_blobs(text: str) -> list[str]:
+    """
+    Split combined soft_demotion on peer pen markers, not bare ';'.
+
+    Live form_continuity reasons are built as
+    ``form_continuity: clause A; clause B`` — bare ';' split truncates FC.
+    """
+    text = (text or "").strip()
+    if not text:
+        return []
+    matches = list(_SOFT_PEER_START.finditer(text))
+    if not matches:
+        return [text]
+    parts: list[str] = []
+    if matches[0].start() > 0:
+        lead = text[: matches[0].start()].strip(" ;")
+        if lead:
+            parts.append(lead)
+    for i, m in enumerate(matches):
+        end = matches[i + 1].start() if i + 1 < len(matches) else len(text)
+        chunk = text[m.start() : end].strip(" ;")
+        if chunk:
+            parts.append(chunk)
+    return parts
+
+
+def _classify_soft_peer(blob: str) -> str | None:
+    """Return 'fc' | 'les' | 'sim' | None for one peer blob."""
+    pl = (blob or "").strip().lower()
+    if not pl:
+        return None
+    if pl.startswith("form_continuity:") or pl.startswith("form_continuity"):
+        return "fc"
+    if "lessons_soft" in pl or pl.startswith("lessons:"):
+        return "les"
+    if (
+        "similar_recent" in pl
+        or "similar to recent" in pl
+        or pl.startswith("similar:")
+    ):
+        return "sim"
+    return None
+
+
 def _soft_pen_reasons(obj: Any) -> tuple[str, str, str]:
     """
     Resolve (similar_recent_reason, lessons_soft_reason, form_continuity_reason).
 
     Prefers explicit Recommendation fields; falls back to classifying
-    soft_demotion_reason / reasons parts (PR2 may only set the combined field).
+    soft_demotion_reason / reasons peer blobs (PR2 may only set the combined field).
+
+    Multi-clause form_continuity reasons that embed ``; `` stay intact.
     """
     sim = str(_pick_attr(obj, "similar_recent_reason") or "").strip()
     les = str(_pick_attr(obj, "lessons_soft_reason") or "").strip()
     fc = str(_pick_attr(obj, "form_continuity_reason") or "").strip()
 
-    parts: list[str] = []
+    peers: list[str] = []
     soft = str(_pick_attr(obj, "soft_demotion_reason") or "").strip()
     if soft:
-        parts.extend(p.strip() for p in soft.split(";") if p.strip())
+        peers.extend(_split_soft_peer_blobs(soft))
     for r in list(_pick_attr(obj, "reasons") or []):
         s = str(r or "").strip()
-        if s and s not in parts:
-            parts.append(s)
+        if not s:
+            continue
+        # Whole reason string is one peer (may be multi-clause FC)
+        if s not in peers:
+            peers.append(s)
 
-    for p in parts:
-        pl = p.lower()
-        if not fc and (p.startswith("form_continuity:") or pl.startswith("form_continuity")):
-            fc = p
-        elif not les and ("lessons_soft" in pl or pl.startswith("lessons:")):
-            les = p
-        elif not sim and (
-            "similar_recent" in pl
-            or "similar to recent" in pl
-            or pl.startswith("similar:")
-        ):
-            sim = p
+    for p in peers:
+        kind = _classify_soft_peer(p)
+        if kind == "fc":
+            # Prefer longer/fuller FC blob (explicit field wins if already set longer)
+            if not fc or (p.startswith("form_continuity:") and len(p) > len(fc)):
+                fc = p
+        elif kind == "les":
+            if not les or len(p) > len(les):
+                les = p
+        elif kind == "sim":
+            if not sim or len(p) > len(sim):
+                sim = p
     return sim, les, fc
 
 
@@ -267,19 +329,55 @@ def _diversity_penalties_text(sim: str, les: str, fc: str) -> str:
     return "; ".join(bits)
 
 
+def _explore_withhold_label(obj: Any, notes: str = "") -> str | None:
+    """
+    True withhold label only when portfolio/notes signal a real explore gate.
+
+    Returns e.g. ``withheld (base_ev≤min)`` / ``withheld (band_gate)`` or None.
+    Does not invent withhold for ordinary non-explore seats (boost 0).
+    """
+    reason = str(_pick_attr(obj, "explore_withhold_reason") or "").strip().lower()
+    if reason == "band_gate":
+        return "withheld (band_gate)"
+    if reason in ("base_ev_min", "base_ev", "min"):
+        return "withheld (base_ev≤min)"
+    n = notes or str(_pick_attr(obj, "notes") or "")
+    if "explore_boost=withheld" in n:
+        m = re.search(
+            r"explore_boost=(withheld(?:\s*\([^)]*\))?)",
+            n,
+            re.IGNORECASE,
+        )
+        if m:
+            return m.group(1).strip()
+        return "withheld"
+    return None
+
+
 def _ev_split_text(
     base_ev: float | None,
     explore_boost_applied: float | None,
     placed_ev: float | None,
+    *,
+    withhold_label: str | None = None,
 ) -> str:
-    """Dual EV display: base_ev / explore_boost / placed_ev."""
+    """
+    Dual EV display: base_ev / explore_boost / placed_ev.
+
+    - Positive boost → numeric
+    - Real gate withhold → ``withheld (…)`` (only when signalled)
+    - Explicit zero without withhold → ``+0.000`` (not "withheld")
+    - Field absent (None) → ``n/a``
+    """
     be = f"{float(base_ev):+.3f}" if base_ev is not None else "n/a"
     pe = f"{float(placed_ev):+.3f}" if placed_ev is not None else "n/a"
     if explore_boost_applied is not None and float(explore_boost_applied) > 1e-12:
         eb = f"{float(explore_boost_applied):+.3f}"
-    elif base_ev is not None:
-        # Boost was scored but withheld (or never applied)
-        eb = "withheld"
+    elif withhold_label:
+        wl = withhold_label.strip()
+        eb = wl if wl.lower().startswith("withheld") else f"withheld ({wl})"
+    elif explore_boost_applied is not None:
+        eb = f"{float(explore_boost_applied):+.3f}"
     else:
         eb = "n/a"
     return f"base_ev={be} · explore_boost={eb} · placed_ev={pe}"
@@ -499,12 +597,20 @@ def build_chain_from_pick(
     sim_r, les_r, fc_r = _soft_pen_reasons(pick)
     opp_payload = _opposite_side_payload(pick)
     base_ev = _as_float(_pick_attr(pick, "base_ev"))
-    explore_boost = _as_float(_pick_attr(pick, "explore_boost_applied"))
-    if explore_boost is None:
-        explore_boost = 0.0
+    # Preserve None when field absent (dict); do not coerce missing → 0.0
+    if isinstance(pick, dict):
+        explore_boost = (
+            _as_float(pick.get("explore_boost_applied"))
+            if "explore_boost_applied" in pick
+            else None
+        )
+    else:
+        raw_eb = getattr(pick, "explore_boost_applied", None)
+        explore_boost = _as_float(raw_eb) if raw_eb is not None else None
     ranking_gap = bool(_pick_attr(pick, "ranking_gap_hc") or False)
     sort_ev = _as_float(_pick_attr(pick, "sort_ev"))
     market_family = _market_family_of(pick)
+    withhold_label = _explore_withhold_label(pick, notes)
 
     chain: dict[str, Any] = {
         "schema_version": SCHEMA_VERSION,
@@ -548,6 +654,8 @@ def build_chain_from_pick(
         "ranking_gap_hc": ranking_gap,
         "sort_ev": sort_ev,
     }
+    if withhold_label:
+        chain["explore_withhold"] = withhold_label
     if _missing_opposite_side_check(pick, opposite_payload=opp_payload):
         # Audit / process flag only — not a reject
         chain["process"] = "missing_opposite_side_check"
@@ -605,8 +713,13 @@ def build_chain_from_near_miss(
         )
     opp_payload = _opposite_side_payload(row)
     base_ev = _as_float(row.get("base_ev"))
-    explore_boost = _as_float(row.get("explore_boost_applied"))
+    explore_boost = (
+        _as_float(row.get("explore_boost_applied"))
+        if "explore_boost_applied" in row
+        else None
+    )
     sort_ev = _as_float(row.get("sort_ev"))
+    withhold_label = _explore_withhold_label(row, notes)
 
     chain: dict[str, Any] = {
         "schema_version": SCHEMA_VERSION,
@@ -642,11 +755,13 @@ def build_chain_from_near_miss(
         "lessons_soft_reason": les_r,
         "similar_recent_reason": sim_r,
         "base_ev": base_ev,
-        "explore_boost_applied": explore_boost if explore_boost is not None else 0.0,
+        "explore_boost_applied": explore_boost,
         "opposite_side_check": opp_payload,
         "ranking_gap_hc": bool(row.get("ranking_gap_hc") or False),
         "sort_ev": sort_ev,
     }
+    if withhold_label:
+        chain["explore_withhold"] = withhold_label
     if row.get("form_continuity"):
         chain["form_continuity"] = True
     if _missing_opposite_side_check(row, opposite_payload=opp_payload):
@@ -972,12 +1087,13 @@ def format_near_miss_md(chains: list[dict[str, Any]]) -> str:
             top = sorted(comps.items(), key=lambda kv: abs(float(kv[1])), reverse=True)[:4]
             if top:
                 bit += " [" + ", ".join(f"{k}:{v:+.0f}" for k, v in top) + "]"
-        if c.get("process") == "missing_opposite_side_check":
-            bit += " · process: missing_opposite_side_check"
-        elif c.get("form_continuity") or str(c.get("form_continuity_reason") or "").startswith(
+        # Both tags when both apply (FC soft-reject + missing opposite-side audit)
+        if c.get("form_continuity") or str(c.get("form_continuity_reason") or "").startswith(
             "form_continuity:"
         ):
             bit += " · form_continuity"
+        if c.get("process") == "missing_opposite_side_check":
+            bit += " · process: missing_opposite_side_check"
         lines.append(bit)
     lines.append("")
     return "\n".join(lines)
@@ -1072,9 +1188,17 @@ def _format_one_md(i: int, c: dict[str, Any]) -> list[str]:
     placed = _as_float(c.get("ev")) if c.get("ev") is not None else _as_float(
         c.get("ev_after_haircut")
     )
+    withhold = c.get("explore_withhold") or _explore_withhold_label(
+        c, str(c.get("notes") or "")
+    )
     out.append(
         "- **EV split:** "
-        + _ev_split_text(base_ev, explore_boost, placed)
+        + _ev_split_text(
+            base_ev,
+            explore_boost,
+            placed,
+            withhold_label=str(withhold) if withhold else None,
+        )
     )
 
     # Diversity: all soft pens (similar; lessons; form_continuity)
