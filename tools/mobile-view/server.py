@@ -7,6 +7,8 @@ CLI `--host` and MOBILE_VIEW_HOST must agree; launcher is the production path.
 
 from __future__ import annotations
 
+import hashlib
+import json
 import os
 import sys
 from pathlib import Path
@@ -28,6 +30,8 @@ except ImportError as e:  # pragma: no cover
     raise SystemExit(
         "fastapi is required for mobile-view. Install: pip install -r tools/mobile-view/requirements.txt"
     ) from e
+
+_CACHE_CONTROL = "private, no-cache"
 
 
 def resolve_bind_host(
@@ -58,6 +62,41 @@ def resolve_bind_host(
     return req  # e.g. 0.0.0.0, 192.168.x.x, 100.x.y.z
 
 
+def _desk_body_bytes(final_dict: dict[str, Any]) -> bytes:
+    """Serialize desk once — strong ETag is SHA-256 of these exact bytes."""
+    return json.dumps(
+        final_dict,
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+        allow_nan=False,
+    ).encode("utf-8")
+
+
+def _strong_etag(body_bytes: bytes) -> str:
+    """Strong ETag: quoted first 16 hex chars of SHA-256(body_bytes)."""
+    return '"' + hashlib.sha256(body_bytes).hexdigest()[:16] + '"'
+
+
+def _if_none_match_hits(header: str | None, etag: str) -> bool:
+    """
+    True if If-None-Match matches etag.
+    Strips weak W/ prefix for comparison leniency; compares opaque tags with quotes.
+    """
+    if not header:
+        return False
+    target = etag.strip()
+    for part in header.split(","):
+        tag = part.strip()
+        if not tag:
+            continue
+        if tag[:2].upper() == "W/" or tag[:2] == "w/":
+            tag = tag[2:].lstrip()
+        if tag == target:
+            return True
+    return False
+
+
 def create_app(project_root: Path | None = None) -> FastAPI:
     root = resolve_project_root(project_root) if project_root else resolve_project_root()
     app = FastAPI(title="NT Mobile Desk", docs_url=None, redoc_url=None)
@@ -81,9 +120,16 @@ def create_app(project_root: Path | None = None) -> FastAPI:
         }
 
     @app.get("/api/desk")
-    def desk() -> JSONResponse:
+    def desk(request: Request) -> Response:
+        # Build final dict (content_hash + stable generated_at from readers), serialize once.
         snap = build_desk_snapshot(root)
-        return JSONResponse(content=snap)
+        body_bytes = _desk_body_bytes(snap)
+        etag = _strong_etag(body_bytes)
+        headers = {"ETag": etag, "Cache-Control": _CACHE_CONTROL}
+        if _if_none_match_hits(request.headers.get("if-none-match"), etag):
+            return Response(status_code=304, content=b"", headers=headers)
+        # Serve body_bytes only — do not re-serialize via JSONResponse (key order / ETag).
+        return Response(content=body_bytes, media_type="application/json", headers=headers)
 
     @app.get("/")
     def index() -> HTMLResponse:

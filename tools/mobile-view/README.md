@@ -16,18 +16,33 @@ Windows PC data/  ──read──►  mobile-view :8787  ──JSON──►  i
 **Reads-only exception:** mobile-view may write **only** `.cache/desk_identity.json` under this
 package (durable `content_hash` → `generated_at` map so content identity survives restarts).
 It **never** mutates engine files under `data/`, `inbox/`, or `outbox/`. The `.cache/` directory
-is gitignored. Run with a **single uvicorn worker** (`reload=False`); identity/cache are process-local.
+is gitignored.
+
+**Single worker only:** run with a **single uvicorn worker** and `reload=False` (as `start.ps1` /
+`start.sh` / `server.py` do). Identity cache and in-memory snapshot cache are **process-local**;
+multi-worker would diverge on first-seen `generated_at` / ETags. Do not pass `--workers N` with N>1.
 
 ## Endpoints
 
 | Endpoint | Role |
 |----------|------|
 | `GET /api/health` | `ok`, `service`, **`api_version`**, **`schema_version`**, `project_root` |
-| `GET /api/desk` | Full snapshot (`schema_version` + `api_version` + stable `generated_at` + `content_hash` + KPIs + …) |
+| `GET /api/desk` | Full snapshot + strong **`ETag`** / conditional **`304`** (see below) |
 | `GET /` | Dark HTML desk |
 | `POST` / `PUT` / … | **405** always (HTTP write methods blocked) |
 
-Identity persistence is a **GET side-effect** only (see reads-only exception above), not an allowed write method.
+### Conditional GET (`/api/desk`)
+
+| Header / status | Behavior |
+|-----------------|----------|
+| Response **`ETag`** | Strong validator: `"<16 hex of sha256(body_bytes)>"` over the **exact** JSON body served |
+| Response **`Cache-Control`** | `private, no-cache` (always revalidate; LAN desk is not a shared CDN cache) |
+| Request **`If-None-Match`** | Prior ETag; weak `W/` prefix accepted for comparison |
+| **`200`** | Body = canonical JSON (sorted keys, compact separators); same bytes as ETag source |
+| **`304`** | Empty body; same `ETag` + `Cache-Control` when content unchanged |
+
+There is **no dedicated HEAD** handler; clients use **GET** (product path). Identity persistence is
+a **GET side-effect** only (see reads-only exception above), not an allowed write method.
 
 ## Install / run
 

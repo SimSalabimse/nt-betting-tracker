@@ -14,6 +14,10 @@ Format: [Keep a Changelog](https://keepachangelog.com/)-style.
   package-local `tools/mobile-view/.cache/desk_identity.json` (survives process restart)
 - In-process full-snapshot memory cache keyed on explicit per-file fingerprints
   (core state files + odds candidate path/mtime/size; no odds parse cache yet)
+- Strong **`ETag`** on `/api/desk` — `"<16 hex of sha256(exact body bytes)>"`; body serialized once
+  (sorted keys, compact separators) and served as those bytes (no JSONResponse re-dump)
+- **`If-None-Match`** → **`304`** empty body with same `ETag` when content unchanged
+  (`Cache-Control: private, no-cache` on both 200 and 304; weak `W/` prefix accepted)
 
 ### Changed
 - `generated_at` no longer stamped on every request when the ledger is idle — clients can skip
@@ -22,7 +26,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/)-style.
 ### Notes
 - `schema_version` remains **1** (additive only)
 - GET may write **only** `.cache/desk_identity.json` under this package; never engine SSOT
-- ETag/304 deferred to a follow-up PR
+- Run **single uvicorn worker** only (process-local identity + snapshot cache)
 
 ## [1.1.3] — 2026-07-26
 

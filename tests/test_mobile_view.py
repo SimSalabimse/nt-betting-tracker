@@ -504,3 +504,108 @@ def test_no_writes_under_data_state(readers_mod, tmp_path, isolated_identity):
 def test_api_version_is_1_2_0():
     ver = (MV / "VERSION").read_text(encoding="utf-8").strip().splitlines()[0]
     assert ver == "1.2.0"
+
+
+# --- ETag / If-None-Match 304 (api_version 1.2.0 / D2.2) -------------------------
+
+
+@pytest.fixture
+def desk_http(server_mod, tmp_path, monkeypatch):
+    """httpx TestClient over /api/desk with isolated identity + fixture root."""
+    pytest.importorskip("fastapi")
+    pytest.importorskip("httpx")
+    import readers
+    from fastapi.testclient import TestClient
+
+    identity = tmp_path / "pkg_cache" / "desk_identity.json"
+    monkeypatch.setattr(readers, "_IDENTITY_PATH", identity)
+    readers.clear_desk_cache()
+    root = tmp_path / "desk_root"
+    _write_minimal_desk_fixture(root)
+    # create_app requires a valid NT project root (config.yaml + data/)
+    (root / "config.yaml").write_text("project: test\n", encoding="utf-8")
+    client = TestClient(server_mod.create_app(root))
+    yield client, root, readers
+    readers.clear_desk_cache()
+
+
+def test_desk_etag_matches_sha256_of_exact_body(desk_http):
+    """200 ETag == quoted first 16 hex of SHA-256(response.content); no double-serialize."""
+    import hashlib
+
+    client, _root, _readers = desk_http
+    r = client.get("/api/desk")
+    assert r.status_code == 200
+    etag = r.headers.get("etag") or r.headers.get("ETag")
+    assert etag is not None
+    expected = '"' + hashlib.sha256(r.content).hexdigest()[:16] + '"'
+    assert etag == expected
+    assert r.headers.get("cache-control") == "private, no-cache"
+    # Body is the single canonical serialize used for ETag (not a re-dump with other key order)
+    body_dict = json.loads(r.content.decode("utf-8"))
+    re_serialized = json.dumps(
+        body_dict,
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+        allow_nan=False,
+    ).encode("utf-8")
+    assert r.content == re_serialized
+    assert "content_hash" in body_dict and "generated_at" in body_dict
+
+
+def test_desk_if_none_match_returns_304(desk_http):
+    """Second GET with If-None-Match → 304 empty body, ETag + Cache-Control present."""
+    client, _root, _readers = desk_http
+    r1 = client.get("/api/desk")
+    assert r1.status_code == 200
+    etag = r1.headers["etag"]
+
+    r2 = client.get("/api/desk", headers={"If-None-Match": etag})
+    assert r2.status_code == 304
+    assert r2.content == b""
+    assert r2.headers.get("etag") == etag
+    assert r2.headers.get("cache-control") == "private, no-cache"
+
+    # Weak form accepted (strip W/)
+    r3 = client.get("/api/desk", headers={"If-None-Match": f"W/{etag}"})
+    assert r3.status_code == 304
+    assert r3.content == b""
+    assert r3.headers.get("etag") == etag
+
+
+def test_desk_etag_changes_when_content_changes(desk_http):
+    """Content mutation → 200 with a new ETag (If-None-Match of old tag does not 304)."""
+    import hashlib
+    import time
+
+    client, root, readers = desk_http
+    r1 = client.get("/api/desk")
+    assert r1.status_code == 200
+    old_etag = r1.headers["etag"]
+
+    time.sleep(0.02)  # ensure mtime differs for memory-cache invalidation
+    _write_minimal_desk_fixture(root, stake="25")
+    readers.clear_desk_cache()  # force rebuild if mtime granularity is coarse
+
+    r2 = client.get("/api/desk", headers={"If-None-Match": old_etag})
+    assert r2.status_code == 200
+    new_etag = r2.headers["etag"]
+    assert new_etag != old_etag
+    assert new_etag == '"' + hashlib.sha256(r2.content).hexdigest()[:16] + '"'
+    body = r2.json()
+    assert abs(float(body["pending_at_risk_nok"]) - 25.0) < 0.01
+
+
+def test_if_none_match_helper_strips_weak_prefix(server_mod):
+    etag = '"abcdef0123456789"'
+    hits = server_mod._if_none_match_hits
+    assert hits(etag, etag) is True
+    assert hits(f"W/{etag}", etag) is True
+    assert hits(f"w/{etag}", etag) is True
+    assert hits(f"W/ {etag}", etag) is True
+    assert hits('"deadbeefdeadbeef"', etag) is False
+    assert hits(None, etag) is False
+    assert hits("", etag) is False
+    assert hits(f'"other", {etag}', etag) is True
+

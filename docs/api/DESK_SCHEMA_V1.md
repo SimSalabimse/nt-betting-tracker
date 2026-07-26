@@ -20,9 +20,20 @@
 | Method | Path | Body |
 |--------|------|------|
 | `GET` | `/api/health` | Reachability + versions |
-| `GET` | `/api/desk` | Full desk snapshot (this schema) |
+| `GET` | `/api/desk` | Full desk snapshot (this schema); strong `ETag` / conditional `304` (api ≥ 1.2.0) |
 | `GET` | `/` | HTML desk (same snapshot) |
 | `POST`/`PUT`/… | any | **405** |
+
+### Conditional GET headers (`/api/desk`, api ≥ 1.2.0)
+
+| Item | Value |
+|------|--------|
+| `ETag` (response) | Strong: `"<first 16 hex of SHA-256(body_bytes)>"` where `body_bytes` is the exact JSON response body |
+| `Cache-Control` | `private, no-cache` on 200 and 304 |
+| `If-None-Match` (request) | Previous `ETag`; weak `W/"…"` accepted for comparison |
+| `304` | Empty body; same `ETag` + `Cache-Control` when validator matches |
+
+Body serialization for ETag: `json.dumps(..., sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False).encode("utf-8")` — served as those bytes (no second serialize).
 
 ### `/api/health` (minimum)
 
