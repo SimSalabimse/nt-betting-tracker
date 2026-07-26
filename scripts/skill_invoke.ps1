@@ -3,7 +3,7 @@
 
 param(
     [Parameter(Mandatory = $true, Position = 0)]
-    [ValidateSet("daily-run", "missed-audit", "chain-explain", "bankroll-tune", "learning-rootcause")]
+    [ValidateSet("daily-run", "missed-audit", "chain-explain", "bankroll-tune", "learning-rootcause", "deep-research")]
     [string]$Skill
 )
 
@@ -88,6 +88,24 @@ First steps:
   python run_nt.py control-signals list --json
 
 Deliverables: taxonomy table · settlement_reviews.jsonl · reweight report
+"@
+    }
+    "deep-research" {
+        Write-Host @"
+Grok: /deep-research
+
+First steps:
+  # Primary worklist ≤15 only (MULTI_AGENT_SHORTLIST ## Primary worklist)
+  # REFUSE full-board deep
+  python run_nt.py status
+  # Live anchor: live bets.csv only — never history/archives
+  # Exa both-sides per line (4–6); Firecrawl 0–2 scrapes; ≤4 min/line; batch ≤45 min
+  # Assemble payload → atomic helper ONLY (never bare write-pack as final):
+  python scripts/write_deep_research_pack.py --payload outbox/deep_research/<slug>.payload.json --odds-ref <dec>
+  # Optional: python run_nt.py research critique evidence/<pack>.json --odds <dec>
+  # Append outbox/DEEP_RESEARCH_BATCH.md
+
+Deliverables: evidence/*.json (deep_research_v1) · outbox/DEEP_RESEARCH_BATCH.md · outbox/deep_research/*.md
 "@
     }
 }

@@ -8,7 +8,8 @@ $names = @(
     "missed-audit",
     "chain-explain",
     "bankroll-tune",
-    "learning-rootcause"
+    "learning-rootcause",
+    "deep-research"
 )
 
 Write-Host "Grok skills root: $skillsRoot"
@@ -26,4 +27,4 @@ foreach ($n in $names) {
 
 Write-Host ""
 Write-Host "Docs: docs/DESK_SKILLS.md  |  Law: AGENTS.md"
-Write-Host "Invoke in Grok: /daily-run  /missed-audit  /chain-explain  /bankroll-tune  /learning-rootcause"
+Write-Host "Invoke in Grok: /daily-run  /missed-audit  /chain-explain  /bankroll-tune  /learning-rootcause  /deep-research"

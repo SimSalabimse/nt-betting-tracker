@@ -13,12 +13,13 @@ Engines in `nt/` remain law. Skills encode **workflows**; they never invent `p_m
 | `/chain-explain` | `~/.grok/skills/chain-explain/` | Full Reasoning Chain for match/selection — light SSOT promo components + near-miss stage/reason |
 | `/bankroll-tune` | `~/.grok/skills/bankroll-tune/` | Secure/phase/unit/regime proposal → MC (`mc_phase_progression.py`) + capital tools |
 | `/learning-rootcause` | `~/.grok/skills/learning-rootcause/` | Taxonomy + `learning_weight` + ControlSignals; **safe** backfill (proposed file default; `--apply` for live) |
+| `/deep-research` | `~/.grok/skills/deep-research/` | Stage 2 only: Exa both-sides + evidence packs on **primary worklist ≤15** (multi-agent shortlist ∪ coverage_critical). Refuse full-board deep. Not inside scan A/B/C. Final write via `scripts/write_deep_research_pack.py` only. Design: [`DEEP_RESEARCH_SKILL_ESR_2026-07-26.md`](./DEEP_RESEARCH_SKILL_ESR_2026-07-26.md) · mirror: [`skills_mirror_deep-research.md`](./skills_mirror_deep-research.md) · Exa: [`EXA_RESEARCH_USAGE.md`](./EXA_RESEARCH_USAGE.md) |
 
 ## Planned skills
 
 | Slash | Directory (planned) | Role | Status |
 |-------|---------------------|------|--------|
-| `/deep-research` | `~/.grok/skills/deep-research/` | Stage 2 only: Exa both-sides + evidence packs on **primary worklist ≤15** (multi-agent shortlist ∪ coverage_critical). Refuse full-board deep. Not inside scan A/B/C. Design: [`DEEP_RESEARCH_SKILL_ESR_2026-07-26.md`](./DEEP_RESEARCH_SKILL_ESR_2026-07-26.md) · Exa usage: [`EXA_RESEARCH_USAGE.md`](./EXA_RESEARCH_USAGE.md) | **Planned** (skill + atomic helper land in skill PR; not installed yet) |
+| *(none currently)* | — | — | Stage 2 `/deep-research` is **installed** (atomic helper + dual-write skill) |
 
 Each skill **must** load root `AGENTS.md` first and use real CLI/tools.
 
@@ -36,6 +37,8 @@ From a Grok session with CWD = tracker root:
 /chain-explain Match Name | Selection @ 2.05
 /bankroll-tune secure soft trigger
 /learning-rootcause last settle batch
+/deep-research
+/deep-research -- primary worklist from MULTI_AGENT_SHORTLIST
 ```
 
 Also: TUI `/skills <name>` · auto-invoke when the skill `description` matches user intent.
@@ -51,6 +54,7 @@ Skills are plain directories:
   chain-explain\SKILL.md
   bankroll-tune\SKILL.md
   learning-rootcause\SKILL.md
+  deep-research\SKILL.md
 ```
 
 Grok reloads skills when files change on disk (slash menu updates within a few seconds).
@@ -71,6 +75,7 @@ Repo scripts (run from tracker root):
 .\scripts\skill_invoke.ps1 chain-explain
 .\scripts\skill_invoke.ps1 bankroll-tune
 .\scripts\skill_invoke.ps1 learning-rootcause
+.\scripts\skill_invoke.ps1 deep-research
 
 # Smoke suite used by desk skill PR validation
 .\scripts\skill_smoke.ps1
