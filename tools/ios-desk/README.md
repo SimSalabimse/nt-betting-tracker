@@ -29,14 +29,18 @@ From repo root (or adapt path to your script):
 
 ```bash
 # Using the in-repo wrapper (mirrors Documents/GitHub/build_unsigned_ipa.sh pattern)
+# Defaults: SCHEME=NTDesk CONFIGURATION=Release (scaffold RootView)
 ./tools/ios-desk/build_unsigned_ipa.sh
+
+# Recovery IPA (LegacyRootView via NTDESK_USE_LEGACY_UI):
+SCHEME=NTDesk-Legacy CONFIGURATION=LegacyRelease ./tools/ios-desk/build_unsigned_ipa.sh
 
 # Or your personal script:
 # /Users/simsalabim/Documents/GitHub/build_unsigned_ipa.sh \
 #   "$(pwd)/tools/ios-desk/NTDesk/NTDesk.xcodeproj"
 ```
 
-Output: `tools/ios-desk/build_unsigned/NTDesk.ipa` (unsigned).
+Output: `tools/ios-desk/build_unsigned/NTDesk.ipa` (unsigned). Env: `SCHEME`, `CONFIGURATION` (product dir = `${CONFIGURATION}-iphoneos`).
 
 **Reminder:** after any visual change (theme tokens, App Icon, AccentColor, launch color, DesignSystem components), rebuild the unsigned IPA and re-sideload so the home-screen glyph and ink launch flash match what is in the tree. Smoke: open all five tabs, pull-to-refresh online, then kill mobile-view / network and confirm the stale (or empty) banner still appears and numbers do not invent equity offline.
 
@@ -73,22 +77,33 @@ If you lack tag-create permission, still document the name `ios-desk-pre-hig-red
 
 **Rollback options if redesign regresses:**
 
-1. Ship an IPA built with scheme **NTDesk-Legacy**.
+1. Ship a Legacy IPA: `SCHEME=NTDesk-Legacy CONFIGURATION=LegacyRelease ./tools/ios-desk/build_unsigned_ipa.sh`
 2. Check out tag `ios-desk-pre-hig-redesign`.
 3. Cache format is unchanged (raw desk JSON envelope).
 
 ### Unit tests
 
+Use any available **iOS 18+** simulator (device names drift with Xcode; pick one from `xcrun simctl list devices available`):
+
 ```bash
+# Build-only (no booted sim required):
 xcodebuild -project tools/ios-desk/NTDesk/NTDesk.xcodeproj \
   -scheme NTDesk \
-  -destination 'platform=iOS Simulator,name=iPhone 16' \
+  -destination 'generic/platform=iOS Simulator' \
+  -configuration Debug \
+  CODE_SIGNING_ALLOWED=NO \
+  build-for-testing
+
+# Run tests (substitute a real sim name from your Xcode, e.g. iPhone 17):
+xcodebuild -project tools/ios-desk/NTDesk/NTDesk.xcodeproj \
+  -scheme NTDesk \
+  -destination 'platform=iOS Simulator,name=iPhone 17' \
   -configuration Debug \
   CODE_SIGNING_ALLOWED=NO \
   test
 ```
 
-Minimal smoke today: `NTDeskTests` / `PrivateHostPolicy` allow/deny. Expand in later PRs (parser, charts builders).
+Minimal smoke today: `NTDeskTests` / `PrivateHostPolicy` allow/deny + normalize/boundaries. Expand in later PRs (parser, charts builders).
 
 ---
 

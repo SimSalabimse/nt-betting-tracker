@@ -16,7 +16,18 @@ Swift does not allow two `struct DeskView` (etc.) in one module. `#if` at the ap
 | `SettingsView` | `LegacySettingsView` |
 | private helpers | `Legacy*` prefix as needed |
 
-Shared: `Models/`, `Services/`, `DesignSystem/`, and the `DeskTab` enum (defined in scaffold `Views/RootView.swift`).
+## What is frozen vs shared
+
+| Surface | Frozen? | Notes |
+|---------|---------|--------|
+| `Legacy/*.swift` view types | **Yes** (freeze-on-copy) | Only security/build fixes + renames |
+| `Models/`, `Services/` | Shared live | Must stay Legacy-compatible (facade contract) |
+| `DesignSystem/*` tokens/components | **Shared live, not frozen** | Theme/spacing changes restyle Legacy too |
+| `DeskTab` enum | **Shared live** | Defined in scaffold `Views/RootView.swift` today |
+
+**Implication:** a scaffold IA or token change can affect Legacy compile/runtime without editing `Legacy/*`. Full visual/behavior tree rollback remains the **git tag** path (`ios-desk-pre-hig-redesign`).
+
+**PR-1b follow-up:** move `DeskTab` to a neutral file (e.g. `Models/DeskTab.swift` or `App/DeskTab.swift`) so Legacy does not depend on scaffold `RootView.swift` surviving after redesign replaces the default root.
 
 ## Compile flag
 
@@ -44,11 +55,16 @@ RootView()
 ## Recovery layers
 
 1. **Git tag** `ios-desk-pre-hig-redesign` — full tree rollback (see `tools/ios-desk/README.md`).
-2. **This folder** — side-by-side source comparison.
-3. **NTDesk-Legacy scheme** — ship a Legacy IPA if redesign fails smoke.
+2. **This folder** — side-by-side source comparison of view types.
+3. **NTDesk-Legacy scheme** — ship a Legacy IPA if redesign fails smoke:
+
+```bash
+SCHEME=NTDesk-Legacy CONFIGURATION=LegacyRelease ./tools/ios-desk/build_unsigned_ipa.sh
+```
 
 ## Do not
 
 - Introduce `AppRootView` / `Features/` here (PR-1b).
 - Change Legacy behavior except compile/security fixes.
 - Delete scaffold `Views/*` until redesign fully replaces them.
+- Assume DesignSystem hex/spacing is pinned for Legacy — it is not; tokens are shared.
