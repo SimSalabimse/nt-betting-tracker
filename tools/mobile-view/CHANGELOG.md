@@ -5,6 +5,12 @@ Wire shape = `schema_version` (still **1** unless a breaking change).
 
 Format: [Keep a Changelog](https://keepachangelog.com/)-style.
 
+## [1.1.2] — 2026-07-26
+
+### Fixed
+- Equity curve matches **Lumina Book** again: match `date` buckets + same non-Pending filter
+  (25th refund → equity 500; 26th bets accumulate). Reverted settlement-day remap that diverged from PC.
+
 ## [1.1.1] — 2026-07-26
 
 ### Fixed
