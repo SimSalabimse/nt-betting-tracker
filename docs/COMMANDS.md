@@ -5,12 +5,14 @@ Copy-paste commands for the NT desk. Run from the **repo root** unless noted.
 | Topic | Jump |
 |-------|------|
 | Setup | [Install](#install) |
-| Mobile desk (phone / Safari) | [Mobile-view server](#mobile-view-server) |
+| **What’s what** | [Products map](PRODUCTS.md) · [tools/](../tools/README.md) |
+| Mobile desk API | [Mobile-view server](#mobile-view-server) |
+| **API-only Windows update** | [Update mobile-view only](#update-mobile-view-api-only-windows) |
 | iPhone app | [iOS unsigned IPA](#ios-unsigned-ipa) |
 | Daily betting CLI | [Engine / desk CLI](#engine--desk-cli) |
 | Checks | [Smoke tests](#smoke-tests) |
 
-Deep docs: [VISION](VISION.md) · [mobile-view](../tools/mobile-view/README.md) · [ios-desk](../tools/ios-desk/README.md) · [IOS_DESK_VIEWER](IOS_DESK_VIEWER.md)
+Deep docs: [PRODUCTS](PRODUCTS.md) · [desk schema v1](api/DESK_SCHEMA_V1.md) · [mobile-view](../tools/mobile-view/README.md) · [ios-desk](../tools/ios-desk/README.md)
 
 ---
 
@@ -30,6 +32,8 @@ pip install -r requirements-desktop.txt
 ---
 
 ## Mobile-view server
+
+**Product:** `tools/mobile-view` · **Package version:** see `tools/mobile-view/VERSION` (`api_version`) · **Wire:** `schema_version` **1**
 
 Read-only desk for browser or the iOS app. **GET only** — no place/settle from the phone.
 
@@ -71,6 +75,8 @@ Read-only desk for browser or the iOS app. **GET only** — no place/settle from
 
 ```bash
 curl -s http://127.0.0.1:8787/api/health | python3 -m json.tool
+# expect: ok, service=nt-mobile-view, api_version, schema_version=1
+
 curl -s http://127.0.0.1:8787/api/desk | python3 -m json.tool | head -40
 ```
 
@@ -78,7 +84,47 @@ curl -s http://127.0.0.1:8787/api/desk | python3 -m json.tool | head -40
 
 ---
 
+## Update mobile-view API only (Windows)
+
+Use this when the **phone needs a new field** (kickoff, secure, charts) but you **must not** merge the whole monorepo stack onto the live ops PC.
+
+```powershell
+cd C:\path\to\nt-betting-tracker   # your Windows clone
+
+# 1) Fetch metadata only (no merge)
+git fetch --tags origin
+
+# 2) Replace ONLY the API product folder (path checkout — no full pull)
+# Prefer a release tag when it exists:
+git checkout mobile-view-v1.1.0 -- tools/mobile-view/
+
+# Or from main (still path-only):
+# git checkout origin/main -- tools/mobile-view/
+
+# 3) Optional: better future notes (kickoff prefix) — engine file, still path-only
+# git checkout mobile-view-v1.1.0 -- nt/recommend.py
+
+# 4) Restart mobile-view (stop the old uvicorn/window first)
+.\tools\mobile-view\start.ps1 -Lan
+
+# 5) Confirm package version
+curl -s http://127.0.0.1:8787/api/health
+# "api_version":"1.1.0"
+```
+
+| Do | Don’t |
+|----|--------|
+| Path-checkout `tools/mobile-view/` | Blind `git pull` of experimental branches |
+| Restart API after file replace | Expect iOS to invent kickoff without API |
+| Tag releases `mobile-view-vX.Y.Z` | Mix engine rewrites with API-only deploys |
+
+Details: [PRODUCTS.md](PRODUCTS.md) · [mobile-view README](../tools/mobile-view/README.md).
+
+---
+
 ## iOS unsigned IPA
+
+**Product:** `tools/ios-desk` · **App version:** `tools/ios-desk/VERSION` (e.g. **1.1.0**)
 
 Build on a Mac with Xcode; sideload with your usual tool.
 
@@ -111,6 +157,8 @@ xcodebuild \
 ```
 
 Charts: drag with a finger to scrub day (or sport) details.
+
+**Version tags (optional):** `ios-desk-v1.1.0` — see [PRODUCTS.md](PRODUCTS.md).
 
 ---
 

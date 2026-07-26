@@ -3,19 +3,30 @@ Build schema_version 1 desk snapshot from on-disk state files.
 
 No nt.* imports — pure file reads so the mobile surface cannot mutate engines.
 Charts are derived from data/bets.csv + bankroll baseline (same formulas as Book).
+
+Versions:
+  schema_version — wire shape (docs/api/DESK_SCHEMA_V1.md)
+  api_version    — this package (VERSION file / version_info.API_VERSION)
 """
 
 from __future__ import annotations
 
 import csv
 import json
+import re
+import sys
 from collections import defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+# Allow `from version_info import …` when loaded via importlib in tests.
+_HERE = Path(__file__).resolve().parent
+if str(_HERE) not in sys.path:
+    sys.path.insert(0, str(_HERE))
 
-SCHEMA_VERSION = 1
+from version_info import API_VERSION, SCHEMA_VERSION  # noqa: E402
+
 PLACE_EXCERPT_CHARS = 4000
 STATUS_EXCERPT_CHARS = 2500
 
@@ -65,17 +76,198 @@ def _load_bets_csv(path: Path) -> list[dict[str, str]]:
         return []
 
 
-def _pending_bets(rows: list[dict[str, str]]) -> list[dict[str, Any]]:
+_KO_NOTE_RE = re.compile(
+    r"kickoff\s*=\s*(\d{4}-\d{2}-\d{2})[ T](\d{2}:\d{2})",
+    re.IGNORECASE,
+)
+_KO_LINE_RE = re.compile(
+    r"(?i)kick[- ]?off\s*:\s*(\d{4}-\d{2}-\d{2})(?:[ T](\d{2}:\d{2}))?",
+)
+
+
+def _extract_kickoff(notes: str | None) -> str | None:
+    """Pull wall-clock kickoff from ledger notes (`kickoff=YYYY-MM-DD HH:MM`).
+
+    Operator times are Europe/Oslo wall clock (same as recommend notes). Returns
+    normalized ``YYYY-MM-DD HH:MM`` or None.
+    """
+    text = notes or ""
+    m = _KO_NOTE_RE.search(text)
+    if not m:
+        return None
+    return f"{m.group(1)} {m.group(2)}"
+
+
+def _norm_match_key(match: str | None) -> str:
+    s = re.sub(r"\s+", " ", (match or "").strip().lower())
+    # Collapse common separators so "A vs B" / "A – B" still match.
+    s = s.replace(" vs. ", " vs ").replace(" – ", " vs ").replace(" — ", " vs ")
+    return s
+
+
+def _match_sides(match: str | None) -> list[str]:
+    """Split 'Home vs Away' into side tokens for fuzzy odds-dump lookup."""
+    key = _norm_match_key(match)
+    if " vs " not in key:
+        return [key] if key else []
+    return [p.strip() for p in key.split(" vs ", 1) if p.strip()]
+
+
+def _kickoff_index_from_ledger(rows: list[dict[str, str]]) -> dict[str, str]:
+    """match_key → kickoff from any ledger row notes (settled peers help open ones)."""
+    index: dict[str, str] = {}
+    for r in rows:
+        ko = _extract_kickoff(r.get("notes"))
+        if not ko:
+            continue
+        mk = _norm_match_key(r.get("match"))
+        if mk and mk not in index:
+            index[mk] = ko
+        # Also key by match + calendar date for disambiguation.
+        d = (r.get("date") or "").strip()[:10]
+        if mk and d:
+            index.setdefault(f"{mk}|{d}", ko)
+    return index
+
+
+def _index_odds_text(text: str, index: dict[str, str]) -> None:
+    """Index Kick-off lines against nearby match titles / side names in odds dumps."""
+    # Blocks: blank-line separated (same idea as nt.odds_parse without importing it).
+    parts = re.split(r"(?:\r?\n[ \t]*){2,}", text.strip())
+    for part in parts:
+        lines = [ln.strip() for ln in part.splitlines() if ln.strip()]
+        if not lines:
+            continue
+        ko: str | None = None
+        for ln in lines:
+            m = _KO_LINE_RE.search(ln)
+            if m and m.group(2):
+                ko = f"{m.group(1)} {m.group(2)}"
+                break
+            # Also accept bare kickoff= in paste notes.
+            m2 = _KO_NOTE_RE.search(ln)
+            if m2:
+                ko = f"{m2.group(1)} {m2.group(2)}"
+                break
+        if not ko:
+            continue
+        # Prefer explicit "A vs B" line; else HUB/Vinner two-way sides.
+        match_name = ""
+        for ln in lines:
+            low = ln.lower()
+            if " vs " in low or " vs. " in low:
+                match_name = ln
+                break
+        if not match_name and len(lines) >= 4:
+            # Vinner / HUB style: sideA, odds, sideB, odds — take non-odds name lines.
+            names: list[str] = []
+            for ln in lines[1:6]:
+                if re.fullmatch(r"\d+(?:[.,]\d+)?", ln.replace(",", ".")):
+                    continue
+                if ln.lower().startswith(("sport:", "kick-off", "kickoff", "hub", "vinner", "event:")):
+                    continue
+                if ln.lower() in ("uavgjort", "draw", "x", "live"):
+                    continue
+                names.append(ln)
+                if len(names) >= 2:
+                    break
+            if len(names) >= 2:
+                match_name = f"{names[0]} vs {names[1]}"
+        if match_name:
+            mk = _norm_match_key(match_name)
+            if mk:
+                index.setdefault(mk, ko)
+            for side in _match_sides(match_name):
+                if len(side) >= 4:
+                    index.setdefault(f"side:{side}", ko)
+
+
+def _kickoff_index_from_odds_files(root: Path) -> dict[str, str]:
+    """Scan inbox / outbox odds dumps (desktop odds list source) for Kick-off times."""
+    index: dict[str, str] = {}
+    for folder in (root / "inbox", root / "outbox"):
+        if not folder.is_dir():
+            continue
+        try:
+            files = [p for p in folder.iterdir() if p.is_file()]
+        except OSError:
+            continue
+        files.sort(key=lambda p: p.stat().st_mtime if p.exists() else 0, reverse=True)
+        for p in files[:60]:
+            suf = p.suffix.lower()
+            if suf and suf not in {".txt", ".md", ".csv", ".log", ".odds"}:
+                continue
+            try:
+                # Cap read — odds pastes are usually well under this.
+                raw = p.read_bytes()[:1_500_000]
+                text = raw.decode("utf-8", errors="replace")
+            except OSError:
+                continue
+            if "kick" not in text.lower() and "kickoff" not in text.lower():
+                continue
+            _index_odds_text(text, index)
+    return index
+
+
+def _resolve_kickoff(
+    *,
+    notes: str | None,
+    match: str | None,
+    date: str | None,
+    ledger_idx: dict[str, str],
+    odds_idx: dict[str, str],
+) -> str | None:
+    """Resolve kickoff: notes → ledger peers → odds dumps (match / sides)."""
+    ko = _extract_kickoff(notes)
+    if ko:
+        return ko
+    mk = _norm_match_key(match)
+    d = (date or "").strip()[:10]
+    if mk and d and f"{mk}|{d}" in ledger_idx:
+        return ledger_idx[f"{mk}|{d}"]
+    if mk and mk in ledger_idx:
+        return ledger_idx[mk]
+    if mk and mk in odds_idx:
+        return odds_idx[mk]
+    # Side-based: both sides must agree on the same kickoff when possible.
+    sides = _match_sides(match)
+    if len(sides) == 2:
+        a = odds_idx.get(f"side:{sides[0]}")
+        b = odds_idx.get(f"side:{sides[1]}")
+        if a and a == b:
+            return a
+        if a and not b:
+            return a
+        if b and not a:
+            return b
+    elif len(sides) == 1 and f"side:{sides[0]}" in odds_idx:
+        return odds_idx[f"side:{sides[0]}"]
+    return None
+
+
+def _pending_bets(rows: list[dict[str, str]], root: Path | None = None) -> list[dict[str, Any]]:
     open_results = {"Pending", "ConfirmedPlaced"}
+    ledger_idx = _kickoff_index_from_ledger(rows)
+    odds_idx = _kickoff_index_from_odds_files(root) if root is not None else {}
     out: list[dict[str, Any]] = []
     for r in rows:
         if (r.get("result") or "").strip() not in open_results:
             continue
+        match = (r.get("match") or "").strip() or None
+        date = (r.get("date") or "").strip() or None
+        kickoff = _resolve_kickoff(
+            notes=r.get("notes"),
+            match=match,
+            date=date,
+            ledger_idx=ledger_idx,
+            odds_idx=odds_idx,
+        )
         out.append(
             {
                 "bet_id": (r.get("bet_id") or "").strip() or None,
-                "date": (r.get("date") or "").strip() or None,
-                "match": (r.get("match") or "").strip() or None,
+                "date": date,
+                "kickoff": kickoff,
+                "match": match,
                 "selection": (r.get("selection") or "").strip() or None,
                 "decimal_odds": _fnum(r.get("decimal_odds")),
                 "stake_nok": _fnum(r.get("stake_nok")),
@@ -84,8 +276,12 @@ def _pending_bets(rows: list[dict[str, str]]) -> list[dict[str, Any]]:
                 "updated_at": (r.get("updated_at") or "").strip() or None,
             }
         )
-    # Newest first for desk scan
-    out.sort(key=lambda x: x.get("updated_at") or x.get("date") or "", reverse=True)
+    # Soonest kickoff first when known; else newest updated.
+    def _sort_key(x: dict[str, Any]) -> tuple:
+        ko = x.get("kickoff") or "9999-99-99 99:99"
+        return (ko, x.get("updated_at") or "", x.get("date") or "")
+
+    out.sort(key=_sort_key)
     return out
 
 
@@ -389,7 +585,10 @@ def _overall_stats(rows: list[dict[str, str]]) -> dict[str, float]:
 
 
 def build_charts(root: Path, bankroll: dict[str, Any] | None) -> dict[str, Any]:
-    """Simple Book-aligned chart series for mobile (most important stats only)."""
+    """Simple Book-aligned chart series for mobile (most important stats only).
+
+    Full era series always returned; clients may filter by date for range chips.
+    """
     rows = _load_bets_csv(root / "data" / "bets.csv")
     baseline = float((bankroll or {}).get("baseline_nok") or 0.0)
     curve = _equity_curve(rows, baseline)
@@ -401,6 +600,7 @@ def build_charts(root: Path, bankroll: dict[str, Any] | None) -> dict[str, Any]:
     ]
     return {
         "range_label": "All time (era)",
+        "range_key": "all",
         "overall": _overall_stats(rows),
         "equity_curve": curve,
         "daily": daily,
@@ -447,6 +647,15 @@ def build_desk_snapshot(root: Path) -> dict[str, Any]:
     remaining = _fnum((risk or {}).get("remaining_risk_nok"))
     reasons = (risk or {}).get("reasons") if isinstance((risk or {}).get("reasons"), list) else []
 
+    # Secure Variant A partition (capital_v2): locked secure vs riskable working equity.
+    secure_nok = _fnum((risk or {}).get("secure_nok"))
+    working_equity = _fnum((risk or {}).get("working_equity_nok"))
+    if working_equity is None and equity is not None and secure_nok is not None:
+        working_equity = round(float(equity) - float(secure_nok), 2)
+    riskable_liquid = _fnum((risk or {}).get("riskable_liquid_nok"))
+    segs = _read_json(root / "data" / "state" / "capital_segments.json") or {}
+    secure_ref_hwm = _fnum(segs.get("ref_hwm_nok") or segs.get("secure_ref_hwm_nok"))
+
     # Server-side stale: bankroll clock missing / very old is operator concern only
     stale = bool(warnings)
 
@@ -454,6 +663,7 @@ def build_desk_snapshot(root: Path) -> dict[str, Any]:
 
     return {
         "schema_version": SCHEMA_VERSION,
+        "api_version": API_VERSION,
         "generated_at": _now_iso(),
         "project_root": str(root),
         "view_only": True,
@@ -478,8 +688,14 @@ def build_desk_snapshot(root: Path) -> dict[str, Any]:
         "open_pending_risk_nok": _fnum((risk or {}).get("open_pending_risk_nok")),
         "today_realized_pl_nok": _fnum((risk or {}).get("today_realized_pl_nok")),
         "unit_size_nok": _fnum((risk or {}).get("unit_size_nok")),
+        # Secure Variant A (additive)
+        "secure_nok": secure_nok,
+        "working_equity_nok": working_equity,
+        "riskable_liquid_nok": riskable_liquid,
+        "secure_variant": "A",
+        "secure_ref_hwm_nok": secure_ref_hwm,
         "risk_reasons": reasons,
-        "pending_bets": _pending_bets(rows),
+        "pending_bets": _pending_bets(rows, root),
         "place_these": place,
         "status_excerpt": status_text,
         "charts": charts,

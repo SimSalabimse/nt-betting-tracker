@@ -31,6 +31,16 @@ struct EquityChartView: View {
         return points.first(where: { $0.day.raw == raw })?.day.date
     }
 
+    /// Zoom Y to data (not 0…equity) so ~50 NOK moves are visible without
+    /// turning noise into a rollercoaster (`minRelativeSpan` floor).
+    private var yDomain: ClosedRange<Double>? {
+        ChartAxisSupport.adaptiveDomain(plotPoints.map(\.equity))
+    }
+
+    private var areaBase: Double {
+        yDomain?.lowerBound ?? 0
+    }
+
     var body: some View {
         if points.isEmpty {
             emptySeries("No settled history")
@@ -39,7 +49,8 @@ struct EquityChartView: View {
                 ChartSelectionCallout(
                     title: selectedRawDay.map { "Equity · \($0)" } ?? "Equity",
                     lines: ChartDataBuilder.equityDetailLines(points, selected: selectedRawDay),
-                    isActive: selectedRawDay != nil
+                    isActive: selectedRawDay != nil,
+                    onDismiss: { clearSelection() }
                 )
 
                 Chart(plotPoints) { p in
@@ -49,10 +60,13 @@ struct EquityChartView: View {
                     )
                     .foregroundStyle(DeskTheme.accent)
                     .interpolationMethod(.linear)
+                    .lineStyle(StrokeStyle(lineWidth: 2))
 
+                    // Fill from domain floor (not 0) so area matches adaptive scale.
                     AreaMark(
                         x: .value("Date", p.day.date),
-                        y: .value("Equity", p.equity)
+                        yStart: .value("Base", areaBase),
+                        yEnd: .value("Equity", p.equity)
                     )
                     .foregroundStyle(DeskTheme.accentSoft)
                     .interpolationMethod(.linear)
@@ -73,16 +87,34 @@ struct EquityChartView: View {
                 // Single scrub path: chartXSelection only (no dual DragGesture).
                 .chartXSelection(value: $scrubDate)
                 .onChange(of: scrubDate) { _, newValue in
-                    // Sticky: only update when we have a date; do not clear on lift.
+                    // Sticky while scrubbing: update day when finger moves; lift keeps detail
+                    // until user taps out / taps callout (clearSelection).
                     if let newValue {
                         selectedRawDay = ChartDataBuilder.nearestRawDay(to: newValue, in: points)
                     }
+                }
+                .onChange(of: selectedRawDay) { _, newValue in
+                    if newValue == nil { scrubDate = nil }
                 }
                 // Non-plot raw selection (weekly downsample): plotFrame-aligned dashed rule.
                 .chartSelectionRuleFallback(
                     selectedDate: selectedDate,
                     showFallback: selectedRawDay != nil && !selectedInPlot
                 )
+                .chartYScale(domain: yDomain ?? 0...1)
+                .chartYAxis {
+                    AxisMarks(position: .leading, values: .automatic(desiredCount: 4)) { value in
+                        AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5))
+                            .foregroundStyle(DeskTheme.borderSoft)
+                        AxisValueLabel {
+                            if let v = value.as(Double.self) {
+                                Text(String(format: "%.0f", v))
+                                    .font(DeskTypography.caption)
+                                    .foregroundStyle(DeskTheme.textMuted)
+                            }
+                        }
+                    }
+                }
                 .frame(height: height)
                 .chartXAxis {
                     ChartAxisSupport.dateAxisMarks(days: days, density: density)
@@ -93,6 +125,11 @@ struct EquityChartView: View {
                 .accessibilityHint("Drag horizontally to inspect a day")
             }
         }
+    }
+
+    private func clearSelection() {
+        selectedRawDay = nil
+        scrubDate = nil
     }
 
     private func emptySeries(_ message: String) -> some View {

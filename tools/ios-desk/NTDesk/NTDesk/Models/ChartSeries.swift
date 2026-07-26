@@ -88,6 +88,7 @@ enum ChartAxisDensity: Equatable, Sendable {
 enum ExpandableChartKind: String, Identifiable, CaseIterable, Hashable {
     case equity
     case daily
+    case calendar
     case drawdown
     case sport
 
@@ -97,6 +98,7 @@ enum ExpandableChartKind: String, Identifiable, CaseIterable, Hashable {
         switch self {
         case .equity: return "Equity"
         case .daily: return "Daily P/L"
+        case .calendar: return "Performance calendar"
         case .drawdown: return "Drawdown"
         case .sport: return "By sport (P/L)"
         }

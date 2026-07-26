@@ -16,50 +16,72 @@ final class SyncService: ObservableObject {
     @Published var lastError: String?
     @Published var lastSuccessSyncAt: String?
     @Published var isSyncing = false
+    /// Last successful health RTT in milliseconds.
+    @Published var lastHealthRTTMs: Int?
+    /// Rolling RTT samples (newest last), max 5.
+    @Published private(set) var rttSamplesMs: [Int] = []
+    /// Last URL that completed a full desk sync successfully (UserDefaults-backed).
+    @Published private(set) var lastKnownGoodBaseURL: String?
 
-    /// Public get/set facade over the default `ConnectionProfile`.
-    /// Legacy `LegacySettingsView` binds/saves this; dual-writes UserDefaults `"baseURL"`.
+    static let lastKnownGoodURLKey = "last_known_good_base_url"
+    static let rttSamplesKey = "health_rtt_samples_ms"
+    private static let maxRTTSamples = 5
+
     @Published var baseURLString: String {
         didSet {
             guard !isApplyingProfileURL else { return }
             profileStore.setDefaultBaseURL(baseURLString)
-            // Re-bind cache/freshness against the new preferred URL (Legacy Save path
-            // often syncs immediately after; still avoids stale `.fresh` under a new host).
             if oldValue != baseURLString {
                 loadCacheOnly()
             }
         }
     }
 
-    /// Additive multi-profile surface (redesign). Same array as the store.
     var profiles: [ConnectionProfile] {
         profileStore.profiles
     }
 
+    /// True when we can offer “use last known good PC” (different from current + non-empty).
+    var canRestoreLastKnownGood: Bool {
+        guard let good = lastKnownGoodBaseURL, !good.isEmpty else { return false }
+        return PrivateHostPolicy.normalizeBaseURL(good)?.absoluteString
+            != PrivateHostPolicy.normalizeBaseURL(baseURLString)?.absoluteString
+    }
+
     let profileStore: ConnectionProfileStore
+    let network = NetworkPathMonitor.shared
 
     private let cache: CacheStore
     private let client = DeskAPIClient()
     private var timer: Timer?
-    /// Prevents recursive baseURLString ↔ profile store updates.
     private var isApplyingProfileURL = false
     private var profileCancellable: AnyCancellable?
+    private let defaults: UserDefaults
 
-    init(profileStore: ConnectionProfileStore? = nil, cache: CacheStore? = nil) {
+    init(
+        profileStore: ConnectionProfileStore? = nil,
+        cache: CacheStore? = nil,
+        defaults: UserDefaults = .standard
+    ) {
         let store = profileStore ?? ConnectionProfileStore.shared
         self.profileStore = store
         self.cache = cache ?? CacheStore()
+        self.defaults = defaults
         store.migrateFromLegacyBaseURLIfNeeded()
-        // didSet is not invoked during init assignment — dual-write already handled by migrate/seed.
         self.baseURLString = store.defaultBaseURLString
-        // Forward profile mutations so Settings / ProfilesListView re-render.
+        self.lastKnownGoodBaseURL = defaults.string(forKey: Self.lastKnownGoodURLKey)
+        if let data = defaults.data(forKey: Self.rttSamplesKey),
+           let arr = try? JSONDecoder().decode([Int].self, from: data) {
+            rttSamplesMs = Array(arr.suffix(Self.maxRTTSamples))
+        }
         profileCancellable = store.objectWillChange.sink { [weak self] _ in
             self?.objectWillChange.send()
         }
+        Haptics.prepare()
         loadCacheOnly()
     }
 
-    // MARK: - Multi-profile (additive)
+    // MARK: - Multi-profile
 
     func setDefaultProfile(id: UUID) {
         profileStore.setDefault(id: id)
@@ -87,8 +109,14 @@ final class SyncService: ObservableObject {
         }
     }
 
-    /// Apply store default URL to the facade. When the URL changes, re-evaluate
-    /// cache freshness against the new preferred host (never leave prior host as `.fresh`).
+    /// Switch active URL to the last PC that fully synced (creates/updates default profile).
+    func restoreLastKnownGoodBaseURL() {
+        guard let good = lastKnownGoodBaseURL, !good.isEmpty else { return }
+        profileStore.setDefaultBaseURL(good)
+        applyDefaultURLFromStore()
+        Haptics.mediumImpact()
+    }
+
     private func applyDefaultURLFromStore() {
         let url = profileStore.defaultBaseURLString
         guard url != baseURLString else { return }
@@ -98,15 +126,10 @@ final class SyncService: ObservableObject {
         loadCacheOnly()
     }
 
-    // MARK: - Polling / cache / sync (unchanged signatures)
+    // MARK: - Polling (adaptive when fresh)
 
     func startPolling() {
-        timer?.invalidate()
-        timer = Timer.scheduledTimer(withTimeInterval: 20, repeats: true) { [weak self] _ in
-            Task { @MainActor in
-                await self?.sync()
-            }
-        }
+        scheduleNextPoll(after: pollIntervalSeconds)
     }
 
     func stopPolling() {
@@ -114,10 +137,32 @@ final class SyncService: ObservableObject {
         timer = nil
     }
 
+    /// 60s while still fresh & recent; else 20s.
+    var pollIntervalSeconds: TimeInterval {
+        if freshness == .fresh, let age = lastSuccessAgeSeconds, age < 90 {
+            return 60
+        }
+        return 20
+    }
+
+    private var lastSuccessAgeSeconds: TimeInterval? {
+        guard let iso = lastSuccessSyncAt, let d = DeskFormatters.parseISO8601(iso) else { return nil }
+        return Date().timeIntervalSince(d)
+    }
+
+    private func scheduleNextPoll(after seconds: TimeInterval) {
+        timer?.invalidate()
+        timer = Timer.scheduledTimer(withTimeInterval: seconds, repeats: false) { [weak self] _ in
+            Task { @MainActor in
+                guard let self else { return }
+                await self.sync(waitForConnectivity: false)
+                self.scheduleNextPoll(after: self.pollIntervalSeconds)
+            }
+        }
+    }
+
     func loadCacheOnly() {
         guard let env = cache.load() else {
-            // No cache for any host — clear live desk state so a prior host's snapshot
-            // cannot linger under a different active URL.
             snapshot = nil
             lastSuccessSyncAt = nil
             freshness = .empty
@@ -131,47 +176,50 @@ final class SyncService: ObservableObject {
         cache.clear()
         snapshot = nil
         lastSuccessSyncAt = nil
+        lastHealthRTTMs = nil
         freshness = .empty
     }
 
     func sync() async {
+        await sync(waitForConnectivity: true)
+    }
+
+    func sync(waitForConnectivity: Bool) async {
         guard !isSyncing else { return }
         isSyncing = true
         defer { isSyncing = false }
 
-        // Capture the profile/URL this request belongs to before any awaits.
         let syncedProfileID = profileStore.defaultProfile?.id
         let preferredURL = baseURLString
 
         guard let base = PrivateHostPolicy.normalizeBaseURL(preferredURL) else {
             lastError = DeskAPIError.cleartextDenied.localizedDescription
             loadCacheOnly()
+            if waitForConnectivity { Haptics.error() }
             return
         }
 
-        // Mismatch check before network
-        if let env = cache.load(), !urlsMatch(env.sourceBaseURL, base.absoluteString) {
-            // still try network; if fail, show staleMismatch
-        }
-
         do {
-            try await client.health(baseURL: base)
-            let (raw, snap) = try await client.fetchDesk(baseURL: base)
+            let rtt = try await client.health(baseURL: base, waitForConnectivity: waitForConnectivity)
+            recordRTT(rtt)
+            let (raw, snap) = try await client.fetchDesk(baseURL: base, waitForConnectivity: waitForConnectivity)
             do {
                 try cache.save(deskObject: raw, sourceBaseURL: base.absoluteString)
                 let when = ISO8601DateFormatter().string(from: Date())
                 lastSuccessSyncAt = when
-                // Attribute success to the profile that started this request, not current default.
                 if let syncedProfileID {
                     profileStore.markSuccess(profileID: syncedProfileID, at: when)
                 }
+                rememberLastKnownGood(base.absoluteString)
                 snapshot = snap
                 freshness = .fresh
                 lastError = nil
+                if waitForConnectivity { Haptics.success() }
             } catch {
                 snapshot = snap
                 freshness = .liveNotPersisted
                 lastError = "Live data but cache write failed: \(error.localizedDescription)"
+                if waitForConnectivity { Haptics.warning() }
             }
         } catch {
             lastError = error.localizedDescription
@@ -180,7 +228,26 @@ final class SyncService: ObservableObject {
             } else {
                 freshness = .empty
             }
+            if waitForConnectivity { Haptics.error() }
         }
+    }
+
+    private func recordRTT(_ ms: Int) {
+        lastHealthRTTMs = ms
+        var next = rttSamplesMs
+        next.append(ms)
+        if next.count > Self.maxRTTSamples {
+            next = Array(next.suffix(Self.maxRTTSamples))
+        }
+        rttSamplesMs = next
+        if let data = try? JSONEncoder().encode(next) {
+            defaults.set(data, forKey: Self.rttSamplesKey)
+        }
+    }
+
+    private func rememberLastKnownGood(_ url: String) {
+        lastKnownGoodBaseURL = url
+        defaults.set(url, forKey: Self.lastKnownGoodURLKey)
     }
 
     private func applyEnvelope(_ env: CacheEnvelope, preferredURL: String) {

@@ -1,62 +1,88 @@
-# Mobile desk view (read-only)
+# mobile-view — read-only desk API
 
-Personal phone / browser surface for the NT desk snapshot.
+| | |
+|--|--|
+| **What** | HTTP service that **reads** PC ledger files and serves a desk snapshot |
+| **What it is not** | Not the betting engine. Not the Flet desktop. No place/settle |
+| **Version** | **`api_version` = contents of [`VERSION`](VERSION)** (now **1.1.0**) |
+| **Wire shape** | **`schema_version` = 1** — [`docs/api/DESK_SCHEMA_V1.md`](../../docs/api/DESK_SCHEMA_V1.md) |
+| **Changelog** | [`CHANGELOG.md`](CHANGELOG.md) |
+| **Product map** | [`docs/PRODUCTS.md`](../../docs/PRODUCTS.md) |
+
+```
+Windows PC data/  ──read──►  mobile-view :8787  ──JSON──►  iOS Desk / browser
+```
+
+## Endpoints
 
 | Endpoint | Role |
 |----------|------|
-| `GET /api/health` | Reachability |
-| `GET /api/desk` | Schema v1 JSON (+ optional `charts`) |
-| `GET /` | Dark HTML desk (KPIs, simple charts, pending, PLACE_THESE) |
+| `GET /api/health` | `ok`, `service`, **`api_version`**, **`schema_version`**, `project_root` |
+| `GET /api/desk` | Full snapshot (`schema_version` + `api_version` + KPIs + pending + charts + …) |
+| `GET /` | Dark HTML desk |
+| writes | **405** |
 
-**No write routes.** POST/PUT/PATCH/DELETE → **405**.
-
-## Install
+## Install / run
 
 ```bash
 pip install -r tools/mobile-view/requirements.txt
 ```
 
-## Bind modes
-
-| Mode | Host | How |
-|------|------|-----|
-| **LocalOnly** (default) | `127.0.0.1` | `./start.sh` or `.\start.ps1` |
-| **Lan** | `0.0.0.0` or pinned IP | `--lan` / `-Lan` |
-| **BindHost** | single IP | `--lan --bind-host 192.168.1.42` |
-
-Fail-closed: `MOBILE_VIEW_HOST` alone **never** opens non-loopback without `MOBILE_VIEW_LAN=1` / `-Lan`.
-
-### Windows
+### Windows (production path)
 
 ```powershell
-.\tools\mobile-view\start.ps1              # loopback
-.\tools\mobile-view\start.ps1 -Lan         # LAN / Tailscale
+.\tools\mobile-view\start.ps1              # loopback only
+.\tools\mobile-view\start.ps1 -Lan         # phone on LAN / Tailscale
 .\tools\mobile-view\start.ps1 -Lan -BindHost 192.168.1.42
 ```
 
 ### macOS / Linux
 
 ```bash
-chmod +x tools/mobile-view/start.sh
-./tools/mobile-view/start.sh
-./tools/mobile-view/start.sh --lan
 ./tools/mobile-view/start.sh --lan --bind-host 192.168.1.42
 ```
 
-### Security preference
+**Security:** default is loopback. Prefer Tailscale or a single `-BindHost` over `0.0.0.0`.
 
-1. **Tailscale** + `-Lan` (or `-BindHost 100.x.y.z`)  
-2. **`-Lan -BindHost <LAN IPv4>`**  
-3. **`-Lan` → `0.0.0.0`** (last resort)
+## Update **only** this API on Windows (no full pull)
 
-Do **not** combine public Cloudflare tunnel with `-Lan` unless you intentionally want a wider origin.
+After `api_version` / tag is on GitHub:
 
-Windows Firewall: allow inbound TCP **8787** on **Private** profile when using LAN (manual; not auto-opened).
+```powershell
+cd path\to\nt-betting-tracker
+git fetch --tags origin
 
-## Charts
+# Option A — from a release tag (preferred)
+git checkout mobile-view-v1.1.0 -- tools/mobile-view/
 
-`/api/desk` includes additive `charts` (equity curve, daily P/L, drawdown, by-sport, overall ROI/WR). Same ledger as Book; no engine mutation.
+# Option B — from main (paths only)
+git checkout origin/main -- tools/mobile-view/
 
-## iOS app
+# Restart the server (stop old process first)
+.\tools\mobile-view\start.ps1 -Lan
+```
 
-See `tools/ios-desk/README.md` (SwiftUI + local JSON cache + unsigned IPA sideload).
+Verify:
+
+```powershell
+curl -s http://127.0.0.1:8787/api/health
+# expect "api_version":"1.1.0"  "schema_version":1  "service":"nt-mobile-view"
+```
+
+Full cheat sheet: [`docs/COMMANDS.md`](../../docs/COMMANDS.md#update-mobile-view-api-only-windows).
+
+## Files in this folder
+
+| File | Role |
+|------|------|
+| `VERSION` | Package semver → `api_version` |
+| `version_info.py` | Loads VERSION + constants |
+| `server.py` | FastAPI routes + bind |
+| `readers.py` | Disk → desk JSON (no `nt.*` imports) |
+| `html_page.py` | Browser desk |
+| `start.ps1` / `start.sh` | Launchers |
+| `CHANGELOG.md` | Human history |
+
+## iOS consumer
+
+[`tools/ios-desk/`](../ios-desk/) — rebuild IPA separately when the app changes; only restart mobile-view when the API changes.

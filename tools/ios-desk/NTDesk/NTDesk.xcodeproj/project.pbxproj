@@ -7,6 +7,13 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		CA1A1B2C3D4E5F6000000004 /* SecureBucketCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA1A1B2C3D4E5F6000000014 /* SecureBucketCard.swift */; };
+		CA1A1B2C3D4E5F6000000003 /* MorningSummaryCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA1A1B2C3D4E5F6000000013 /* MorningSummaryCard.swift */; };
+		CA1A1B2C3D4E5F6000000002 /* EquitySparklineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA1A1B2C3D4E5F6000000012 /* EquitySparklineView.swift */; };
+		CA1A1B2C3D4E5F6000000001 /* NetworkPathMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA1A1B2C3D4E5F6000000011 /* NetworkPathMonitor.swift */; };
+		C91A1B2C3D4E5F6000000002 /* CacheDebugExport.swift in Sources */ = {isa = PBXBuildFile; fileRef = C91A1B2C3D4E5F6000000012 /* CacheDebugExport.swift */; };
+		C91A1B2C3D4E5F6000000001 /* Haptics.swift in Sources */ = {isa = PBXBuildFile; fileRef = C91A1B2C3D4E5F6000000011 /* Haptics.swift */; };
+		C81A1B2C3D4E5F6000000001 /* ConnectionQuality.swift in Sources */ = {isa = PBXBuildFile; fileRef = C81A1B2C3D4E5F6000000011 /* ConnectionQuality.swift */; };
 		CB91B236D5F7C7144AA1B55E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B5E4BCA51612EB4937DB848A /* Assets.xcassets */; };
 		D4E5F6A7B8C94D0E1F2A3B4C /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = C1D2E3F4A5B60718293A4B5C /* PrivacyInfo.xcprivacy */; };
 		4BA9D7AA6D714D6F910BED51 /* CacheEnvelope.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89153251FF794878B656A195 /* CacheEnvelope.swift */; };
@@ -73,6 +80,7 @@
 		C51A1B2C3D4E5F6000000005 /* ChartAxisSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = C51A1B2C3D4E5F6000000015 /* ChartAxisSupport.swift */; };
 		C51A1B2C3D4E5F6000000006 /* EquityChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C51A1B2C3D4E5F6000000016 /* EquityChartView.swift */; };
 		C51A1B2C3D4E5F6000000007 /* DailyPLChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C51A1B2C3D4E5F6000000017 /* DailyPLChartView.swift */; };
+		C51A1B2C3D4E5F600000000C /* PerformanceCalendarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C51A1B2C3D4E5F600000001C /* PerformanceCalendarView.swift */; };
 		C51A1B2C3D4E5F6000000008 /* DrawdownChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C51A1B2C3D4E5F6000000018 /* DrawdownChartView.swift */; };
 		C51A1B2C3D4E5F6000000009 /* SportChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C51A1B2C3D4E5F6000000019 /* SportChartView.swift */; };
 		C51A1B2C3D4E5F600000000A /* ChartDataBuilderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C51A1B2C3D4E5F600000001A /* ChartDataBuilderTests.swift */; };
@@ -98,6 +106,13 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		CA1A1B2C3D4E5F6000000014 /* SecureBucketCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecureBucketCard.swift; sourceTree = "<group>"; };
+		CA1A1B2C3D4E5F6000000013 /* MorningSummaryCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MorningSummaryCard.swift; sourceTree = "<group>"; };
+		CA1A1B2C3D4E5F6000000012 /* EquitySparklineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EquitySparklineView.swift; sourceTree = "<group>"; };
+		CA1A1B2C3D4E5F6000000011 /* NetworkPathMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkPathMonitor.swift; sourceTree = "<group>"; };
+		C91A1B2C3D4E5F6000000012 /* CacheDebugExport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CacheDebugExport.swift; sourceTree = "<group>"; };
+		C91A1B2C3D4E5F6000000011 /* Haptics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Haptics.swift; sourceTree = "<group>"; };
+		C81A1B2C3D4E5F6000000011 /* ConnectionQuality.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionQuality.swift; sourceTree = "<group>"; };
 		89153251FF794878B656A195 /* CacheEnvelope.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CacheEnvelope.swift; sourceTree = "<group>"; };
 		8AEB1BFA4F9E49408518F2F1 /* DeskSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeskSnapshot.swift; sourceTree = "<group>"; };
 		27EE6A4556014ACB90E60C91 /* NTDeskApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NTDeskApp.swift; sourceTree = "<group>"; };
@@ -168,6 +183,7 @@
 		C51A1B2C3D4E5F6000000015 /* ChartAxisSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartAxisSupport.swift; sourceTree = "<group>"; };
 		C51A1B2C3D4E5F6000000016 /* EquityChartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EquityChartView.swift; sourceTree = "<group>"; };
 		C51A1B2C3D4E5F6000000017 /* DailyPLChartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyPLChartView.swift; sourceTree = "<group>"; };
+		C51A1B2C3D4E5F600000001C /* PerformanceCalendarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PerformanceCalendarView.swift; sourceTree = "<group>"; };
 		C51A1B2C3D4E5F6000000018 /* DrawdownChartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DrawdownChartView.swift; sourceTree = "<group>"; };
 		C51A1B2C3D4E5F6000000019 /* SportChartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SportChartView.swift; sourceTree = "<group>"; };
 		C51A1B2C3D4E5F600000001A /* ChartDataBuilderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartDataBuilderTests.swift; sourceTree = "<group>"; };
@@ -320,6 +336,7 @@
 				P21A1B2C3D4E5F6000000011 /* ConnectionProfile.swift */,
 				C31A1B2C3D4E5F6000000011 /* PlaceTheseDocument.swift */,
 				C41A1B2C3D4E5F6000000011 /* PendingBetRoute.swift */,
+				C81A1B2C3D4E5F6000000011 /* ConnectionQuality.swift */,
 				C51A1B2C3D4E5F6000000011 /* ChartSeries.swift */,
 			);
 			path = Models;
@@ -331,6 +348,8 @@
 				4544F1B14C1848B3A0625549 /* CacheStore.swift */,
 				965A39FC5F2047DD89F4A62F /* DeskAPIClient.swift */,
 				1F73ED04DEF54036AFB8EC70 /* PrivateHostPolicy.swift */,
+				C91A1B2C3D4E5F6000000012 /* CacheDebugExport.swift */,
+				C91A1B2C3D4E5F6000000011 /* Haptics.swift */,
 				C75282348639400EB6DDC42C /* SyncService.swift */,
 				P21A1B2C3D4E5F6000000012 /* ConnectionProfileStore.swift */,
 				C31A1B2C3D4E5F6000000012 /* PlaceTheseParser.swift */,
@@ -338,6 +357,7 @@
 				P61A1B2C3D4E5F6000000011 /* ServerDiscoveryService.swift */,
 				P91A1B2C3D4E5F6000000011 /* AppLockService.swift */,
 				P91A1B2C3D4E5F6000000012 /* DeskRuntime.swift */,
+				CA1A1B2C3D4E5F6000000011 /* NetworkPathMonitor.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -370,6 +390,9 @@
 			isa = PBXGroup;
 			children = (
 				64B3963EEF5248F6B65F432A /* DeskView.swift */,
+				CA1A1B2C3D4E5F6000000012 /* EquitySparklineView.swift */,
+				CA1A1B2C3D4E5F6000000013 /* MorningSummaryCard.swift */,
+				CA1A1B2C3D4E5F6000000014 /* SecureBucketCard.swift */,
 			);
 			path = Desk;
 			sourceTree = "<group>";
@@ -380,6 +403,7 @@
 				2B800869570241A490F8BC76 /* ChartsView.swift */,
 				C51A1B2C3D4E5F6000000016 /* EquityChartView.swift */,
 				C51A1B2C3D4E5F6000000017 /* DailyPLChartView.swift */,
+				C51A1B2C3D4E5F600000001C /* PerformanceCalendarView.swift */,
 				C51A1B2C3D4E5F6000000018 /* DrawdownChartView.swift */,
 				C51A1B2C3D4E5F6000000019 /* SportChartView.swift */,
 				C51A1B2C3D4E5F6000000013 /* ChartSelectionCallout.swift */,
@@ -532,9 +556,15 @@
 				710ECB7CA555499BB575330B /* CacheStore.swift in Sources */,
 				518DBD775FE644599D68FD6C /* DeskAPIClient.swift in Sources */,
 				02500C5084F54662BCBB9D79 /* PrivateHostPolicy.swift in Sources */,
+				CA1A1B2C3D4E5F6000000001 /* NetworkPathMonitor.swift in Sources */,
+				C91A1B2C3D4E5F6000000002 /* CacheDebugExport.swift in Sources */,
+				C91A1B2C3D4E5F6000000001 /* Haptics.swift in Sources */,
 				0DDFCD6BF58E47FD8D033C60 /* SyncService.swift in Sources */,
 				7386E4EB0A584CD58E467CA9 /* ChartsView.swift in Sources */,
 				6F4AF4EB9E094DDDB2DCEC87 /* DeskView.swift in Sources */,
+				CA1A1B2C3D4E5F6000000004 /* SecureBucketCard.swift in Sources */,
+				CA1A1B2C3D4E5F6000000003 /* MorningSummaryCard.swift in Sources */,
+				CA1A1B2C3D4E5F6000000002 /* EquitySparklineView.swift in Sources */,
 				A292ED1DF0D743FC8AC0E623 /* PendingListView.swift in Sources */,
 				D2EB199DB8424737B2E17533 /* SettingsView.swift in Sources */,
 				43074185315343D497370947 /* SlipView.swift in Sources */,
@@ -571,6 +601,7 @@
 				C31A1B2C3D4E5F6000000005 /* StatusDocumentView.swift in Sources */,
 				C31A1B2C3D4E5F6000000006 /* MarkdownFallbackView.swift in Sources */,
 				C41A1B2C3D4E5F6000000001 /* PendingBetRoute.swift in Sources */,
+				C81A1B2C3D4E5F6000000001 /* ConnectionQuality.swift in Sources */,
 				C41A1B2C3D4E5F6000000002 /* PendingBetRow.swift in Sources */,
 				C41A1B2C3D4E5F6000000003 /* PendingBetDetailView.swift in Sources */,
 				C51A1B2C3D4E5F6000000001 /* ChartSeries.swift in Sources */,
@@ -580,6 +611,7 @@
 				C51A1B2C3D4E5F6000000005 /* ChartAxisSupport.swift in Sources */,
 				C51A1B2C3D4E5F6000000006 /* EquityChartView.swift in Sources */,
 				C51A1B2C3D4E5F6000000007 /* DailyPLChartView.swift in Sources */,
+				C51A1B2C3D4E5F600000000C /* PerformanceCalendarView.swift in Sources */,
 				C51A1B2C3D4E5F6000000008 /* DrawdownChartView.swift in Sources */,
 				C51A1B2C3D4E5F6000000009 /* SportChartView.swift in Sources */,
 				C51A1B2C3D4E5F600000000B /* ChartSelectionRuleOverlay.swift in Sources */,
@@ -691,7 +723,7 @@
 				CODE_SIGNING_REQUIRED = NO;
 				CODE_SIGN_IDENTITY = "";
 				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_PREVIEWS = YES;
 				ENABLE_TESTABILITY = YES;
@@ -703,7 +735,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.simsalabim.ntdesk;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -723,7 +755,7 @@
 				CODE_SIGNING_REQUIRED = NO;
 				CODE_SIGN_IDENTITY = "";
 				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
@@ -734,7 +766,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.simsalabim.ntdesk;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -754,7 +786,7 @@
 				CODE_SIGNING_REQUIRED = NO;
 				CODE_SIGN_IDENTITY = "";
 				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_PREVIEWS = YES;
 				ENABLE_TESTABILITY = YES;
@@ -766,7 +798,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.simsalabim.ntdesk;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -787,7 +819,7 @@
 				CODE_SIGNING_REQUIRED = NO;
 				CODE_SIGN_IDENTITY = "";
 				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
@@ -798,7 +830,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.simsalabim.ntdesk;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -818,7 +850,7 @@
 				CODE_SIGNING_REQUIRED = NO;
 				CODE_SIGN_IDENTITY = "";
 				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = "";
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
@@ -827,7 +859,7 @@
 					"@executable_path/Frameworks",
 					"@loader_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.simsalabim.ntdesk.tests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -847,7 +879,7 @@
 				CODE_SIGNING_REQUIRED = NO;
 				CODE_SIGN_IDENTITY = "";
 				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = "";
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
@@ -856,7 +888,7 @@
 					"@executable_path/Frameworks",
 					"@loader_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.simsalabim.ntdesk.tests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -876,7 +908,7 @@
 				CODE_SIGNING_REQUIRED = NO;
 				CODE_SIGN_IDENTITY = "";
 				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = "";
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
@@ -885,7 +917,7 @@
 					"@executable_path/Frameworks",
 					"@loader_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.simsalabim.ntdesk.tests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -905,7 +937,7 @@
 				CODE_SIGNING_REQUIRED = NO;
 				CODE_SIGN_IDENTITY = "";
 				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = "";
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
@@ -914,7 +946,7 @@
 					"@executable_path/Frameworks",
 					"@loader_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.simsalabim.ntdesk.tests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";

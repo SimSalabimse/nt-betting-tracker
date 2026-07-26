@@ -54,14 +54,20 @@ struct AppRootView: View {
                         .tag(DeskTab.slip)
                 }
                 .tint(DeskTheme.accent)
-                .toolbarBackground(.ultraThinMaterial, for: .tabBar)
+                // Solid tab bar (desk night) — ultraThin material washes labels on iOS 26+ glass.
+                .toolbarBackground(DeskTheme.surface, for: .tabBar)
                 .toolbarBackground(.visible, for: .tabBar)
+                .toolbarColorScheme(.dark, for: .tabBar)
                 .background(DeskTheme.bg)
             }
         }
         .sheet(isPresented: $showSettings) {
             NavigationStack {
                 SettingsView()
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbarBackground(DeskTheme.surface, for: .navigationBar)
+                    .toolbarBackground(.visible, for: .navigationBar)
+                    .toolbarColorScheme(.dark, for: .navigationBar)
                     .toolbar {
                         ToolbarItem(placement: .topBarTrailing) {
                             Button("Done") {
@@ -71,10 +77,15 @@ struct AppRootView: View {
                         }
                     }
             }
+            // Solid sheet chrome — iOS 26/27 ultraThin + large title made a tall blur
+            // until scroll collapsed the title into the nav bar.
+            .presentationBackground(DeskTheme.bg)
+            .preferredColorScheme(.dark)
         }
         .environment(\.openSettings, OpenSettingsAction { showSettings = true })
         .task {
-            await sync.sync()
+            // Initial load: wait for connectivity (user opened the app).
+            await sync.sync(waitForConnectivity: true)
             sync.startPolling()
         }
         .onChange(of: scenePhase) { _, phase in
@@ -101,3 +112,5 @@ struct AppRootView: View {
         sync.snapshot?.pendingCount ?? sync.snapshot?.pendingBets?.count ?? 0
     }
 }
+
+

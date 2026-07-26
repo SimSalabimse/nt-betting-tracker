@@ -30,6 +30,16 @@ struct DailyPLChartView: View {
         return points.first(where: { $0.day.raw == raw })?.day.date
     }
 
+    /// Keep zero baseline; pad to data extremes without a huge empty axis.
+    private var yDomain: ClosedRange<Double>? {
+        ChartAxisSupport.adaptiveDomain(
+            plotPoints.map(\.pl),
+            includeZero: true,
+            minRelativeSpan: 0.0,
+            absoluteFloor: 8.0
+        )
+    }
+
     var body: some View {
         if points.isEmpty {
             emptySeries("No daily data")
@@ -38,7 +48,8 @@ struct DailyPLChartView: View {
                 ChartSelectionCallout(
                     title: selectedRawDay.map { "Daily P/L · \($0)" } ?? "Daily P/L",
                     lines: ChartDataBuilder.dailyDetailLines(points, selected: selectedRawDay),
-                    isActive: selectedRawDay != nil
+                    isActive: selectedRawDay != nil,
+                    onDismiss: { clearSelection() }
                 )
 
                 Chart(plotPoints) { p in
@@ -55,6 +66,11 @@ struct DailyPLChartView: View {
                             .foregroundStyle(DeskTheme.text.opacity(0.55))
                             .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 3]))
                     }
+
+                    // Zero baseline for signed P/L.
+                    RuleMark(y: .value("Zero", 0))
+                        .foregroundStyle(DeskTheme.borderSoft)
+                        .lineStyle(StrokeStyle(lineWidth: 1))
                 }
                 .chartXSelection(value: $scrubDate)
                 .onChange(of: scrubDate) { _, newValue in
@@ -62,10 +78,27 @@ struct DailyPLChartView: View {
                         selectedRawDay = ChartDataBuilder.nearestRawDay(to: newValue, in: points)
                     }
                 }
+                .onChange(of: selectedRawDay) { _, newValue in
+                    if newValue == nil { scrubDate = nil }
+                }
                 .chartSelectionRuleFallback(
                     selectedDate: selectedDate,
                     showFallback: selectedRawDay != nil && !selectedInPlot
                 )
+                .chartYScale(domain: yDomain ?? -10...10)
+                .chartYAxis {
+                    AxisMarks(position: .leading, values: .automatic(desiredCount: 4)) { value in
+                        AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5))
+                            .foregroundStyle(DeskTheme.borderSoft)
+                        AxisValueLabel {
+                            if let v = value.as(Double.self) {
+                                Text(String(format: "%+.0f", v))
+                                    .font(DeskTypography.caption)
+                                    .foregroundStyle(DeskTheme.textMuted)
+                            }
+                        }
+                    }
+                }
                 .frame(height: height)
                 .chartXAxis {
                     ChartAxisSupport.dateAxisMarks(days: days, density: density)
@@ -76,6 +109,11 @@ struct DailyPLChartView: View {
                 .accessibilityHint("Drag horizontally to inspect a day")
             }
         }
+    }
+
+    private func clearSelection() {
+        selectedRawDay = nil
+        scrubDate = nil
     }
 
     /// When selected raw ∉ plotPoints (weekly max-abs reduction), leave all bars full opacity.

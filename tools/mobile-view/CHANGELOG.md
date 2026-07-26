@@ -1,0 +1,27 @@
+# mobile-view changelog
+
+Package version = `VERSION` file = `api_version` in `/api/health` and `/api/desk`.  
+Wire shape = `schema_version` (still **1** unless a breaking change).
+
+Format: [Keep a Changelog](https://keepachangelog.com/)-style.
+
+## [1.1.0] — 2026-07-26
+
+### Added
+- `api_version` / `service` / `schema_version` on `/api/health`
+- `api_version` on `/api/desk` (alongside `schema_version: 1`)
+- Pending `kickoff` (`YYYY-MM-DD HH:MM`) from notes, ledger peers, inbox/outbox odds dumps
+- Secure Variant A fields: `secure_nok`, `working_equity_nok`, `riskable_liquid_nok`, `secure_variant`, `secure_ref_hwm_nok`
+- Object-shaped `place_these.rows_preview` (iOS-tolerant)
+- Charts block (equity / daily / drawdown / by_sport / overall) — full era
+
+### Changed
+- Pending sort prefers soonest kickoff when known
+- Docs: product map + schema contract
+
+## [1.0.0] — earlier
+
+### Added
+- Read-only FastAPI desk: `/api/health`, `/api/desk`, HTML `/`
+- Fail-closed bind (loopback default; `-Lan` opt-in)
+- Basic pending + PLACE_THESE excerpt + charts scaffold

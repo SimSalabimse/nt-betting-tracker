@@ -11,6 +11,15 @@ struct SportChartView: View {
         chartHeight ?? CGFloat(max(120, sports.count * 28))
     }
 
+    private var xDomain: ClosedRange<Double>? {
+        ChartAxisSupport.adaptiveDomain(
+            sports.map(\.pl),
+            includeZero: true,
+            minRelativeSpan: 0.0,
+            absoluteFloor: 8.0
+        )
+    }
+
     var body: some View {
         if sports.isEmpty {
             emptySeries("No sport stats")
@@ -20,7 +29,8 @@ struct SportChartView: View {
                     title: selectedSport.map { "Sport · \($0)" } ?? "By sport",
                     lines: ChartDataBuilder.sportDetailLines(sports, selected: selectedSport),
                     isActive: selectedSport != nil,
-                    idleHint: "Drag or tap a sport to inspect"
+                    idleHint: "Drag or tap a sport to inspect",
+                    onDismiss: { selectedSport = nil }
                 )
 
                 Chart(sports) { s in
@@ -30,7 +40,12 @@ struct SportChartView: View {
                     )
                     .foregroundStyle(s.pl >= 0 ? DeskTheme.profit : DeskTheme.loss)
                     .opacity(selectedSport == nil || selectedSport == s.name ? 1 : 0.35)
+
+                    RuleMark(x: .value("Zero", 0))
+                        .foregroundStyle(DeskTheme.borderSoft)
+                        .lineStyle(StrokeStyle(lineWidth: 1))
                 }
+                .chartXScale(domain: xDomain ?? -10...10)
                 .chartYSelection(value: $selectedSport)
                 .frame(height: resolvedHeight)
                 .accessibilityElement(children: .ignore)

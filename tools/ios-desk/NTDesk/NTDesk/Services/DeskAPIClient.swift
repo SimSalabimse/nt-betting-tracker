@@ -19,7 +19,8 @@ enum DeskAPIError: Error, LocalizedError {
 }
 
 struct DeskAPIClient {
-    var session: URLSession = {
+    /// Fast polling path — never hang waiting for the network path to appear.
+    private let pollSession: URLSession = {
         let cfg = URLSessionConfiguration.ephemeral
         cfg.timeoutIntervalForRequest = 8
         cfg.timeoutIntervalForResource = 12
@@ -27,23 +28,50 @@ struct DeskAPIClient {
         return URLSession(configuration: cfg)
     }()
 
-    func health(baseURL: URL) async throws {
+    /// Manual Sync only — may wait for connectivity when the user explicitly asked.
+    private let manualSession: URLSession = {
+        let cfg = URLSessionConfiguration.ephemeral
+        cfg.timeoutIntervalForRequest = 20
+        cfg.timeoutIntervalForResource = 30
+        cfg.waitsForConnectivity = true
+        return URLSession(configuration: cfg)
+    }()
+
+    private func session(waitForConnectivity: Bool) -> URLSession {
+        waitForConnectivity ? manualSession : pollSession
+    }
+
+    /// Health probe. Returns round-trip time in milliseconds when the body is OK.
+    @discardableResult
+    func health(baseURL: URL, waitForConnectivity: Bool = false) async throws -> Int {
         let url = baseURL.appendingPathComponent("api/health")
         var req = URLRequest(url: url)
         req.httpMethod = "GET"
-        let (_, resp) = try await session.data(for: req)
+        let start = CFAbsoluteTimeGetCurrent()
+        let (data, resp) = try await session(waitForConnectivity: waitForConnectivity).data(for: req)
+        let rttMs = Int(((CFAbsoluteTimeGetCurrent() - start) * 1000.0).rounded())
         guard let http = resp as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
             throw DeskAPIError.http((resp as? HTTPURLResponse)?.statusCode ?? -1)
         }
+        // Prefer ok==true when JSON body present (discovery contract); accept empty 200 for older servers.
+        if let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+            if let ok = obj["ok"] as? Bool, !ok {
+                throw DeskAPIError.http(http.statusCode)
+            }
+            if let n = obj["ok"] as? NSNumber, !n.boolValue {
+                throw DeskAPIError.http(http.statusCode)
+            }
+        }
+        return max(0, rttMs)
     }
 
     /// Returns raw JSON object as Foundation dictionary (for cache) + decoded UI model.
-    func fetchDesk(baseURL: URL) async throws -> (raw: [String: Any], snap: DeskSnapshot) {
+    func fetchDesk(baseURL: URL, waitForConnectivity: Bool = false) async throws -> (raw: [String: Any], snap: DeskSnapshot) {
         let url = baseURL.appendingPathComponent("api/desk")
         var req = URLRequest(url: url)
         req.httpMethod = "GET"
         req.setValue("application/json", forHTTPHeaderField: "Accept")
-        let (data, resp) = try await session.data(for: req)
+        let (data, resp) = try await session(waitForConnectivity: waitForConnectivity).data(for: req)
         guard let http = resp as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
             throw DeskAPIError.http((resp as? HTTPURLResponse)?.statusCode ?? -1)
         }
@@ -52,7 +80,6 @@ struct DeskAPIClient {
         else {
             throw DeskAPIError.notJSON
         }
-        // schema_version required for cache write — missing fail closed
         let schemaOK: Bool = {
             if let ver = obj["schema_version"] as? Int { return ver >= 1 }
             if let n = obj["schema_version"] as? NSNumber { return n.intValue >= 1 }

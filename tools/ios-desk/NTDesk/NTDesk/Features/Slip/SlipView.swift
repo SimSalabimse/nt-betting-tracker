@@ -24,7 +24,7 @@ struct SlipView: View {
                 .padding(DeskSpacing.contentPad)
             }
             .background(DeskTheme.bg)
-            .refreshable { await sync.sync() }
+            .refreshable { await sync.sync(waitForConnectivity: true) }
         }
     }
 

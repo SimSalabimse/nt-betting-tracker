@@ -203,10 +203,13 @@ def test_get_desk_and_health(server_mod):
     body_h = h.json()
     assert body_h["ok"] is True
     assert body_h.get("service") == "nt-mobile-view"
+    assert body_h.get("schema_version") == 1
+    assert isinstance(body_h.get("api_version"), str) and body_h["api_version"]
     d = client.get("/api/desk")
     assert d.status_code == 200
     body = d.json()
     assert body["schema_version"] == 1
+    assert body.get("api_version") == body_h["api_version"]
     assert body["view_only"] is True
     # Raw JSON object (not re-encoded strip) — future keys would survive round-trip at cache layer
     assert "charts" in body

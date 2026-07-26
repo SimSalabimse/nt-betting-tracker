@@ -303,9 +303,16 @@ def run_recommend(
             if not match_date or len(match_date) < 10:
                 match_date = place_day
             ko = (getattr(r, "kickoff", None) or "").strip()
-            note = (r.notes or "")[:400]
-            if ko and "kickoff=" not in note:
-                note = (note + f"; kickoff={ko}").strip("; ")[:400]
+            # Prefix kickoff so the 400-char notes cap never drops the clock
+            # (mobile desk countdown depends on kickoff=YYYY-MM-DD HH:MM).
+            raw_note = (r.notes or "").strip()
+            if ko:
+                if "kickoff=" in raw_note.lower():
+                    note = raw_note[:400]
+                else:
+                    note = f"kickoff={ko}; {raw_note}".strip()[:400]
+            else:
+                note = raw_note[:400]
             bid = make_bet_id(match_date, r.match, r.selection, r.decimal_odds, r.stake_nok, salt=now)
             rows.append(
                 {

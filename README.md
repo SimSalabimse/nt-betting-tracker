@@ -12,11 +12,24 @@ You supply **odds** and **results**. The system owns stakes, phase, daily risk, 
 | **Human final approval** | Recommend proposes; you place. Agent never auto-bets |
 | **Backward compatible** | v5 is additive — your ledger and LuminaNT desktop keep working |
 
-Deep docs: [`docs/COMMANDS.md`](docs/COMMANDS.md) · [`docs/VISION.md`](docs/VISION.md) · [`docs/BANKROLL_PLAN.md`](docs/BANKROLL_PLAN.md) · [`docs/RESEARCH_WORKFLOW.md`](docs/RESEARCH_WORKFLOW.md) · [`docs/CAPITAL_HYBRID_PROGRESSION.md`](docs/CAPITAL_HYBRID_PROGRESSION.md) · [`docs/DESK_SKILLS.md`](docs/DESK_SKILLS.md) · [`docs/SETTLEMENT_LEARNING.md`](docs/SETTLEMENT_LEARNING.md) · [`docs/SOURCES.md`](docs/SOURCES.md) · [`docs/AGENT.md`](docs/AGENT.md) · [`docs/PHASE_PLAN.md`](docs/PHASE_PLAN.md) · mobile/iOS: [`tools/mobile-view/README.md`](tools/mobile-view/README.md) · [`tools/ios-desk/README.md`](tools/ios-desk/README.md)
+Deep docs: [`docs/COMMANDS.md`](docs/COMMANDS.md) · [`docs/VISION.md`](docs/VISION.md) · [`docs/BANKROLL_PLAN.md`](docs/BANKROLL_PLAN.md) · [`docs/RESEARCH_WORKFLOW.md`](docs/RESEARCH_WORKFLOW.md) · [`docs/CAPITAL_HYBRID_PROGRESSION.md`](docs/CAPITAL_HYBRID_PROGRESSION.md) · [`docs/DESK_SKILLS.md`](docs/DESK_SKILLS.md) · [`docs/SETTLEMENT_LEARNING.md`](docs/SETTLEMENT_LEARNING.md) · [`docs/SOURCES.md`](docs/SOURCES.md) · [`docs/AGENT.md`](docs/AGENT.md) · [`docs/PHASE_PLAN.md`](docs/PHASE_PLAN.md)
+
+### Products in this monorepo
+
+One repo, **four products** — do not confuse them:
+
+| Product | Path | Role | Version |
+|---------|------|------|---------|
+| **Engine** | `nt/`, `run_nt.py` | Bankroll / risk / recommend (SSOT) | Monorepo / engine tags |
+| **Desktop** | `desktop/` | Flet operator UI | Same machine as engine |
+| **Mobile-view API** | `tools/mobile-view/` | Read-only HTTP desk for phone | **`api_version`** ← [`VERSION`](tools/mobile-view/VERSION) |
+| **iOS Desk** | `tools/ios-desk/` | SwiftUI viewer + cache | App **VERSION** ← [`VERSION`](tools/ios-desk/VERSION) |
+
+Map + release tags: **[`docs/PRODUCTS.md`](docs/PRODUCTS.md)** · index: [`tools/README.md`](tools/README.md) · wire contract: [`docs/api/DESK_SCHEMA_V1.md`](docs/api/DESK_SCHEMA_V1.md)
 
 ### Command cheatsheet
 
-Copy-paste server, iOS IPA, and CLI commands: **[`docs/COMMANDS.md`](docs/COMMANDS.md)**.
+Copy-paste server, **API-only Windows update**, iOS IPA, and CLI: **[`docs/COMMANDS.md`](docs/COMMANDS.md)**.
 
 ---
 

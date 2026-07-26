@@ -3,6 +3,8 @@ import Foundation
 /// UI view model only — never the sole cache serialization of desk.
 struct DeskSnapshot: Codable, Equatable {
     var schemaVersion: Int?
+    /// mobile-view package version (`tools/mobile-view/VERSION`).
+    var apiVersion: String?
     var generatedAt: String?
     var viewOnly: Bool?
     var stale: Bool?
@@ -26,6 +28,13 @@ struct DeskSnapshot: Codable, Equatable {
     var openPendingRiskNok: Double?
     var todayRealizedPlNok: Double?
     var unitSizeNok: Double?
+    /// Secure Variant A — locked capital (not riskable for new stakes).
+    var secureNok: Double?
+    /// Equity − secure (riskable working equity).
+    var workingEquityNok: Double?
+    var riskableLiquidNok: Double?
+    var secureVariant: String?
+    var secureRefHwmNok: Double?
     var riskReasons: [String]?
     var pendingBets: [PendingBet]?
     var placeThese: PlaceThese?
@@ -34,6 +43,7 @@ struct DeskSnapshot: Codable, Equatable {
 
     enum CodingKeys: String, CodingKey {
         case schemaVersion = "schema_version"
+        case apiVersion = "api_version"
         case generatedAt = "generated_at"
         case viewOnly = "view_only"
         case stale, warnings
@@ -55,6 +65,11 @@ struct DeskSnapshot: Codable, Equatable {
         case openPendingRiskNok = "open_pending_risk_nok"
         case todayRealizedPlNok = "today_realized_pl_nok"
         case unitSizeNok = "unit_size_nok"
+        case secureNok = "secure_nok"
+        case workingEquityNok = "working_equity_nok"
+        case riskableLiquidNok = "riskable_liquid_nok"
+        case secureVariant = "secure_variant"
+        case secureRefHwmNok = "secure_ref_hwm_nok"
         case riskReasons = "risk_reasons"
         case pendingBets = "pending_bets"
         case placeThese = "place_these"
@@ -66,6 +81,8 @@ struct DeskSnapshot: Codable, Equatable {
 struct PendingBet: Codable, Equatable, Hashable, Identifiable {
     var betId: String?
     var date: String?
+    /// Match kickoff wall clock from PC notes: `YYYY-MM-DD HH:MM` (Europe/Oslo).
+    var kickoff: String?
     var match: String?
     var selection: String?
     var decimalOdds: Double?
@@ -81,7 +98,7 @@ struct PendingBet: Codable, Equatable, Hashable, Identifiable {
 
     enum CodingKeys: String, CodingKey {
         case betId = "bet_id"
-        case date, match, selection, result, sport
+        case date, kickoff, match, selection, result, sport
         case decimalOdds = "decimal_odds"
         case stakeNok = "stake_nok"
         case updatedAt = "updated_at"

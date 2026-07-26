@@ -19,6 +19,7 @@ if str(_HERE) not in sys.path:
 
 from paths_util import resolve_project_root  # noqa: E402
 from readers import build_desk_snapshot  # noqa: E402
+from version_info import API_VERSION, SCHEMA_VERSION, SERVICE_NAME  # noqa: E402
 
 try:
     from fastapi import FastAPI, Request, Response
@@ -73,8 +74,10 @@ def create_app(project_root: Path | None = None) -> FastAPI:
             "ok": True,
             "view_only": True,
             "project_root": str(root),
-            # Additive fingerprint for discovery (optional; clients key off ok / view_only).
-            "service": "nt-mobile-view",
+            # Identity + versions (see docs/PRODUCTS.md, docs/api/DESK_SCHEMA_V1.md).
+            "service": SERVICE_NAME,
+            "api_version": API_VERSION,
+            "schema_version": SCHEMA_VERSION,
         }
 
     @app.get("/api/desk")

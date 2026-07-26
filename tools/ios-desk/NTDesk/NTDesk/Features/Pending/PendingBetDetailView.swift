@@ -32,6 +32,15 @@ struct PendingBetDetailView: View {
             detailRow(label: "Match", value: bet.match ?? "—")
             detailRow(label: "Sport", value: bet.sport ?? "—")
             detailRow(label: "Date", value: bet.date ?? "—")
+            if let ko = bet.kickoff, !ko.isEmpty {
+                detailRow(label: "Kickoff", value: ko)
+            }
+            TimelineView(.periodic(from: .now, by: 30)) { context in
+                detailRow(
+                    label: "Starts",
+                    value: KickoffCountdown.label(for: bet, now: context.date)
+                )
+            }
         }
     }
 

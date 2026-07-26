@@ -3,6 +3,7 @@ import SwiftUI
 /// Compact pending-bet card used in `PendingListView`.
 struct PendingBetRow: View {
     let bet: PendingBet
+    var countdown: String? = nil
 
     private var match: String { bet.match ?? "—" }
     private var selection: String { bet.selection ?? "—" }
@@ -40,7 +41,11 @@ struct PendingBetRow: View {
                     if let sport = bet.sport, !sport.isEmpty {
                         Text(sport)
                     }
-                    if let date = bet.date, !date.isEmpty {
+                    if let cd = countdown, !cd.isEmpty {
+                        Text(cd)
+                            .foregroundStyle(DeskTheme.accent)
+                            .fontWeight(.semibold)
+                    } else if let date = bet.date, !date.isEmpty {
                         Text(date)
                     }
                     Spacer(minLength: 0)
@@ -72,7 +77,9 @@ struct PendingBetRow: View {
         if let sport = bet.sport, !sport.isEmpty {
             parts.insert(sport, at: 0)
         }
-        if let date = bet.date, !date.isEmpty {
+        if let cd = countdown, !cd.isEmpty {
+            parts.insert(cd, at: 0)
+        } else if let date = bet.date, !date.isEmpty {
             parts.insert(date, at: 0)
         }
         if let result = bet.result, !result.isEmpty {
