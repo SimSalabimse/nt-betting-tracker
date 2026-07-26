@@ -58,6 +58,15 @@ class Recommendation:
     # P1 soft correlation keys
     league_key: str = "unknown"
     script_family: str = "other"
+    # Form continuity / anti-flip (PR2): soft pens on sort_ev only; true EV honest
+    form_continuity_reason: str = ""
+    ranking_gap_hc: bool = False
+    base_ev: float | None = None  # haircut+prior+non-explore learning (score time)
+    explore_boost_applied: float = 0.0  # explore portion actually added (0 if withheld)
+    evidence_snapshot: dict | None = None  # lightweight pack fields for annotate
+    opposite_side_check_status: str = ""  # "evaluated" | "missing" | "n_a"
+    soft_demotion_reason: str = ""  # combined continuity (and peers when present)
+    sort_ev: float | None = None  # composite ranking EV; never rewrites rec.ev
 
 
 def _stake_for(
@@ -436,10 +445,61 @@ def build_portfolio(
             )
             continue
 
-        ev = ev_after_haircut(p_model, odds, haircut)
-        # soft prior from config band table + live learning
-        ev += float(priors.get(band, 0.0))
-        ev += float(adj.get("ev_boost") or 0.0)
+        haircut_ev = ev_after_haircut(p_model, odds, haircut)
+        prior = float(priors.get(band, 0.0))
+        # Split learning: non-explore vs explore (PR2 base_ev gate)
+        # Backward compat: if split keys missing, treat full boost as non-explore.
+        if "ev_boost_other" in adj or "ev_boost_explore" in adj:
+            ev_boost_other = float(adj.get("ev_boost_other") or 0.0)
+            ev_boost_explore = float(adj.get("ev_boost_explore") or 0.0)
+        else:
+            ev_boost_other = float(adj.get("ev_boost") or 0.0)
+            ev_boost_explore = 0.0
+        base_ev = float(haircut_ev) + prior + ev_boost_other
+        explore_base_min = float(div_lim.get("explore_base_ev_min", 0.005))
+        pre_gate_explore = float(ev_boost_explore)
+        # Optional Band A/B strip: zero explore when odds-confidence forbids it
+        # (module may be absent on this branch — fail open to explore_allowed=True)
+        explore_allowed = True
+        try:
+            from nt.odds_confidence import evaluate_odds_band_gates  # type: ignore
+
+            band_gate = evaluate_odds_band_gates(
+                odds=odds,
+                grade=grade,
+                evidence=c.evidence if isinstance(c.evidence, dict) else None,
+                cfg=cfg,
+                selection=c.selection or "",
+            )
+            allowed = getattr(band_gate, "explore_allowed", None)
+            if allowed is None and isinstance(band_gate, dict):
+                allowed = band_gate.get("explore_allowed")
+            if allowed is False:
+                explore_allowed = False
+                ev_boost_explore = 0.0
+        except Exception:
+            pass
+        explore_boost_applied = 0.0
+        explored_effective = False
+        if (
+            explore_allowed
+            and base_ev + 1e-12 >= explore_base_min
+            and ev_boost_explore > 0
+        ):
+            ev = base_ev + ev_boost_explore
+            explore_boost_applied = float(ev_boost_explore)
+            explored_effective = bool(adj.get("explored"))
+        else:
+            # withhold explore portion (thin edges cannot ride virgin/explore alone)
+            ev = base_ev
+            explore_boost_applied = 0.0
+            explored_effective = False
+        # Reflect gate on adj for downstream notes / floors
+        adj = dict(adj)
+        adj["ev_boost_explore"] = round(explore_boost_applied, 4)
+        adj["ev_boost"] = round(ev_boost_other + explore_boost_applied, 4)
+        if not explored_effective:
+            adj["explored"] = False
 
         # High-Volume v2 EV floors after haircut (+ soft boosts already applied)
         standard_floor = float(sel.get("standard_min_ev", 0.02))
@@ -448,8 +508,8 @@ def build_portfolio(
         strong_n = int(sel.get("strong_min_sources", 8))
         strong = is_strong_confidence(c.evidence, grade, min_sources=strong_n)
         min_ev = strong_floor if strong else standard_floor
-        # Thin sport/market explore path: lower EV bar so non-football can build sample
-        if adj.get("explored"):
+        # Thin sport/market explore path: lower EV bar only when boost actually applied
+        if explored_effective and explore_boost_applied > 0:
             min_ev = min(min_ev, float(div_lim.get("explore_min_ev", 0.012)))
         # Early-bankroll regime floor (Exploration 2% / Survival 3% under High-Volume v2)
         regime_floor = risk.get("regime_min_ev")
@@ -757,12 +817,20 @@ def build_portfolio(
         # Dual-write p_model into notes for forensic recovery if side-car is missing
         note_bits.append(f"p_model={float(p_model):.4f}")
         note_bits.append(f"EV={ev:.3f}")
+        # Dual EV: base vs explore (PR2)
+        if explore_boost_applied > 0:
+            note_bits.append(
+                f"base_ev={base_ev:+.3f} · explore_boost={explore_boost_applied:+.3f} · "
+                f"placed_ev={ev:+.3f}"
+            )
+        elif pre_gate_explore > 0 and not explored_effective:
+            note_bits.append(f"explore_boost=withheld (base_ev={base_ev:+.3f})")
         if regime_explore:
             from nt.bankroll_regime import EXPLORE_REGIME_TAG
 
             note_bits.append(EXPLORE_REGIME_TAG)
             note_bits.append("explore")
-        elif adj.get("explored"):
+        elif explored_effective:
             note_bits.append("EXPLORE")
         if adj.get("stake_mult") and abs(float(adj["stake_mult"]) - 1.0) > 0.01:
             note_bits.append(f"learn_stake×{adj['stake_mult']}")
@@ -806,6 +874,32 @@ def build_portfolio(
             market_key=str(mk or ""),
             evidence=c.evidence if isinstance(c.evidence, dict) else None,
         )
+        # Score-time evidence snapshot + ranking-gap tag (no pack reload at annotate)
+        from nt.form_continuity import build_evidence_snapshot, is_ranking_gap_hc
+
+        snap = build_evidence_snapshot(
+            c.evidence if isinstance(c.evidence, dict) else None,
+            grade,
+        )
+        opp = snap.get("opposite_side_check") if isinstance(snap, dict) else None
+        if opp:
+            opp_status = "evaluated"
+        elif c.evidence:
+            opp_status = "missing"
+        else:
+            opp_status = "n_a"
+        mf_key = str(mk or c.market_type or "")
+        # Prefer explicit market_family from evidence when present
+        if isinstance(c.evidence, dict) and c.evidence.get("market_family"):
+            mf_key = str(c.evidence.get("market_family") or mf_key)
+        rank_gap = is_ranking_gap_hc(
+            market_family=mf_key,
+            selection=c.selection or "",
+            notes=c.notes or "",
+            match=c.match or "",
+            evidence_snapshot=snap,
+            market_type=c.market_type or "",
+        )
         rec = Recommendation(
             match=c.match,
             selection=c.selection,
@@ -821,9 +915,9 @@ def build_portfolio(
             p_model=p_model,
             notes="; ".join(note_bits)[:400],
             high_odds=high,
-            explore=bool(adj.get("explored") or regime_explore),
+            explore=bool(explored_effective or regime_explore),
             learning_stake_mult=learn_mult,
-            learning_ev_boost=float(adj.get("ev_boost") or 0.0),
+            learning_ev_boost=float(ev_boost_other) + float(explore_boost_applied),
             market_key=mk,
             reasons=list(adj.get("notes") or [])[:6],
             evidence_path=(c.evidence_path or "").strip(),
@@ -832,11 +926,88 @@ def build_portfolio(
             stake_decision=stake_decision,
             league_key=lg,
             script_family=sf,
+            base_ev=round(base_ev, 6),
+            explore_boost_applied=float(explore_boost_applied),
+            evidence_snapshot=snap,
+            ranking_gap_hc=bool(rank_gap),
+            opposite_side_check_status=opp_status,
         )
         scored.append(rec)
 
-    # Sort by EV desc; optional explore-first reorder so thin sports get airtime
-    scored.sort(key=lambda r: (r.ev, 1 if r.explore else 0), reverse=True)
+    # --- Form continuity annotate (PR2): pens on sort_ev only; soft-reject filter ---
+    # INVARIANT: never rewrite rec.ev. similar_recent/lessons peers optional when present.
+    from nt.form_continuity import form_continuity_penalty
+
+    fc_cfg = dict(div_lim.get("form_continuity") or {})
+    sort_cfg = dict(div_lim.get("sort") or {})
+    cont_weight = float(sort_cfg.get("continuity_penalty_weight", 1.0) or 1.0)
+    fc_on = bool(fc_cfg.get("enabled", False))
+
+    for rec in scored:
+        true_ev = float(rec.ev)
+        pre_annotate_ev = true_ev
+        pen_fc = 0.0
+        why_fc = ""
+        meta_fc: dict[str, Any] = {}
+        if fc_on:
+            pen_fc, why_fc, meta_fc = form_continuity_penalty(
+                match=rec.match,
+                selection=rec.selection,
+                sport=rec.sport or "",
+                market_type=rec.market_type or "",
+                market_family_key=str(rec.market_key or ""),
+                decimal_odds=rec.decimal_odds,
+                base_ev=rec.base_ev,
+                grade=rec.grade,
+                evidence_snapshot=rec.evidence_snapshot,
+                notes=rec.notes or "",
+                recent_rows=historical_rows,
+                cfg=fc_cfg,
+            )
+            rec.form_continuity_reason = why_fc or ""
+            # INVARIANT: do not change rec.ev (pens apply to sort_ev only)
+            if rec.ev != pre_annotate_ev:
+                rec.ev = pre_annotate_ev
+            if why_fc:
+                if why_fc not in (rec.notes or ""):
+                    rec.notes = f"{(rec.notes or '').rstrip('; ')}; {why_fc}".strip("; ")[:400]
+                if why_fc not in (rec.reasons or []):
+                    rec.reasons = list(rec.reasons or []) + [why_fc]
+                rec.soft_demotion_reason = why_fc
+            if meta_fc.get("soft_reject") and why_fc:
+                rec.reject_reason = (
+                    why_fc
+                    if why_fc.startswith("form_continuity:")
+                    else f"form_continuity: {why_fc}"
+                )
+        rec.sort_ev = round(true_ev - float(pen_fc) * cont_weight, 6)
+
+    if fc_on:
+        for rec in scored:
+            if (rec.reject_reason or "").startswith("form_continuity:"):
+                rejects.append(
+                    {
+                        "match": rec.match,
+                        "selection": rec.selection,
+                        "reason": rec.reject_reason,
+                        "near_miss": True,
+                        "form_continuity": True,
+                        "ev": rec.ev,
+                        "sort_ev": rec.sort_ev,
+                        "base_ev": rec.base_ev,
+                    }
+                )
+        scored = [
+            r
+            for r in scored
+            if not (r.reject_reason or "").startswith("form_continuity:")
+        ]
+
+    # Sort by sort_ev (fallback true EV) desc; optional explore-first reorder
+    def _rank_ev(r: Recommendation) -> float:
+        return float(r.sort_ev if r.sort_ev is not None else r.ev)
+
+    scored.sort(key=lambda r: (_rank_ev(r), 1 if r.explore else 0), reverse=True)
     # Early regime: soft-prefer mid-odds lower-variance lines (sort only, not hard ban)
     if risk.get("regime_prefer_mid_odds") and risk.get("bankroll_regime") in (
         "exploration",
@@ -853,7 +1024,7 @@ def build_portfolio(
 
         def _mid_key(r: Recommendation) -> tuple:
             mid = 1 if is_mid_odds_preferred(float(r.decimal_odds), regime_blob) else 0
-            return (mid, r.ev, 1 if r.explore else 0)
+            return (mid, _rank_ev(r), 1 if r.explore else 0)
 
         scored.sort(key=_mid_key, reverse=True)
     if div_lim.get("prefer_explore_first"):
@@ -862,7 +1033,7 @@ def build_portfolio(
             key=lambda r: (
                 0 if (r.explore and normalize_sport(r.sport) != "football") else 1,
                 0 if r.explore else 1,
-                -r.ev,
+                -_rank_ev(r),
             )
         )
 

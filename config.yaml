@@ -330,9 +330,10 @@ learning:
       macro_underrep_bonus: 0.004
       explore_tiebreak: true
       continuity_penalty_weight: 1.0
-    # Form continuity / anti-flip (PR1 library only — enabled false until PR2)
+    # Form continuity / anti-flip (PR2 portfolio wire-up — enabled true)
+    # Ops note: first live day may set weak_flip_action: demote_only, then soft_reject.
     form_continuity:
-      enabled: false
+      enabled: true
       live_ledger_only: true
       anchor_scan_limit: 30
       max_hours: 48

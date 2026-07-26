@@ -1016,6 +1016,8 @@ def learning_adjustments(
     if not enabled or not learning or not learning.get("enabled", True):
         return {
             "ev_boost": 0.0,
+            "ev_boost_other": 0.0,
+            "ev_boost_explore": 0.0,
             "stake_mult": 1.0,
             "blocked": False,
             "block_reason": "",
@@ -1035,14 +1037,16 @@ def learning_adjustments(
         market_key = infer_market(selection, market or "")
 
     notes: list[str] = []
-    ev = 0.0
+    # Split: non-explore sport/market/band vs explore/virgin/thin extras (PR2)
+    ev_other = 0.0
+    ev_explore = 0.0
     stake = 1.0
     blocked = False
     block_reason = ""
     explored = False
 
     if sp:
-        ev += float(sp.get("ev_boost") or 0)
+        ev_other += float(sp.get("ev_boost") or 0)
         stake *= float(sp.get("stake_mult") or 1.0)
         if sp.get("n", 0) >= 8:
             notes.append(f"sport {sport or '?'}×{sp.get('stake_mult')} EV{float(sp.get('ev_boost') or 0):+.3f}")
@@ -1054,7 +1058,7 @@ def learning_adjustments(
         # Market is softer: half weight on EV, stake mult pulled toward 1
         m_ev = float(mk.get("ev_boost") or 0) * 0.6
         m_st = 1.0 + (float(mk.get("stake_mult") or 1.0) - 1.0) * 0.5
-        ev += m_ev
+        ev_other += m_ev
         stake *= m_st
         if mk.get("n", 0) >= 12:
             notes.append(f"mkt {mk.get('status')}×{m_st:.2f}")
@@ -1065,12 +1069,13 @@ def learning_adjustments(
     if bd:
         # Band: EV only (stake already has static high-odds mult)
         b_ev = float(bd.get("ev_boost") or 0) * 0.5
-        ev += b_ev
+        ev_other += b_ev
         if bd.get("n", 0) >= 15:
             notes.append(f"band {band} EV{b_ev:+.3f}")
 
     # Exploration: under-sampled sport OR market gets a nudge so football
     # volume cannot starve thin sports/markets of sample forever.
+    # All virgin/thin/prop extras go into ev_boost_explore (gated at portfolio score).
     div = (learn_cfg or {}).get("diversification") or {}
     exp_lo = int(div.get("explore_min_n", 0))  # 0 = allow virgin groups
     exp_hi = int(div.get("explore_max_n", 14))
@@ -1080,7 +1085,7 @@ def learning_adjustments(
     virgin_boost = float(div.get("explore_virgin_ev_boost", 0.022))
 
     def _try_explore(group: dict[str, Any] | None, label: str, *, n_hint: int | None = None) -> None:
-        nonlocal ev, stake, explored
+        nonlocal ev_explore, stake, explored
         n = int((group or {}).get("n") or 0) if group else int(n_hint or 0)
         roi = 0.0
         blocked_g = False
@@ -1095,7 +1100,7 @@ def learning_adjustments(
         if blocked_g:
             return
         if n == 0 and exp_lo <= 0:
-            ev += virgin_boost
+            ev_explore += virgin_boost
             stake = max(stake, exp_floor)
             explored = True
             notes.append(f"explore virgin {label}")
@@ -1108,7 +1113,7 @@ def learning_adjustments(
             # Props / period market keys
             if any(x in label.lower() for x in ("player", "period", "corner", "prop", "clean")):
                 boost = exp_boost + 0.006
-            ev += boost
+            ev_explore += boost
             stake = max(stake, exp_floor)
             explored = True
             notes.append(f"explore {label} n={n}")
@@ -1119,12 +1124,21 @@ def learning_adjustments(
         if not sp or int(sp.get("n") or 0) <= exp_hi:
             _try_explore(sp if sp else None, f"sport:{sport or 'new'}", n_hint=0 if not sp else None)
 
-    # Global safety clamps on combined effect
-    ev = _clamp(ev, -0.06, 0.065)
+    # Global safety clamps: keep other in range; explore only fills remaining headroom
+    ev_other = _clamp(ev_other, -0.06, 0.065)
+    ev_explore = max(0.0, float(ev_explore))
+    headroom = 0.065 - float(ev_other)
+    if headroom < 0:
+        headroom = 0.0
+    if ev_explore > headroom:
+        ev_explore = headroom
+    ev = float(ev_other) + float(ev_explore)
     stake = _clamp(stake, 0.65, 1.25)
 
     return {
-        "ev_boost": round(ev, 4),
+        "ev_boost": round(ev, 4),  # sum — backward compatible
+        "ev_boost_other": round(ev_other, 4),
+        "ev_boost_explore": round(ev_explore, 4),
         "stake_mult": round(stake, 3),
         "blocked": blocked,
         "block_reason": block_reason,
