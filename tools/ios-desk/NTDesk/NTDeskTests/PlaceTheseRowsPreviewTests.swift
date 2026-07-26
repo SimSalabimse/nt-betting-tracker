@@ -43,6 +43,24 @@ final class PlaceTheseRowsPreviewTests: XCTestCase {
     func testRowsPreview_null() throws {
         XCTAssertEqual(try decodeDesk(minimalDesk(rowsPreviewJSON: "null")).placeThese?.rowsPreview.count, 0)
     }
+
+    /// Non-array junk must not fail whole-desk decode (PR-8 contract).
+    func testRowsPreview_scalarNumber_noBomb() throws {
+        let desk = try decodeDesk(minimalDesk(rowsPreviewJSON: "123"))
+        XCTAssertEqual(desk.placeThese?.rowsPreview.count, 0)
+        XCTAssertEqual(desk.placeThese?.title, "T")
+    }
+
+    func testRowsPreview_objectNotArray_noBomb() throws {
+        let desk = try decodeDesk(minimalDesk(rowsPreviewJSON: #"{"index":1,"match":"x"}"#))
+        XCTAssertEqual(desk.placeThese?.rowsPreview.count, 0)
+    }
+
+    func testRowsPreview_bool_noBomb() throws {
+        let desk = try decodeDesk(minimalDesk(rowsPreviewJSON: "true"))
+        XCTAssertEqual(desk.placeThese?.rowsPreview.count, 0)
+    }
+
     func testDeskSample_stillDecodes() throws {
         let b = Bundle(for: PlaceTheseRowsPreviewTests.self)
         let url = try XCTUnwrap(b.url(forResource: "desk_sample_v1", withExtension: "json", subdirectory: "Fixtures") ?? b.url(forResource: "desk_sample_v1", withExtension: "json"))

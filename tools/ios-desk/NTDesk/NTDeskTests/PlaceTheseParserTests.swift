@@ -70,6 +70,26 @@ final class PlaceTheseParserTests: XCTestCase {
         XCTAssertEqual(PlaceTheseParser.normalizeCell("**NO BETS**"), "NO BETS")
     }
 
+    /// Hybrid phase ids from `nt/recommend.py` use a trailing `+` (e.g. 1A+, 1B+).
+    func testParse_hybridPhaseId_withPlus() {
+        let md = """
+        # Bets to place — hybrid
+
+        Phase **1A+** | Equity **550.99** | Remaining risk **8.00** / cap **42.00**
+
+        | # | Match | Selection | Odds | Stake NOK | EV | Grade | Band |
+        |---|-------|-----------|------|-----------|----|-------|------|
+        | — | **NO BETS** | empty slip is success | — | — | — | — | — |
+        """
+        let doc = PlaceTheseParser.parse(textExcerpt: md)
+        XCTAssertEqual(doc.phaseId, "1A+")
+        XCTAssertEqual(doc.equityNok!, 550.99, accuracy: 0.001)
+        XCTAssertEqual(doc.remainingRiskNok!, 8.00, accuracy: 0.001)
+        XCTAssertEqual(doc.dailyCapNok!, 42.00, accuracy: 0.001)
+        XCTAssertTrue(doc.isEmptySlip)
+        XCTAssertEqual(doc.parseQuality, .full)
+    }
+
     func testResolve_prefersObjectRows() {
         let rows = [PlaceTheseRowPreview(index: 1, match: "A vs B", selection: "A", decimalOdds: 2.0, stakeNok: 10, ev: 0.05, grade: "A", band: "<1.5")]
         let doc = PlaceTheseParser.resolve(textExcerpt: "garbage", apiTitle: "From API", summaryLine: nil, rowsPreview: rows)

@@ -5,6 +5,9 @@ import SwiftUI
 struct SettingsView: View {
     @EnvironmentObject private var sync: SyncService
     @State private var confirmClearCache = false
+    @FocusState private var urlFieldFocused: Bool
+    /// Same key + default as `SlipView` — single UserDefaults read path for the flag.
+    @AppStorage(DeskPreferences.useStructuredSlipKey) private var useStructuredSlip: Bool = true
 
     private var appVersionLine: String {
         let short = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "—"
@@ -73,12 +76,9 @@ struct SettingsView: View {
             }
 
             Section {
-                Toggle("Structured slip", isOn: Binding(
-                    get: { DeskPreferences.useStructuredSlip },
-                    set: { DeskPreferences.useStructuredSlip = $0 }
-                ))
-                .tint(DeskTheme.accent)
-                .accessibilityHint("When on, PLACE_THESE is shown as cards; when off, Markdown source is shown")
+                Toggle("Structured slip", isOn: $useStructuredSlip)
+                    .tint(DeskTheme.accent)
+                    .accessibilityHint("When on, PLACE_THESE is shown as cards; when off, Markdown source is shown")
             } header: {
                 Text("Display")
             } footer: {

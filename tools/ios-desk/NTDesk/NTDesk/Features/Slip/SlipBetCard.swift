@@ -23,7 +23,8 @@ struct SlipBetCard: View {
                 HStack(spacing: DeskSpacing.s3) {
                     metric("Odds", formatOdds(bet.decimalOdds))
                     metric("Stake", DeskFormatters.nok(bet.stakeNok))
-                    metric("EV", formatEV(bet.ev))
+                    // Ratio in model; display as % to match desk KPI helpers.
+                    metric("EV", DeskFormatters.pct(bet.ev, signed: true))
                     if let grade = bet.grade, !grade.isEmpty { metric("Grade", grade) }
                     if let band = bet.band, !band.isEmpty { metric("Band", band) }
                 }
@@ -52,11 +53,6 @@ struct SlipBetCard: View {
         return String(format: "%.2f", value)
     }
 
-    private func formatEV(_ value: Double?) -> String {
-        guard let value else { return "—" }
-        return String(format: "%.3f", value)
-    }
-
     private var accessibilitySummary: String {
         var parts: [String] = []
         if let index = bet.index { parts.append("Bet \(index)") }
@@ -64,7 +60,7 @@ struct SlipBetCard: View {
         parts.append(bet.selection)
         if let o = bet.decimalOdds { parts.append("Odds \(formatOdds(o))") }
         if let s = bet.stakeNok { parts.append("Stake \(DeskFormatters.nok(s))") }
-        if let e = bet.ev { parts.append("EV \(formatEV(e))") }
+        if bet.ev != nil { parts.append("EV \(DeskFormatters.pct(bet.ev, signed: true))") }
         if let g = bet.grade { parts.append("Grade \(g)") }
         if let b = bet.band { parts.append("Band \(b)") }
         return parts.joined(separator: ", ")

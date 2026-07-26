@@ -6,7 +6,8 @@ enum PlaceTheseParser {
 
     private static let phaseRegex: NSRegularExpression = {
         let pattern =
-            #"Phase\s+\*{0,2}([A-Za-z0-9]+)\*{0,2}\s*\|\s*Equity\s+\*{0,2}([0-9.,]+)\*{0,2}\s*\|\s*Remaining risk\s+\*{0,2}([0-9.,]+)\*{0,2}\s*/\s*cap\s+\*{0,2}([0-9.,]+)\*{0,2}"#
+            // Hybrid phase ids include a trailing '+' (e.g. 1A+, 1B+) from nt/recommend.py.
+            #"Phase\s+\*{0,2}([A-Za-z0-9][A-Za-z0-9+]*)\*{0,2}\s*\|\s*Equity\s+\*{0,2}([0-9.,]+)\*{0,2}\s*\|\s*Remaining risk\s+\*{0,2}([0-9.,]+)\*{0,2}\s*/\s*cap\s+\*{0,2}([0-9.,]+)\*{0,2}"#
         return try! NSRegularExpression(pattern: pattern, options: [.caseInsensitive])
     }()
 
