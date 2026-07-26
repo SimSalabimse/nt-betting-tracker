@@ -65,6 +65,16 @@
 		C41A1B2C3D4E5F6000000002 /* PendingBetRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = C41A1B2C3D4E5F6000000012 /* PendingBetRow.swift */; };
 		C41A1B2C3D4E5F6000000003 /* PendingBetDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C41A1B2C3D4E5F6000000013 /* PendingBetDetailView.swift */; };
 		C41A1B2C3D4E5F6000000004 /* PendingBetRouteTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C41A1B2C3D4E5F6000000014 /* PendingBetRouteTests.swift */; };
+		C51A1B2C3D4E5F6000000001 /* ChartSeries.swift in Sources */ = {isa = PBXBuildFile; fileRef = C51A1B2C3D4E5F6000000011 /* ChartSeries.swift */; };
+		C51A1B2C3D4E5F6000000002 /* ChartDataBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = C51A1B2C3D4E5F6000000012 /* ChartDataBuilder.swift */; };
+		C51A1B2C3D4E5F6000000003 /* ChartSelectionCallout.swift in Sources */ = {isa = PBXBuildFile; fileRef = C51A1B2C3D4E5F6000000013 /* ChartSelectionCallout.swift */; };
+		C51A1B2C3D4E5F6000000004 /* ChartExpandedContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = C51A1B2C3D4E5F6000000014 /* ChartExpandedContainer.swift */; };
+		C51A1B2C3D4E5F6000000005 /* ChartAxisSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = C51A1B2C3D4E5F6000000015 /* ChartAxisSupport.swift */; };
+		C51A1B2C3D4E5F6000000006 /* EquityChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C51A1B2C3D4E5F6000000016 /* EquityChartView.swift */; };
+		C51A1B2C3D4E5F6000000007 /* DailyPLChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C51A1B2C3D4E5F6000000017 /* DailyPLChartView.swift */; };
+		C51A1B2C3D4E5F6000000008 /* DrawdownChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C51A1B2C3D4E5F6000000018 /* DrawdownChartView.swift */; };
+		C51A1B2C3D4E5F6000000009 /* SportChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C51A1B2C3D4E5F6000000019 /* SportChartView.swift */; };
+		C51A1B2C3D4E5F600000000A /* ChartDataBuilderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C51A1B2C3D4E5F600000001A /* ChartDataBuilderTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -140,6 +150,16 @@
 		C31A1B2C3D4E5F6000000021 /* PLACE_THESE_2026-07-12.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "PLACE_THESE_2026-07-12.md"; sourceTree = "<group>"; };
 		C31A1B2C3D4E5F6000000022 /* PLACE_THESE_empty.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = PLACE_THESE_empty.md; sourceTree = "<group>"; };
 		C31A1B2C3D4E5F6000000023 /* desk_sample_v1.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = desk_sample_v1.json; sourceTree = "<group>"; };
+		C51A1B2C3D4E5F6000000011 /* ChartSeries.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartSeries.swift; sourceTree = "<group>"; };
+		C51A1B2C3D4E5F6000000012 /* ChartDataBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartDataBuilder.swift; sourceTree = "<group>"; };
+		C51A1B2C3D4E5F6000000013 /* ChartSelectionCallout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartSelectionCallout.swift; sourceTree = "<group>"; };
+		C51A1B2C3D4E5F6000000014 /* ChartExpandedContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartExpandedContainer.swift; sourceTree = "<group>"; };
+		C51A1B2C3D4E5F6000000015 /* ChartAxisSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartAxisSupport.swift; sourceTree = "<group>"; };
+		C51A1B2C3D4E5F6000000016 /* EquityChartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EquityChartView.swift; sourceTree = "<group>"; };
+		C51A1B2C3D4E5F6000000017 /* DailyPLChartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyPLChartView.swift; sourceTree = "<group>"; };
+		C51A1B2C3D4E5F6000000018 /* DrawdownChartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DrawdownChartView.swift; sourceTree = "<group>"; };
+		C51A1B2C3D4E5F6000000019 /* SportChartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SportChartView.swift; sourceTree = "<group>"; };
+		C51A1B2C3D4E5F600000001A /* ChartDataBuilderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartDataBuilderTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -219,6 +239,7 @@
 				C31A1B2C3D4E5F6000000018 /* PlaceTheseRowsPreviewTests.swift */,
 				C31A1B2C3D4E5F6000000040 /* Fixtures */,
 				C41A1B2C3D4E5F6000000014 /* PendingBetRouteTests.swift */,
+				C51A1B2C3D4E5F600000001A /* ChartDataBuilderTests.swift */,
 			);
 			path = NTDeskTests;
 			sourceTree = "<group>";
@@ -267,6 +288,7 @@
 				P21A1B2C3D4E5F6000000011 /* ConnectionProfile.swift */,
 				C31A1B2C3D4E5F6000000011 /* PlaceTheseDocument.swift */,
 				C41A1B2C3D4E5F6000000011 /* PendingBetRoute.swift */,
+				C51A1B2C3D4E5F6000000011 /* ChartSeries.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -280,6 +302,7 @@
 				C75282348639400EB6DDC42C /* SyncService.swift */,
 				P21A1B2C3D4E5F6000000012 /* ConnectionProfileStore.swift */,
 				C31A1B2C3D4E5F6000000012 /* PlaceTheseParser.swift */,
+				C51A1B2C3D4E5F6000000012 /* ChartDataBuilder.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -319,6 +342,13 @@
 			isa = PBXGroup;
 			children = (
 				2B800869570241A490F8BC76 /* ChartsView.swift */,
+				C51A1B2C3D4E5F6000000016 /* EquityChartView.swift */,
+				C51A1B2C3D4E5F6000000017 /* DailyPLChartView.swift */,
+				C51A1B2C3D4E5F6000000018 /* DrawdownChartView.swift */,
+				C51A1B2C3D4E5F6000000019 /* SportChartView.swift */,
+				C51A1B2C3D4E5F6000000013 /* ChartSelectionCallout.swift */,
+				C51A1B2C3D4E5F6000000014 /* ChartExpandedContainer.swift */,
+				C51A1B2C3D4E5F6000000015 /* ChartAxisSupport.swift */,
 			);
 			path = Charts;
 			sourceTree = "<group>";
@@ -505,6 +535,15 @@
 				C41A1B2C3D4E5F6000000001 /* PendingBetRoute.swift in Sources */,
 				C41A1B2C3D4E5F6000000002 /* PendingBetRow.swift in Sources */,
 				C41A1B2C3D4E5F6000000003 /* PendingBetDetailView.swift in Sources */,
+				C51A1B2C3D4E5F6000000001 /* ChartSeries.swift in Sources */,
+				C51A1B2C3D4E5F6000000002 /* ChartDataBuilder.swift in Sources */,
+				C51A1B2C3D4E5F6000000003 /* ChartSelectionCallout.swift in Sources */,
+				C51A1B2C3D4E5F6000000004 /* ChartExpandedContainer.swift in Sources */,
+				C51A1B2C3D4E5F6000000005 /* ChartAxisSupport.swift in Sources */,
+				C51A1B2C3D4E5F6000000006 /* EquityChartView.swift in Sources */,
+				C51A1B2C3D4E5F6000000007 /* DailyPLChartView.swift in Sources */,
+				C51A1B2C3D4E5F6000000008 /* DrawdownChartView.swift in Sources */,
+				C51A1B2C3D4E5F6000000009 /* SportChartView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -517,6 +556,7 @@
 				C31A1B2C3D4E5F6000000007 /* PlaceTheseParserTests.swift in Sources */,
 				C31A1B2C3D4E5F6000000008 /* PlaceTheseRowsPreviewTests.swift in Sources */,
 				C41A1B2C3D4E5F6000000004 /* PendingBetRouteTests.swift in Sources */,
+				C51A1B2C3D4E5F600000000A /* ChartDataBuilderTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
