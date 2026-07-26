@@ -118,35 +118,46 @@ _CONVINCING_WIN_TOKENS: tuple[str, ...] = (
     "covered easily",
 )
 
+# S1 vs S4 must be disjoint so one phrase cannot double-count into strong_flip.
+# S1 = availability / injury / lineup break (material news).
+_S1_NOTES_TOKENS: tuple[str, ...] = (
+    "injury",
+    "scratched",
+    "out for",
+    "lineup change",
+    "lineup delta",
+)
+# S4 = structural matchup terms (pitcher/rest/travel/rotation) — not S1 tokens.
 _STRUCTURAL_FLIP_TOKENS: tuple[str, ...] = (
     "pitcher change",
     "starting pitcher",
     "rotation change",
     "confirmed lineup",
-    "lineup delta",
-    "lineup change",
     "rest advantage",
     "travel",
     "back-to-back",
     "b2b",
-    "injury",
-    "scratched",
-    "out for",
 )
 
-_RANK_IDIOMS: tuple[str, ...] = (
-    "rank",
+# Multi-word / longer idioms: plain substring OK.
+# Short tokens use word-boundary match in is_ranking_gap_hc (avoid "frank"→"rank").
+_RANK_IDIOMS_PHRASE: tuple[str, ...] = (
     "table position",
-    "elo",
-    "seed",
-    "standings",
     "worst era",
     "best record",
     "elite vs bottom",
     "bottom of",
     "ranking gap",
     "strength gap",
+    "standings",
 )
+_RANK_IDIOMS_WORD: tuple[str, ...] = (
+    "rank",
+    "elo",
+    "seed",
+)
+# Backward-compatible combined view for tests/docs
+_RANK_IDIOMS: tuple[str, ...] = _RANK_IDIOMS_PHRASE + _RANK_IDIOMS_WORD
 
 
 def _fc_section(cfg: Mapping[str, Any] | None) -> dict[str, Any]:
@@ -485,6 +496,26 @@ def _anchor_sort_key(r: Mapping[str, Any]) -> str:
     return ""
 
 
+def _is_potential_continuity_anchor(row: Mapping[str, Any]) -> bool:
+    """
+    True when a row could seed an anti-flip heavy-fav anchor.
+
+    Used to prefer HC minus / Win-Pending seats in the scan window so
+    high-volume Loss/Refunded terminals do not dilute past anchor_scan_limit.
+    """
+    res = str(row.get("result") or "").strip()
+    if res not in _TERMINAL_WIN and res not in _PENDING_OK:
+        return False
+    sel = str(row.get("selection") or "")
+    mt = str(row.get("market_type") or "")
+    fam = str(row.get("market_family") or row.get("market_family_key") or "")
+    if selection_side_sign(sel) == "minus":
+        return True
+    if _is_handicap_context(sel, mt, fam) and selection_side_sign(sel) != "plus":
+        return True
+    return False
+
+
 def live_continuity_anchor_window(
     rows: Sequence[Mapping[str, Any]] | None,
     *,
@@ -498,23 +529,38 @@ def live_continuity_anchor_window(
     NOT clamped to similar_recent's 10–15 band.
     Sort key (desc, ledger-native): updated_at → created_at → date.
     Always filter_live_rows when live_ledger_only. Excludes Abandoned.
+
+    Prefer-filter (anti-dilution): potential continuity anchors
+    (Win/Pending + minus-HC / handicap context) are taken first up to
+    ``limit``, then remaining slots fill with other terminals. Prevents
+    high-volume non-fav seats from pushing true heavy-fav Wins past the scan.
     """
     lim = max(1, int(limit) if limit else 30)
     if live_ledger_only:
         live = filter_live_rows(rows)
     else:
         live = [dict(r) for r in (rows or []) if isinstance(r, Mapping)]
-    eligible: list[dict[str, Any]] = []
+    preferred: list[dict[str, Any]] = []
+    other: list[dict[str, Any]] = []
     for r in live:
         res = str(r.get("result") or "").strip()
         if res == "Abandoned":
             continue
-        if res in _TERMINAL_ANY or res in _TERMINAL_WIN:
-            eligible.append(dict(r))
-        elif include_pending and res in _PENDING_OK:
-            eligible.append(dict(r))
-    eligible.sort(key=_anchor_sort_key, reverse=True)
-    return eligible[:lim]
+        row = dict(r)
+        is_terminal = res in _TERMINAL_ANY or res in _TERMINAL_WIN
+        is_pending = include_pending and res in _PENDING_OK
+        if not is_terminal and not is_pending:
+            continue
+        if _is_potential_continuity_anchor(row):
+            preferred.append(row)
+        else:
+            other.append(row)
+    preferred.sort(key=_anchor_sort_key, reverse=True)
+    other.sort(key=_anchor_sort_key, reverse=True)
+    out = preferred[:lim]
+    if len(out) < lim:
+        out.extend(other[: lim - len(out)])
+    return out
 
 
 def hours_since_anchor(
@@ -616,18 +662,21 @@ def _count_strong_flip_signals(
     notes: str,
     strong_flip_min_ev: float,
 ) -> tuple[int, list[str]]:
-    """Return (count, signal ids). Escape requires ≥2 positive signals."""
+    """
+    Return (count, signal ids). Escape requires ≥2 positive signals.
+
+    S1 and S4 token sets are disjoint: a single phrase (e.g. ``pitcher change``)
+    can credit at most one of S1/S4.
+    """
     snap = evidence_snapshot or {}
     hits: list[str] = []
     notes_l = (notes or "").lower()
     why = str(snap.get("why_flip") or "")
-    # S1 material news / injury-lineup break
+    summary_l = str(snap.get("summary") or "").lower()
+    # S1 material news / injury-lineup break (disjoint from S4 structural set)
     if snap.get("injury_or_lineup_break"):
         hits.append("S1_injury_lineup")
-    elif any(
-        t in notes_l
-        for t in ("injury", "scratched", "lineup change", "pitcher change", "out for")
-    ):
+    elif any(t in notes_l for t in _S1_NOTES_TOKENS):
         hits.append("S1_injury_lineup")
     # S2 explicit why_flip ≥40 chars, not weak-only
     why_ok = len(why.strip()) >= 40 and not _blob_has_weak_phrase(why)
@@ -648,25 +697,10 @@ def _count_strong_flip_signals(
         bev = None
     if bev is not None and bev + 1e-12 >= float(strong_flip_min_ev) and grade_ok:
         hits.append("S3_base_ev_grade")
-    # S4 structural matchup terms beyond public/sharp
-    struct_blob = f"{notes_l} {str(snap.get('summary') or '').lower()} {why.lower()}"
+    # S4 structural matchup terms (disjoint from S1 — no injury/lineup tokens here)
+    struct_blob = f"{notes_l} {summary_l} {why.lower()}"
     if any(t in struct_blob for t in _STRUCTURAL_FLIP_TOKENS):
-        # Avoid double-count if S1 already used same injury token exclusively
-        if "S1_injury_lineup" not in hits or any(
-            t in struct_blob
-            for t in (
-                "pitcher change",
-                "starting pitcher",
-                "rotation change",
-                "rest advantage",
-                "travel",
-                "back-to-back",
-                "b2b",
-                "confirmed lineup",
-            )
-        ):
-            if "S4_structural" not in hits:
-                hits.append("S4_structural")
+        hits.append("S4_structural")
     return len(hits), hits
 
 
@@ -780,7 +814,13 @@ def is_ranking_gap_hc(
     ):
         return True
     blob = f"{notes} {snap.get('summary') or ''}".lower()
-    return any(t in blob for t in _RANK_IDIOMS)
+    if any(t in blob for t in _RANK_IDIOMS_PHRASE):
+        return True
+    # Short tokens: word boundary so "frank" ≠ "rank", "seeded" can still match seed*
+    for w in _RANK_IDIOMS_WORD:
+        if re.search(rf"\b{re.escape(w)}\b", blob):
+            return True
+    return False
 
 
 def _prior_signed_label(row: Mapping[str, Any]) -> str:

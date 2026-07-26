@@ -207,6 +207,51 @@ def test_and_window_within_48h_applies_pen():
     assert "Opposite side of recent successful" in reason
 
 
+def test_and_window_games_over_max_no_pen():
+    """hours ≤ max_hours but games_in_pair > max_games → no pen (fail-closed AND)."""
+    # Fixed clock: 30h window with two distinct calendar dates; max_games=1 → no pen.
+    now = datetime(2026, 7, 26, 18, 0, 0, tzinfo=timezone.utc)
+    prior = {
+        "bet_id": "brewers-win-games",
+        "match": MATCH,
+        "selection": PRIOR_SEL,
+        "sport": "baseball",
+        "market_type": "Handikap 2-veis",
+        "market_family": "baseball_handicap",
+        "result": "Win",
+        "decimal_odds": PRIOR_ODDS,
+        "odds": PRIOR_ODDS,
+        "updated_at": "2026-07-25T12:00:00Z",  # 30h before now
+        "created_at": "2026-07-25T12:00:00Z",
+        "date": "2026-07-25",
+        "notes": "",
+        "source": "live",
+    }
+    peer = {
+        "match": MATCH,
+        "selection": PRIOR_SEL,
+        "result": "Loss",
+        "updated_at": "2026-07-26T12:00:00Z",
+        "created_at": "2026-07-26T12:00:00Z",
+        "date": "2026-07-26",
+        "source": "live",
+    }
+    cand = _rockies_cand()
+    pen, reason, meta = form_continuity_penalty(
+        cand,
+        [prior, peer],
+        _enabled_cfg(max_games=1, max_hours=48),
+        base_ev=0.02,
+        grade="B",
+        notes="public on fav",
+        now_utc=now,
+    )
+    # games = {2026-07-25, 2026-07-26} = 2 > max_games=1; hours=30 ≤ 48
+    assert pen == 0.0, f"expected no pen when games>max; got pen={pen} meta={meta}"
+    assert meta.get("flip_detected") is False
+    assert reason == ""
+
+
 # ---------------------------------------------------------------------------
 # Weak / strong flip truth table
 # ---------------------------------------------------------------------------
@@ -223,7 +268,7 @@ def test_weak_phrase_en_soft_reject():
     assert reason.startswith("form_continuity:")
 
 
-def test_weak_phrase_no_soft_reject():
+def test_weak_phrase_norwegian_soft_reject():
     prior = _brewers_win_row(hours_ago=8.0)
     cand = _rockies_cand(notes="enklere linje; publikum på favoritt")
     pen, reason, meta = form_continuity_penalty(
@@ -231,6 +276,62 @@ def test_weak_phrase_no_soft_reject():
     )
     assert meta["soft_reject"] is True
     assert meta.get("has_weak_phrase") is True
+
+
+def test_single_structural_token_not_strong_soft_reject():
+    """S1/S4 disjoint: notes='pitcher change' alone is one signal → still WEAK."""
+    prior = _brewers_win_row(hours_ago=5.0)
+    cand = _rockies_cand(notes="pitcher change")
+    pen, reason, meta = form_continuity_penalty(
+        cand,
+        [prior],
+        _enabled_cfg(),
+        base_ev=0.02,
+        grade="B",
+        notes="pitcher change",
+    )
+    assert pen > 0.0
+    assert meta["flip_detected"] is True
+    assert meta["strong_flip_evidence"] is False
+    assert meta["soft_reject"] is True
+    assert "S4_structural" in (meta.get("strong_signals") or [])
+    assert "S1_injury_lineup" not in (meta.get("strong_signals") or [])
+
+
+def test_demote_only_no_soft_reject_extra_pen():
+    prior = _brewers_win_row(hours_ago=8.0)
+    cand = _rockies_cand(notes="easier line; public chalk")
+    pen, reason, meta = form_continuity_penalty(
+        cand,
+        [prior],
+        _enabled_cfg(weak_flip_action="demote_only"),
+        base_ev=0.02,
+        grade="B",
+        notes="easier line; public chalk",
+    )
+    assert meta["soft_reject"] is False
+    assert meta["weak_evidence"] is True
+    assert meta["flip_detected"] is True
+    # base 0.035 + weak_extra 0.025
+    assert abs(pen - (0.035 + 0.025)) < 1e-9
+    assert "demoted" in reason
+
+
+def test_force_true_bypasses_enabled_false():
+    prior = _brewers_win_row(hours_ago=4.0)
+    cand = _rockies_cand(notes="easier line")
+    pen, reason, meta = form_continuity_penalty(
+        cand,
+        [prior],
+        _enabled_cfg(enabled=False),
+        base_ev=0.02,
+        grade="B",
+        notes="easier line",
+        force=True,
+    )
+    assert pen > 0.0
+    assert reason.startswith("form_continuity:")
+    assert meta.get("flip_detected") is True
 
 
 def test_strong_flip_no_soft_reject_pen_remains():
@@ -354,6 +455,51 @@ def test_abandoned_excluded_from_window():
     assert win[0]["match"] == "C vs D"
 
 
+def test_anchor_window_prefers_heavy_fav_over_noise():
+    """Potential HC-minus anchors are not diluted past limit by Loss noise."""
+    now = datetime.now(timezone.utc)
+    rows = []
+    # 40 recent Loss rows (non-anchors) — newest
+    for i in range(40):
+        ts = (now - timedelta(minutes=i)).strftime("%Y-%m-%dT%H:%M:%SZ")
+        rows.append(
+            {
+                "match": f"Noise{i} vs Other{i}",
+                "selection": "Vinner Home",
+                "result": "Loss",
+                "updated_at": ts,
+                "created_at": ts,
+                "source": "live",
+            }
+        )
+    # Older heavy-fav Win that must still appear when limit=30
+    fav_ts = (now - timedelta(hours=2)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    rows.append(
+        {
+            "bet_id": "heavy-fav-keep",
+            "match": MATCH,
+            "selection": PRIOR_SEL,
+            "sport": "baseball",
+            "market_type": "Handikap 2-veis",
+            "market_family": "baseball_handicap",
+            "result": "Win",
+            "decimal_odds": PRIOR_ODDS,
+            "updated_at": fav_ts,
+            "created_at": fav_ts,
+            "source": "live",
+        }
+    )
+    win = live_continuity_anchor_window(rows, limit=30, live_ledger_only=True)
+    assert len(win) <= 30
+    ids = [r.get("bet_id") for r in win]
+    assert "heavy-fav-keep" in ids
+    # Preferred anchor should outrank pure Loss noise in the window
+    assert any(
+        r.get("bet_id") == "heavy-fav-keep" and r.get("selection") == PRIOR_SEL
+        for r in win
+    )
+
+
 # ---------------------------------------------------------------------------
 # Import fence
 # ---------------------------------------------------------------------------
@@ -380,6 +526,30 @@ def test_ranking_gap_elite_vs_bottom_era():
             market_family="baseball_handicap",
             selection=PRIOR_SEL,
             notes="elite vs bottom ERA mismatch; ranking gap on the run line",
+            match=MATCH,
+        )
+        is True
+    )
+
+
+def test_ranking_gap_short_token_word_boundary():
+    """Bare 'rank'/'seed' must not match inside frank / unseeded false friends poorly."""
+    # "frank" must NOT tag via substring "rank"
+    assert (
+        is_ranking_gap_hc(
+            market_family="baseball_handicap",
+            selection=PRIOR_SEL,
+            notes="frank analysis of the matchup form",
+            match=MATCH,
+        )
+        is False
+    )
+    # Whole-word "rank" still tags
+    assert (
+        is_ranking_gap_hc(
+            market_family="baseball_handicap",
+            selection=PRIOR_SEL,
+            notes="clear rank gap on the run line",
             match=MATCH,
         )
         is True
