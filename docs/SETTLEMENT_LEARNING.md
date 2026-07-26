@@ -81,9 +81,39 @@ python run_nt.py learn --reject "market:Totals Over:..."
 |------|------|
 | `outbox/SETTLEMENT_RECEIPT.md` | What settled |
 | `outbox/SETTLEMENT_ANALYSIS.md` | Post-settlement narrative |
+| `outbox/SETTLEMENT_LESSONS.md` | Per-batch main reason / driver / soft notes (overwrite) |
+| `data/state/settlement_lessons.json` | Machine SSOT schema v1 (soft_awareness TTL) |
 | `data/state/settlement_reviews.jsonl` | Per-bet reviews |
 | `data/state/learning_proposals.json` | Pending mult proposals |
 | `data/state/learning.json` | Live multipliers (layers + blend) |
+
+### Settlement Lessons v1 (ESR)
+
+After every settle batch with ≥1 terminal, the engine writes Settlement Lessons:
+
+- **`main_reason`** always non-empty (engine auto-template when agent packet is thin; `settle{…}` blobs stripped)
+- **`outcome_driver`** heuristic enum (`research_quality`, `variance`, `total_line_miss`, …)
+- **Pattern peers** = last ~12 **live settled** (Win/Loss/Refunded) via `filter_live_rows` — no `era_archive`. Open tickets do not push losses out of the window. `cluster_same_family` may note open same-family seats but **soft_awareness is only emitted for loss-linked patterns** (repeat losses / batch multi-loss / side-flip).
+- **Soft awareness** with TTL (`learning.settlement_lessons.ttl_hours`, default 72h) — never permanent hard rejects; `max_soft_notes` keeps **freshest** notes
+- **`live_ledger_only`**: always enforced (informational in config — cannot re-enable archive peers)
+- Portfolio applies `lessons_soft:` sort demotion **independent** of similar-recent hits (`Recommendation.lessons_soft_reason` + combined `soft_demotion_reason`)
+
+Config: `learning.settlement_lessons.*`. Failures are logged; settle never blocks.
+
+#### Pattern: `side_flip_after_fav_win` (TTL soft only)
+
+Emitted when settle detects an **opposite-side handicap** after a recent **heavy-favourite HC Win** on the same matchup (Brewers −1.5 Win → Rockies +2.5 class), or operator notes cite the flip process miss.
+
+| Rule | Behaviour |
+|------|-----------|
+| **Detection** | Live settled peer: heavy-fav minus HC + Win + opposite HC sign / same teams; or flip language + process-miss notes |
+| **Enforcement** | Soft awareness TTL only — **never hard-reject** |
+| **Scope** | Prefer **matchup-scoped** SA (`match` field, `scope: matchup`) so unrelated same-family seats are not hammered |
+| **Penalty** | Mild only (`soft_ev_penalty_repeat_loss`, default **0.008**) |
+| **Double-count guard** | `form_continuity` owns place-path soft-reject (`form_continuity:`). When that already soft-rejected the flip, lessons **skip** the side_flip pen. Family caution stays mild — no second large stack |
+| **Ownership** | Continuity / anti-flip logic lives in `nt/form_continuity.py`; lessons annotate family/matchup awareness only |
+
+See also: `docs/FORM_CONTINUITY_AND_ANTI_FLIP_HARDENING_2026-07-26.md` (PR6).
 
 ## LuminaNT
 
