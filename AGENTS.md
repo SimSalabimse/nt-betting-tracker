@@ -118,9 +118,11 @@ Two orthogonal mechanisms. Operators see both on **`data/state/status.md`** → 
 - Prefer Mechanism A (more deep research) over waiting for B.  
 - Verify: `python scripts/verify_coverage_floor.py --synthetic-large`
 
-5. **Deep research (engine deep queue first — not only O2.5/ML)**  
-   Work the **Deep queue** from light report / board. Use web search / page open aggressively (Sofascore, FBref, HLTV, ATP/WTA, Flashscore, official sites, etc.).  
+5. **Deep research (Stage 2 — primary worklist only)**  
+   Work the **Deep queue** / primary candidates from light report / board. Use web search / page open aggressively (Sofascore, FBref, HLTV, ATP/WTA, Flashscore, official sites, etc.).  
    Quality over quantity. Multi-sport shortlist **and** market-scan interesting lines.
+
+   **Stage 2 scope law (ESR multi-agent desk):** deep research runs on the **primary worklist ≤15 only** — multi-agent shortlist ∪ `coverage_critical`. **Never** the full odds board. **Not** inside scan agents A/B/C (those stay shallow; no Exa packs there). When a multi-agent shortlist exists, Stage 2 follows **that worklist** (not deep_queue-first as the default primary pass). On multi-agent all-fail, primary = engine `deep_queue` head (still capped ≤15). Design + pack contract: [`docs/DEEP_RESEARCH_SKILL_ESR_2026-07-26.md`](docs/DEEP_RESEARCH_SKILL_ESR_2026-07-26.md). When installed, invoke **`/deep-research`** for this step (see [`docs/DESK_SKILLS.md`](docs/DESK_SKILLS.md)); until then, main agent runs Stage 2 with the same scope law.
 
 ### Multi-sport research gates (engine-enforced)
 
@@ -468,6 +470,7 @@ User-scope skills in `%USERPROFILE%\.grok\skills\` — load **this file first**,
 | Slash | Skill | When |
 |-------|--------|------|
 | `/daily-run` | Full day desk | results → odds → board+light → deep queue → scaffolds → recommend (form continuity · ranking-gap · explore gate · opposite-side always) + Reasoning Chains → `outbox/PLACE_THESE.md` → place-ack |
+| `/deep-research` | Stage 2 packs (**planned** until skill PR) | Primary worklist ≤15 only (shortlist ∪ coverage_critical); Exa both-sides; refuse full-board. Design: [`docs/DEEP_RESEARCH_SKILL_ESR_2026-07-26.md`](docs/DEEP_RESEARCH_SKILL_ESR_2026-07-26.md) |
 | `/missed-audit` | Mid-band misses | 1.80–2.20 out of deep; `promotion_score` components; cheapest fix; Bodø/Glimt −1.5 & tennis/snooker patterns |
 | `/chain-explain` | Reasoning Chain | forensic justify one match/selection (or whole slip) using light SSOT promo + near-miss stage/reason |
 | `/bankroll-tune` | Capital tune | secure/phase/unit/regime proposal → `scripts/mc_phase_progression.py` + `capital` CLI |
@@ -506,7 +509,9 @@ User-scope skills in `%USERPROFILE%\.grok\skills\` — load **this file first**,
 | `artifacts/PACKAGE_VALIDATION_REPORT.md` | Success-metric validation |
 | `docs/CLOSED_LOOP_PHASE_REDESIGN_SUMMARY.md` | ControlSignals + Phase v5 |
 | `docs/DIVERSITY_AND_EXPLORE.md` | Virgin explore + diversify · form_continuity · ranking_gap · explore_base_ev_min |
-| `docs/FORM_CONTINUITY_AND_ANTI_FLIP_HARDENING_2026-07-26.md` | Form continuity + anti-flip + ranking-gap + explore gate design |
+| `docs/FORM_CONTINUITY_AND_ANTI_FLIP_HARDENING_2026-07-26.md` | Form continuity + anti-flip + ranking-gap + explore gate (pointer → DIVERSITY + `nt/form_continuity.py`) |
+| `docs/DEEP_RESEARCH_SKILL_ESR_2026-07-26.md` | `/deep-research` skill design · Stage 2 primary worklist ≤15 |
+| `docs/EXA_RESEARCH_USAGE.md` | Exa both-sides on primary worklist only — no full-board deep |
 | `docs/RESEARCH_GATES.md` | Gate field design |
 | `docs/SETTLEMENT_LEARNING.md` | Settle + learn loop |
 | `docs/skills_mirror_daily-run.md` | Repo mirror of `~/.grok/skills/daily-run/SKILL.md` (dual-write) |

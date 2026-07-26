@@ -14,6 +14,12 @@ Engines in `nt/` remain law. Skills encode **workflows**; they never invent `p_m
 | `/bankroll-tune` | `~/.grok/skills/bankroll-tune/` | Secure/phase/unit/regime proposal → MC (`mc_phase_progression.py`) + capital tools |
 | `/learning-rootcause` | `~/.grok/skills/learning-rootcause/` | Taxonomy + `learning_weight` + ControlSignals; **safe** backfill (proposed file default; `--apply` for live) |
 
+## Planned skills
+
+| Slash | Directory (planned) | Role | Status |
+|-------|---------------------|------|--------|
+| `/deep-research` | `~/.grok/skills/deep-research/` | Stage 2 only: Exa both-sides + evidence packs on **primary worklist ≤15** (multi-agent shortlist ∪ coverage_critical). Refuse full-board deep. Not inside scan A/B/C. Design: [`DEEP_RESEARCH_SKILL_ESR_2026-07-26.md`](./DEEP_RESEARCH_SKILL_ESR_2026-07-26.md) · Exa usage: [`EXA_RESEARCH_USAGE.md`](./EXA_RESEARCH_USAGE.md) | **Planned** (skill + atomic helper land in skill PR; not installed yet) |
+
 Each skill **must** load root `AGENTS.md` first and use real CLI/tools.
 
 ## Grok invoke
@@ -148,6 +154,8 @@ When explaining a line / slip:
 | `AGENTS.md` | Desk law + skills section |
 | `docs/RESEARCH_WORKFLOW.md` | Prefilter → deep → recommend |
 | `docs/RESEARCH_GATES.md` | Gate fields |
+| `docs/DEEP_RESEARCH_SKILL_ESR_2026-07-26.md` | `/deep-research` design (Stage 2 primary worklist) |
+| `docs/EXA_RESEARCH_USAGE.md` | Exa both-sides scope (no full-board deep) |
 | `docs/CAPITAL_HYBRID_PROGRESSION.md` | Half-steps + continuous unit + Variant A |
 | `docs/SETTLEMENT_LEARNING.md` | Settle + learn loop |
 | `docs/BANKROLL_PLAN.md` | Clean 500 era plan |
