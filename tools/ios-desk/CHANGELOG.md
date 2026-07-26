@@ -6,6 +6,20 @@ Build = `CFBundleVersion` / `CURRENT_PROJECT_VERSION`.
 Requires **mobile-view `api_version` ≥ 1.1.1** for settlement equity, kickoff countdown, Secure A.  
 Older APIs still load; the app shows an **outdated API** warning.
 
+Conditional GET (`If-None-Match` / **304**) needs mobile-view **≥ 1.2.0**; without it the app still works (full body each poll). Soft minimum remains **1.1.3**.
+
+## [1.2.0] (build 7) — 2026-07-26
+
+### Performance — conditional GET + contact clock + silent poll
+- Send **`If-None-Match`** with stored ETag; **HTTP 304** is success (no throw)
+- **Contact clock** (`lastSuccessSyncAt`) refreshes on every successful desk result: 304, content-unchanged 200, or content-applied 200 — adaptive poll stays ~120s while PC idle
+- Prefer **`content_hash`** over `generated_at` for content-unchanged skip
+- No snapshot mutation / no cache write on 304 or content-unchanged
+- Silent background poll does not flip `isSyncing` (no nav ProgressView spinner)
+- Throttled RTT chrome publish (every 30s / ≥10 ms change / every 3rd sample)
+- `clearCache` and base URL change clear stored ETag
+- `minimumRequired` API still **1.1.3**
+
 ## [1.1.4] (build 6) — 2026-07-26
 
 ### Performance (iPhone 14 Pro · iOS 18 / iPhone 16 Pro · iOS 26+)

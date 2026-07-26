@@ -6,6 +6,9 @@ struct DeskSnapshot: Codable, Equatable {
     /// mobile-view package version (`tools/mobile-view/VERSION`).
     var apiVersion: String?
     var generatedAt: String?
+    /// Stable content identity from mobile-view ≥ 1.2.0 (`content_hash`).
+    /// Prefer over `generatedAt` when deciding skip / content-unchanged.
+    var contentHash: String?
     var viewOnly: Bool?
     var stale: Bool?
     var warnings: [String]?
@@ -45,6 +48,7 @@ struct DeskSnapshot: Codable, Equatable {
         case schemaVersion = "schema_version"
         case apiVersion = "api_version"
         case generatedAt = "generated_at"
+        case contentHash = "content_hash"
         case viewOnly = "view_only"
         case stale, warnings
         case equityNok = "equity_nok"

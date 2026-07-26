@@ -23,8 +23,16 @@ struct DeskAPIClient {
     /// we keep one for this client used from the main actor / short tasks).
     private let decoder = JSONDecoder()
 
+    private let pollSession: URLSession
+    private let manualSession: URLSession
+
+    init(pollSession: URLSession? = nil, manualSession: URLSession? = nil) {
+        self.pollSession = pollSession ?? Self.makePollSession()
+        self.manualSession = manualSession ?? Self.makeManualSession()
+    }
+
     /// Fast polling path — never hang waiting for the network path to appear.
-    private let pollSession: URLSession = {
+    private static func makePollSession() -> URLSession {
         let cfg = URLSessionConfiguration.ephemeral
         cfg.timeoutIntervalForRequest = 8
         cfg.timeoutIntervalForResource = 12
@@ -36,10 +44,10 @@ struct DeskAPIClient {
         cfg.allowsExpensiveNetworkAccess = true
         cfg.allowsConstrainedNetworkAccess = true
         return URLSession(configuration: cfg)
-    }()
+    }
 
     /// Manual Sync only — may wait for connectivity when the user explicitly asked.
-    private let manualSession: URLSession = {
+    private static func makeManualSession() -> URLSession {
         let cfg = URLSessionConfiguration.ephemeral
         cfg.timeoutIntervalForRequest = 18
         cfg.timeoutIntervalForResource = 28
@@ -48,7 +56,7 @@ struct DeskAPIClient {
         cfg.requestCachePolicy = .reloadIgnoringLocalCacheData
         cfg.urlCache = nil
         return URLSession(configuration: cfg)
-    }()
+    }
 
     private func session(waitForConnectivity: Bool) -> URLSession {
         waitForConnectivity ? manualSession : pollSession
@@ -61,6 +69,23 @@ struct DeskAPIClient {
         var apiVersion: String?
         var schemaVersion: Int?
         var service: String?
+    }
+
+    /// Desk fetch with RTT (so polls can skip a separate `/api/health` round-trip).
+    struct DeskFetch {
+        enum Outcome: Equatable {
+            /// HTTP 304 — empty body; keep applied snapshot.
+            case notModified
+            /// HTTP 200 with body. SyncService may reclassify as content-unchanged.
+            case applied
+        }
+
+        var outcome: Outcome
+        var raw: [String: Any]?
+        var snap: DeskSnapshot?
+        var rttMs: Int
+        /// Response `ETag` when present (also on 304).
+        var etag: String?
     }
 
     /// Health probe. Returns RTT + `api_version` when the body includes it.
@@ -105,26 +130,45 @@ struct DeskAPIClient {
         )
     }
 
-    /// Desk fetch with RTT (so polls can skip a separate `/api/health` round-trip).
-    struct DeskFetch {
-        var raw: [String: Any]
-        var snap: DeskSnapshot
-        var rttMs: Int
-    }
-
-    /// Returns raw JSON object (for cache) + decoded UI model + RTT ms.
-    func fetchDesk(baseURL: URL, waitForConnectivity: Bool = false) async throws -> DeskFetch {
+    /// Returns outcome + optional raw/snap + RTT. **304 does not throw.**
+    /// - Parameter ifNoneMatch: prior ETag for conditional GET (`If-None-Match`).
+    func fetchDesk(
+        baseURL: URL,
+        waitForConnectivity: Bool = false,
+        ifNoneMatch: String? = nil
+    ) async throws -> DeskFetch {
         let url = baseURL.appendingPathComponent("api/desk")
         var req = URLRequest(url: url)
         req.httpMethod = "GET"
         req.setValue("application/json", forHTTPHeaderField: "Accept")
         req.cachePolicy = .reloadIgnoringLocalCacheData
+        if let etag = ifNoneMatch?.trimmingCharacters(in: .whitespacesAndNewlines), !etag.isEmpty {
+            req.setValue(etag, forHTTPHeaderField: "If-None-Match")
+        }
         let start = CFAbsoluteTimeGetCurrent()
         let (data, resp) = try await session(waitForConnectivity: waitForConnectivity).data(for: req)
         let rttMs = Int(((CFAbsoluteTimeGetCurrent() - start) * 1000.0).rounded())
-        guard let http = resp as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
-            throw DeskAPIError.http((resp as? HTTPURLResponse)?.statusCode ?? -1)
+        guard let http = resp as? HTTPURLResponse else {
+            throw DeskAPIError.http(-1)
         }
+
+        let responseETag = http.value(forHTTPHeaderField: "ETag")
+
+        // 304 Not Modified — success path (must not throw DeskAPIError.http).
+        if http.statusCode == 304 {
+            return DeskFetch(
+                outcome: .notModified,
+                raw: nil,
+                snap: nil,
+                rttMs: max(0, rttMs),
+                etag: responseETag
+            )
+        }
+
+        guard (200...299).contains(http.statusCode) else {
+            throw DeskAPIError.http(http.statusCode)
+        }
+
         // Decode typed model first (one JSON pass via Decoder).
         let snap: DeskSnapshot
         do {
@@ -137,6 +181,12 @@ struct DeskAPIClient {
         guard let obj = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
             throw DeskAPIError.notJSON
         }
-        return DeskFetch(raw: obj, snap: snap, rttMs: max(0, rttMs))
+        return DeskFetch(
+            outcome: .applied,
+            raw: obj,
+            snap: snap,
+            rttMs: max(0, rttMs),
+            etag: responseETag
+        )
     }
 }

@@ -29,13 +29,22 @@ final class SyncService: ObservableObject {
 
     static let lastKnownGoodURLKey = "last_known_good_base_url"
     static let rttSamplesKey = "health_rtt_samples_ms"
+    /// UserDefaults key prefix for stored desk ETag (suffix = normalized base URL).
+    static let etagKeyPrefix = "desk_etag_"
     private static let maxRTTSamples = 5
+    /// Throttle chrome RTT publish (D2.1 / C1).
+    private static let rttPublishMinInterval: TimeInterval = 30
+    private static let rttPublishMinDeltaMs = 10
+    private static let rttPublishEveryNthSample = 3
 
     @Published var baseURLString: String {
         didSet {
             guard !isApplyingProfileURL else { return }
             profileStore.setDefaultBaseURL(baseURLString)
             if oldValue != baseURLString {
+                // Never send prior host’s ETag to a new base URL.
+                lastETag = nil
+                loadStoredETag()
                 loadCacheOnly()
             }
         }
@@ -56,21 +65,30 @@ final class SyncService: ObservableObject {
     let network = NetworkPathMonitor.shared
 
     private let cache: CacheStore
-    private let client = DeskAPIClient()
+    private let client: DeskAPIClient
     private var timer: Timer?
     private var isApplyingProfileURL = false
+    /// Separate from `isSyncing` so silent background polls can skip chrome while still serializing work.
+    private var syncInFlight = false
     private var profileCancellable: AnyCancellable?
     private let defaults: UserDefaults
+
+    /// In-memory ETag for conditional GET (also mirrored to UserDefaults per base URL).
+    private(set) var lastETag: String?
+    private var lastRTTPublishAt: Date?
+    private var rttSamplesSincePublish = 0
 
     init(
         profileStore: ConnectionProfileStore? = nil,
         cache: CacheStore? = nil,
-        defaults: UserDefaults = .standard
+        defaults: UserDefaults = .standard,
+        client: DeskAPIClient = DeskAPIClient()
     ) {
         let store = profileStore ?? ConnectionProfileStore.shared
         self.profileStore = store
         self.cache = cache ?? CacheStore()
         self.defaults = defaults
+        self.client = client
         store.migrateFromLegacyBaseURLIfNeeded()
         self.baseURLString = store.defaultBaseURLString
         self.lastKnownGoodBaseURL = defaults.string(forKey: Self.lastKnownGoodURLKey)
@@ -82,6 +100,7 @@ final class SyncService: ObservableObject {
             self?.objectWillChange.send()
         }
         Haptics.prepare()
+        loadStoredETag()
         loadCacheOnly()
     }
 
@@ -127,6 +146,8 @@ final class SyncService: ObservableObject {
         isApplyingProfileURL = true
         baseURLString = url
         isApplyingProfileURL = false
+        lastETag = nil
+        loadStoredETag()
         loadCacheOnly()
     }
 
@@ -143,6 +164,7 @@ final class SyncService: ObservableObject {
 
     /// Battery-friendly adaptive poll (iPhone 14 Pro / 16 Pro).
     /// Fresh & recent → 2 min; fresh but aging → 45s; stale/empty → 25s.
+    /// Contact clock (`lastSuccessSyncAt`) is refreshed on 304 / content-unchanged so idle PC stays at 120s.
     var pollIntervalSeconds: TimeInterval {
         if !network.isSatisfied { return 90 }
         if freshness == .fresh, let age = lastSuccessAgeSeconds {
@@ -191,6 +213,7 @@ final class SyncService: ObservableObject {
         serverApiVersion = nil
         apiCompatibility = .unknown
         freshness = .empty
+        clearETagStorage()
     }
 
     /// True when live (or cached) desk came from an old mobile-view package.
@@ -208,15 +231,21 @@ final class SyncService: ObservableObject {
     ///     Background polls set false and take RTT from the desk request only (half the
     ///     round-trips on the radio — matters on iPhone 14 Pro + LAN).
     func sync(waitForConnectivity: Bool, probeHealth: Bool = true) async {
-        guard !isSyncing else { return }
+        guard !syncInFlight else { return }
         // Don't burn battery probing when the path is down — show cache.
         if !waitForConnectivity, !network.isSatisfied {
             if snapshot == nil { loadCacheOnly() }
             return
         }
 
-        isSyncing = true
-        defer { isSyncing = false }
+        // Silent background poll: no isSyncing chrome / ProgressView spinner.
+        let silent = !waitForConnectivity && !probeHealth
+        syncInFlight = true
+        if !silent { isSyncing = true }
+        defer {
+            syncInFlight = false
+            if !silent { isSyncing = false }
+        }
 
         let syncedProfileID = profileStore.defaultProfile?.id
         let preferredURL = baseURLString
@@ -234,51 +263,65 @@ final class SyncService: ObservableObject {
                 recordRTT(health.rttMs)
                 noteServerAPIVersion(health.apiVersion)
             }
-            let fetch = try await client.fetchDesk(baseURL: base, waitForConnectivity: waitForConnectivity)
+            let fetch = try await client.fetchDesk(
+                baseURL: base,
+                waitForConnectivity: waitForConnectivity,
+                ifNoneMatch: lastETag
+            )
             // Desk RTT always recorded (poll path has no separate health).
             if !probeHealth {
                 recordRTT(fetch.rttMs)
             }
-            // Prefer desk body api_version; missing → outdated package.
-            noteServerAPIVersion(fetch.snap.apiVersion)
 
-            // Skip publish + disk if PC payload is unchanged (same generated_at).
-            let unchanged = fetch.snap.generatedAt != nil
-                && fetch.snap.generatedAt == snapshot?.generatedAt
-                && freshness == .fresh
-            if unchanged {
-                lastError = nil
-                return
-            }
-
-            let raw = fetch.raw
-            let snap = fetch.snap
-            let sourceURL = base.absoluteString
-            // Cache write off the main actor (file I/O).
-            let cacheStore = cache
-            do {
-                try await Task.detached(priority: .utility) {
-                    try cacheStore.save(deskObject: raw, sourceBaseURL: sourceURL)
-                }.value
-                let when = ISO8601DateFormatter().string(from: Date())
-                lastSuccessSyncAt = when
-                if let syncedProfileID {
-                    profileStore.markSuccess(profileID: syncedProfileID, at: when)
-                }
-                rememberLastKnownGood(sourceURL)
-                if snapshot != snap {
-                    snapshot = snap
-                }
-                freshness = .fresh
-                lastError = nil
+            switch fetch.outcome {
+            case .notModified:
+                // D2.1 contact path — no snapshot / cache mutation.
+                markContactSuccess(responseETag: fetch.etag)
                 if waitForConnectivity { Haptics.success() }
-            } catch {
-                if snapshot != snap {
-                    snapshot = snap
+                return
+
+            case .applied:
+                guard let snap = fetch.snap, let raw = fetch.raw else {
+                    throw DeskAPIError.schema
                 }
-                freshness = .liveNotPersisted
-                lastError = "Live data but cache write failed: \(error.localizedDescription)"
-                if waitForConnectivity { Haptics.warning() }
+                // Prefer desk body api_version; missing → outdated package.
+                noteServerAPIVersion(snap.apiVersion)
+
+                // Prefer content_hash over generated_at for skip when present.
+                if isContentUnchanged(incoming: snap) {
+                    markContactSuccess(responseETag: fetch.etag)
+                    if waitForConnectivity { Haptics.success() }
+                    return
+                }
+
+                let sourceURL = base.absoluteString
+                // Cache write off the main actor (file I/O).
+                let cacheStore = cache
+                do {
+                    try await Task.detached(priority: .utility) {
+                        try cacheStore.save(deskObject: raw, sourceBaseURL: sourceURL)
+                    }.value
+                    markContactSuccess(responseETag: fetch.etag)
+                    if let syncedProfileID {
+                        profileStore.markSuccess(profileID: syncedProfileID, at: lastSuccessSyncAt ?? "")
+                    }
+                    rememberLastKnownGood(sourceURL)
+                    if snapshot != snap {
+                        snapshot = snap
+                    }
+                    freshness = .fresh
+                    lastError = nil
+                    if waitForConnectivity { Haptics.success() }
+                } catch {
+                    // Live body applied — still refresh contact clock + ETag; no disk envelope.
+                    markContactSuccess(responseETag: fetch.etag)
+                    if snapshot != snap {
+                        snapshot = snap
+                    }
+                    freshness = .liveNotPersisted
+                    lastError = "Live data but cache write failed: \(error.localizedDescription)"
+                    if waitForConnectivity { Haptics.warning() }
+                }
             }
         } catch {
             lastError = error.localizedDescription
@@ -291,8 +334,68 @@ final class SyncService: ObservableObject {
         }
     }
 
+    // MARK: - Content identity (skip)
+
+    /// Prefer `content_hash` when present; else `generated_at`. Requires freshness `.fresh`.
+    func isContentUnchanged(incoming: DeskSnapshot) -> Bool {
+        Self.isContentUnchanged(incoming: incoming, applied: snapshot, freshness: freshness)
+    }
+
+    /// Pure helper for tests / skip path (nonisolated — no actor state).
+    nonisolated static func isContentUnchanged(
+        incoming: DeskSnapshot,
+        applied: DeskSnapshot?,
+        freshness: Freshness
+    ) -> Bool {
+        guard freshness == .fresh, applied != nil else { return false }
+        if let h = incoming.contentHash?.trimmingCharacters(in: .whitespacesAndNewlines), !h.isEmpty {
+            let prior = applied?.contentHash?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            return !prior.isEmpty && h == prior
+        }
+        if let g = incoming.generatedAt, !g.isEmpty {
+            return g == applied?.generatedAt
+        }
+        return false
+    }
+
+    // MARK: - Contact clock + ETag
+
+    /// D2.1: successful desk result without content apply (304 or content-unchanged 200).
+    private func markContactSuccess(responseETag: String?) {
+        lastError = nil
+        let when = ISO8601DateFormatter().string(from: Date())
+        lastSuccessSyncAt = when
+        if snapshot != nil {
+            freshness = .fresh
+        }
+        // 304 without ETag response: keep prior. New ETag: store.
+        if let etag = responseETag?.trimmingCharacters(in: .whitespacesAndNewlines), !etag.isEmpty {
+            storeETag(etag)
+        }
+    }
+
+    static func etagDefaultsKey(for baseURLString: String) -> String {
+        let norm = PrivateHostPolicy.normalizeBaseURL(baseURLString)?.absoluteString
+            ?? baseURLString.trimmingCharacters(in: .whitespacesAndNewlines)
+        return etagKeyPrefix + norm
+    }
+
+    private func loadStoredETag() {
+        let key = Self.etagDefaultsKey(for: baseURLString)
+        lastETag = defaults.string(forKey: key)
+    }
+
+    private func storeETag(_ etag: String) {
+        lastETag = etag
+        defaults.set(etag, forKey: Self.etagDefaultsKey(for: baseURLString))
+    }
+
+    private func clearETagStorage() {
+        lastETag = nil
+        defaults.removeObject(forKey: Self.etagDefaultsKey(for: baseURLString))
+    }
+
     private func recordRTT(_ ms: Int) {
-        lastHealthRTTMs = ms
         var next = rttSamplesMs
         next.append(ms)
         if next.count > Self.maxRTTSamples {
@@ -301,6 +404,28 @@ final class SyncService: ObservableObject {
         rttSamplesMs = next
         if let data = try? JSONEncoder().encode(next) {
             defaults.set(data, forKey: Self.rttSamplesKey)
+        }
+
+        rttSamplesSincePublish += 1
+        let shouldPublish: Bool
+        if lastHealthRTTMs == nil {
+            shouldPublish = true
+        } else if abs(ms - (lastHealthRTTMs ?? 0)) >= Self.rttPublishMinDeltaMs {
+            shouldPublish = true
+        } else if rttSamplesSincePublish >= Self.rttPublishEveryNthSample {
+            shouldPublish = true
+        } else if let t = lastRTTPublishAt, Date().timeIntervalSince(t) >= Self.rttPublishMinInterval {
+            shouldPublish = true
+        } else if lastRTTPublishAt == nil {
+            shouldPublish = true
+        } else {
+            shouldPublish = false
+        }
+
+        if shouldPublish {
+            lastHealthRTTMs = ms
+            lastRTTPublishAt = Date()
+            rttSamplesSincePublish = 0
         }
     }
 
