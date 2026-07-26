@@ -142,6 +142,149 @@ def _parse_promo_from_notes(notes: str) -> float | None:
         return None
 
 
+def _market_family_of(obj: Any) -> str:
+    """Best-effort market family for Diversity line (no inventing)."""
+    for key in ("market_family", "market_key", "market_type"):
+        v = str(_pick_attr(obj, key) or "").strip()
+        if v:
+            return v
+    return ""
+
+
+def _soft_pen_reasons(obj: Any) -> tuple[str, str, str]:
+    """
+    Resolve (similar_recent_reason, lessons_soft_reason, form_continuity_reason).
+
+    Prefers explicit Recommendation fields; falls back to classifying
+    soft_demotion_reason / reasons parts (PR2 may only set the combined field).
+    """
+    sim = str(_pick_attr(obj, "similar_recent_reason") or "").strip()
+    les = str(_pick_attr(obj, "lessons_soft_reason") or "").strip()
+    fc = str(_pick_attr(obj, "form_continuity_reason") or "").strip()
+
+    parts: list[str] = []
+    soft = str(_pick_attr(obj, "soft_demotion_reason") or "").strip()
+    if soft:
+        parts.extend(p.strip() for p in soft.split(";") if p.strip())
+    for r in list(_pick_attr(obj, "reasons") or []):
+        s = str(r or "").strip()
+        if s and s not in parts:
+            parts.append(s)
+
+    for p in parts:
+        pl = p.lower()
+        if not fc and (p.startswith("form_continuity:") or pl.startswith("form_continuity")):
+            fc = p
+        elif not les and ("lessons_soft" in pl or pl.startswith("lessons:")):
+            les = p
+        elif not sim and (
+            "similar_recent" in pl
+            or "similar to recent" in pl
+            or pl.startswith("similar:")
+        ):
+            sim = p
+    return sim, les, fc
+
+
+def _opposite_side_payload(obj: Any) -> Any:
+    """
+    opposite_side_check value for chain JSON (string, object, or None).
+
+    Sources (first hit): explicit field → evidence_snapshot → status-only.
+    """
+    direct = _pick_attr(obj, "opposite_side_check")
+    if direct is not None and direct != "" and direct is not False:
+        return direct
+    snap = _pick_attr(obj, "evidence_snapshot")
+    if isinstance(snap, dict) and snap.get("opposite_side_check") is not None:
+        return snap.get("opposite_side_check")
+    # Reject rows may nest snapshot-like keys
+    if isinstance(obj, dict):
+        if obj.get("opposite_side_check") is not None:
+            return obj.get("opposite_side_check")
+        snap2 = obj.get("evidence_snapshot")
+        if isinstance(snap2, dict) and snap2.get("opposite_side_check") is not None:
+            return snap2.get("opposite_side_check")
+    return None
+
+
+def _opposite_side_one_liner(payload: Any) -> str:
+    """Human one-liner for PLACE_THESE Opposite side bullet."""
+    if payload is None or payload == "" or payload is False:
+        return "not evaluated"
+    if isinstance(payload, str):
+        t = payload.strip()
+        return t if t else "not evaluated"
+    if isinstance(payload, dict):
+        for k in ("one_liner", "summary", "why_not", "text", "reason"):
+            v = payload.get(k)
+            if v is not None and str(v).strip():
+                return str(v).strip()[:200]
+        # Compact non-empty dict fallback
+        bits = []
+        for k, v in list(payload.items())[:4]:
+            if v is None or v == "":
+                continue
+            bits.append(f"{k}={v}")
+        if bits:
+            return "; ".join(bits)[:200]
+        return "not evaluated"
+    return str(payload).strip()[:200] or "not evaluated"
+
+
+def _missing_opposite_side_check(obj: Any, *, opposite_payload: Any) -> bool:
+    """
+    True when a deep pack path exists but opposite_side_check is absent.
+
+    Audit / process flag only — never a hard reject.
+    """
+    if opposite_payload is not None and opposite_payload != "" and opposite_payload is not False:
+        return False
+    path = str(_pick_attr(obj, "evidence_path") or "").strip()
+    if path:
+        return True
+    # Explicit status from portfolio score path
+    status = str(_pick_attr(obj, "opposite_side_check_status") or "").strip().lower()
+    if status == "missing":
+        return True
+    snap = _pick_attr(obj, "evidence_snapshot")
+    if isinstance(snap, dict) and snap:
+        # Snapshot present (pack was scored) but no opposite_side_check key/value
+        if snap.get("opposite_side_check") in (None, "", False):
+            # Only flag when pack-like content exists (summary or grade from pack)
+            if snap.get("summary") or snap.get("grade") or snap.get("why_flip") is not None:
+                return True
+    return False
+
+
+def _diversity_penalties_text(sim: str, les: str, fc: str) -> str:
+    """Always list all three soft-pen slots for Diversity line."""
+    bits = [
+        sim if sim else "similar:none",
+        les if les else "lessons:none",
+        fc if fc else "form_continuity:none",
+    ]
+    return "; ".join(bits)
+
+
+def _ev_split_text(
+    base_ev: float | None,
+    explore_boost_applied: float | None,
+    placed_ev: float | None,
+) -> str:
+    """Dual EV display: base_ev / explore_boost / placed_ev."""
+    be = f"{float(base_ev):+.3f}" if base_ev is not None else "n/a"
+    pe = f"{float(placed_ev):+.3f}" if placed_ev is not None else "n/a"
+    if explore_boost_applied is not None and float(explore_boost_applied) > 1e-12:
+        eb = f"{float(explore_boost_applied):+.3f}"
+    elif base_ev is not None:
+        # Boost was scored but withheld (or never applied)
+        eb = "withheld"
+    else:
+        eb = "n/a"
+    return f"base_ev={be} · explore_boost={eb} · placed_ev={pe}"
+
+
 def load_light_payload(cfg: dict[str, Any]) -> dict[str, Any] | None:
     """Load light LATEST.json, else same-day batch. Soft-fail → None."""
     try:
@@ -353,6 +496,16 @@ def build_chain_from_pick(
 
         ev_h = round(ev_after_haircut(p_model, odds, hair), 4)
 
+    sim_r, les_r, fc_r = _soft_pen_reasons(pick)
+    opp_payload = _opposite_side_payload(pick)
+    base_ev = _as_float(_pick_attr(pick, "base_ev"))
+    explore_boost = _as_float(_pick_attr(pick, "explore_boost_applied"))
+    if explore_boost is None:
+        explore_boost = 0.0
+    ranking_gap = bool(_pick_attr(pick, "ranking_gap_hc") or False)
+    sort_ev = _as_float(_pick_attr(pick, "sort_ev"))
+    market_family = _market_family_of(pick)
+
     chain: dict[str, Any] = {
         "schema_version": SCHEMA_VERSION,
         "ts": utc_now(),
@@ -363,6 +516,7 @@ def build_chain_from_pick(
         "sport": str(_pick_attr(pick, "sport") or ""),
         "market_type": str(_pick_attr(pick, "market_type") or ""),
         "market_key": str(_pick_attr(pick, "market_key") or ""),
+        "market_family": market_family,
         "grade": str(_pick_attr(pick, "grade") or ""),
         "odds_band": str(_pick_attr(pick, "odds_band") or ""),
         "p_model": p_model,
@@ -384,7 +538,19 @@ def build_chain_from_pick(
         "light": _light_from_notes_or_dict(notes, light),
         "reasons": list(_pick_attr(pick, "reasons") or [])[:8],
         "notes": notes[:400],
+        # Form continuity / dual-EV / diversity (additive; schema v1 keys)
+        "form_continuity_reason": fc_r,
+        "lessons_soft_reason": les_r,
+        "similar_recent_reason": sim_r,
+        "base_ev": base_ev,
+        "explore_boost_applied": explore_boost,
+        "opposite_side_check": opp_payload,
+        "ranking_gap_hc": ranking_gap,
+        "sort_ev": sort_ev,
     }
+    if _missing_opposite_side_check(pick, opposite_payload=opp_payload):
+        # Audit / process flag only — not a reject
+        chain["process"] = "missing_opposite_side_check"
     if extra:
         chain["extra"] = dict(extra)
     return chain
@@ -429,6 +595,19 @@ def build_chain_from_near_miss(
     if row.get("promotion_score_components") and "promotion_score_components" not in light_blob:
         light_blob["promotion_score_components"] = row.get("promotion_score_components")
 
+    sim_r, les_r, fc_r = _soft_pen_reasons(row)
+    if not fc_r and (
+        reason.startswith("form_continuity:")
+        or bool(row.get("form_continuity"))
+    ):
+        fc_r = reason if reason.startswith("form_continuity:") else str(
+            row.get("form_continuity_reason") or reason or ""
+        )
+    opp_payload = _opposite_side_payload(row)
+    base_ev = _as_float(row.get("base_ev"))
+    explore_boost = _as_float(row.get("explore_boost_applied"))
+    sort_ev = _as_float(row.get("sort_ev"))
+
     chain: dict[str, Any] = {
         "schema_version": SCHEMA_VERSION,
         "ts": utc_now(),
@@ -440,6 +619,7 @@ def build_chain_from_near_miss(
         "decimal_odds": odds,
         "sport": str(row.get("sport") or ""),
         "market_type": str(row.get("market_type") or ""),
+        "market_family": _market_family_of(row),
         "grade": str(row.get("grade") or ""),
         "p_model": p_model,
         "haircut": hair,
@@ -458,7 +638,23 @@ def build_chain_from_near_miss(
         },
         "light": light_blob,
         "notes": (notes or reason)[:400],
+        "form_continuity_reason": fc_r,
+        "lessons_soft_reason": les_r,
+        "similar_recent_reason": sim_r,
+        "base_ev": base_ev,
+        "explore_boost_applied": explore_boost if explore_boost is not None else 0.0,
+        "opposite_side_check": opp_payload,
+        "ranking_gap_hc": bool(row.get("ranking_gap_hc") or False),
+        "sort_ev": sort_ev,
     }
+    if row.get("form_continuity"):
+        chain["form_continuity"] = True
+    if _missing_opposite_side_check(row, opposite_payload=opp_payload):
+        chain["process"] = "missing_opposite_side_check"
+    # Explicit process flag on reject rows (audit only)
+    proc = row.get("process") or row.get("process_flag")
+    if proc and not chain.get("process"):
+        chain["process"] = str(proc)
     if row.get("promotion_score") is not None:
         chain["promotion_score"] = row.get("promotion_score")
     elif light_blob.get("promotion_score") is not None:
@@ -776,6 +972,12 @@ def format_near_miss_md(chains: list[dict[str, Any]]) -> str:
             top = sorted(comps.items(), key=lambda kv: abs(float(kv[1])), reverse=True)[:4]
             if top:
                 bit += " [" + ", ".join(f"{k}:{v:+.0f}" for k, v in top) + "]"
+        if c.get("process") == "missing_opposite_side_check":
+            bit += " · process: missing_opposite_side_check"
+        elif c.get("form_continuity") or str(c.get("form_continuity_reason") or "").startswith(
+            "form_continuity:"
+        ):
+            bit += " · form_continuity"
         lines.append(bit)
     lines.append("")
     return "\n".join(lines)
@@ -854,6 +1056,41 @@ def _format_one_md(i: int, c: dict[str, Any]) -> list[str]:
                 out.append(f"- light/promo: {lite}")
     if c.get("reject_reason"):
         out.append(f"- reject: {c['reject_reason']}")
+
+    # Form continuity / anti-flip visibility (always emit Opposite side)
+    opp_line = _opposite_side_one_liner(c.get("opposite_side_check"))
+    opp_bit = f"- **Opposite side:** {opp_line}"
+    if c.get("process") == "missing_opposite_side_check":
+        opp_bit += " · process: missing_opposite_side_check"
+    out.append(opp_bit)
+
+    fc = str(c.get("form_continuity_reason") or "").strip()
+    out.append(f"- **Form continuity:** {fc if fc else 'none'}")
+
+    base_ev = _as_float(c.get("base_ev"))
+    explore_boost = _as_float(c.get("explore_boost_applied"))
+    placed = _as_float(c.get("ev")) if c.get("ev") is not None else _as_float(
+        c.get("ev_after_haircut")
+    )
+    out.append(
+        "- **EV split:** "
+        + _ev_split_text(base_ev, explore_boost, placed)
+    )
+
+    # Diversity: all soft pens (similar; lessons; form_continuity)
+    mf = str(c.get("market_family") or c.get("market_key") or c.get("market_type") or "").strip()
+    sim = str(c.get("similar_recent_reason") or "").strip()
+    les = str(c.get("lessons_soft_reason") or "").strip()
+    se = c.get("sort_ev")
+    se_bit = f"{float(se):+.4f}" if se is not None else "n/a"
+    fam_bit = mf or "other"
+    out.append(
+        f"- **Diversity:** {fam_bit} · sort_ev={se_bit} · "
+        f"penalties: {_diversity_penalties_text(sim, les, fc)}"
+    )
+    if c.get("ranking_gap_hc"):
+        out.append("- **Ranking-gap HC:** yes")
+
     if c.get("notes"):
         out.append(f"- notes: {c['notes'][:220]}")
     out.append("")

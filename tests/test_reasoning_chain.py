@@ -488,3 +488,243 @@ def test_append_and_cfg_defaults():
     rc = reasoning_cfg(cfg)
     assert rc["enabled"] is True
     assert rc["max_near_miss"] == 8
+
+
+def test_build_chain_form_continuity_and_ev_split_fields():
+    """PR3: additive chain keys from Recommendation (base_ev, pens, opposite side)."""
+    rec = Recommendation(
+        match="Milwaukee Brewers vs Colorado Rockies",
+        selection="Handikap 2-veis -2.5: Colorado Rockies +2.5",
+        decimal_odds=1.75,
+        stake_nok=10.0,
+        ev=0.032,
+        grade="B",
+        odds_band="1.70-1.85",
+        sport="baseball",
+        market_type="handicap",
+        p_model=0.60,
+        notes="thin public lean",
+        form_continuity_reason=(
+            "form_continuity: Opposite side of recent successful Milwaukee Brewers -1.5 "
+            "— strong continuity penalty applied; weak flip justification — rejected"
+        ),
+        base_ev=0.014,
+        explore_boost_applied=0.018,
+        ranking_gap_hc=True,
+        sort_ev=-0.021,
+        market_key="baseball_handicap",
+        evidence_path="evidence/milwaukee_brewers_vs_colorado_rockies_handikap.json",
+        evidence_snapshot={
+            "summary": "flip attempt",
+            "opposite_side_check": {
+                "one_liner": "Brewers -1.5 already hit; Rockies +2.5 is opposite side",
+            },
+            "grade": "B",
+        },
+        opposite_side_check_status="evaluated",
+        soft_demotion_reason=(
+            "similar to recent baseball_handicap – demoted (1 in last 12); "
+            "lessons_soft: baseball_handicap (research_process_miss); "
+            "form_continuity: Opposite side of recent successful Milwaukee Brewers -1.5 "
+            "— strong continuity penalty applied; weak flip justification — rejected"
+        ),
+    )
+    # Optional fields when present on dataclass (other ESR branches)
+    try:
+        rec.similar_recent_reason = (  # type: ignore[attr-defined]
+            "similar to recent baseball_handicap – demoted (1 in last 12)"
+        )
+    except Exception:
+        pass
+    try:
+        rec.lessons_soft_reason = (  # type: ignore[attr-defined]
+            "lessons_soft: baseball_handicap (research_process_miss)"
+        )
+    except Exception:
+        pass
+
+    chain = build_chain_from_pick(rec, haircut=0.03, phase_id="1A")
+    assert chain["kind"] == "pick"
+    assert chain["form_continuity_reason"].startswith("form_continuity:")
+    assert "lessons_soft" in chain["lessons_soft_reason"]
+    assert "similar" in chain["similar_recent_reason"].lower()
+    assert chain["base_ev"] is not None
+    assert abs(float(chain["base_ev"]) - 0.014) < 1e-9
+    assert abs(float(chain["explore_boost_applied"]) - 0.018) < 1e-9
+    assert chain["ranking_gap_hc"] is True
+    assert chain["sort_ev"] is not None
+    assert abs(float(chain["sort_ev"]) + 0.021) < 1e-6
+    opp = chain["opposite_side_check"]
+    assert isinstance(opp, dict)
+    assert "opposite" in str(opp.get("one_liner") or "").lower() or "Rockies" in str(
+        opp.get("one_liner") or ""
+    )
+    # Deep pack present AND opposite_side_check present → no process flag
+    assert chain.get("process") != "missing_opposite_side_check"
+
+
+def test_missing_opposite_side_check_process_flag():
+    """Deep pack path without opposite_side_check → process audit flag (not reject)."""
+    rec = Recommendation(
+        match="Alpha vs Beta",
+        selection="Over 2.5",
+        decimal_odds=2.05,
+        stake_nok=12.0,
+        ev=0.05,
+        grade="B",
+        odds_band="1.85-2.20",
+        sport="football",
+        market_type="total",
+        p_model=0.55,
+        notes="ok pack",
+        evidence_path="evidence/alpha_over25.json",
+        evidence_snapshot={"summary": "some edge", "grade": "B"},
+        opposite_side_check_status="missing",
+        base_ev=0.05,
+        explore_boost_applied=0.0,
+    )
+    chain = build_chain_from_pick(rec, haircut=0.03)
+    assert chain.get("process") == "missing_opposite_side_check"
+    assert chain.get("opposite_side_check") is None
+    # Not a reject — kind stays pick
+    assert chain["kind"] == "pick"
+    assert not chain.get("reject_reason")
+
+
+def test_format_reasoning_md_always_emits_opposite_form_ev_diversity():
+    """PLACE_THESE Reasoning always shows Opposite side / Form / EV split / Diversity."""
+    rec = Recommendation(
+        match="Home vs Away",
+        selection="BTTS Yes",
+        decimal_odds=1.90,
+        stake_nok=12.0,
+        ev=0.05,
+        grade="B",
+        odds_band="1.85-2.20",
+        sport="football",
+        market_type="btts",
+        p_model=0.58,
+        notes="p_model=0.5800; EV=0.050",
+        base_ev=0.032,
+        explore_boost_applied=0.018,
+        form_continuity_reason="",
+        sort_ev=0.040,
+        market_key="football_btts",
+        soft_demotion_reason=(
+            "similar to recent football_btts – demoted (1 in last 10); "
+            "lessons_soft: football_btts (caution)"
+        ),
+    )
+    chain = build_chain_from_pick(rec, haircut=0.03, phase_id="1A")
+    md = format_reasoning_md([chain])
+    assert "## Reasoning" in md
+    assert "**Opposite side:**" in md
+    assert "not evaluated" in md  # default when missing
+    assert "**Form continuity:**" in md
+    assert "**EV split:**" in md
+    assert "base_ev=" in md
+    assert "explore_boost=" in md
+    assert "placed_ev=" in md
+    assert "+0.018" in md or "explore_boost=+0.018" in md
+    assert "**Diversity:**" in md
+    assert "sort_ev=" in md
+    assert "penalties:" in md
+    # All three soft pen slots present
+    assert "similar" in md.lower()
+    assert "lessons" in md.lower()
+    assert "form_continuity" in md.lower()
+
+
+def test_format_md_explore_withheld_and_form_continuity_text():
+    rec = Recommendation(
+        match="A vs B",
+        selection="A -1.5",
+        decimal_odds=1.85,
+        stake_nok=10.0,
+        ev=0.01,
+        grade="B",
+        odds_band="1.70-1.85",
+        sport="baseball",
+        market_type="handicap",
+        p_model=0.55,
+        notes="thin",
+        base_ev=0.004,
+        explore_boost_applied=0.0,
+        form_continuity_reason="form_continuity: Opposite side of recent successful A -1.5 — demoted",
+        sort_ev=-0.02,
+    )
+    chain = build_chain_from_pick(rec, haircut=0.03)
+    md = format_reasoning_md([chain])
+    assert "explore_boost=withheld" in md
+    assert "base_ev=+0.004" in md
+    assert "form_continuity: Opposite side" in md
+    assert "not evaluated" in md
+
+
+def test_near_miss_form_continuity_fields_and_process():
+    """form_continuity rejects and missing opposite-side process flag on near-miss."""
+    row = {
+        "match": "Milwaukee Brewers vs Colorado Rockies",
+        "selection": "Handikap 2-veis -2.5: Colorado Rockies +2.5",
+        "reason": (
+            "form_continuity: Opposite side of recent successful Milwaukee Brewers -1.5 "
+            "— strong continuity penalty applied; weak flip justification — rejected"
+        ),
+        "ev": 0.02,
+        "base_ev": 0.02,
+        "sort_ev": -0.04,
+        "odds": 1.75,
+        "p_model": 0.58,
+        "grade": "B",
+        "sport": "baseball",
+        "near_miss": True,
+        "form_continuity": True,
+        "evidence_path": "evidence/rockies_plus25.json",
+    }
+    chain = build_chain_from_near_miss(row, haircut=0.03, phase_id="1A")
+    assert chain["kind"] == "near_miss"
+    assert chain["form_continuity_reason"].startswith("form_continuity:")
+    assert chain.get("form_continuity") is True
+    assert chain["base_ev"] is not None
+    assert abs(float(chain["base_ev"]) - 0.02) < 1e-9
+    assert chain.get("process") == "missing_opposite_side_check"
+
+    md = format_reasoning_md([chain])
+    assert "## Near-miss / Rejected" in md
+    assert "form_continuity" in md
+    assert "process: missing_opposite_side_check" in md or "Rockies" in md
+
+
+def test_soft_demotion_reason_split_into_pen_slots():
+    """When only soft_demotion_reason is set, Diversity slots still classify pens."""
+    pick = {
+        "match": "X vs Y",
+        "selection": "Over 3.5",
+        "decimal_odds": 2.10,
+        "stake_nok": 12,
+        "ev": 0.04,
+        "grade": "B",
+        "sport": "football",
+        "market_type": "total",
+        "market_key": "football_totals_over",
+        "p_model": 0.52,
+        "notes": "edge",
+        "base_ev": 0.04,
+        "explore_boost_applied": 0.0,
+        "sort_ev": 0.02,
+        "soft_demotion_reason": (
+            "similar to recent football_totals_over – demoted (2 in last 12); "
+            "lessons_soft: football_totals_over (caution); "
+            "form_continuity: Opposite side of recent successful X -1.5 — caution"
+        ),
+    }
+    chain = build_chain_from_pick(pick, haircut=0.03)
+    assert "similar" in chain["similar_recent_reason"].lower()
+    assert "lessons_soft" in chain["lessons_soft_reason"]
+    assert chain["form_continuity_reason"].startswith("form_continuity:")
+    md = format_reasoning_md([chain])
+    assert "penalties:" in md
+    # All three named in Diversity line
+    assert "similar to recent" in md
+    assert "lessons_soft" in md
+    assert "form_continuity:" in md
