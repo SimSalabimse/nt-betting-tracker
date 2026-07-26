@@ -103,7 +103,7 @@ xcodebuild -project tools/ios-desk/NTDesk/NTDesk.xcodeproj \
   test
 ```
 
-Minimal smoke today: `NTDeskTests` / `PrivateHostPolicy` allow/deny + normalize/boundaries. Expand in later PRs (parser, charts builders).
+`NTDeskTests` covers `PrivateHostPolicy`, connection profiles, and **server discovery** (`DiscoveryProbeLogic` host plan + `URLProtocol` health mocks: `ok==true` hit, `ok==false` miss, public IP never requested, no `/api/desk` during scan).
 
 ---
 
@@ -210,9 +210,9 @@ NT Desk targets personal sideload quality (HIG), not App Store review. Use this 
 
 ### Local Network permission
 
-- [ ] `NSLocalNetworkUsageDescription` in `Info.plist` explains LAN / Tailscale **read-only** desk access and that nothing is sent to third parties (current string is operator-facing; keep that intent if you reword)
-- [ ] On first LAN fetch, system Local Network prompt appears; Allow is required for private-host base URLs
-- [ ] Base URL hint in Settings mentions LAN IP or Tailscale `100.x` (not MagicDNS when ATS clarity matters)
+- [ ] `NSLocalNetworkUsageDescription` in `Info.plist` explains **scanning** + confirm-only connect, LAN / Tailscale **read-only** desk access, and that nothing is sent to third parties
+- [ ] On first LAN scan or fetch, system Local Network prompt appears; Allow is required for private-host discovery and base URLs
+- [ ] Base URL hint in Settings mentions LAN IP or Tailscale `100.x` (not MagicDNS when ATS clarity matters); **Find PC on network** is user-initiated only
 
 ### Other HIG / privacy hygiene
 
@@ -228,10 +228,23 @@ NT Desk targets personal sideload quality (HIG), not App Store review. Use this 
 ## Settings
 
 1. Base URL, e.g. `http://192.168.1.42:8787` or `http://100.x.y.z:8787` (Tailscale IP preferred over MagicDNS for ATS clarity).
-2. Allow **Local Network** when prompted.
-3. Pull to refresh; auto-refresh while foregrounded.
+2. Or **Find PC on network** (Settings): user-initiated probe of the current **private /24** for `GET /api/health` with `ok == true`. Confirm before a profile is saved and `/api/desk` is fetched.
+3. Allow **Local Network** when prompted.
+4. Pull to refresh; auto-refresh while foregrounded.
 
 Base URL different from cached envelope → **never show as fresh** (mismatch banner).
+
+### Discovery vs Tailscale
+
+| Path | Behavior |
+|------|----------|
+| **Home LAN (RFC1918)** | Optional **Find PC** scan of the phone’s current private subnet (cap 256 hosts, short timeouts, concurrency cap). Health-only; **confirm before connect**. |
+| **Tailscale** | **No CGNAT `100.64/10` bulk scan.** Add a **manual profile** with the PC’s `100.x` IP or MagicDNS name, then Test / Sync. |
+| **Cellular** | Discovery UI disabled; use saved profiles only. |
+
+### LAN residual risk
+
+LAN-bound mobile-view is readable by anyone on the same L2 who can reach TCP **8787**. Discovery only increases **findability** (health already exposes metadata such as `project_root`). Prefer **Tailscale ACLs** for remote access; do not expose mobile-view on hostile/guest Wi‑Fi without understanding that risk.
 
 ---
 
@@ -267,7 +280,7 @@ tools/ios-desk/
       Models/…
       Services/…
       Legacy/                   # renamed freeze (Legacy* types; always compiled)
-    NTDeskTests/                # XCTest (PrivateHostPolicy smoke, …)
+    NTDeskTests/                # XCTest (PrivateHostPolicy, profiles, discovery, …)
 ```
 
 ## CI note

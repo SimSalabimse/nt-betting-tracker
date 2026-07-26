@@ -8,6 +8,7 @@ struct SettingsView: View {
     @FocusState private var urlFieldFocused: Bool
     /// Same key + default as `SlipView` — single UserDefaults read path for the flag.
     @AppStorage(DeskPreferences.useStructuredSlipKey) private var useStructuredSlip: Bool = true
+    @State private var showDiscovery = false
 
     private var appVersionLine: String {
         let short = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "—"
@@ -40,6 +41,14 @@ struct SettingsView: View {
                 }
                 .accessibilityHint("Edit default profile name and base URL, then save and sync")
 
+                Button {
+                    showDiscovery = true
+                } label: {
+                    Label("Find PC on network", systemImage: "magnifyingglass")
+                }
+                .foregroundStyle(DeskTheme.accent)
+                .accessibilityHint("User-initiated LAN scan for mobile-view. You confirm before connecting.")
+
                 NavigationLink {
                     ProfilesListView()
                 } label: {
@@ -48,7 +57,7 @@ struct SettingsView: View {
                 .accessibilityHint("Add, delete, or set the default connection profile")
 
                 Text(
-                    "Profiles store LAN or Tailscale URLs for home/office/travel. Default profile drives sync. Prefer numeric IP over MagicDNS for cleartext. Edit connection to save a URL, or use Sync now below."
+                    "Profiles store LAN or Tailscale URLs for home/office/travel. Default profile drives sync. Prefer numeric IP over MagicDNS for cleartext. Use Find PC on network for a LAN health scan (confirm before connect), or Edit connection for a typed URL — including Tailscale 100.x (no CGNAT bulk scan)."
                 )
                 .font(.caption)
                 .foregroundStyle(DeskTheme.textMuted)
@@ -106,10 +115,16 @@ struct SettingsView: View {
                     .foregroundStyle(DeskTheme.text)
 
                 Text(
-                    "Privacy: connects only to the base URL you set (LAN or Tailscale). Desk JSON is cached on-device. No third-party analytics, accounts, or cloud sync."
+                    "Privacy: connects only to addresses you set or confirm (LAN or Tailscale). Desk JSON is cached on-device. No third-party analytics, accounts, or cloud sync."
                 )
                 .font(.caption)
                 .foregroundStyle(DeskTheme.textMuted)
+
+                Text(
+                    "LAN residual risk: mobile-view on a shared Wi‑Fi is readable by others on that L2 who can reach the port. Prefer Tailscale for remote. Discovery only probes your current private subnet; it does not scan Tailscale CGNAT."
+                )
+                .font(.caption)
+                .foregroundStyle(DeskTheme.textDim)
 
                 LabeledContent("Version", value: appVersionLine)
                     .font(.caption)
@@ -142,6 +157,13 @@ struct SettingsView: View {
             Button("Cancel", role: .cancel) {}
         } message: {
             Text("Removes the cached desk snapshot. Sync again when the PC is reachable.")
+        }
+        .sheet(isPresented: $showDiscovery) {
+            NavigationStack {
+                DiscoverySheet()
+                    .environmentObject(sync)
+            }
+            .preferredColorScheme(.dark)
         }
     }
 
