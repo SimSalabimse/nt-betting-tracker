@@ -1,11 +1,10 @@
 import SwiftUI
 
 /// Stack-free Settings content. The presenting sheet owns the only NavigationStack.
+/// Connection IA: active URL + NavigationLinks to ConnectionSettingsView / ProfilesListView.
 struct SettingsView: View {
     @EnvironmentObject private var sync: SyncService
-    @State private var draftURL: String = ""
     @State private var confirmClearCache = false
-    @FocusState private var urlFieldFocused: Bool
 
     private var appVersionLine: String {
         let short = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "—"
@@ -16,25 +15,45 @@ struct SettingsView: View {
     var body: some View {
         Form {
             Section {
-                TextField("http://192.168.x.x:8787", text: $draftURL)
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled()
-                    .keyboardType(.URL)
-                    .textContentType(.URL)
-                    .focused($urlFieldFocused)
-                    .foregroundStyle(DeskTheme.text)
-                    .accessibilityLabel("PC base URL")
-                    .accessibilityHint("LAN IP or Tailscale 100.x address for the desk mobile-view server")
+                if let profile = sync.profileStore.defaultProfile {
+                    LabeledContent("Active") {
+                        Text(profile.name)
+                            .foregroundStyle(DeskTheme.text)
+                    }
+                }
+                LabeledContent("URL") {
+                    Text(sync.baseURLString)
+                        .font(.caption.monospaced())
+                        .foregroundStyle(DeskTheme.textMuted)
+                        .lineLimit(2)
+                        .multilineTextAlignment(.trailing)
+                }
+                .accessibilityElement(children: .combine)
+
+                NavigationLink {
+                    ConnectionSettingsView()
+                } label: {
+                    Label("Edit connection", systemImage: "link")
+                }
+                .accessibilityHint("Edit default profile name and base URL, then save and sync")
+
+                NavigationLink {
+                    ProfilesListView()
+                } label: {
+                    Label("Manage profiles", systemImage: "list.bullet.rectangle")
+                }
+                .accessibilityHint("Add, delete, or set the default connection profile")
 
                 Button("Save & sync") {
-                    sync.baseURLString = draftURL
+                    // Re-apply facade (dual-write) then sync — matches Legacy path.
+                    sync.baseURLString = sync.baseURLString
                     Task { await sync.sync() }
                 }
                 .foregroundStyle(DeskTheme.accent)
-                .accessibilityHint("Saves the base URL and syncs a read-only desk snapshot")
+                .accessibilityHint("Syncs a read-only desk snapshot from the default connection")
 
                 Text(
-                    "Use LAN IP or Tailscale 100.x — e.g. http://192.168.1.10:8787 or http://100.x.y.z:8787. Prefer numeric IP over MagicDNS for cleartext. Start mobile-view with -Lan on the PC."
+                    "Profiles store LAN or Tailscale URLs for home/office/travel. Default profile drives sync. Prefer numeric IP over MagicDNS for cleartext."
                 )
                 .font(.caption)
                 .foregroundStyle(DeskTheme.textMuted)
@@ -107,12 +126,6 @@ struct SettingsView: View {
         .scrollContentBackground(.hidden)
         .background(DeskTheme.bg)
         .navigationTitle("Settings")
-        .onAppear {
-            draftURL = sync.baseURLString
-            if sync.freshness == .empty {
-                urlFieldFocused = true
-            }
-        }
         .confirmationDialog(
             "Clear on-device cache?",
             isPresented: $confirmClearCache,

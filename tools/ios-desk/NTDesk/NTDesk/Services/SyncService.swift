@@ -16,20 +16,80 @@ final class SyncService: ObservableObject {
     @Published var lastError: String?
     @Published var lastSuccessSyncAt: String?
     @Published var isSyncing = false
+
+    /// Public get/set facade over the default `ConnectionProfile`.
+    /// Legacy `LegacySettingsView` binds/saves this; dual-writes UserDefaults `"baseURL"`.
     @Published var baseURLString: String {
         didSet {
-            UserDefaults.standard.set(baseURLString, forKey: "baseURL")
+            guard !isApplyingProfileURL else { return }
+            profileStore.setDefaultBaseURL(baseURLString)
         }
     }
+
+    /// Additive multi-profile surface (redesign). Same array as the store.
+    var profiles: [ConnectionProfile] {
+        profileStore.profiles
+    }
+
+    let profileStore: ConnectionProfileStore
 
     private let cache = CacheStore()
     private let client = DeskAPIClient()
     private var timer: Timer?
+    /// Prevents recursive baseURLString ↔ profile store updates.
+    private var isApplyingProfileURL = false
+    private var profileCancellable: AnyCancellable?
 
-    init() {
-        baseURLString = UserDefaults.standard.string(forKey: "baseURL") ?? "http://127.0.0.1:8787"
+    init(profileStore: ConnectionProfileStore? = nil) {
+        let store = profileStore ?? ConnectionProfileStore.shared
+        self.profileStore = store
+        store.migrateFromLegacyBaseURLIfNeeded()
+        // didSet is not invoked during init assignment — dual-write already handled by migrate/seed.
+        self.baseURLString = store.defaultBaseURLString
+        // Forward profile mutations so Settings / ProfilesListView re-render.
+        profileCancellable = store.objectWillChange.sink { [weak self] _ in
+            self?.objectWillChange.send()
+        }
         loadCacheOnly()
     }
+
+    // MARK: - Multi-profile (additive)
+
+    func setDefaultProfile(id: UUID) {
+        profileStore.setDefault(id: id)
+        applyDefaultURLFromStore()
+    }
+
+    @discardableResult
+    func addProfile(name: String, baseURLString: String, makeDefault: Bool = true) -> ConnectionProfile {
+        let profile = profileStore.add(name: name, baseURLString: baseURLString, makeDefault: makeDefault)
+        if makeDefault || profile.isDefault {
+            applyDefaultURLFromStore()
+        }
+        return profile
+    }
+
+    func removeProfile(id: UUID) {
+        profileStore.remove(id: id)
+        applyDefaultURLFromStore()
+    }
+
+    func updateProfile(id: UUID, name: String? = nil, baseURLString: String? = nil) {
+        profileStore.update(id: id, name: name, baseURLString: baseURLString)
+        if profileStore.defaultProfile?.id == id {
+            applyDefaultURLFromStore()
+        }
+    }
+
+    private func applyDefaultURLFromStore() {
+        let url = profileStore.defaultBaseURLString
+        guard url != baseURLString else { return }
+        isApplyingProfileURL = true
+        baseURLString = url
+        isApplyingProfileURL = false
+    }
+
+    // MARK: - Polling / cache / sync (unchanged signatures)
 
     func startPolling() {
         timer?.invalidate()
@@ -82,7 +142,9 @@ final class SyncService: ObservableObject {
             let (raw, snap) = try await client.fetchDesk(baseURL: base)
             do {
                 try cache.save(deskObject: raw, sourceBaseURL: base.absoluteString)
-                lastSuccessSyncAt = ISO8601DateFormatter().string(from: Date())
+                let when = ISO8601DateFormatter().string(from: Date())
+                lastSuccessSyncAt = when
+                profileStore.markDefaultSuccess(at: when)
                 snapshot = snap
                 freshness = .fresh
                 lastError = nil

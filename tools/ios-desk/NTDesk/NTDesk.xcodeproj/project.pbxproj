@@ -44,6 +44,11 @@
 		A21A1B2C3D4E5F6000000004 /* DeskScreenChrome.swift in Sources */ = {isa = PBXBuildFile; fileRef = A21A1B2C3D4E5F6000000014 /* DeskScreenChrome.swift */; };
 		A21A1B2C3D4E5F6000000005 /* LegacyDeskTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = A21A1B2C3D4E5F6000000015 /* LegacyDeskTab.swift */; };
 		B11A1B2C3D4E5F6000000001 /* PrivateHostPolicyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B11A1B2C3D4E5F6000000011 /* PrivateHostPolicyTests.swift */; };
+		P21A1B2C3D4E5F6000000001 /* ConnectionProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = P21A1B2C3D4E5F6000000011 /* ConnectionProfile.swift */; };
+		P21A1B2C3D4E5F6000000002 /* ConnectionProfileStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = P21A1B2C3D4E5F6000000012 /* ConnectionProfileStore.swift */; };
+		P21A1B2C3D4E5F6000000003 /* ConnectionSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = P21A1B2C3D4E5F6000000013 /* ConnectionSettingsView.swift */; };
+		P21A1B2C3D4E5F6000000004 /* ProfilesListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = P21A1B2C3D4E5F6000000014 /* ProfilesListView.swift */; };
+		P21A1B2C3D4E5F6000000005 /* ConnectionProfileStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = P21A1B2C3D4E5F6000000015 /* ConnectionProfileStoreTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -98,6 +103,11 @@
 		14E671AE8ACD437DA6E95191 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		B5E4BCA51612EB4937DB848A /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		C1D2E3F4A5B60718293A4B5C /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		P21A1B2C3D4E5F6000000011 /* ConnectionProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionProfile.swift; sourceTree = "<group>"; };
+		P21A1B2C3D4E5F6000000012 /* ConnectionProfileStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionProfileStore.swift; sourceTree = "<group>"; };
+		P21A1B2C3D4E5F6000000013 /* ConnectionSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionSettingsView.swift; sourceTree = "<group>"; };
+		P21A1B2C3D4E5F6000000014 /* ProfilesListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfilesListView.swift; sourceTree = "<group>"; };
+		P21A1B2C3D4E5F6000000015 /* ConnectionProfileStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionProfileStoreTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -172,6 +182,7 @@
 			isa = PBXGroup;
 			children = (
 				B11A1B2C3D4E5F6000000011 /* PrivateHostPolicyTests.swift */,
+				P21A1B2C3D4E5F6000000015 /* ConnectionProfileStoreTests.swift */,
 			);
 			path = NTDeskTests;
 			sourceTree = "<group>";
@@ -207,6 +218,7 @@
 			children = (
 				89153251FF794878B656A195 /* CacheEnvelope.swift */,
 				8AEB1BFA4F9E49408518F2F1 /* DeskSnapshot.swift */,
+				P21A1B2C3D4E5F6000000011 /* ConnectionProfile.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -218,6 +230,7 @@
 				965A39FC5F2047DD89F4A62F /* DeskAPIClient.swift */,
 				1F73ED04DEF54036AFB8EC70 /* PrivateHostPolicy.swift */,
 				C75282348639400EB6DDC42C /* SyncService.swift */,
+				P21A1B2C3D4E5F6000000012 /* ConnectionProfileStore.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -281,6 +294,8 @@
 			isa = PBXGroup;
 			children = (
 				9E6AC46BE5914858AA4431A5 /* SettingsView.swift */,
+				P21A1B2C3D4E5F6000000013 /* ConnectionSettingsView.swift */,
+				P21A1B2C3D4E5F6000000014 /* ProfilesListView.swift */,
 			);
 			path = Settings;
 			sourceTree = "<group>";
@@ -411,6 +426,10 @@
 				38C4C7F4264144B084C95275 /* FreshnessBanner.swift in Sources */,
 				A1B2C3D4E5F6471890ABCDEF /* RiskGaugeCard.swift in Sources */,
 				A7C3E91F4B2D4E6A9F1C8D05 /* EmptyDeskView.swift in Sources */,
+				P21A1B2C3D4E5F6000000001 /* ConnectionProfile.swift in Sources */,
+				P21A1B2C3D4E5F6000000002 /* ConnectionProfileStore.swift in Sources */,
+				P21A1B2C3D4E5F6000000003 /* ConnectionSettingsView.swift in Sources */,
+				P21A1B2C3D4E5F6000000004 /* ProfilesListView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -419,6 +438,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				B11A1B2C3D4E5F6000000001 /* PrivateHostPolicyTests.swift in Sources */,
+				P21A1B2C3D4E5F6000000005 /* ConnectionProfileStoreTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
