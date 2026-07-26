@@ -55,23 +55,20 @@ struct PendingListView: View {
                 .listRowSeparator(.hidden)
 
             if allBets.isEmpty {
-                DeskContentUnavailable(
-                    title: "No open bets",
-                    systemImage: "list.bullet.rectangle",
-                    description: "No pending or confirmed-placed tickets right now.",
-                    accessibilityLabelText: "No open pending or confirmed bets"
-                )
-                .listRowBackground(Color.clear)
-                .listRowSeparator(.hidden)
+                // Compact in-list empty — full ContentUnavailable is for canvas empties (Charts/Slip).
+                Text("No open pending / confirmed bets")
+                    .font(.subheadline)
+                    .foregroundStyle(DeskTheme.textMuted)
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
+                    .accessibilityLabel("No open pending or confirmed bets")
             } else if filteredBets.isEmpty {
-                DeskContentUnavailable(
-                    title: "No matches",
-                    systemImage: "magnifyingglass",
-                    description: "No bets match “\(searchText)”.",
-                    accessibilityLabelText: "No bets match search"
-                )
-                .listRowBackground(Color.clear)
-                .listRowSeparator(.hidden)
+                Text("No bets match “\(searchText)”")
+                    .font(.subheadline)
+                    .foregroundStyle(DeskTheme.textMuted)
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
+                    .accessibilityLabel("No bets match search")
             } else {
                 ForEach(filteredBets) { bet in
                     NavigationLink(value: PendingBetRoute.make(from: bet)) {

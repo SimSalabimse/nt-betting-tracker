@@ -68,21 +68,32 @@ enum DeskFormatters {
     /// Human relative time from an ISO-8601 string (HIG: `RelativeDateTimeFormatter`).
     /// - nil/empty → `"—"`
     /// - unparseable → raw string when `fallbackToRaw`, else `"—"`
-    /// - optional `relativeTo` for tests
+    /// - optional `relativeTo` / `locale` for tests (locale pins unit substrings)
     static func relativeTime(
         _ iso8601: String?,
         relativeTo: Date = Date(),
-        fallbackToRaw: Bool = true
+        fallbackToRaw: Bool = true,
+        locale: Locale? = nil
     ) -> String {
         guard let iso8601, !iso8601.isEmpty else { return "—" }
         guard let date = parseISO8601(iso8601) else {
             return fallbackToRaw ? iso8601 : "—"
         }
-        return relativeFormatter.localizedString(for: date, relativeTo: relativeTo)
+        return relativeTime(date: date, relativeTo: relativeTo, locale: locale)
     }
 
     /// Relative phrase from a `Date` (same formatter as string path).
-    static func relativeTime(date: Date, relativeTo: Date = Date()) -> String {
-        relativeFormatter.localizedString(for: date, relativeTo: relativeTo)
+    static func relativeTime(
+        date: Date,
+        relativeTo: Date = Date(),
+        locale: Locale? = nil
+    ) -> String {
+        if let locale {
+            let f = RelativeDateTimeFormatter()
+            f.unitsStyle = .abbreviated
+            f.locale = locale
+            return f.localizedString(for: date, relativeTo: relativeTo)
+        }
+        return relativeFormatter.localizedString(for: date, relativeTo: relativeTo)
     }
 }

@@ -117,7 +117,15 @@ struct PendingBetDetailView: View {
                     )
                 }
                 if let generated = desk.generatedAt, !generated.isEmpty {
-                    detailRow(label: "Generated", value: generated)
+                    TimelineView(.periodic(from: .now, by: 60)) { context in
+                        detailRow(
+                            label: "Generated",
+                            value: DeskFormatters.relativeTime(
+                                generated,
+                                relativeTo: context.date
+                            )
+                        )
+                    }
                 }
             } else {
                 Text("No desk snapshot available")

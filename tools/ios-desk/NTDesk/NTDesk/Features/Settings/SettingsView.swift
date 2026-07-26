@@ -5,6 +5,8 @@ import SwiftUI
 struct SettingsView: View {
     @EnvironmentObject private var sync: SyncService
     @EnvironmentObject private var appLock: AppLockService
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var draftURL: String = ""
     @State private var confirmClearCache = false
     @FocusState private var urlFieldFocused: Bool
     /// Same key + default as `SlipView` — single UserDefaults read path for the flag.
@@ -15,6 +17,10 @@ struct SettingsView: View {
         let short = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "—"
         let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "—"
         return "\(short) (\(build))"
+    }
+
+    private var relativeTimelinePeriod: TimeInterval {
+        reduceMotion ? 300 : 60
     }
 
     var body: some View {
@@ -68,18 +74,15 @@ struct SettingsView: View {
 
             Section {
                 LabeledContent("Last success") {
-                    TimelineView(.periodic(from: .now, by: 60)) { context in
-                        Text(
-                            DeskFormatters.relativeTime(
-                                sync.lastSuccessSyncAt,
-                                relativeTo: context.date
-                            )
+                    TimelineView(.periodic(from: .now, by: relativeTimelinePeriod)) { context in
+                        let relative = DeskFormatters.relativeTime(
+                            sync.lastSuccessSyncAt,
+                            relativeTo: context.date
                         )
-                        .font(.system(.body, design: .monospaced))
-                        .foregroundStyle(DeskTheme.textMuted)
-                        .accessibilityLabel(
-                            "Last success \(DeskFormatters.relativeTime(sync.lastSuccessSyncAt, relativeTo: context.date))"
-                        )
+                        Text(relative)
+                            .font(.system(.body, design: .monospaced))
+                            .foregroundStyle(DeskTheme.textMuted)
+                            .accessibilityLabel("Last success \(relative)")
                     }
                 }
                 LabeledContent("Freshness") {

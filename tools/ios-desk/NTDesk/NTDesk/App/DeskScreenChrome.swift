@@ -8,6 +8,10 @@ struct DeskScreenChrome<Content: View>: View {
     let title: String
     @ViewBuilder var content: () -> Content
 
+    private var showsLeadingChrome: Bool {
+        sync.isSyncing || sync.freshness == .fresh
+    }
+
     var body: some View {
         NavigationStack {
             content()
@@ -15,8 +19,11 @@ struct DeskScreenChrome<Content: View>: View {
                 .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
                 .toolbarBackground(.visible, for: .navigationBar)
                 .toolbar {
-                    ToolbarItem(placement: .topBarLeading) {
-                        leadingChrome
+                    // Only attach when content exists — avoids empty combined VO toolbar ghost.
+                    if showsLeadingChrome {
+                        ToolbarItem(placement: .topBarLeading) {
+                            leadingChrome
+                        }
                     }
                     ToolbarItem(placement: .topBarTrailing) {
                         Button {
@@ -32,19 +39,17 @@ struct DeskScreenChrome<Content: View>: View {
 
     @ViewBuilder
     private var leadingChrome: some View {
-        HStack(spacing: DeskSpacing.s2) {
-            if sync.isSyncing {
-                ProgressView()
-                    .controlSize(.small)
-                    .tint(DeskTheme.accent)
-                    .accessibilityLabel("Syncing desk snapshot")
-            } else if sync.freshness == .fresh {
-                Image(systemName: "checkmark.circle.fill")
-                    .foregroundStyle(DeskTheme.profit)
-                    .symbolRenderingMode(.hierarchical)
-                    .accessibilityLabel("Live data")
-            }
+        if sync.isSyncing {
+            ProgressView()
+                .controlSize(.small)
+                .tint(DeskTheme.accent)
+                .accessibilityLabel("Syncing desk snapshot")
+        } else {
+            // Caller only installs this item when freshness == .fresh (and not syncing).
+            Image(systemName: "checkmark.circle.fill")
+                .foregroundStyle(DeskTheme.profit)
+                .symbolRenderingMode(.hierarchical)
+                .accessibilityLabel("Live data")
         }
-        .accessibilityElement(children: .combine)
     }
 }

@@ -233,14 +233,14 @@ NT Desk targets personal sideload quality (HIG), not App Store review. Use this 
 
 - [ ] Stale banner shows **relative** last sync via `RelativeDateTimeFormatter` (`DeskFormatters.relativeTime`) — not raw ISO only
 - [ ] Desk “Generated …” and Settings “Last success” use the same relative helper
-- [ ] `TimelineView` refreshes relative labels (~60s; longer when Reduce Motion is on for the banner)
+- [ ] `TimelineView` refreshes relative labels (~60s; **300s** when Reduce Motion — banner, Desk generated, Settings last success)
 - [ ] `.fresh` hides the banner; optional toolbar checkmark signals live
 - [ ] `.staleMismatch` / `.liveNotPersisted` / `.empty` keep distinct copy + a11y labels
 
 ### contentUnavailable / empty states
 
 - [ ] First-run empty uses `EmptyDeskView` → HIG `ContentUnavailableView` + Open Settings CTA
-- [ ] Secondary empties use `DeskContentUnavailable` (pending empty / search miss, charts no data, no PLACE_THESE)
+- [ ] Full-canvas empties use `DeskContentUnavailable` (charts no data, no PLACE_THESE); **in-list** pending empty / search miss stay compact muted text
 - [ ] Cards stay solid `surfaceElev`; empty chrome is not a second invent-of-equity path
 
 ### Materials (chrome only)
@@ -253,7 +253,7 @@ NT Desk targets personal sideload quality (HIG), not App Store review. Use this 
 ### Reduce Motion
 
 - [ ] Chart selection callouts honor `accessibilityReduceMotion` (no springy chrome)
-- [ ] Freshness `TimelineView` period lengthens under Reduce Motion (less frequent label churn)
+- [ ] Relative-time `TimelineView` periods lengthen under Reduce Motion (banner + Desk generated + Settings last success)
 - [ ] No decorative loops on banners/toolbars
 
 ### Local Network permission

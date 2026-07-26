@@ -20,6 +20,7 @@ struct EmptyDeskView: View {
                     .font(DeskTypography.sectionTitle)
                     .foregroundStyle(DeskTheme.text)
                     .multilineTextAlignment(.center)
+                    .accessibilityAddTraits(.isHeader)
             } icon: {
                 Image(systemName: systemImage)
                     .font(.largeTitle.weight(.medium))
@@ -56,8 +57,8 @@ struct EmptyDeskView: View {
 }
 
 /// Themed empty / unavailable chrome (HIG ContentUnavailable pattern, desk tokens).
-/// Use for no-data, no-search-match, and secondary empty states — not first-run connect
-/// (prefer `EmptyDeskView` for Settings CTA).
+/// Use for full-canvas no-data empties (Charts / Slip) — not first-run connect
+/// (prefer `EmptyDeskView` for Settings CTA) and not compact in-list rows.
 struct DeskContentUnavailable: View {
     var title: String
     var systemImage: String
@@ -72,6 +73,7 @@ struct DeskContentUnavailable: View {
                     .font(DeskTypography.sectionTitle)
                     .foregroundStyle(DeskTheme.text)
                     .multilineTextAlignment(.center)
+                    .accessibilityAddTraits(.isHeader)
             } icon: {
                 Image(systemName: systemImage)
                     .font(.largeTitle.weight(.medium))

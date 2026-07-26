@@ -3,6 +3,9 @@ import XCTest
 
 final class DeskFormattersTests: XCTestCase {
 
+    /// Pin unit substrings independent of device locale.
+    private let enUS = Locale(identifier: "en_US_POSIX")
+
     func testParseISO8601_basicAndFractional() {
         XCTAssertNotNil(DeskFormatters.parseISO8601("2026-07-24T18:42:42Z"))
         XCTAssertNotNil(DeskFormatters.parseISO8601("2026-07-24T18:42:42.123Z"))
@@ -36,6 +39,32 @@ final class DeskFormattersTests: XCTestCase {
         XCTAssertNotEqual(relative, "—")
         // Should not echo the raw ISO string when parse succeeds.
         XCTAssertNotEqual(relative, iso)
+    }
+
+    func testRelativeTime_twoMinutesAgo_enUS_abbreviatedUnit() {
+        let past = Date(timeIntervalSince1970: 1_721_847_762)
+        let iso = ISO8601DateFormatter().string(from: past)
+        let now = past.addingTimeInterval(120)
+        let relative = DeskFormatters.relativeTime(
+            iso,
+            relativeTo: now,
+            locale: enUS
+        )
+        // Abbreviated en_US_POSIX: "2m ago" (not raw ISO).
+        XCTAssertEqual(relative, "2m ago")
+        XCTAssertFalse(relative.contains("T"), "should not look like ISO: \(relative)")
+    }
+
+    func testRelativeTime_oneHourAgo_enUS_abbreviatedUnit() {
+        let past = Date(timeIntervalSince1970: 1_721_847_762)
+        let now = past.addingTimeInterval(3_600)
+        let relative = DeskFormatters.relativeTime(
+            date: past,
+            relativeTo: now,
+            locale: enUS
+        )
+        // Abbreviated en_US_POSIX: "1h ago".
+        XCTAssertEqual(relative, "1h ago")
     }
 
     func testRelativeTime_dateAPI() {

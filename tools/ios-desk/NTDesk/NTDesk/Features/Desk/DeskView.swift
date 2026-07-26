@@ -3,12 +3,17 @@ import SwiftUI
 struct DeskView: View {
     @EnvironmentObject private var sync: SyncService
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var gridColumns: [GridItem] {
         if dynamicTypeSize.isAccessibilitySize {
             return [GridItem(.flexible())]
         }
         return [GridItem(.flexible()), GridItem(.flexible())]
+    }
+
+    private var relativeTimelinePeriod: TimeInterval {
+        reduceMotion ? 300 : 60
     }
 
     var body: some View {
@@ -74,7 +79,7 @@ struct DeskView: View {
                             }
                         }
 
-                        TimelineView(.periodic(from: .now, by: 60)) { context in
+                        TimelineView(.periodic(from: .now, by: relativeTimelinePeriod)) { context in
                             let relative = DeskFormatters.relativeTime(
                                 s.generatedAt,
                                 relativeTo: context.date
