@@ -17,7 +17,18 @@ struct DrawdownChartView: View {
 
     private var days: [ChartDay] { points.map(\.day) }
 
+    /// Sticky inspect: last raw day is kept when the gesture ends (`scrubDate` → nil).
     @State private var scrubDate: Date?
+
+    private var selectedInPlot: Bool {
+        guard let raw = selectedRawDay else { return false }
+        return plotPoints.contains(where: { $0.day.raw == raw })
+    }
+
+    private var selectedDate: Date? {
+        guard let raw = selectedRawDay else { return nil }
+        return points.first(where: { $0.day.raw == raw })?.day.date
+    }
 
     var body: some View {
         if points.isEmpty {
@@ -52,52 +63,24 @@ struct DrawdownChartView: View {
                 }
                 .chartXSelection(value: $scrubDate)
                 .onChange(of: scrubDate) { _, newValue in
-                    selectedRawDay = ChartDataBuilder.nearestRawDay(to: newValue, in: points)
-                }
-                .chartOverlay { proxy in
-                    GeometryReader { geo in
-                        Rectangle()
-                            .fill(Color.clear)
-                            .contentShape(Rectangle())
-                            .gesture(scrubGesture(proxy: proxy, geo: geo))
+                    if let newValue {
+                        selectedRawDay = ChartDataBuilder.nearestRawDay(to: newValue, in: points)
                     }
                 }
-                .chartBackground { proxy in
-                    GeometryReader { _ in
-                        if let raw = selectedRawDay,
-                           let pt = points.first(where: { $0.day.raw == raw }),
-                           plotPoints.contains(where: { $0.day.raw == raw }) == false,
-                           let xPos = proxy.position(forX: pt.day.date) {
-                            Path { path in
-                                path.move(to: CGPoint(x: xPos, y: 0))
-                                path.addLine(to: CGPoint(x: xPos, y: proxy.plotSize.height))
-                            }
-                            .stroke(DeskTheme.text.opacity(0.55), style: StrokeStyle(lineWidth: 1, dash: [4, 3]))
-                        }
-                    }
-                }
+                .chartSelectionRuleFallback(
+                    selectedDate: selectedDate,
+                    showFallback: selectedRawDay != nil && !selectedInPlot
+                )
                 .frame(height: height)
                 .chartXAxis {
                     ChartAxisSupport.dateAxisMarks(days: days, density: density)
                 }
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel(ChartDataBuilder.drawdownSummary(points))
+                .accessibilityValue(selectedRawDay.map { "Selected \($0)" } ?? "No day selected")
                 .accessibilityHint("Drag horizontally to inspect a day")
             }
         }
-    }
-
-    private func scrubGesture(proxy: ChartProxy, geo: GeometryProxy) -> some Gesture {
-        DragGesture(minimumDistance: 0)
-            .onChanged { value in
-                guard let frame = proxy.plotFrame else { return }
-                let origin = geo[frame].origin
-                let x = value.location.x - origin.x
-                if let date: Date = proxy.value(atX: x) {
-                    scrubDate = date
-                    selectedRawDay = ChartDataBuilder.nearestRawDay(to: date, in: points)
-                }
-            }
     }
 
     private func emptySeries(_ message: String) -> some View {

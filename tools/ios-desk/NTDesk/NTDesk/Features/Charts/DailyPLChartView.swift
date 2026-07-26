@@ -17,7 +17,18 @@ struct DailyPLChartView: View {
 
     private var days: [ChartDay] { points.map(\.day) }
 
+    /// Sticky inspect: last raw day is kept when the gesture ends (`scrubDate` → nil).
     @State private var scrubDate: Date?
+
+    private var selectedInPlot: Bool {
+        guard let raw = selectedRawDay else { return false }
+        return plotPoints.contains(where: { $0.day.raw == raw })
+    }
+
+    private var selectedDate: Date? {
+        guard let raw = selectedRawDay else { return nil }
+        return points.first(where: { $0.day.raw == raw })?.day.date
+    }
 
     var body: some View {
         if points.isEmpty {
@@ -36,7 +47,8 @@ struct DailyPLChartView: View {
                         y: .value("P/L", p.pl)
                     )
                     .foregroundStyle(p.pl >= 0 ? DeskTheme.profit : DeskTheme.loss)
-                    .opacity(selectedRawDay == nil || selectedRawDay == p.day.raw ? 1 : 0.35)
+                    // Dim only when selected raw is among plot bars; otherwise all full opacity + fallback rule.
+                    .opacity(barOpacity(for: p))
 
                     if selectedRawDay == p.day.raw {
                         RuleMark(x: .value("Selected", p.day.date))
@@ -46,38 +58,31 @@ struct DailyPLChartView: View {
                 }
                 .chartXSelection(value: $scrubDate)
                 .onChange(of: scrubDate) { _, newValue in
-                    selectedRawDay = ChartDataBuilder.nearestRawDay(to: newValue, in: points)
-                }
-                .chartOverlay { proxy in
-                    GeometryReader { geo in
-                        Rectangle()
-                            .fill(Color.clear)
-                            .contentShape(Rectangle())
-                            .gesture(scrubGesture(proxy: proxy, geo: geo))
+                    if let newValue {
+                        selectedRawDay = ChartDataBuilder.nearestRawDay(to: newValue, in: points)
                     }
                 }
+                .chartSelectionRuleFallback(
+                    selectedDate: selectedDate,
+                    showFallback: selectedRawDay != nil && !selectedInPlot
+                )
                 .frame(height: height)
                 .chartXAxis {
                     ChartAxisSupport.dateAxisMarks(days: days, density: density)
                 }
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel(ChartDataBuilder.dailySummary(points))
+                .accessibilityValue(selectedRawDay.map { "Selected \($0)" } ?? "No day selected")
                 .accessibilityHint("Drag horizontally to inspect a day")
             }
         }
     }
 
-    private func scrubGesture(proxy: ChartProxy, geo: GeometryProxy) -> some Gesture {
-        DragGesture(minimumDistance: 0)
-            .onChanged { value in
-                guard let frame = proxy.plotFrame else { return }
-                let origin = geo[frame].origin
-                let x = value.location.x - origin.x
-                if let date: Date = proxy.value(atX: x) {
-                    scrubDate = date
-                    selectedRawDay = ChartDataBuilder.nearestRawDay(to: date, in: points)
-                }
-            }
+    /// When selected raw ∉ plotPoints (weekly max-abs reduction), leave all bars full opacity.
+    private func barOpacity(for p: DailyChartPoint) -> Double {
+        guard let selected = selectedRawDay else { return 1 }
+        guard selectedInPlot else { return 1 }
+        return selected == p.day.raw ? 1 : 0.35
     }
 
     private func emptySeries(_ message: String) -> some View {

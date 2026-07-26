@@ -231,6 +231,109 @@ final class ChartDataBuilderTests: XCTestCase {
         ])
         XCTAssertTrue(ChartDataBuilder.drawdownSummary(dd).contains("worst"))
     }
+
+    // MARK: - Parse edges
+
+    func testParseDay_rejectsNonLeapFeb29() {
+        XCTAssertNil(ChartDataBuilder.parseDay("2023-02-29"))
+        XCTAssertNotNil(ChartDataBuilder.parseDay("2024-02-29"))
+    }
+
+    // MARK: - Axis tick policy
+
+    func testAxisTickDates_allLabelsAndThinned() {
+        let days = ["2026-07-18", "2026-07-19", "2026-07-20"].compactMap(ChartDataBuilder.parseDay)
+        XCTAssertEqual(ChartDataBuilder.axisTickDates(from: days, density: .empty), [])
+        XCTAssertEqual(
+            ChartDataBuilder.axisTickDates(from: days, density: .allLabels)?.count,
+            3
+        )
+        XCTAssertNil(ChartDataBuilder.axisTickDates(from: days, density: .thinnedLabels))
+    }
+
+    func testAxisTickDates_weeklyPrefersMonthStarts() {
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = TimeZone(secondsFromGMT: 0)!
+        let fmt = DateFormatter()
+        fmt.calendar = cal
+        fmt.locale = Locale(identifier: "en_US_POSIX")
+        fmt.timeZone = TimeZone(secondsFromGMT: 0)!
+        fmt.dateFormat = "yyyy-MM-dd"
+        // Two months of daily keys → at least two month-starts present.
+        let start = ChartDataBuilder.parseDay("2025-01-01")!.date
+        var days: [ChartDay] = []
+        for i in 0..<70 {
+            let d = cal.date(byAdding: .day, value: i, to: start)!
+            days.append(ChartDataBuilder.parseDay(fmt.string(from: d))!)
+        }
+        let ticks = ChartDataBuilder.axisTickDates(from: days, density: .weeklyDisplay)
+        XCTAssertNotNil(ticks)
+        XCTAssertGreaterThanOrEqual(ticks!.count, 2)
+        // Month starts only (day == 1 in UTC).
+        for t in ticks! {
+            XCTAssertEqual(cal.component(.day, from: t), 1)
+        }
+    }
+
+    // MARK: - Nearest / selection vs display
+
+    func testNearestRawDay_equidistantPrefersEarlier() {
+        let pts = ChartDataBuilder.equity([
+            EquityPoint(date: "2026-07-18", equity: 100, dayPl: nil, cumPl: nil),
+            EquityPoint(date: "2026-07-20", equity: 110, dayPl: nil, cumPl: nil),
+        ])
+        // Exactly 12h after 18 midnight = 12h before 20 midnight.
+        let mid = pts[0].day.date.addingTimeInterval(24 * 3600) // 2026-07-19 00:00 UTC
+        // mid is 24h from each — equidistant; earlier day wins.
+        XCTAssertEqual(ChartDataBuilder.nearestRawDay(to: mid, in: pts), "2026-07-18")
+    }
+
+    func testNearestRawDay_canReturnDayAbsentFromWeeklyDisplay() {
+        var wire: [EquityPoint] = []
+        let start = ChartDataBuilder.parseDay("2025-01-01")!.date
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = TimeZone(secondsFromGMT: 0)!
+        let fmt = DateFormatter()
+        fmt.calendar = cal
+        fmt.locale = Locale(identifier: "en_US_POSIX")
+        fmt.timeZone = TimeZone(secondsFromGMT: 0)!
+        fmt.dateFormat = "yyyy-MM-dd"
+        for i in 0..<70 {
+            let d = cal.date(byAdding: .day, value: i, to: start)!
+            wire.append(EquityPoint(date: fmt.string(from: d), equity: Double(i), dayPl: 0, cumPl: Double(i)))
+        }
+        let raw = ChartDataBuilder.equity(wire)
+        let display = ChartDataBuilder.displayEquity(raw)
+        XCTAssertEqual(raw.count, 70)
+        XCTAssertLessThan(display.count, 70)
+
+        // Pick a mid-week day that is typically not last-of-week display.
+        let candidate = raw[3] // 2025-01-04 (Sat after Jan 1 Wed) — may or may not be display
+        let selected = ChartDataBuilder.nearestRawDay(to: candidate.day.date, in: raw)
+        XCTAssertEqual(selected, candidate.day.raw)
+        // Selection is allowed even when not in display set.
+        if !display.contains(where: { $0.day.raw == candidate.day.raw }) {
+            XCTAssertFalse(display.contains(where: { $0.day.raw == selected }))
+        }
+
+        // Daily path: force a non-max-abs mid-week day under 61+ downsample.
+        var dailyWire: [DailyPoint] = []
+        for i in 0..<70 {
+            let d = cal.date(byAdding: .day, value: i, to: start)!
+            // Spike only on index 0 of each week-ish; most days have small pl.
+            let pl: Double = (i % 7 == 0) ? 50 : 1
+            dailyWire.append(DailyPoint(date: fmt.string(from: d), pl: pl, equity: nil))
+        }
+        let dailyRaw = ChartDataBuilder.daily(dailyWire)
+        let dailyDisplay = ChartDataBuilder.displayDaily(dailyRaw)
+        let midWeek = dailyRaw.first(where: { $0.pl == 1 })!
+        let dailySelected = ChartDataBuilder.nearestRawDay(to: midWeek.day.date, in: dailyRaw)
+        XCTAssertEqual(dailySelected, midWeek.day.raw)
+        XCTAssertFalse(
+            dailyDisplay.contains(where: { $0.day.raw == midWeek.day.raw }),
+            "expected mid-week pl=1 day to be absent from max-abs weekly display"
+        )
+    }
 }
 
 

@@ -7,6 +7,7 @@ enum ChartDataBuilder {
     // MARK: - Day parse (UTC midnight)
 
     /// Shared formatter: `yyyy-MM-dd` in UTC / Gregorian / en_US_POSIX.
+    /// **Main-thread only** — `DateFormatter` is not thread-safe; call from UI / tests.
     private static let dayFormatter: DateFormatter = {
         let f = DateFormatter()
         f.calendar = Calendar(identifier: .gregorian)
@@ -87,24 +88,30 @@ enum ChartDataBuilder {
     // MARK: - Selection resolve (nearest raw by day)
 
     static func nearestRawDay(to date: Date?, in points: [EquityChartPoint]) -> String? {
-        guard let date, let best = points.min(by: {
-            abs($0.day.date.timeIntervalSince(date)) < abs($1.day.date.timeIntervalSince(date))
-        }) else { return nil }
-        return best.day.raw
+        nearest(to: date, in: points, day: \.day)
     }
 
     static func nearestRawDay(to date: Date?, in points: [DailyChartPoint]) -> String? {
-        guard let date, let best = points.min(by: {
-            abs($0.day.date.timeIntervalSince(date)) < abs($1.day.date.timeIntervalSince(date))
-        }) else { return nil }
-        return best.day.raw
+        nearest(to: date, in: points, day: \.day)
     }
 
     static func nearestRawDay(to date: Date?, in points: [DrawdownChartPoint]) -> String? {
-        guard let date, let best = points.min(by: {
-            abs($0.day.date.timeIntervalSince(date)) < abs($1.day.date.timeIntervalSince(date))
-        }) else { return nil }
-        return best.day.raw
+        nearest(to: date, in: points, day: \.day)
+    }
+
+    /// Closest day by absolute interval; ties break to the **earlier** day (stable).
+    private static func nearest<T>(
+        to date: Date?,
+        in points: [T],
+        day: (T) -> ChartDay
+    ) -> String? {
+        guard let date, !points.isEmpty else { return nil }
+        return points.min(by: { a, b in
+            let da = abs(day(a).date.timeIntervalSince(date))
+            let db = abs(day(b).date.timeIntervalSince(date))
+            if da != db { return da < db }
+            return day(a).date < day(b).date
+        }).map { day($0).raw }
     }
 
     // MARK: - Display downsample (61+ only; never invent aggregates)

@@ -3,6 +3,8 @@ import SwiftUI
 /// Multi-field selection callout above a chart (parity with prior detail card).
 /// Color is not the sole signal — signed amounts appear as text in `lines`.
 struct ChartSelectionCallout: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     let title: String
     let lines: [String]
     var isActive: Bool = false
@@ -38,6 +40,6 @@ struct ChartSelectionCallout: View {
         )
         .accessibilityElement(children: .combine)
         .accessibilityLabel(([title] + lines).joined(separator: ", "))
-        .animation(.easeInOut(duration: 0.12), value: isActive)
+        .animation(reduceMotion ? nil : .easeInOut(duration: 0.12), value: isActive)
     }
 }

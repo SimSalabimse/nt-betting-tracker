@@ -30,6 +30,5 @@ struct ChartExpandedContainer<Content: View>: View {
                 }
             }
         }
-        .presentationDragIndicator(.visible)
     }
 }

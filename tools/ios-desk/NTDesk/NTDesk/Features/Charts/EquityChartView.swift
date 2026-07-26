@@ -18,7 +18,18 @@ struct EquityChartView: View {
     private var days: [ChartDay] { points.map(\.day) }
 
     /// Bridge continuous Date selection → stable API day string.
+    /// Sticky inspect: last raw day is kept when the gesture ends (`scrubDate` → nil).
     @State private var scrubDate: Date?
+
+    private var selectedInPlot: Bool {
+        guard let raw = selectedRawDay else { return false }
+        return plotPoints.contains(where: { $0.day.raw == raw })
+    }
+
+    private var selectedDate: Date? {
+        guard let raw = selectedRawDay else { return nil }
+        return points.first(where: { $0.day.raw == raw })?.day.date
+    }
 
     var body: some View {
         if points.isEmpty {
@@ -46,6 +57,7 @@ struct EquityChartView: View {
                     .foregroundStyle(DeskTheme.accentSoft)
                     .interpolationMethod(.linear)
 
+                    // In-plot selection chrome (RuleMark + point).
                     if selectedRawDay == p.day.raw {
                         RuleMark(x: .value("Selected", p.day.date))
                             .foregroundStyle(DeskTheme.text.opacity(0.55))
@@ -58,55 +70,29 @@ struct EquityChartView: View {
                         .symbolSize(64)
                     }
                 }
+                // Single scrub path: chartXSelection only (no dual DragGesture).
                 .chartXSelection(value: $scrubDate)
                 .onChange(of: scrubDate) { _, newValue in
-                    selectedRawDay = ChartDataBuilder.nearestRawDay(to: newValue, in: points)
-                }
-                .chartOverlay { proxy in
-                    GeometryReader { geo in
-                        Rectangle()
-                            .fill(Color.clear)
-                            .contentShape(Rectangle())
-                            .gesture(scrubGesture(proxy: proxy, geo: geo))
+                    // Sticky: only update when we have a date; do not clear on lift.
+                    if let newValue {
+                        selectedRawDay = ChartDataBuilder.nearestRawDay(to: newValue, in: points)
                     }
                 }
-                // If selected raw day is not among plot points (weekly downsample), overlay rule from raw.
-                .chartBackground { proxy in
-                    GeometryReader { _ in
-                        if let raw = selectedRawDay,
-                           let pt = points.first(where: { $0.day.raw == raw }),
-                           plotPoints.contains(where: { $0.day.raw == raw }) == false,
-                           let xPos = proxy.position(forX: pt.day.date) {
-                            Path { path in
-                                path.move(to: CGPoint(x: xPos, y: 0))
-                                path.addLine(to: CGPoint(x: xPos, y: proxy.plotSize.height))
-                            }
-                            .stroke(DeskTheme.text.opacity(0.55), style: StrokeStyle(lineWidth: 1, dash: [4, 3]))
-                        }
-                    }
-                }
+                // Non-plot raw selection (weekly downsample): plotFrame-aligned dashed rule.
+                .chartSelectionRuleFallback(
+                    selectedDate: selectedDate,
+                    showFallback: selectedRawDay != nil && !selectedInPlot
+                )
                 .frame(height: height)
                 .chartXAxis {
                     ChartAxisSupport.dateAxisMarks(days: days, density: density)
                 }
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel(ChartDataBuilder.equitySummary(points))
+                .accessibilityValue(selectedRawDay.map { "Selected \($0)" } ?? "No day selected")
                 .accessibilityHint("Drag horizontally to inspect a day")
             }
         }
-    }
-
-    private func scrubGesture(proxy: ChartProxy, geo: GeometryProxy) -> some Gesture {
-        DragGesture(minimumDistance: 0)
-            .onChanged { value in
-                guard let frame = proxy.plotFrame else { return }
-                let origin = geo[frame].origin
-                let x = value.location.x - origin.x
-                if let date: Date = proxy.value(atX: x) {
-                    scrubDate = date
-                    selectedRawDay = ChartDataBuilder.nearestRawDay(to: date, in: points)
-                }
-            }
     }
 
     private func emptySeries(_ message: String) -> some View {

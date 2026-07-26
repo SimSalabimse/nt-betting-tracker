@@ -75,6 +75,7 @@
 		C51A1B2C3D4E5F6000000008 /* DrawdownChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C51A1B2C3D4E5F6000000018 /* DrawdownChartView.swift */; };
 		C51A1B2C3D4E5F6000000009 /* SportChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C51A1B2C3D4E5F6000000019 /* SportChartView.swift */; };
 		C51A1B2C3D4E5F600000000A /* ChartDataBuilderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C51A1B2C3D4E5F600000001A /* ChartDataBuilderTests.swift */; };
+		C51A1B2C3D4E5F600000000B /* ChartSelectionRuleOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = C51A1B2C3D4E5F600000001B /* ChartSelectionRuleOverlay.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -160,6 +161,7 @@
 		C51A1B2C3D4E5F6000000018 /* DrawdownChartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DrawdownChartView.swift; sourceTree = "<group>"; };
 		C51A1B2C3D4E5F6000000019 /* SportChartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SportChartView.swift; sourceTree = "<group>"; };
 		C51A1B2C3D4E5F600000001A /* ChartDataBuilderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartDataBuilderTests.swift; sourceTree = "<group>"; };
+		C51A1B2C3D4E5F600000001B /* ChartSelectionRuleOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartSelectionRuleOverlay.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -349,6 +351,7 @@
 				C51A1B2C3D4E5F6000000013 /* ChartSelectionCallout.swift */,
 				C51A1B2C3D4E5F6000000014 /* ChartExpandedContainer.swift */,
 				C51A1B2C3D4E5F6000000015 /* ChartAxisSupport.swift */,
+				C51A1B2C3D4E5F600000001B /* ChartSelectionRuleOverlay.swift */,
 			);
 			path = Charts;
 			sourceTree = "<group>";
@@ -544,6 +547,7 @@
 				C51A1B2C3D4E5F6000000007 /* DailyPLChartView.swift in Sources */,
 				C51A1B2C3D4E5F6000000008 /* DrawdownChartView.swift in Sources */,
 				C51A1B2C3D4E5F6000000009 /* SportChartView.swift in Sources */,
+				C51A1B2C3D4E5F600000000B /* ChartSelectionRuleOverlay.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
