@@ -22,13 +22,17 @@ enum ChartDataBuilder {
         return f
     }()
 
-    private static let utcCalendar: Calendar = {
+    /// DateFormatter is not thread-safe; chart rebuilds run off the main actor.
+    private static let dayFormatterLock = NSLock()
+
+    private static let chartCalendar: Calendar = {
         var cal = Calendar(identifier: .gregorian)
         cal.timeZone = chartTimeZone
         return cal
     }()
 
     /// Parse ledger day string → `ChartDay` at Europe/Oslo 12:00. Rejects garbage / empty.
+    /// Safe from background chart-build tasks (lock around DateFormatter).
     static func parseDay(_ raw: String?) -> ChartDay? {
         guard let raw else { return nil }
         let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -37,11 +41,13 @@ enum ChartDataBuilder {
         guard trimmed.range(of: #"^\d{4}-\d{2}-\d{2}$"#, options: .regularExpression) != nil else {
             return nil
         }
-        guard let midnight = dayFormatter.date(from: trimmed) else { return nil }
-        // Reject rollover of invalid calendar days even if formatter is lenient.
-        guard dayFormatter.string(from: midnight) == trimmed else { return nil }
-        // Noon avoids DST edge cases and keeps the mark on `trimmed` for all zones.
-        let date = utcCalendar.date(bySettingHour: 12, minute: 0, second: 0, of: midnight) ?? midnight
+        dayFormatterLock.lock()
+        let midnight = dayFormatter.date(from: trimmed)
+        let roundTripOK = midnight.map { dayFormatter.string(from: $0) == trimmed } ?? false
+        dayFormatterLock.unlock()
+        guard let midnight, roundTripOK else { return nil }
+        // Noon keeps the mark on `trimmed` for all display time zones.
+        let date = chartCalendar.date(bySettingHour: 12, minute: 0, second: 0, of: midnight) ?? midnight
         return ChartDay(raw: trimmed, date: date)
     }
 
@@ -275,16 +281,16 @@ enum ChartDataBuilder {
     }
 
     private static func isoWeekKey(for date: Date) -> String {
-        let y = utcCalendar.component(.yearForWeekOfYear, from: date)
-        let w = utcCalendar.component(.weekOfYear, from: date)
+        let y = chartCalendar.component(.yearForWeekOfYear, from: date)
+        let w = chartCalendar.component(.weekOfYear, from: date)
         return String(format: "%04d-W%02d", y, w)
     }
 
     private static func isFriday(_ date: Date) -> Bool {
-        utcCalendar.component(.weekday, from: date) == 6
+        chartCalendar.component(.weekday, from: date) == 6
     }
 
     private static func isMonthStart(_ date: Date) -> Bool {
-        utcCalendar.component(.day, from: date) == 1
+        chartCalendar.component(.day, from: date) == 1
     }
 }

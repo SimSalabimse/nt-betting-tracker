@@ -33,7 +33,8 @@ struct ChartsView: View {
     var body: some View {
         DeskScreenChrome(title: "Charts") {
             ScrollView {
-                VStack(alignment: .leading, spacing: DeskSpacing.s5) {
+                // LazyVStack: only build chart sections as they approach the viewport.
+                LazyVStack(alignment: .leading, spacing: DeskSpacing.s5) {
                     FreshnessBanner()
                         .onTapGesture { clearAllSelections() }
 

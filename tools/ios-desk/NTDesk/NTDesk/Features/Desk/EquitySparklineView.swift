@@ -46,6 +46,8 @@ struct EquitySparklineView: View {
             .chartXAxis(.hidden)
             .chartYAxis(.hidden)
             .chartLegend(.hidden)
+            // Flatten to a single texture — cheap for a non-interactive sparkline.
+            .drawingGroup(opaque: false, colorMode: .nonLinear)
             .frame(height: height)
             .accessibilityLabel("Equity trend, \(points.count) days")
             .accessibilityValue({

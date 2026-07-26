@@ -89,6 +89,8 @@ final class AppLockService: ObservableObject {
             return "Touch ID"
         case .opticID:
             return "Optic ID"
+        case .none:
+            return "Device Passcode"
         @unknown default:
             return "Biometrics"
         }

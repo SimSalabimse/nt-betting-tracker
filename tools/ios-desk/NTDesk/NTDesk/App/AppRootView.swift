@@ -85,14 +85,16 @@ struct AppRootView: View {
         .environment(\.openSettings, OpenSettingsAction { showSettings = true })
         .task {
             // Initial load: wait for connectivity (user opened the app).
-            await sync.sync(waitForConnectivity: true)
+            await sync.sync(waitForConnectivity: true, probeHealth: true)
             sync.startPolling()
         }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active {
-                Task { await sync.sync() }
+                // Foreground resume: one full sync (health+desk), then cheap desk-only polls.
+                Task { await sync.sync(waitForConnectivity: false, probeHealth: true) }
                 sync.startPolling()
             } else {
+                // Background: stop timers entirely (iOS will suspend work anyway).
                 sync.stopPolling()
             }
         }

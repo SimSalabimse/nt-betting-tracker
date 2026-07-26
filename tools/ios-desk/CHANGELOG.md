@@ -6,6 +6,17 @@ Build = `CFBundleVersion` / `CURRENT_PROJECT_VERSION`.
 Requires **mobile-view `api_version` ≥ 1.1.1** for settlement equity, kickoff countdown, Secure A.  
 Older APIs still load; the app shows an **outdated API** warning.
 
+## [1.1.4] (build 6) — 2026-07-26
+
+### Performance (iPhone 14 Pro · iOS 18 / iPhone 16 Pro · iOS 26+)
+- Background poll: **desk-only** (no separate health hop); RTT from desk request
+- Adaptive poll intervals (25s–120s) + skip when offline; timers on `.common` run loop
+- Skip UI/disk when `generated_at` unchanged
+- Cache file writes off main actor
+- One TimelineView for entire pending list (not per-row)
+- Charts `LazyVStack`; sparkline `drawingGroup`
+- Thread-safe chart day parsing for background series build
+
 ## [1.1.3] (build 5) — 2026-07-26
 
 ### Changed

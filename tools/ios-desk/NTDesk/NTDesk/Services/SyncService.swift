@@ -141,12 +141,15 @@ final class SyncService: ObservableObject {
         timer = nil
     }
 
-    /// 60s while still fresh & recent; else 20s.
+    /// Battery-friendly adaptive poll (iPhone 14 Pro / 16 Pro).
+    /// Fresh & recent → 2 min; fresh but aging → 45s; stale/empty → 25s.
     var pollIntervalSeconds: TimeInterval {
-        if freshness == .fresh, let age = lastSuccessAgeSeconds, age < 90 {
-            return 60
+        if !network.isSatisfied { return 90 }
+        if freshness == .fresh, let age = lastSuccessAgeSeconds {
+            if age < 120 { return 120 }
+            if age < 300 { return 45 }
         }
-        return 20
+        return 25
     }
 
     private var lastSuccessAgeSeconds: TimeInterval? {
@@ -156,13 +159,17 @@ final class SyncService: ObservableObject {
 
     private func scheduleNextPoll(after seconds: TimeInterval) {
         timer?.invalidate()
-        timer = Timer.scheduledTimer(withTimeInterval: seconds, repeats: false) { [weak self] _ in
+        let t = Timer(timeInterval: seconds, repeats: false) { [weak self] _ in
             Task { @MainActor in
                 guard let self else { return }
-                await self.sync(waitForConnectivity: false)
+                // Background polls: desk-only (RTT from desk), skip when offline.
+                await self.sync(waitForConnectivity: false, probeHealth: false)
                 self.scheduleNextPoll(after: self.pollIntervalSeconds)
             }
         }
+        // Common modes: fire while scrolling lists/charts (otherwise polls stall).
+        RunLoop.main.add(t, forMode: .common)
+        timer = t
     }
 
     func loadCacheOnly() {
@@ -192,11 +199,22 @@ final class SyncService: ObservableObject {
     }
 
     func sync() async {
-        await sync(waitForConnectivity: true)
+        await sync(waitForConnectivity: true, probeHealth: true)
     }
 
-    func sync(waitForConnectivity: Bool) async {
+    /// - Parameters:
+    ///   - waitForConnectivity: user-driven Sync may wait for path.
+    ///   - probeHealth: when true, also hit `/api/health` (manual sync / first open).
+    ///     Background polls set false and take RTT from the desk request only (half the
+    ///     round-trips on the radio — matters on iPhone 14 Pro + LAN).
+    func sync(waitForConnectivity: Bool, probeHealth: Bool = true) async {
         guard !isSyncing else { return }
+        // Don't burn battery probing when the path is down — show cache.
+        if !waitForConnectivity, !network.isSatisfied {
+            if snapshot == nil { loadCacheOnly() }
+            return
+        }
+
         isSyncing = true
         defer { isSyncing = false }
 
@@ -211,31 +229,53 @@ final class SyncService: ObservableObject {
         }
 
         do {
-            let health = try await client.health(baseURL: base, waitForConnectivity: waitForConnectivity)
-            recordRTT(health.rttMs)
-            // Prefer health.api_version; desk body is a second source (same package).
-            noteServerAPIVersion(health.apiVersion)
-            let (raw, snap) = try await client.fetchDesk(baseURL: base, waitForConnectivity: waitForConnectivity)
-            if let fromDesk = snap.apiVersion {
-                noteServerAPIVersion(fromDesk)
-            } else if health.apiVersion == nil {
-                // Live desk with no version field → definitely pre-1.1 mobile-view.
-                noteServerAPIVersion(nil)
+            if probeHealth {
+                let health = try await client.health(baseURL: base, waitForConnectivity: waitForConnectivity)
+                recordRTT(health.rttMs)
+                noteServerAPIVersion(health.apiVersion)
             }
+            let fetch = try await client.fetchDesk(baseURL: base, waitForConnectivity: waitForConnectivity)
+            // Desk RTT always recorded (poll path has no separate health).
+            if !probeHealth {
+                recordRTT(fetch.rttMs)
+            }
+            // Prefer desk body api_version; missing → outdated package.
+            noteServerAPIVersion(fetch.snap.apiVersion)
+
+            // Skip publish + disk if PC payload is unchanged (same generated_at).
+            let unchanged = fetch.snap.generatedAt != nil
+                && fetch.snap.generatedAt == snapshot?.generatedAt
+                && freshness == .fresh
+            if unchanged {
+                lastError = nil
+                return
+            }
+
+            let raw = fetch.raw
+            let snap = fetch.snap
+            let sourceURL = base.absoluteString
+            // Cache write off the main actor (file I/O).
+            let cacheStore = cache
             do {
-                try cache.save(deskObject: raw, sourceBaseURL: base.absoluteString)
+                try await Task.detached(priority: .utility) {
+                    try cacheStore.save(deskObject: raw, sourceBaseURL: sourceURL)
+                }.value
                 let when = ISO8601DateFormatter().string(from: Date())
                 lastSuccessSyncAt = when
                 if let syncedProfileID {
                     profileStore.markSuccess(profileID: syncedProfileID, at: when)
                 }
-                rememberLastKnownGood(base.absoluteString)
-                snapshot = snap
+                rememberLastKnownGood(sourceURL)
+                if snapshot != snap {
+                    snapshot = snap
+                }
                 freshness = .fresh
                 lastError = nil
                 if waitForConnectivity { Haptics.success() }
             } catch {
-                snapshot = snap
+                if snapshot != snap {
+                    snapshot = snap
+                }
                 freshness = .liveNotPersisted
                 lastError = "Live data but cache write failed: \(error.localizedDescription)"
                 if waitForConnectivity { Haptics.warning() }

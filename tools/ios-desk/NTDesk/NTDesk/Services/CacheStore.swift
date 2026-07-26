@@ -1,9 +1,11 @@
 import Foundation
 
-final class CacheStore {
+/// File-backed desk cache. Marked unchecked-Sendable so saves can leave the main actor.
+final class CacheStore: @unchecked Sendable {
     private let fileURL: URL
     private let encoder = JSONEncoder()
     private let decoder = JSONDecoder()
+    private let ioLock = NSLock()
 
     init(filename: String = "desk_cache_envelope.json") {
         let dir = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
@@ -23,6 +25,8 @@ final class CacheStore {
     }
 
     func load() -> CacheEnvelope? {
+        ioLock.lock()
+        defer { ioLock.unlock() }
         guard let data = try? Data(contentsOf: fileURL) else { return nil }
         return try? decoder.decode(CacheEnvelope.self, from: data)
     }
@@ -37,6 +41,8 @@ final class CacheStore {
             desk: .fromJSONObject(deskObject)
         )
         let data = try encoder.encode(envelope)
+        ioLock.lock()
+        defer { ioLock.unlock() }
         let tmp = fileURL.appendingPathExtension("tmp")
         try data.write(to: tmp, options: .atomic)
         if FileManager.default.fileExists(atPath: fileURL.path) {
@@ -47,6 +53,8 @@ final class CacheStore {
     }
 
     func clear() {
+        ioLock.lock()
+        defer { ioLock.unlock() }
         try? FileManager.default.removeItem(at: fileURL)
     }
 
@@ -68,8 +76,8 @@ final class CacheStore {
     }
 
     static func isAppLockEnabledInDefaults(_ defaults: UserDefaults = .standard) -> Bool {
-        // Missing key → false (default OFF). Do not use bare bool(forKey:) alone for clarity.
-        defaults.object(forKey: AppLockService.enabledKey) as? Bool ?? false
+        // Missing key → false (default OFF). Literal key avoids MainActor isolation on AppLockService.
+        defaults.object(forKey: "app_lock_enabled") as? Bool ?? false
     }
 
     static func applyFileProtection(to fileURL: URL) {

@@ -19,21 +19,34 @@ enum DeskAPIError: Error, LocalizedError {
 }
 
 struct DeskAPIClient {
+    /// Shared decoder (thread-safe for concurrent use with separate instances is fine;
+    /// we keep one for this client used from the main actor / short tasks).
+    private let decoder = JSONDecoder()
+
     /// Fast polling path — never hang waiting for the network path to appear.
     private let pollSession: URLSession = {
         let cfg = URLSessionConfiguration.ephemeral
         cfg.timeoutIntervalForRequest = 8
         cfg.timeoutIntervalForResource = 12
         cfg.waitsForConnectivity = false
+        cfg.httpMaximumConnectionsPerHost = 2
+        cfg.requestCachePolicy = .reloadIgnoringLocalCacheData
+        cfg.urlCache = nil
+        // Slightly friendlier on cellular / constrained paths (iPhone 14/16).
+        cfg.allowsExpensiveNetworkAccess = true
+        cfg.allowsConstrainedNetworkAccess = true
         return URLSession(configuration: cfg)
     }()
 
     /// Manual Sync only — may wait for connectivity when the user explicitly asked.
     private let manualSession: URLSession = {
         let cfg = URLSessionConfiguration.ephemeral
-        cfg.timeoutIntervalForRequest = 20
-        cfg.timeoutIntervalForResource = 30
+        cfg.timeoutIntervalForRequest = 18
+        cfg.timeoutIntervalForResource = 28
         cfg.waitsForConnectivity = true
+        cfg.httpMaximumConnectionsPerHost = 2
+        cfg.requestCachePolicy = .reloadIgnoringLocalCacheData
+        cfg.urlCache = nil
         return URLSession(configuration: cfg)
     }()
 
@@ -92,28 +105,38 @@ struct DeskAPIClient {
         )
     }
 
-    /// Returns raw JSON object as Foundation dictionary (for cache) + decoded UI model.
-    func fetchDesk(baseURL: URL, waitForConnectivity: Bool = false) async throws -> (raw: [String: Any], snap: DeskSnapshot) {
+    /// Desk fetch with RTT (so polls can skip a separate `/api/health` round-trip).
+    struct DeskFetch {
+        var raw: [String: Any]
+        var snap: DeskSnapshot
+        var rttMs: Int
+    }
+
+    /// Returns raw JSON object (for cache) + decoded UI model + RTT ms.
+    func fetchDesk(baseURL: URL, waitForConnectivity: Bool = false) async throws -> DeskFetch {
         let url = baseURL.appendingPathComponent("api/desk")
         var req = URLRequest(url: url)
         req.httpMethod = "GET"
         req.setValue("application/json", forHTTPHeaderField: "Accept")
+        req.cachePolicy = .reloadIgnoringLocalCacheData
+        let start = CFAbsoluteTimeGetCurrent()
         let (data, resp) = try await session(waitForConnectivity: waitForConnectivity).data(for: req)
+        let rttMs = Int(((CFAbsoluteTimeGetCurrent() - start) * 1000.0).rounded())
         guard let http = resp as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
             throw DeskAPIError.http((resp as? HTTPURLResponse)?.statusCode ?? -1)
         }
-        guard
-            let obj = try JSONSerialization.jsonObject(with: data) as? [String: Any]
-        else {
+        // Decode typed model first (one JSON pass via Decoder).
+        let snap: DeskSnapshot
+        do {
+            snap = try decoder.decode(DeskSnapshot.self, from: data)
+        } catch {
+            throw DeskAPIError.schema
+        }
+        guard (snap.schemaVersion ?? 0) >= 1 else { throw DeskAPIError.schema }
+        // Second pass only for cache envelope (AnyJSON). Avoided on schema failure.
+        guard let obj = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
             throw DeskAPIError.notJSON
         }
-        let schemaOK: Bool = {
-            if let ver = obj["schema_version"] as? Int { return ver >= 1 }
-            if let n = obj["schema_version"] as? NSNumber { return n.intValue >= 1 }
-            return false
-        }()
-        guard schemaOK else { throw DeskAPIError.schema }
-        let snap = try JSONDecoder().decode(DeskSnapshot.self, from: data)
-        return (obj, snap)
+        return DeskFetch(raw: obj, snap: snap, rttMs: max(0, rttMs))
     }
 }

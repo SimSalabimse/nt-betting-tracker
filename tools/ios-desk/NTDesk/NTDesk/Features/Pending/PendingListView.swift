@@ -146,34 +146,35 @@ struct PendingListView: View {
                     .listRowBackground(Color.clear)
                     .listRowSeparator(.hidden)
             } else {
-                ForEach(filteredBets) { bet in
-                    // Live countdown — recompute every 30s so "in 2h 15m" stays current.
-                    TimelineView(.periodic(from: .now, by: 30)) { context in
+                // One TimelineView for the whole list — not one timer per row (iPhone 14 Pro).
+                TimelineView(.periodic(from: .now, by: 30)) { context in
+                    let now = context.date
+                    ForEach(filteredBets) { bet in
                         NavigationLink(value: PendingBetRoute.make(from: bet)) {
                             PendingBetRow(
                                 bet: bet,
-                                countdown: KickoffCountdown.label(for: bet, now: context.date)
+                                countdown: KickoffCountdown.label(for: bet, now: now)
                             )
                         }
                         .buttonStyle(.plain)
-                    }
-                    .listRowInsets(EdgeInsets(
-                        top: DeskSpacing.s2,
-                        leading: DeskSpacing.contentPad,
-                        bottom: DeskSpacing.s2,
-                        trailing: DeskSpacing.contentPad
-                    ))
-                    .listRowBackground(Color.clear)
-                    .listRowSeparator(.hidden)
-                    .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                        if let betId = bet.betId, !betId.isEmpty {
-                            Button {
-                                UIPasteboard.general.string = betId
-                                Haptics.lightImpact()
-                            } label: {
-                                Label("Copy ID", systemImage: "doc.on.doc")
+                        .listRowInsets(EdgeInsets(
+                            top: DeskSpacing.s2,
+                            leading: DeskSpacing.contentPad,
+                            bottom: DeskSpacing.s2,
+                            trailing: DeskSpacing.contentPad
+                        ))
+                        .listRowBackground(Color.clear)
+                        .listRowSeparator(.hidden)
+                        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                            if let betId = bet.betId, !betId.isEmpty {
+                                Button {
+                                    UIPasteboard.general.string = betId
+                                    Haptics.lightImpact()
+                                } label: {
+                                    Label("Copy ID", systemImage: "doc.on.doc")
+                                }
+                                .tint(DeskTheme.accent)
                             }
-                            .tint(DeskTheme.accent)
                         }
                     }
                 }

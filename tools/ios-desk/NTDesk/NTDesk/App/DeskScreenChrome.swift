@@ -187,7 +187,7 @@ struct DeskScreenChrome<Content: View>: View {
                 }
                 if let last = sync.lastSuccessSyncAt {
                     LabeledContent("Last success") {
-                        Text(DeskFormatters.relativeTime(last) ?? last)
+                        Text(DeskFormatters.relativeTime(last))
                             .font(.caption)
                             .foregroundStyle(DeskTheme.textMuted)
                     }
