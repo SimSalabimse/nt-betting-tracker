@@ -3,15 +3,16 @@ import Foundation
 // MARK: - Chart day (ledger calendar key → Date)
 
 /// Ledger calendar day → Date.
-/// Normative parse (axis position):
-/// - Format: `yyyy-MM-dd`, Gregorian calendar
-/// - Time zone: **UTC midnight** (not Europe/Oslo) — dates are day keys without zone
-/// - Selection equality: same `yyyy-MM-dd` string / same UTC day component
+/// Normative (D7):
+/// - Wire key: bare `yyyy-MM-dd` meaning a **Europe/Oslo** business / match day (not a zoned instant)
+/// - Mark placement: **Europe/Oslo noon** via `ChartDataBuilder.parseDay` — **not** UTC midnight
+/// - Selection equality: same `yyyy-MM-dd` string (`raw`)
+/// - Range chips (1w/1m): compare string keys or Oslo calendar components — never mixed-zone `Date` inequality
 /// Display labels may use `Locale.current` for formatting only.
 struct ChartDay: Hashable, Sendable {
-    /// Original API string — selection identity.
+    /// Original API string — selection identity and range-filter key.
     let raw: String
-    /// UTC midnight for that day.
+    /// Europe/Oslo noon for that ledger day (axis / nearest-day placement).
     let date: Date
 }
 

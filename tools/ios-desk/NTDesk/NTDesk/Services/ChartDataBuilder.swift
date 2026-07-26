@@ -51,6 +51,30 @@ enum ChartDataBuilder {
         return ChartDay(raw: trimmed, date: date)
     }
 
+    // MARK: - Oslo ledger day keys (range chips)
+
+    /// Wire / filter day key: bare `yyyy-MM-dd` for the Europe/Oslo business day of `date`.
+    /// Range chips compare these strings (or Oslo calendar components) — never mixed-zone `Date` inequality.
+    static func osloDayKey(for date: Date = Date()) -> String {
+        dayFormatterLock.lock()
+        let key = dayFormatter.string(from: date)
+        dayFormatterLock.unlock()
+        return key
+    }
+
+    /// Inclusive lower bound for a trailing window of `days` Oslo calendar days ending today.
+    /// For 1w (`days == 7`): cutoff = todayKey − 6 days → keep `raw >= cutoff` (7 keys inclusive).
+    static func rangeCutoffDayKey(days: Int, relativeTo date: Date = Date()) -> String {
+        let todayStart = chartCalendar.startOfDay(for: date)
+        let cutoffDate = chartCalendar.date(byAdding: .day, value: -(days - 1), to: todayStart) ?? todayStart
+        return osloDayKey(for: cutoffDate)
+    }
+
+    /// Keep if ledger day key is on/after cutoff. Zero-padded ISO keys are lexicographically ordered.
+    static func dayKey(_ raw: String, isOnOrAfter cutoffKey: String) -> Bool {
+        raw >= cutoffKey
+    }
+
     // MARK: - Series map
 
     /// Skip points with unparsable day or missing required numeric field.

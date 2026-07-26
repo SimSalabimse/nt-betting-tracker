@@ -276,6 +276,129 @@ final class ChartDataBuilderTests: XCTestCase {
         }
     }
 
+    // MARK: - D7 Oslo ledger day keys (range chips)
+
+    /// Late evening in Oslo stays on that business day; UTC components alone would mis-key near the date line.
+    func testOsloDayKey_eveningNearUTCDateLine() {
+        var oslo = Calendar(identifier: .gregorian)
+        oslo.timeZone = TimeZone(identifier: "Europe/Oslo") ?? TimeZone(secondsFromGMT: 3600)!
+
+        // 2026-07-18 23:30 Europe/Oslo (CEST = UTC+2) — still ledger day 18.
+        var comps = DateComponents()
+        comps.year = 2026
+        comps.month = 7
+        comps.day = 18
+        comps.hour = 23
+        comps.minute = 30
+        let osloEvening = oslo.date(from: comps)!
+        XCTAssertEqual(ChartDataBuilder.osloDayKey(for: osloEvening), "2026-07-18")
+
+        // Immediately after Oslo midnight → next ledger day.
+        comps.day = 19
+        comps.hour = 0
+        comps.minute = 15
+        let osloEarly = oslo.date(from: comps)!
+        XCTAssertEqual(ChartDataBuilder.osloDayKey(for: osloEarly), "2026-07-19")
+
+        // Same absolute instant as Oslo evening, built from UTC components (21:30 UTC).
+        var utc = Calendar(identifier: .gregorian)
+        utc.timeZone = TimeZone(secondsFromGMT: 0)!
+        var utcComps = DateComponents()
+        utcComps.year = 2026
+        utcComps.month = 7
+        utcComps.day = 18
+        utcComps.hour = 21
+        utcComps.minute = 30
+        let asUTC = utc.date(from: utcComps)!
+        XCTAssertEqual(asUTC.timeIntervalSince1970, osloEvening.timeIntervalSince1970, accuracy: 1)
+        XCTAssertEqual(ChartDataBuilder.osloDayKey(for: asUTC), "2026-07-18")
+
+        // 23:00 UTC on the 18th = 01:00 Oslo on the 19th → Oslo key rolls.
+        utcComps.hour = 23
+        utcComps.minute = 0
+        let utcLate = utc.date(from: utcComps)!
+        XCTAssertEqual(ChartDataBuilder.osloDayKey(for: utcLate), "2026-07-19")
+    }
+
+    func testRangeCutoffDayKey_oneWeekInclusiveWindow() {
+        var oslo = Calendar(identifier: .gregorian)
+        oslo.timeZone = TimeZone(identifier: "Europe/Oslo") ?? TimeZone(secondsFromGMT: 3600)!
+        var comps = DateComponents()
+        comps.year = 2026
+        comps.month = 7
+        comps.day = 26
+        comps.hour = 15
+        comps.minute = 0
+        let now = oslo.date(from: comps)!
+
+        XCTAssertEqual(ChartDataBuilder.osloDayKey(for: now), "2026-07-26")
+        // 1w = 7 days inclusive → cutoff = today − 6 = 2026-07-20
+        XCTAssertEqual(ChartDataBuilder.rangeCutoffDayKey(days: 7, relativeTo: now), "2026-07-20")
+        // 1m = 30 days inclusive → cutoff = today − 29
+        XCTAssertEqual(ChartDataBuilder.rangeCutoffDayKey(days: 30, relativeTo: now), "2026-06-27")
+    }
+
+    func testOneWeekChip_includesCutoffDayExcludesPrior() {
+        var oslo = Calendar(identifier: .gregorian)
+        oslo.timeZone = TimeZone(identifier: "Europe/Oslo") ?? TimeZone(secondsFromGMT: 3600)!
+        var comps = DateComponents()
+        comps.year = 2026
+        comps.month = 7
+        comps.day = 26
+        comps.hour = 20
+        let now = oslo.date(from: comps)!
+        let cutoff = ChartDataBuilder.rangeCutoffDayKey(days: 7, relativeTo: now)
+        XCTAssertEqual(cutoff, "2026-07-20")
+
+        let wire: [EquityPoint] = [
+            EquityPoint(date: "2026-07-19", equity: 100, dayPl: 0, cumPl: 0), // before cutoff
+            EquityPoint(date: "2026-07-20", equity: 101, dayPl: 1, cumPl: 1), // on cutoff — keep
+            EquityPoint(date: "2026-07-23", equity: 105, dayPl: 4, cumPl: 5),
+            EquityPoint(date: "2026-07-26", equity: 110, dayPl: 5, cumPl: 10),
+        ]
+        let pts = ChartDataBuilder.equity(wire)
+        let filtered = pts.filter { ChartDataBuilder.dayKey($0.day.raw, isOnOrAfter: cutoff) }
+        XCTAssertEqual(filtered.map(\.day.raw), ["2026-07-20", "2026-07-23", "2026-07-26"])
+        XCTAssertFalse(ChartDataBuilder.dayKey("2026-07-19", isOnOrAfter: cutoff))
+        XCTAssertTrue(ChartDataBuilder.dayKey("2026-07-20", isOnOrAfter: cutoff))
+    }
+
+    /// Month grid day keys are Oslo calendar components; month boundary days stay on the correct side.
+    func testOsloCalendarMonthBoundaries_dayKeys() {
+        var oslo = Calendar(identifier: .gregorian)
+        oslo.timeZone = TimeZone(identifier: "Europe/Oslo") ?? TimeZone(secondsFromGMT: 3600)!
+
+        // July 31 and August 1 Oslo noon marks
+        let jul31 = ChartDataBuilder.parseDay("2026-07-31")!
+        let aug1 = ChartDataBuilder.parseDay("2026-08-01")!
+        XCTAssertEqual(oslo.component(.month, from: jul31.date), 7)
+        XCTAssertEqual(oslo.component(.day, from: jul31.date), 31)
+        XCTAssertEqual(oslo.component(.month, from: aug1.date), 8)
+        XCTAssertEqual(oslo.component(.day, from: aug1.date), 1)
+
+        // Month start of Aug from aug1 should not include jul31 by month granularity.
+        let augStart = oslo.date(from: oslo.dateComponents([.year, .month], from: aug1.date))!
+        XCTAssertFalse(oslo.isDate(jul31.date, equalTo: augStart, toGranularity: .month))
+        XCTAssertTrue(oslo.isDate(aug1.date, equalTo: augStart, toGranularity: .month))
+
+        // Day-key formatting for month grid cells (same as PerformanceCalendarView).
+        func dayRaw(_ date: Date) -> String {
+            let y = oslo.component(.year, from: date)
+            let m = oslo.component(.month, from: date)
+            let d = oslo.component(.day, from: date)
+            return String(format: "%04d-%02d-%02d", y, m, d)
+        }
+        XCTAssertEqual(dayRaw(jul31.date), "2026-07-31")
+        XCTAssertEqual(dayRaw(aug1.date), "2026-08-01")
+
+        // First of month weekday leading blanks: 2026-08-01 is Saturday (Oslo).
+        // firstWeekday=2 (Mon) → Sat index = 5 → 5 leading blanks.
+        let weekday = oslo.component(.weekday, from: augStart) // Sun=1 … Sat=7
+        let leading = (weekday + 5) % 7
+        XCTAssertEqual(oslo.component(.weekday, from: augStart), 7) // Saturday
+        XCTAssertEqual(leading, 5)
+    }
+
     // MARK: - Nearest / selection vs display
 
     func testNearestRawDay_equidistantPrefersEarlier() {

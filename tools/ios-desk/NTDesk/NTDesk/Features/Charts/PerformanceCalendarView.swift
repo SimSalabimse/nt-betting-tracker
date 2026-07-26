@@ -1,17 +1,18 @@
 import SwiftUI
 
 /// Month grid of daily settled P/L — Book-style performance calendar (heatmap cells).
-/// Uses full-era `charts.daily` day keys (UTC midnight); intensity scaled within the visible month.
+/// Uses full-era `charts.daily` bare Europe/Oslo ledger day keys; intensity scaled within the visible month.
 struct PerformanceCalendarView: View {
     let points: [DailyChartPoint]
     @Binding var selectedRawDay: String?
 
-    /// Month currently displayed (day component ignored; UTC calendar).
+    /// Month currently displayed (day component ignored; Europe/Oslo calendar).
     @State private var visibleMonth: Date = Date()
 
-    private static let utcCalendar: Calendar = {
+    /// Same Oslo calendar as `ChartDataBuilder` — month grid aligns with ledger day keys.
+    private static let osloCalendar: Calendar = {
         var cal = Calendar(identifier: .gregorian)
-        cal.timeZone = TimeZone(secondsFromGMT: 0)!
+        cal.timeZone = TimeZone(identifier: "Europe/Oslo") ?? TimeZone(secondsFromGMT: 0)!
         cal.firstWeekday = 2 // Monday first (Europe / Oslo operator habit)
         return cal
     }()
@@ -20,7 +21,7 @@ struct PerformanceCalendarView: View {
         let f = DateFormatter()
         f.calendar = Calendar(identifier: .gregorian)
         f.locale = .current
-        f.timeZone = TimeZone(secondsFromGMT: 0)!
+        f.timeZone = TimeZone(identifier: "Europe/Oslo") ?? TimeZone(secondsFromGMT: 0)!
         f.dateFormat = "MMMM yyyy"
         return f
     }()
@@ -30,23 +31,23 @@ struct PerformanceCalendarView: View {
     }
 
     private var monthStart: Date {
-        Self.utcCalendar.date(from: Self.utcCalendar.dateComponents([.year, .month], from: visibleMonth))
+        Self.osloCalendar.date(from: Self.osloCalendar.dateComponents([.year, .month], from: visibleMonth))
             ?? visibleMonth
     }
 
     private var daysInMonth: Int {
-        Self.utcCalendar.range(of: .day, in: .month, for: monthStart)?.count ?? 30
+        Self.osloCalendar.range(of: .day, in: .month, for: monthStart)?.count ?? 30
     }
 
     /// Leading blanks so day 1 lands on correct weekday column (Mon=0 … Sun=6).
     private var leadingBlanks: Int {
-        let weekday = Self.utcCalendar.component(.weekday, from: monthStart) // Sun=1 … Sat=7
+        let weekday = Self.osloCalendar.component(.weekday, from: monthStart) // Sun=1 … Sat=7
         // Convert to Mon-first index: Mon=0 … Sun=6
         return (weekday + 5) % 7
     }
 
     private var monthPoints: [DailyChartPoint] {
-        points.filter { Self.utcCalendar.isDate($0.day.date, equalTo: monthStart, toGranularity: .month) }
+        points.filter { Self.osloCalendar.isDate($0.day.date, equalTo: monthStart, toGranularity: .month) }
     }
 
     private var monthPl: Double {
@@ -59,12 +60,12 @@ struct PerformanceCalendarView: View {
 
     private var canGoPrev: Bool {
         guard let earliest = points.first?.day.date else { return false }
-        return Self.utcCalendar.compare(monthStart, to: earliest, toGranularity: .month) == .orderedDescending
+        return Self.osloCalendar.compare(monthStart, to: earliest, toGranularity: .month) == .orderedDescending
     }
 
     private var canGoNext: Bool {
         guard let latest = points.last?.day.date else { return false }
-        return Self.utcCalendar.compare(monthStart, to: latest, toGranularity: .month) == .orderedAscending
+        return Self.osloCalendar.compare(monthStart, to: latest, toGranularity: .month) == .orderedAscending
     }
 
     var body: some View {
@@ -240,7 +241,7 @@ struct PerformanceCalendarView: View {
             cells.append(CalCell(id: "pad-\(cells.count)", dayNumber: 0, rawDay: nil, pl: nil, isPlaceholder: true))
         }
         for day in 1...daysInMonth {
-            guard let date = Self.utcCalendar.date(byAdding: .day, value: day - 1, to: monthStart) else { continue }
+            guard let date = Self.osloCalendar.date(byAdding: .day, value: day - 1, to: monthStart) else { continue }
             let raw = dayRaw(date)
             let pt = plByDay[raw]
             cells.append(
@@ -261,9 +262,9 @@ struct PerformanceCalendarView: View {
     }
 
     private func dayRaw(_ date: Date) -> String {
-        let y = Self.utcCalendar.component(.year, from: date)
-        let m = Self.utcCalendar.component(.month, from: date)
-        let d = Self.utcCalendar.component(.day, from: date)
+        let y = Self.osloCalendar.component(.year, from: date)
+        let m = Self.osloCalendar.component(.month, from: date)
+        let d = Self.osloCalendar.component(.day, from: date)
         return String(format: "%04d-%02d-%02d", y, m, d)
     }
 
@@ -297,7 +298,7 @@ struct PerformanceCalendarView: View {
     }
 
     private func shiftMonth(_ delta: Int) {
-        guard let next = Self.utcCalendar.date(byAdding: .month, value: delta, to: monthStart) else { return }
+        guard let next = Self.osloCalendar.date(byAdding: .month, value: delta, to: monthStart) else { return }
         visibleMonth = next
         Haptics.lightImpact()
     }
@@ -307,7 +308,7 @@ struct PerformanceCalendarView: View {
         // Prefer month of most recent settled day when first appearing or when out of range.
         if points.isEmpty { return }
         let inRange = points.contains {
-            Self.utcCalendar.isDate($0.day.date, equalTo: monthStart, toGranularity: .month)
+            Self.osloCalendar.isDate($0.day.date, equalTo: monthStart, toGranularity: .month)
         }
         if !inRange {
             visibleMonth = latest

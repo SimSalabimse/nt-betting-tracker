@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// Compact charts list of Book-aligned stats from `/api/desk` → `charts`.
-/// Time series use UTC date axes, multi-field callouts, and expand-to-full-screen.
+/// Time series use Europe/Oslo ledger day keys (`yyyy-MM-dd`), multi-field callouts, and expand-to-full-screen.
 struct ChartsView: View {
     @EnvironmentObject private var sync: SyncService
 
@@ -167,10 +167,11 @@ struct ChartsView: View {
             }
             .background(DeskTheme.bg.ignoresSafeArea())
             .refreshable { await sync.sync(waitForConnectivity: true) }
-            .task(id: sync.snapshot?.generatedAt) {
+            // Rebuild when content identity changes (prefer content_hash, else generated_at).
+            .task(id: sync.snapshot?.contentHash ?? sync.snapshot?.generatedAt) {
                 await rebuildSeriesInBackground()
             }
-            .onChange(of: sync.snapshot?.generatedAt) { _, _ in
+            .onChange(of: sync.snapshot?.contentHash ?? sync.snapshot?.generatedAt) { _, _ in
                 clearAllSelections()
             }
             // Selecting one series clears the others so only one callout stays open.
@@ -247,21 +248,19 @@ struct ChartsView: View {
             let dy = ChartDataBuilder.daily(dailyIn)
             let dd = ChartDataBuilder.drawdown(ddIn)
             let sp = ChartDataBuilder.sports(sportIn)
-            // Cutoff in UTC to match ChartDay keys (yyyy-MM-dd at UTC midnight).
-            var utcCal = Calendar(identifier: .gregorian)
-            utcCal.timeZone = TimeZone(secondsFromGMT: 0)!
-            let cutoff: Date? = {
+            // D7: filter by bare Oslo ledger day keys — never mixed-zone Date inequality.
+            // todayKey = yyyy-MM-dd in Europe/Oslo; cutoffKey = todayKey − (N−1) Oslo days.
+            let cutoffKey: String? = {
                 guard let d = daysLimit else { return nil }
-                let today = utcCal.startOfDay(for: Date())
-                return utcCal.date(byAdding: .day, value: -d + 1, to: today)
+                return ChartDataBuilder.rangeCutoffDayKey(days: d)
             }()
-            func keep(_ date: Date) -> Bool {
-                guard let cutoff else { return true }
-                return date >= cutoff
+            func keep(_ raw: String) -> Bool {
+                guard let cutoffKey else { return true }
+                return ChartDataBuilder.dayKey(raw, isOnOrAfter: cutoffKey)
             }
-            let eqF = eq.filter { keep($0.day.date) }
-            let dyF = dy.filter { keep($0.day.date) }
-            let ddF = dd.filter { keep($0.day.date) }
+            let eqF = eq.filter { keep($0.day.raw) }
+            let dyF = dy.filter { keep($0.day.raw) }
+            let ddF = dd.filter { keep($0.day.raw) }
             let maxDD = ddF.map(\.drawdown).max()
             let label: String = {
                 switch key {
