@@ -15,7 +15,7 @@ When the user provides a **new or updated odds file** in `inbox/`, the agent **m
         ↓              (auto Stage-1 Light Research)
 3. LIGHT RESEARCH      ≥70–85% shortlist · sport minimums
         ↓              outbox/light_research/*.md
-4. DEEP RESEARCH       only light-pass deep queue
+4. DEEP RESEARCH       Stage 2 primary worklist ≤15 (see ESR note)
         ↓              evidence/*.json + honest p_model
 5. READY CHECK         nt research ready --odds …
         ↓
@@ -32,15 +32,17 @@ When the user provides a **new or updated odds file** in `inbox/`, the agent **m
 
 | | **Light (Stage 1)** | **Deep (Stage 2)** |
 |--|---------------------|--------------------|
-| Scope | Most of shortlist (target 85%) | Promote queue (~8–12 lines) |
+| Scope | Most of shortlist (target 85%) | **Primary worklist ≤15** (multi-agent shortlist ∪ coverage_critical; fallback = engine `deep_queue` head) |
 | Content | script lean, base-rate flag, odds/EV bar, strength/weakness notes | Full evidence pack + p_model + gates |
 | Time | Fast / structured | Web research, quality bar |
 | Recommend? | **No** | **Yes** (only these) |
 
+**ESR Stage 2 note:** When a multi-agent shortlist exists, deep the **primary worklist** (not full board, not inside scan A/B/C, not deep_queue-first by default). Engine `deep_queue.json` remains construction SSOT + composition quotas + all-fail fallback. Exa both-sides on that worklist only — [`docs/EXA_RESEARCH_USAGE.md`](./EXA_RESEARCH_USAGE.md). Design: [`docs/DEEP_RESEARCH_SKILL_ESR_2026-07-26.md`](./DEEP_RESEARCH_SKILL_ESR_2026-07-26.md). Scope law: root `AGENTS.md` step 5.
+
 ```bash
 python run_nt.py research board --odds inbox/current_odds_01.txt
 python run_nt.py research light --odds inbox/current_odds_01.txt
-# … deep packs for deep_queue …
+# … deep packs for primary worklist (≤15; fallback deep_queue head) …
 python run_nt.py recommend --odds inbox/current_odds_01.txt
 ```
 

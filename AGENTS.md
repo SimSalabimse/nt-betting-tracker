@@ -52,15 +52,15 @@ Docs: `docs/PACKAGE_IMPLEMENTATION_SUMMARY.md` · `docs/RESEARCH_COVERAGE_FIX_SU
    |-------|--------|--------|----------------|
    | **Prefilter** | Stage1 screens + Stage2 classical prior on light assess | discard noise/chalk/hopeless; `prior_ev` rank-only | **No** |
    | **Light** | ≥70–85% of shortlist; sports with ≥5 lines get ≥3 light | verdict pass/fail + notes | **No** |
-   | **Deep queue** | Engine-built worklist (`engine_deep_queue: true`) from light-pass | ranked promote list (preferred ≥55%, short-main ≤25%) | **No** until packs |
-   | **Deep packs** | Agent writes full `evidence/*.json` + honest `p_model` for queue lines | gradeable packs | **Yes** |
+   | **Deep queue** | Engine-built worklist (`engine_deep_queue: true`) from light-pass | ranked promote list (preferred ≥55%, short-main ≤25%) — construction SSOT + all-fail fallback | **No** until packs |
+   | **Deep packs** | Agent writes full `evidence/*.json` + honest `p_model` for **Stage 2 primary worklist** lines | gradeable packs | **Yes** |
 
    - **Assess never auto-promotes** (`auto_promote_to_deep: false`) — `auto_light_assess` always leaves `promote_to_deep=false`.  
-   - **Engine fills deep_queue** via anti-chalk `promotion_score` + **composition quotas** (see below).  
-   - **You must deep-research the deep queue** — queue alone does not invent `p_model` or place bets.  
-   - Do **not** deep-dive 2–3 short favourites while ignoring mid-price / preferred lines on the queue.  
+   - **Engine fills deep_queue** via anti-chalk `promotion_score` + **composition quotas** (see below) — Stage 1 construction; not always the Stage 2 deep order.  
+   - **You must deep-research the Stage 2 primary worklist** (multi-agent shortlist ∪ `coverage_critical`, ≤15; fallback = engine `deep_queue` head when multi-agent all-fail) — queue/shortlist alone does not invent `p_model` or place bets.  
+   - Do **not** deep-dive 2–3 short favourites while ignoring mid-price / preferred lines on the worklist.  
    - Light is quick/heuristic; Deep stays high quality (gates, sources, script).  
-   - Prefer kick-off balance: early and late KO both get Light; Deep queue must not be 100% chalk ML/O2.5.
+   - Prefer kick-off balance: early and late KO both get Light; Deep worklist must not be 100% chalk ML/O2.5.
 
 ### Engine deep queue (permanent — inherit every session)
 
@@ -119,10 +119,10 @@ Two orthogonal mechanisms. Operators see both on **`data/state/status.md`** → 
 - Verify: `python scripts/verify_coverage_floor.py --synthetic-large`
 
 5. **Deep research (Stage 2 — primary worklist only)**  
-   Work the **Deep queue** / primary candidates from light report / board. Use web search / page open aggressively (Sofascore, FBref, HLTV, ATP/WTA, Flashscore, official sites, etc.).  
+   Work the **primary worklist** (multi-agent shortlist ∪ `coverage_critical`; hard cap **≤15**). Fallback when multi-agent all-fail: engine **`deep_queue` head** (still capped). Use web search / page open aggressively (Sofascore, FBref, HLTV, ATP/WTA, Flashscore, official sites, etc.).  
    Quality over quantity. Multi-sport shortlist **and** market-scan interesting lines.
 
-   **Stage 2 scope law (ESR multi-agent desk):** deep research runs on the **primary worklist ≤15 only** — multi-agent shortlist ∪ `coverage_critical`. **Never** the full odds board. **Not** inside scan agents A/B/C (those stay shallow; no Exa packs there). When a multi-agent shortlist exists, Stage 2 follows **that worklist** (not deep_queue-first as the default primary pass). On multi-agent all-fail, primary = engine `deep_queue` head (still capped ≤15). Design + pack contract: [`docs/DEEP_RESEARCH_SKILL_ESR_2026-07-26.md`](docs/DEEP_RESEARCH_SKILL_ESR_2026-07-26.md). When installed, invoke **`/deep-research`** for this step (see [`docs/DESK_SKILLS.md`](docs/DESK_SKILLS.md)); until then, main agent runs Stage 2 with the same scope law.
+   **Stage 2 scope law (ESR multi-agent desk) — supersedes deep_queue-first prose when a multi-agent shortlist exists:** deep research runs on the **primary worklist ≤15 only** — multi-agent shortlist ∪ `coverage_critical`. **Never** the full odds board. **Not** inside scan agents A/B/C (those stay shallow; no Exa packs there). Engine `deep_queue` remains Stage 1 construction SSOT + composition target + all-fail fallback — not the default primary deep order on multi-agent days. Design + pack contract: [`docs/DEEP_RESEARCH_SKILL_ESR_2026-07-26.md`](docs/DEEP_RESEARCH_SKILL_ESR_2026-07-26.md). When installed, invoke **`/deep-research`** for this step (see [`docs/DESK_SKILLS.md`](docs/DESK_SKILLS.md)); until then, main agent runs Stage 2 with the same scope law. **Interim (until atomic helper / skill PR):** prefer a **single final** pack write per line; do **not** re-run bare `research write-pack` after ESR hand-edits (`opposite_side_check`, form_continuity, takeaways) — CLI full-rebuild wipes them.
 
 ### Multi-sport research gates (engine-enforced)
 
@@ -427,7 +427,7 @@ python run_nt.py simulate --sport basketball --home H --away A ...
 | Engines in `nt/` are law | Bypass risk/phase/diversify without user consent |
 | **Auto-apply learning proposals** after settle | Ask the user to accept/reject learnings |
 | Empty slip after **honest deep research** = success | Force seats to “use budget” |
-| Deep-research engine **deep_queue** (anti-chalk) | Deep-dive only short ML/O2.5 favourites |
+| Deep-research **primary worklist** ≤15 (shortlist ∪ coverage_critical; fallback `deep_queue` head) — anti-chalk composition still applies | Deep-dive only short ML/O2.5 favourites **or** full odds board |
 | Treat Coverage Health **critical** as process miss | Silent empty slip while mid-price unresearched |
 | Respect recommend soft gate / use `--allow-low-coverage` only explicitly | Bypass coverage with `--force-mechanical` casually |
 | Light assess never promotes; engine builds deep_queue | Expect assess-time auto-promote or empty queue forever |
@@ -467,14 +467,21 @@ python scripts/validate_closed_loop.py -n 60
 
 User-scope skills in `%USERPROFILE%\.grok\skills\` — load **this file first**, force real tools, list deliverable paths. Full invoke guide: **`docs/DESK_SKILLS.md`**. Optional helpers: `scripts/skill_*.ps1`.
 
+### Installed
+
 | Slash | Skill | When |
 |-------|--------|------|
 | `/daily-run` | Full day desk | results → odds → board+light → deep queue → scaffolds → recommend (form continuity · ranking-gap · explore gate · opposite-side always) + Reasoning Chains → `outbox/PLACE_THESE.md` → place-ack |
-| `/deep-research` | Stage 2 packs (**planned** until skill PR) | Primary worklist ≤15 only (shortlist ∪ coverage_critical); Exa both-sides; refuse full-board. Design: [`docs/DEEP_RESEARCH_SKILL_ESR_2026-07-26.md`](docs/DEEP_RESEARCH_SKILL_ESR_2026-07-26.md) |
 | `/missed-audit` | Mid-band misses | 1.80–2.20 out of deep; `promotion_score` components; cheapest fix; Bodø/Glimt −1.5 & tennis/snooker patterns |
 | `/chain-explain` | Reasoning Chain | forensic justify one match/selection (or whole slip) using light SSOT promo + near-miss stage/reason |
 | `/bankroll-tune` | Capital tune | secure/phase/unit/regime proposal → `scripts/mc_phase_progression.py` + `capital` CLI |
 | `/learning-rootcause` | Taxonomy | predictability + variance_class + learning_weight; safe backfill (proposed unless `--apply`) |
+
+### Planned (not installed — do not slash-invoke yet)
+
+| Slash | Status | When ready |
+|-------|--------|------------|
+| `/deep-research` | **Planned** (skill + atomic helper PR) | Stage 2 packs on primary worklist ≤15 only (shortlist ∪ coverage_critical); Exa both-sides; refuse full-board. Design: [`docs/DEEP_RESEARCH_SKILL_ESR_2026-07-26.md`](docs/DEEP_RESEARCH_SKILL_ESR_2026-07-26.md) · pointer: [`docs/DESK_SKILLS.md`](docs/DESK_SKILLS.md) |
 
 ```powershell
 # Grok (CWD = tracker root)
@@ -483,6 +490,7 @@ User-scope skills in `%USERPROFILE%\.grok\skills\` — load **this file first**,
 # /chain-explain <match> | <selection>
 # /bankroll-tune
 # /learning-rootcause
+# (do not invoke /deep-research until skill PR installs it)
 
 # PowerShell helpers
 .\scripts\skill_list.ps1

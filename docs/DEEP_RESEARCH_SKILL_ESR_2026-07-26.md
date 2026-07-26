@@ -5,10 +5,10 @@
 | **PLAN_ID** | `deep-research-skill-esr-2026-07-26` |
 | **Author** | _(desk / Grok Build)_ |
 | **Date** | 2026-07-26 |
-| **Revised** | 2026-07-27 (post design review ISS-01–ISS-12) |
-| **Status** | Draft (review-revised) |
-| **Repository** | `C:\Users\Sander\Documents\GitHub\nt-betting-tracker` |
-| **Skills home** | `C:\Users\Sander\.grok\skills\` |
+| **Revised** | 2026-07-27 (post design review ISS-01–ISS-12; PR1 review hygiene) |
+| **Status** | Accepted (PR1 design landed) |
+| **Repository** | repo root (`nt-betting-tracker`) |
+| **Skills home** | `~/.grok/skills/` |
 | **Related (live)** | `docs/DIVERSITY_AND_EXPLORE.md` · `docs/RESEARCH_GATES.md` · `docs/RESEARCH_WORKFLOW.md` · `~/.grok/skills/daily-run/SKILL.md` · `docs/skills_mirror_daily-run.md` · `nt/form_continuity.py` |
 | **Related (PR1 stubs)** | `docs/FORM_CONTINUITY_AND_ANTI_FLIP_HARDENING_2026-07-26.md` (pointer → DIVERSITY + `nt/form_continuity.py`) · `docs/EXA_RESEARCH_USAGE.md` (Exa both-sides on primary worklist only) |
 | **Persist copy** | `docs/DEEP_RESEARCH_SKILL_ESR_2026-07-26.md` (this file) |
@@ -49,7 +49,7 @@ This design introduces a focused **`/deep-research`** Grok skill that **standard
 | 3b Expand | Main agent | only if large board & &lt;2 picks |
 | 4 Output | Main agent + CLI | PLACE_THESE · place-ack |
 
-**Stage 2 scope law (must land in AGENTS.md PR1):** when multi-agent Stage 1b ran, deep the **primary worklist** (shortlist ∪ coverage_critical, ≤15) — **not** “work engine `deep_queue` first” as the default primary pass, **not** the full board, **not** inside scan agents A/B/C. On multi-agent all-fail, primary = engine `deep_queue` head (still capped; still once). Root `AGENTS.md` still mixes older “deep_queue first” prose in places; PR1 adds an explicit sentence so skill bootstrap does not fight multi-agent law.
+**Stage 2 scope law (landed in AGENTS.md PR1 + review hygiene):** when multi-agent Stage 1b ran, deep the **primary worklist** (shortlist ∪ coverage_critical, ≤15) — **not** “work engine `deep_queue` first” as the default primary pass, **not** the full board, **not** inside scan agents A/B/C. On multi-agent all-fail, primary = engine `deep_queue` head (still capped; still once). Root `AGENTS.md` step 5 + hard rules state that this law **supersedes** older deep_queue-first wording when a multi-agent shortlist exists; engine queue language remains Stage 1 construction / composition only.
 
 Stage 2 is the **only** expensive research layer. Scan agents are intentionally shallow. Portfolio soft-reject for form continuity is already live (`config.yaml` → `learning.diversification.form_continuity.enabled: true`, `weak_flip_action: soft_reject`).
 
