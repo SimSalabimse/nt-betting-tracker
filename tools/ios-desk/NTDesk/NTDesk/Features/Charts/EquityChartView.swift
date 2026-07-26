@@ -31,10 +31,15 @@ struct EquityChartView: View {
         return points.first(where: { $0.day.raw == raw })?.day.date
     }
 
-    /// Zoom Y to data (not 0…equity) so ~50 NOK moves are visible without
-    /// turning noise into a rollercoaster (`minRelativeSpan` floor).
+    /// Zoom Y to the series span (not 0…equity). Floor is soft (~3% of level)
+    /// so a ~50 NOK run on a ~550 bank is clearly visible, not flat.
     private var yDomain: ClosedRange<Double>? {
-        ChartAxisSupport.adaptiveDomain(plotPoints.map(\.equity))
+        ChartAxisSupport.adaptiveDomain(
+            plotPoints.map(\.equity),
+            minRelativeSpan: 0.03,
+            padFraction: 0.10,
+            absoluteFloor: 5.0
+        )
     }
 
     private var areaBase: Double {

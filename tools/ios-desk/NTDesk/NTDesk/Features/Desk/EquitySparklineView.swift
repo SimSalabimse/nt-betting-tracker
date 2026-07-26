@@ -4,10 +4,16 @@ import SwiftUI
 /// Tiny equity sparkline for the Desk header (display-only).
 struct EquitySparklineView: View {
     let points: [EquityChartPoint]
-    var height: CGFloat = 44
+    var height: CGFloat = 52
 
     private var yDomain: ClosedRange<Double>? {
-        ChartAxisSupport.adaptiveDomain(points.map(\.equity), minRelativeSpan: 0.05, padFraction: 0.1)
+        // Desk sparkline: zoom to true min…max with light pad (no heavy floor).
+        ChartAxisSupport.adaptiveDomain(
+            points.map(\.equity),
+            minRelativeSpan: 0.0,
+            padFraction: 0.12,
+            absoluteFloor: 3.0
+        )
     }
 
     private var areaBase: Double {
@@ -25,15 +31,18 @@ struct EquitySparklineView: View {
                 )
                 .foregroundStyle(DeskTheme.accent)
                 .interpolationMethod(.linear)
-                .lineStyle(StrokeStyle(lineWidth: 1.5))
+                .lineStyle(StrokeStyle(lineWidth: 2))
                 AreaMark(
                     x: .value("D", p.day.date),
                     yStart: .value("Base", areaBase),
                     yEnd: .value("E", p.equity)
                 )
-                .foregroundStyle(DeskTheme.accentSoft)
+                .foregroundStyle(DeskTheme.accent.opacity(0.22))
             }
             .chartYScale(domain: yDomain ?? 0...1)
+            .chartPlotStyle { plot in
+                plot.background(DeskTheme.surface3.opacity(0.35))
+            }
             .chartXAxis(.hidden)
             .chartYAxis(.hidden)
             .chartLegend(.hidden)

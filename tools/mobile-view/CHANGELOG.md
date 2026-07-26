@@ -5,6 +5,12 @@ Wire shape = `schema_version` (still **1** unless a breaking change).
 
 Format: [Keep a Changelog](https://keepachangelog.com/)-style.
 
+## [1.1.1] — 2026-07-26
+
+### Fixed
+- Equity / daily / drawdown series use **settlement day** (Europe/Oslo `updated_at`), not match kickoff `date` — stops wrong day buckets (e.g. activity on the 25th)
+- Carry-forward empty calendar days + baseline anchor so equity trend is not a sparse flat segment
+
 ## [1.1.0] — 2026-07-26
 
 ### Added

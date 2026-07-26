@@ -16,7 +16,7 @@ import json
 import re
 import sys
 from collections import defaultdict
-from datetime import datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
@@ -492,28 +492,82 @@ def _place_these(path: Path) -> dict[str, Any]:
     }
 
 
+def _settlement_day(row: dict[str, str], *, tz_name: str = "Europe/Oslo") -> str:
+    """Calendar day money moved (Oslo via updated_at) — NOT match kickoff ``date``.
+
+    Matches engine ``nt.bets_io.settlement_calendar_day`` without importing nt.
+    """
+    ua = (row.get("updated_at") or "").strip()
+    if ua:
+        try:
+            raw = ua.replace("Z", "+00:00") if ua.endswith("Z") else ua
+            dt = datetime.fromisoformat(raw)
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            try:
+                from zoneinfo import ZoneInfo
+
+                local = dt.astimezone(ZoneInfo(tz_name))
+            except Exception:
+                # Windows without tzdata: CEST-ish UTC+2 (era summer) fallback
+                local = dt.astimezone(timezone(timedelta(hours=2)))
+            return local.date().isoformat()
+        except ValueError:
+            if len(ua) >= 10 and ua[4] == "-" and ua[7] == "-":
+                return ua[:10]
+    return (row.get("date") or "").strip()[:10]
+
+
 def _equity_curve(rows: list[dict[str, str]], baseline: float) -> list[dict[str, Any]]:
-    settled = [r for r in rows if (r.get("result") or "") not in ("Pending", "ConfirmedPlaced", "Abandoned")]
-    # Treat any non-pending with date as settled for curve (Win/Loss/Refunded)
+    """End-of-day equity on **settlement** calendar days (Europe/Oslo).
+
+    - Buckets Win/Loss/Refunded by settlement day (when equity actually moved).
+    - Carries equity forward across empty days so charts don't invent jumps
+      between sparse match-dates (old bug: match ``date`` put Jul 25 settles
+      on the kickoff day and skipped true settle days).
+    - Starts with baseline on the day before first settlement (if known).
+    """
     settled = [r for r in rows if (r.get("result") or "").strip() in ("Win", "Loss", "Refunded")]
-    settled.sort(key=lambda r: (r.get("date") or "", r.get("updated_at") or r.get("created_at") or ""))
-    by_date: dict[str, list[dict[str, str]]] = defaultdict(list)
+    by_day: dict[str, float] = defaultdict(float)
     for r in settled:
-        by_date[r.get("date") or ""].append(r)
+        d = _settlement_day(r)
+        if not d or len(d) < 10:
+            continue
+        by_day[d] += _fnum(r.get("p_l_nok")) or 0.0
+    if not by_day:
+        return []
+
+    days_sorted = sorted(by_day.keys())
+    first = date.fromisoformat(days_sorted[0])
+    last = date.fromisoformat(days_sorted[-1])
+
     out: list[dict[str, Any]] = []
     running_pl = 0.0
-    for d in sorted(k for k in by_date if k):
-        day_rows = by_date[d]
-        day_pl = sum(_fnum(r.get("p_l_nok")) or 0.0 for r in day_rows)
+    # Anchor: baseline the calendar day before first settlement (readable start).
+    anchor = first - timedelta(days=1)
+    out.append(
+        {
+            "date": anchor.isoformat(),
+            "equity": round(baseline, 2),
+            "day_pl": 0.0,
+            "cum_pl": 0.0,
+        }
+    )
+
+    d = first
+    while d <= last:
+        key = d.isoformat()
+        day_pl = round(by_day.get(key, 0.0), 2)
         running_pl = round(running_pl + day_pl, 2)
         out.append(
             {
-                "date": d,
+                "date": key,
                 "equity": round(baseline + running_pl, 2),
-                "day_pl": round(day_pl, 2),
+                "day_pl": day_pl,
                 "cum_pl": running_pl,
             }
         )
+        d += timedelta(days=1)
     return out
 
 

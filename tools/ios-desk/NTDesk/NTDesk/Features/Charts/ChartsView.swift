@@ -246,9 +246,13 @@ struct ChartsView: View {
             let dy = ChartDataBuilder.daily(dailyIn)
             let dd = ChartDataBuilder.drawdown(ddIn)
             let sp = ChartDataBuilder.sports(sportIn)
+            // Cutoff in UTC to match ChartDay keys (yyyy-MM-dd at UTC midnight).
+            var utcCal = Calendar(identifier: .gregorian)
+            utcCal.timeZone = TimeZone(secondsFromGMT: 0)!
             let cutoff: Date? = {
                 guard let d = daysLimit else { return nil }
-                return Calendar(identifier: .gregorian).date(byAdding: .day, value: -d + 1, to: Date())
+                let today = utcCal.startOfDay(for: Date())
+                return utcCal.date(byAdding: .day, value: -d + 1, to: today)
             }()
             func keep(_ date: Date) -> Bool {
                 guard let cutoff else { return true }

@@ -5,6 +5,15 @@ Build = `CFBundleVersion` / `CURRENT_PROJECT_VERSION`.
 
 Requires **mobile-view `api_version` ≥ 1.1.0** for kickoff countdown + Secure A cards (older APIs still load; features degrade).
 
+## [1.1.1] (build 3) — 2026-07-26
+
+### Fixed
+- Equity sparkline / chart Y zoom more aggressive so trend is visible
+- Chart range chips (1w/1m) use UTC day cutoff (matches desk day keys)
+
+### Needs
+- mobile-view **1.1.1** (settlement-day equity curve) for correct day buckets
+
 ## [1.1.0] (build 2) — 2026-07-26
 
 ### Added
