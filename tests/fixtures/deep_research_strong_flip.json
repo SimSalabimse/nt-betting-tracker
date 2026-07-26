@@ -1,0 +1,118 @@
+{
+  "match": "Milwaukee Brewers vs Colorado Rockies",
+  "selection": "Handikap 2-veis 2.5 (inkludert ekstra innings): Colorado Rockies +2.5",
+  "sport": "baseball",
+  "league": "MLB",
+  "decimal_odds_ref": 1.85,
+  "p_model": 0.58,
+  "summary": "Series game 2 after Brewers covered -1.5 behind ace. Today pitcher change: Brewers go to opener or bullpen game after short rest; Rockies start their number-two with rest advantage. Ranking still favors Brewers, but run-line +2.5 is a structural matchup change driven by SP delta, not a public-side narrative.",
+  "failure_modes": "Brewers stack early anyway; Rockies bullpen collapses; weather delay resets SP.",
+  "availability_status": "predicted",
+  "availability_notes": "Probables listed: Brewers opener/bullpen game after ace scratched (injury / lineup change vs game 1); Rockies SP confirmed.",
+  "lineup_status": "changed",
+  "lineup_notes": "Pitcher change on favourite side; confirmed lineup delta vs game 1; ace out for this start.",
+  "context_risk": "medium",
+  "script_lean": "competitive",
+  "selection_vs_script": "agree",
+  "base_rate_conflict": false,
+  "market_family": "handicap_baseball",
+  "scan_agents": ["C"],
+  "model_name": "agent_deep_research",
+  "sources": [
+    {
+      "url": "https://www.mlb.com/example-probables",
+      "takeaway": "Brewers opener listed; ace pushed — lineup change",
+      "kind": "lineup",
+      "side": "home"
+    },
+    {
+      "url": "https://www.espn.com/example-preview",
+      "takeaway": "Rockies SP number-two confirmed, five days rest",
+      "kind": "lineup",
+      "side": "away"
+    },
+    {
+      "url": "https://www.baseball-reference.com/example-h2h",
+      "takeaway": "H2H last season mixed; no automatic dog edge",
+      "kind": "h2h",
+      "side": "both"
+    },
+    {
+      "url": "https://www.mlb.com/standings",
+      "takeaway": "Brewers clearly higher standings; ranking gap large",
+      "kind": "ranking",
+      "side": "both"
+    }
+  ],
+  "opposite_side_check": {
+    "evaluated": true,
+    "opposite_selection": "Milwaukee Brewers heavy fav HC (minus run line)",
+    "one_liner": "Fav HC is the ranking-default side, but today's pitcher change and rest advantage remove the game-1 script — dog RL is selected because the SP delta is material.",
+    "why_not_opposite": "Brewers minus HC still prices residual ranking edge without fully pricing the SP downgrade on this board."
+  },
+  "form_continuity": {
+    "checked": true,
+    "flip_risk_suspected": true,
+    "prior_anchor_note": "Live ledger: Brewers -1.5 Win prior game same pair (from status/bets live rows — not archives)",
+    "why_flip": "Starting pitcher change on the Brewers after game-1 ace cover; Rockies hold rest advantage and confirmed lineup vs a bullpen or opener game — structural matchup flip with material SP delta.",
+    "strong_signals_claimed": ["S1_injury_lineup", "S2_why_flip", "S4_structural"],
+    "form_continuity_triggered": true,
+    "recent_form_home": "Brewers W-W-L-W-W; covered -1.5 game 1",
+    "recent_form_away": "Rockies L-W-L-L-W; outscored in series game 1",
+    "conclusion": "Continuity risk real; escape only via SP/lineup structural signals (documented)."
+  },
+  "signals": {
+    "ranking_seed": {
+      "filled": true,
+      "strength": "positive",
+      "note": "Brewers higher standings — selection is dog RL so ranking_gap_hc for THIS selection should be false"
+    }
+  },
+  "feh_checklist": {
+    "higher_ranked_side": "favourite",
+    "ranking_confidence": 0.8,
+    "why_this_side_not_opposite": "Dog RL selected despite ranking gap because SP and rest structural flip."
+  },
+  "deep_research": {
+    "schema_version": "deep_research_v1",
+    "tooling": {
+      "exa_queries": 5,
+      "firecrawl_pages": 1,
+      "fallback_web": false,
+      "budget_profile": "standard"
+    },
+    "match_context": {
+      "competition": "MLB",
+      "format": "9 innings + extras in HC",
+      "importance": "Regular season series game 2",
+      "series_context": "Brewers won game 1 and covered heavy fav HC"
+    },
+    "recent_form": {
+      "home_last_n": "Brewers 4-1 last 5; covered -1.5 game 1",
+      "away_last_n": "Rockies 2-3 last 5; failed to cover game 1",
+      "side_flip_after_heavy_fav_check": "YES — opposite of successful Brewers -1.5",
+      "form_continuity_rules_applied": "Expect engine soft-reject unless ≥2 strong signals; pack supplies S1 via lineup_status+notes, S2 why_flip, S4 tokens",
+      "conclusion": "Flip is structural SP-driven"
+    },
+    "h2h": "Recent H2H mixed; no automatic dog edge from H2H alone.",
+    "ranking_strength_gap": {
+      "gap_summary": "Brewers clearly stronger roster/standings",
+      "ranking_gap_hc_considered": true,
+      "gap_strength": "large",
+      "higher_ranked_side": "favourite"
+    },
+    "natural_markets": "Totals depend on SP; avoid stacking same-match ML+HC.",
+    "key_risks": [
+      "Brewers offense still covers without ace",
+      "Opener report wrong / ace reinstated",
+      "form_continuity demotion even if not soft-rejected"
+    ],
+    "verdict": {
+      "label": "Acceptable",
+      "base_ev_estimate": 0.07,
+      "form_continuity_triggered": true,
+      "rationale": "Clear SP structural flip; ranking against selection so not ranking-gap HC seat; EV only if p_model holds."
+    }
+  },
+  "notes": "deep_research_v1; ESR both-sides; lineup change and injury language for S1; no FEH place language"
+}

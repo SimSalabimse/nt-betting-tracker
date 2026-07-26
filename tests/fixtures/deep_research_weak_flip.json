@@ -1,0 +1,108 @@
+{
+  "match": "Milwaukee Brewers vs Colorado Rockies",
+  "selection": "Handikap 2-veis 2.5 (inkludert ekstra innings): Colorado Rockies +2.5",
+  "sport": "baseball",
+  "league": "MLB",
+  "decimal_odds_ref": 1.85,
+  "p_model": 0.56,
+  "summary": "Rockies +2.5 is an easier line after Brewers already won; fade the favourite; bounce back expected for the dog run line.",
+  "failure_modes": "Brewers cover again; Rockies get no early runs; market moves further against dog.",
+  "availability_status": "predicted",
+  "availability_notes": "Probables listed as usual; no material news beyond series continuity.",
+  "lineup_status": "predicted",
+  "lineup_notes": "Both starters expected; no confirmed material delta vs series game 1.",
+  "context_risk": "medium",
+  "script_lean": "favoured",
+  "selection_vs_script": "disagree",
+  "base_rate_conflict": false,
+  "market_family": "handicap_baseball",
+  "scan_agents": ["C"],
+  "model_name": "agent_deep_research",
+  "sources": [
+    {
+      "url": "https://www.mlb.com/example-probables-weak",
+      "takeaway": "Probables unchanged from series game 1 board",
+      "kind": "lineup",
+      "side": "both"
+    },
+    {
+      "url": "https://www.espn.com/example-preview-weak",
+      "takeaway": "Public still leans Brewers favourite side heavily",
+      "kind": "preview",
+      "side": "home"
+    },
+    {
+      "url": "https://www.baseball-reference.com/example-h2h-weak",
+      "takeaway": "H2H last season mixed; no automatic dog edge",
+      "kind": "h2h",
+      "side": "both"
+    },
+    {
+      "url": "https://www.mlb.com/standings-weak",
+      "takeaway": "Brewers clearly higher standings; ranking gap large",
+      "kind": "ranking",
+      "side": "both"
+    }
+  ],
+  "opposite_side_check": {
+    "evaluated": true,
+    "opposite_selection": "Milwaukee Brewers heavy fav HC (minus run line)",
+    "one_liner": "Rockies +2.5 is an easier line after Brewers already won; fade the favourite on the dog side.",
+    "why_not_opposite": "Public on favourite; softer number on the dog makes bounce back the thesis."
+  },
+  "form_continuity": {
+    "checked": true,
+    "flip_risk_suspected": true,
+    "prior_anchor_note": "Live ledger: Brewers -1.5 Win prior game same pair",
+    "why_flip": "Rockies +2.5 is an easier line after Brewers already won; fade the favourite; bounce back.",
+    "strong_signals_claimed": [],
+    "form_continuity_triggered": true,
+    "conclusion": "Weak narrative flip only — expect form_continuity soft-reject."
+  },
+  "signals": {
+    "ranking_seed": {
+      "filled": true,
+      "strength": "positive",
+      "note": "Brewers higher standings"
+    }
+  },
+  "feh_checklist": {
+    "higher_ranked_side": "favourite",
+    "ranking_confidence": 0.8,
+    "why_this_side_not_opposite": "Public chalk on the favourite; dog +2.5 is an easier line and bounce back."
+  },
+  "deep_research": {
+    "schema_version": "deep_research_v1",
+    "tooling": {
+      "exa_queries": 3,
+      "firecrawl_pages": 0,
+      "fallback_web": false,
+      "budget_profile": "standard"
+    },
+    "match_context": {
+      "competition": "MLB",
+      "series_context": "Brewers won game 1 heavy fav HC"
+    },
+    "recent_form": {
+      "side_flip_after_heavy_fav_check": "YES — opposite of successful Brewers -1.5",
+      "conclusion": "Only weak public-side bounce-back narrative; no structural SP flip"
+    },
+    "h2h": "Recent H2H mixed; no automatic dog edge from H2H alone.",
+    "ranking_strength_gap": {
+      "gap_summary": "Brewers clearly stronger roster/standings",
+      "higher_ranked_side": "favourite"
+    },
+    "natural_markets": "Avoid stacking same-match sides.",
+    "key_risks": [
+      "form_continuity soft-reject on weak flip",
+      "no injury or lineup structural justification"
+    ],
+    "verdict": {
+      "label": "Weak",
+      "base_ev_estimate": 0.02,
+      "form_continuity_triggered": true,
+      "rationale": "Weak-phrase flip only; skill verdict Weak/Reject — engine soft-reject expected."
+    }
+  },
+  "notes": "deep_research_v1; weak anti-pattern fixture — public-side easier line only"
+}
