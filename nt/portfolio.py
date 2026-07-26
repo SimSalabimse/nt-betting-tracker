@@ -99,6 +99,32 @@ def _stake_for(
     return stake
 
 
+def compose_soft_sort_ev(
+    true_ev: float,
+    *,
+    pen_similar: float = 0.0,
+    pen_lessons: float = 0.0,
+    pen_form_continuity: float = 0.0,
+    similar_weight: float = 1.0,
+    continuity_weight: float = 1.0,
+    macro_bonus: float = 0.0,
+) -> float:
+    """
+    Composite ranking EV for annotate (never rewrites place/true EV).
+
+    sort_ev = true_ev
+              − (pen_similar + pen_lessons) × similar_weight
+              − pen_form_continuity × continuity_weight
+              + macro_bonus
+
+    Named pens compose additively so similar_recent / lessons / form_continuity
+    merges cannot overwrite each other.
+    """
+    peer = (float(pen_similar) + float(pen_lessons)) * float(similar_weight)
+    cont = float(pen_form_continuity) * float(continuity_weight)
+    return round(float(true_ev) - peer - cont + float(macro_bonus), 6)
+
+
 def _capital_v2_enabled(cfg: dict[str, Any]) -> bool:
     from nt.capital_v2 import capital_v2_cfg
 
@@ -458,26 +484,33 @@ def build_portfolio(
         base_ev = float(haircut_ev) + prior + ev_boost_other
         explore_base_min = float(div_lim.get("explore_base_ev_min", 0.005))
         pre_gate_explore = float(ev_boost_explore)
-        # Optional Band A/B strip: zero explore when odds-confidence forbids it
-        # (module may be absent on this branch — fail open to explore_allowed=True)
+        # Optional Band A/B strip: zero explore when odds-confidence forbids it.
+        # ImportError only when module absent (fail-open). Other exceptions also
+        # fail-open so a bad API cannot crash recommend — but do not strip explore.
         explore_allowed = True
+        explore_withhold_reason = ""  # "band_gate" | "base_ev_min" | ""
         try:
             from nt.odds_confidence import evaluate_odds_band_gates  # type: ignore
 
-            band_gate = evaluate_odds_band_gates(
-                odds=odds,
-                grade=grade,
-                evidence=c.evidence if isinstance(c.evidence, dict) else None,
-                cfg=cfg,
-                selection=c.selection or "",
-            )
-            allowed = getattr(band_gate, "explore_allowed", None)
-            if allowed is None and isinstance(band_gate, dict):
-                allowed = band_gate.get("explore_allowed")
-            if allowed is False:
-                explore_allowed = False
-                ev_boost_explore = 0.0
-        except Exception:
+            try:
+                band_gate = evaluate_odds_band_gates(
+                    odds=odds,
+                    grade=grade,
+                    evidence=c.evidence if isinstance(c.evidence, dict) else None,
+                    cfg=cfg,
+                    selection=c.selection or "",
+                )
+                allowed = getattr(band_gate, "explore_allowed", None)
+                if allowed is None and isinstance(band_gate, dict):
+                    allowed = band_gate.get("explore_allowed")
+                if allowed is False:
+                    explore_allowed = False
+                    ev_boost_explore = 0.0
+                    explore_withhold_reason = "band_gate"
+            except Exception:
+                # Module present but call failed — fail open (keep explore portion)
+                explore_allowed = True
+        except ImportError:
             pass
         explore_boost_applied = 0.0
         explored_effective = False
@@ -489,11 +522,14 @@ def build_portfolio(
             ev = base_ev + ev_boost_explore
             explore_boost_applied = float(ev_boost_explore)
             explored_effective = bool(adj.get("explored"))
+            explore_withhold_reason = ""
         else:
             # withhold explore portion (thin edges cannot ride virgin/explore alone)
             ev = base_ev
             explore_boost_applied = 0.0
             explored_effective = False
+            if pre_gate_explore > 0 and not explore_withhold_reason:
+                explore_withhold_reason = "base_ev_min"
         # Reflect gate on adj for downstream notes / floors
         adj = dict(adj)
         adj["ev_boost_explore"] = round(explore_boost_applied, 4)
@@ -681,6 +717,8 @@ def build_portfolio(
                     "reason": reason,
                     "grade": grade,
                     "high_odds": high,
+                    "ev": round(ev, 4),
+                    "base_ev": round(base_ev, 6),
                     "learning_ev_boost": adj.get("ev_boost"),
                     "process_gate_raise": pg_raise or None,
                     "temp_ev_relax_delta": relax_delta if used_ev_relax else None,
@@ -817,14 +855,21 @@ def build_portfolio(
         # Dual-write p_model into notes for forensic recovery if side-car is missing
         note_bits.append(f"p_model={float(p_model):.4f}")
         note_bits.append(f"EV={ev:.3f}")
-        # Dual EV: base vs explore (PR2)
+        # Dual EV: base vs explore (PR2) — distinguish band strip vs base floor
         if explore_boost_applied > 0:
             note_bits.append(
                 f"base_ev={base_ev:+.3f} · explore_boost={explore_boost_applied:+.3f} · "
                 f"placed_ev={ev:+.3f}"
             )
         elif pre_gate_explore > 0 and not explored_effective:
-            note_bits.append(f"explore_boost=withheld (base_ev={base_ev:+.3f})")
+            if explore_withhold_reason == "band_gate":
+                note_bits.append(
+                    f"explore_boost=withheld (band_gate; base_ev={base_ev:+.3f})"
+                )
+            else:
+                note_bits.append(
+                    f"explore_boost=withheld (base_ev={base_ev:+.3f}≤min)"
+                )
         if regime_explore:
             from nt.bankroll_regime import EXPLORE_REGIME_TAG
 
@@ -934,21 +979,103 @@ def build_portfolio(
         )
         scored.append(rec)
 
-    # --- Form continuity annotate (PR2): pens on sort_ev only; soft-reject filter ---
-    # INVARIANT: never rewrite rec.ev. similar_recent/lessons peers optional when present.
+    # --- Composite soft-demotion annotate (PR2) ---
+    # sort_ev = true_ev − (similar+lessons)×w_sim − form_continuity×w_cont + macro
+    # Named pens accumulate; filters stay orthogonal (form_continuity: soft-reject
+    # vs optional similar_recent hard count). Peers optional when modules present.
+    # INVARIANT: never rewrite rec.ev.
     from nt.form_continuity import form_continuity_penalty
 
     fc_cfg = dict(div_lim.get("form_continuity") or {})
     sort_cfg = dict(div_lim.get("sort") or {})
     cont_weight = float(sort_cfg.get("continuity_penalty_weight", 1.0) or 1.0)
+    sim_weight = float(sort_cfg.get("similar_penalty_weight", 1.0) or 1.0)
+    macro_bonus_amt = float(sort_cfg.get("macro_underrep_bonus", 0.0) or 0.0)
     fc_on = bool(fc_cfg.get("enabled", False))
+
+    # Optional similar_recent peer (ImportError → pens stay 0)
+    similar_on = False
+    sr_cfg: dict[str, Any] = {}
+    similar_recent_penalty_fn = None
+    recent_window_rows: list[dict[str, Any]] = []
+    try:
+        from nt.similar_recent import (  # type: ignore
+            live_recent_window,
+            similar_recent_penalty,
+        )
+
+        similar_recent_penalty_fn = similar_recent_penalty
+        sr_cfg = dict(div_lim.get("similar_recent") or {})
+        similar_on = bool(sr_cfg.get("enabled", True)) and similar_recent_penalty_fn is not None
+        if similar_on:
+            try:
+                recent_window_rows = live_recent_window(
+                    historical_rows,
+                    window=int(sr_cfg.get("window", 12) or 12),
+                    include_pending=bool(sr_cfg.get("include_pending", True)),
+                    live_ledger_only=bool(sr_cfg.get("live_ledger_only", True)),
+                )
+            except Exception:
+                recent_window_rows = list(historical_rows or [])
+    except ImportError:
+        similar_on = False
+        similar_recent_penalty_fn = None
+
+    # Optional settlement lessons soft pen
+    lessons_soft_fn = None
+    try:
+        from nt.settlement_lessons import lessons_soft_adjustments  # type: ignore
+
+        lessons_soft_fn = lessons_soft_adjustments
+    except ImportError:
+        lessons_soft_fn = None
 
     for rec in scored:
         true_ev = float(rec.ev)
         pre_annotate_ev = true_ev
+        # Named pen accumulator — never overwrite one peer with another
+        pen_similar = 0.0
+        pen_lessons = 0.0
         pen_fc = 0.0
+        why_sim = ""
+        why_les = ""
         why_fc = ""
         meta_fc: dict[str, Any] = {}
+
+        if similar_on and similar_recent_penalty_fn is not None:
+            try:
+                pen_similar, why_sim, _hits = similar_recent_penalty_fn(
+                    sport=rec.sport or "",
+                    selection=rec.selection or "",
+                    market_type=rec.market_type or "",
+                    market_key=rec.market_key or "",
+                    market_family_key=str(getattr(rec, "market_family", "") or rec.market_key or ""),
+                    recent_rows=recent_window_rows,
+                    cfg=sr_cfg,
+                )
+                pen_similar = float(pen_similar or 0.0)
+                why_sim = str(why_sim or "")
+            except Exception:
+                pen_similar = 0.0
+                why_sim = ""
+
+        if lessons_soft_fn is not None:
+            try:
+                les = lessons_soft_fn(
+                    rec,
+                    cfg=cfg,
+                    historical_rows=historical_rows,
+                )
+                if isinstance(les, tuple) and len(les) >= 2:
+                    pen_lessons = float(les[0] or 0.0)
+                    why_les = str(les[1] or "")
+                elif isinstance(les, dict):
+                    pen_lessons = float(les.get("penalty") or les.get("pen") or 0.0)
+                    why_les = str(les.get("reason") or "")
+            except Exception:
+                pen_lessons = 0.0
+                why_les = ""
+
         if fc_on:
             pen_fc, why_fc, meta_fc = form_continuity_penalty(
                 match=rec.match,
@@ -957,13 +1084,14 @@ def build_portfolio(
                 market_type=rec.market_type or "",
                 market_family_key=str(rec.market_key or ""),
                 decimal_odds=rec.decimal_odds,
-                base_ev=rec.base_ev,
+                base_ev=rec.base_ev,  # never post-explore place EV
                 grade=rec.grade,
                 evidence_snapshot=rec.evidence_snapshot,
                 notes=rec.notes or "",
                 recent_rows=historical_rows,
                 cfg=fc_cfg,
             )
+            pen_fc = float(pen_fc or 0.0)
             rec.form_continuity_reason = why_fc or ""
             # INVARIANT: do not change rec.ev (pens apply to sort_ev only)
             if rec.ev != pre_annotate_ev:
@@ -973,14 +1101,37 @@ def build_portfolio(
                     rec.notes = f"{(rec.notes or '').rstrip('; ')}; {why_fc}".strip("; ")[:400]
                 if why_fc not in (rec.reasons or []):
                     rec.reasons = list(rec.reasons or []) + [why_fc]
-                rec.soft_demotion_reason = why_fc
             if meta_fc.get("soft_reject") and why_fc:
                 rec.reject_reason = (
                     why_fc
                     if why_fc.startswith("form_continuity:")
                     else f"form_continuity: {why_fc}"
                 )
-        rec.sort_ev = round(true_ev - float(pen_fc) * cont_weight, 6)
+
+        # Macro under-rep bonus reserved for diversify merge (0 when no macro counts)
+        macro_bonus = 0.0
+        if macro_bonus_amt > 0:
+            # Prefer non-football when peers land; PR2 leaves 0 unless prefer_spread wired
+            macro_bonus = 0.0
+
+        rec.sort_ev = compose_soft_sort_ev(
+            true_ev,
+            pen_similar=pen_similar,
+            pen_lessons=pen_lessons,
+            pen_form_continuity=pen_fc,
+            similar_weight=sim_weight,
+            continuity_weight=cont_weight,
+            macro_bonus=macro_bonus,
+        )
+        demotion_bits = [x for x in (why_sim, why_les, why_fc) if x]
+        if demotion_bits:
+            rec.soft_demotion_reason = "; ".join(demotion_bits)
+            for bit in demotion_bits:
+                if bit not in (rec.notes or "") and not bit.startswith("form_continuity:"):
+                    # form_continuity already appended above; peer reasons once
+                    rec.notes = f"{(rec.notes or '').rstrip('; ')}; {bit}".strip("; ")[:400]
+                if bit not in (rec.reasons or []):
+                    rec.reasons = list(rec.reasons or []) + [bit]
 
     if fc_on:
         for rec in scored:

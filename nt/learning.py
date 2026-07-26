@@ -1155,9 +1155,9 @@ def diversification_limits(cfg: dict[str, Any]) -> dict[str, Any]:
     """Caps + exploration policy for portfolio construction."""
     div = dict((cfg.get("learning") or {}).get("diversification") or {})
 
-    # Form continuity / anti-flip (PR1 library; enabled false until portfolio wire-up)
+    # Form continuity / anti-flip (PR2 portfolio wire-up enables via config.yaml)
     fc_defaults = {
-        "enabled": False,
+        "enabled": False,  # setdefault only; config.yaml sets true after PR2
         "live_ledger_only": True,
         "anchor_scan_limit": 30,
         "max_hours": 48,
