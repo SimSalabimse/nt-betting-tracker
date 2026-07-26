@@ -323,6 +323,42 @@ learning:
     explore_stake_floor: 0.92
     explore_min_roi: -0.15    # don't explore groups that are already deep red
     explore_min_ev: 0.012     # lower EV bar for explore-flagged lines
+    # Explore boost only when base model EV clears this floor (PR2 wire-up)
+    explore_base_ev_min: 0.005
+    sort:
+      similar_penalty_weight: 1.0
+      macro_underrep_bonus: 0.004
+      explore_tiebreak: true
+      continuity_penalty_weight: 1.0
+    # Form continuity / anti-flip (PR1 library only — enabled false until PR2)
+    form_continuity:
+      enabled: false
+      live_ledger_only: true
+      anchor_scan_limit: 30
+      max_hours: 48
+      max_games: 2
+      heavy_fav_max_odds: 2.10
+      include_pending_anchors: true
+      base_penalty: 0.035
+      pending_penalty: 0.015
+      weak_extra_penalty: 0.025
+      convincing_win_mult: 1.25
+      strong_flip_min_ev: 0.06
+      weak_flip_action: soft_reject  # soft_reject | demote_only
+      heavy_line_by_sport:
+        baseball: 1.5
+        basketball: 5.5
+        football: 1.5
+        ice_hockey: 1.5
+        tennis: 2.5
+        darts: 2.5
+        esports: 1.5
+        default: 1.5
+    # Ranking-gap HC soft cap (PR4 wire-up — enabled false)
+    ranking_gap_hc:
+      enabled: false
+      max_per_slip: 1
+      ev_slack: 0.015
   # P1: process_error settle tags → temporary min_ev raise
   process_gate:
     enabled: true

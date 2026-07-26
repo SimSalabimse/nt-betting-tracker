@@ -1139,7 +1139,68 @@ def learning_adjustments(
 
 def diversification_limits(cfg: dict[str, Any]) -> dict[str, Any]:
     """Caps + exploration policy for portfolio construction."""
-    div = (cfg.get("learning") or {}).get("diversification") or {}
+    div = dict((cfg.get("learning") or {}).get("diversification") or {})
+
+    # Form continuity / anti-flip (PR1 library; enabled false until portfolio wire-up)
+    fc_defaults = {
+        "enabled": False,
+        "live_ledger_only": True,
+        "anchor_scan_limit": 30,
+        "max_hours": 48,
+        "max_games": 2,
+        "heavy_fav_max_odds": 2.10,
+        "include_pending_anchors": True,
+        "base_penalty": 0.035,
+        "win_penalty": 0.035,
+        "pending_penalty": 0.015,
+        "weak_extra_penalty": 0.025,
+        "convincing_win_mult": 1.25,
+        "weak_flip_action": "soft_reject",
+        "strong_flip_min_ev": 0.06,
+        "weak_phrase_blocklist": [],
+        "heavy_line_by_sport": {
+            "baseball": 1.5,
+            "basketball": 5.5,
+            "football": 1.5,
+            "ice_hockey": 1.5,
+            "tennis": 2.5,
+            "darts": 2.5,
+            "esports": 1.5,
+            "default": 1.5,
+        },
+    }
+    fc = dict(fc_defaults)
+    fc_in = div.get("form_continuity") if isinstance(div.get("form_continuity"), dict) else {}
+    fc.update(fc_in)
+    # Nested heavy_line_by_sport merge
+    hlines = dict(fc_defaults["heavy_line_by_sport"])
+    if isinstance(fc_in.get("heavy_line_by_sport"), dict):
+        hlines.update(fc_in["heavy_line_by_sport"])
+    fc["heavy_line_by_sport"] = hlines
+    # Alias: win_penalty ↔ base_penalty
+    if "base_penalty" in fc_in and "win_penalty" not in fc_in:
+        fc["win_penalty"] = fc["base_penalty"]
+    if "win_penalty" in fc_in and "base_penalty" not in fc_in:
+        fc["base_penalty"] = fc["win_penalty"]
+
+    rg_defaults = {
+        "enabled": False,
+        "max_per_slip": 1,
+        "ev_slack": 0.015,
+        "soft_skip_reason": "ranking_gap_hc: soft cap 1 per slip",
+    }
+    rg = dict(rg_defaults)
+    rg_in = div.get("ranking_gap_hc") if isinstance(div.get("ranking_gap_hc"), dict) else {}
+    rg.update(rg_in)
+
+    sort_in = div.get("sort") if isinstance(div.get("sort"), dict) else {}
+    sort_cfg = {
+        "similar_penalty_weight": float(sort_in.get("similar_penalty_weight", 1.0)),
+        "macro_underrep_bonus": float(sort_in.get("macro_underrep_bonus", 0.004)),
+        "explore_tiebreak": bool(sort_in.get("explore_tiebreak", True)),
+        "continuity_penalty_weight": float(sort_in.get("continuity_penalty_weight", 1.0)),
+    }
+
     return {
         "max_per_sport": int(div.get("max_per_sport", 2)),
         "max_per_market": int(div.get("max_per_market", 2)),
@@ -1149,10 +1210,15 @@ def diversification_limits(cfg: dict[str, Any]) -> dict[str, Any]:
         "max_football_per_round": int(div.get("max_football_per_round", 1)),
         "min_non_football_per_round": int(div.get("min_non_football_per_round", 1)),
         "explore_min_ev": float(div.get("explore_min_ev", 0.012)),
+        "explore_base_ev_min": float(div.get("explore_base_ev_min", 0.005)),
         "prefer_explore_first": bool(div.get("prefer_explore_first", True)),
         # P1 soft correlation
         "max_per_league": int(div.get("max_per_league", 2)),
         "max_per_script_family": int(div.get("max_per_script_family", 2)),
         "ko_window_hours": float(div.get("ko_window_hours", 3)),
         "max_per_ko_window": int(div.get("max_per_ko_window", 2)),
+        # Form continuity + ranking-gap (nested; enabled false in PR1)
+        "form_continuity": fc,
+        "ranking_gap_hc": rg,
+        "sort": sort_cfg,
     }
