@@ -13,12 +13,22 @@ final class CacheStore {
         fileURL = appDir.appendingPathComponent(filename)
     }
 
+    /// Default production cache path (Application Support / NTDesk / desk_cache_envelope.json).
+    static var defaultCacheFileURL: URL {
+        let dir = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
+            ?? FileManager.default.temporaryDirectory
+        return dir
+            .appendingPathComponent("NTDesk", isDirectory: true)
+            .appendingPathComponent("desk_cache_envelope.json")
+    }
+
     func load() -> CacheEnvelope? {
         guard let data = try? Data(contentsOf: fileURL) else { return nil }
         return try? decoder.decode(CacheEnvelope.self, from: data)
     }
 
     /// Persist envelope only after successful validation. Atomic write.
+    /// When app lock is enabled, applies explicit file protection after the replace.
     func save(deskObject: [String: Any], sourceBaseURL: String) throws {
         let envelope = CacheEnvelope(
             envelopeVersion: 1,
@@ -33,9 +43,39 @@ final class CacheStore {
             try FileManager.default.removeItem(at: fileURL)
         }
         try FileManager.default.moveItem(at: tmp, to: fileURL)
+        applyFileProtectionIfAppLockEnabled()
     }
 
     func clear() {
         try? FileManager.default.removeItem(at: fileURL)
+    }
+
+    // MARK: - File protection (optional app lock)
+
+    /// Design: when app lock is on, set protection on the cache file URL after write.
+    /// Does not claim "encrypted because Application Support" without this call.
+    func applyFileProtectionIfAppLockEnabled() {
+        guard Self.isAppLockEnabledInDefaults() else { return }
+        Self.applyFileProtection(to: fileURL)
+    }
+
+    /// Apply protection to the default cache path if the file exists (e.g. toggle turned on).
+    static func applyFileProtectionToDefaultCacheIfPresent() {
+        guard isAppLockEnabledInDefaults() else { return }
+        let url = defaultCacheFileURL
+        guard FileManager.default.fileExists(atPath: url.path) else { return }
+        applyFileProtection(to: url)
+    }
+
+    static func isAppLockEnabledInDefaults(_ defaults: UserDefaults = .standard) -> Bool {
+        // Missing key → false (default OFF). Do not use bare bool(forKey:) alone for clarity.
+        defaults.object(forKey: AppLockService.enabledKey) as? Bool ?? false
+    }
+
+    static func applyFileProtection(to fileURL: URL) {
+        try? (fileURL as NSURL).setResourceValue(
+            URLFileProtection.completeUntilFirstUserAuthentication,
+            forKey: .fileProtectionKey
+        )
     }
 }

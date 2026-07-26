@@ -4,6 +4,7 @@ import SwiftUI
 /// Connection IA: active URL + NavigationLinks to ConnectionSettingsView / ProfilesListView.
 struct SettingsView: View {
     @EnvironmentObject private var sync: SyncService
+    @EnvironmentObject private var appLock: AppLockService
     @State private var confirmClearCache = false
     @FocusState private var urlFieldFocused: Bool
     /// Same key + default as `SlipView` — single UserDefaults read path for the flag.
@@ -92,6 +93,19 @@ struct SettingsView: View {
                 Text("Display")
             } footer: {
                 Text("Structured slip parses PLACE_THESE into bet cards. Turn off to always show Markdown source.")
+                Toggle(isOn: appLockEnabledBinding) {
+                    Label("Require \(appLock.biometryLabel)", systemImage: "lock.fill")
+                }
+                .tint(DeskTheme.accent)
+                .accessibilityIdentifier("settings.appLock")
+                .accessibilityHint("Locks the app UI when leaving; default is off")
+
+                Text(
+                    "Optional. Default off. UI lock only — does not replace device passcode. When on, the desk cache file also gets complete-until-first-unlock protection after each successful write."
+                )
+                .font(.caption)
+                .foregroundStyle(DeskTheme.textMuted)
+                Text("App lock")
             }
 
             Section {
@@ -165,6 +179,13 @@ struct SettingsView: View {
             }
             .preferredColorScheme(.dark)
         }
+    }
+
+    private var appLockEnabledBinding: Binding<Bool> {
+        Binding(
+            get: { appLock.isEnabled },
+            set: { appLock.setEnabled($0) }
+        )
     }
 
     private var freshnessColor: Color {

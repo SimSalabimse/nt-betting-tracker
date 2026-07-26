@@ -79,6 +79,11 @@
 		P61A1B2C3D4E5F6000000001 /* ServerDiscoveryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = P61A1B2C3D4E5F6000000011 /* ServerDiscoveryService.swift */; };
 		P61A1B2C3D4E5F6000000002 /* DiscoverySheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = P61A1B2C3D4E5F6000000012 /* DiscoverySheet.swift */; };
 		P61A1B2C3D4E5F6000000003 /* ServerDiscoveryServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = P61A1B2C3D4E5F6000000013 /* ServerDiscoveryServiceTests.swift */; };
+		P91A1B2C3D4E5F6000000001 /* AppLockService.swift in Sources */ = {isa = PBXBuildFile; fileRef = P91A1B2C3D4E5F6000000011 /* AppLockService.swift */; };
+		P91A1B2C3D4E5F6000000002 /* DeskRuntime.swift in Sources */ = {isa = PBXBuildFile; fileRef = P91A1B2C3D4E5F6000000012 /* DeskRuntime.swift */; };
+		P91A1B2C3D4E5F6000000003 /* AppLockGateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = P91A1B2C3D4E5F6000000013 /* AppLockGateView.swift */; };
+		P91A1B2C3D4E5F6000000004 /* SyncDeskIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = P91A1B2C3D4E5F6000000014 /* SyncDeskIntent.swift */; };
+		P91A1B2C3D4E5F6000000005 /* AppLockServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = P91A1B2C3D4E5F6000000015 /* AppLockServiceTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -168,6 +173,11 @@
 		P61A1B2C3D4E5F6000000011 /* ServerDiscoveryService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServerDiscoveryService.swift; sourceTree = "<group>"; };
 		P61A1B2C3D4E5F6000000012 /* DiscoverySheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiscoverySheet.swift; sourceTree = "<group>"; };
 		P61A1B2C3D4E5F6000000013 /* ServerDiscoveryServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServerDiscoveryServiceTests.swift; sourceTree = "<group>"; };
+		P91A1B2C3D4E5F6000000011 /* AppLockService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLockService.swift; sourceTree = "<group>"; };
+		P91A1B2C3D4E5F6000000012 /* DeskRuntime.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeskRuntime.swift; sourceTree = "<group>"; };
+		P91A1B2C3D4E5F6000000013 /* AppLockGateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLockGateView.swift; sourceTree = "<group>"; };
+		P91A1B2C3D4E5F6000000014 /* SyncDeskIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncDeskIntent.swift; sourceTree = "<group>"; };
+		P91A1B2C3D4E5F6000000015 /* AppLockServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLockServiceTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -215,12 +225,21 @@
 				2D1A3137E6B74250BCCE8A09 /* Services */,
 				A21A1B2C3D4E5F6000000020 /* App */,
 				A21A1B2C3D4E5F6000000030 /* Features */,
+				P91A1B2C3D4E5F6000000020 /* Intents */,
 				A11A1B2C3D4E5F6000000060 /* Legacy */,
 				B5E4BCA51612EB4937DB848A /* Assets.xcassets */,
 				14E671AE8ACD437DA6E95191 /* Info.plist */,
 				C1D2E3F4A5B60718293A4B5C /* PrivacyInfo.xcprivacy */,
 			);
 			path = NTDesk;
+			sourceTree = "<group>";
+		};
+		P91A1B2C3D4E5F6000000020 /* Intents */ = {
+			isa = PBXGroup;
+			children = (
+				P91A1B2C3D4E5F6000000014 /* SyncDeskIntent.swift */,
+			);
+			path = Intents;
 			sourceTree = "<group>";
 		};
 		A11A1B2C3D4E5F6000000060 /* Legacy */ = {
@@ -249,6 +268,7 @@
 				C41A1B2C3D4E5F6000000014 /* PendingBetRouteTests.swift */,
 				C51A1B2C3D4E5F600000001A /* ChartDataBuilderTests.swift */,
 				P61A1B2C3D4E5F6000000013 /* ServerDiscoveryServiceTests.swift */,
+				P91A1B2C3D4E5F6000000015 /* AppLockServiceTests.swift */,
 			);
 			path = NTDeskTests;
 			sourceTree = "<group>";
@@ -313,6 +333,8 @@
 				C31A1B2C3D4E5F6000000012 /* PlaceTheseParser.swift */,
 				C51A1B2C3D4E5F6000000012 /* ChartDataBuilder.swift */,
 				P61A1B2C3D4E5F6000000011 /* ServerDiscoveryService.swift */,
+				P91A1B2C3D4E5F6000000011 /* AppLockService.swift */,
+				P91A1B2C3D4E5F6000000012 /* DeskRuntime.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -324,6 +346,7 @@
 				A21A1B2C3D4E5F6000000012 /* DeskTab.swift */,
 				A21A1B2C3D4E5F6000000013 /* OpenSettingsKey.swift */,
 				A21A1B2C3D4E5F6000000014 /* DeskScreenChrome.swift */,
+				P91A1B2C3D4E5F6000000013 /* AppLockGateView.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -559,6 +582,10 @@
 				C51A1B2C3D4E5F600000000B /* ChartSelectionRuleOverlay.swift in Sources */,
 				P61A1B2C3D4E5F6000000001 /* ServerDiscoveryService.swift in Sources */,
 				P61A1B2C3D4E5F6000000002 /* DiscoverySheet.swift in Sources */,
+				P91A1B2C3D4E5F6000000001 /* AppLockService.swift in Sources */,
+				P91A1B2C3D4E5F6000000002 /* DeskRuntime.swift in Sources */,
+				P91A1B2C3D4E5F6000000003 /* AppLockGateView.swift in Sources */,
+				P91A1B2C3D4E5F6000000004 /* SyncDeskIntent.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -573,6 +600,7 @@
 				C41A1B2C3D4E5F6000000004 /* PendingBetRouteTests.swift in Sources */,
 				C51A1B2C3D4E5F600000000A /* ChartDataBuilderTests.swift in Sources */,
 				P61A1B2C3D4E5F6000000003 /* ServerDiscoveryServiceTests.swift in Sources */,
+				P91A1B2C3D4E5F6000000005 /* AppLockServiceTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
