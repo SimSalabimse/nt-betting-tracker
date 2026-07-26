@@ -89,6 +89,178 @@ def _pending_bets(rows: list[dict[str, str]]) -> list[dict[str, Any]]:
     return out
 
 
+def _split_table_cells(line: str) -> list[str]:
+    s = line.strip()
+    if s.startswith("|"):
+        s = s[1:]
+    if s.endswith("|"):
+        s = s[:-1]
+    return [c.strip() for c in s.split("|")]
+
+
+def _normalize_cell(raw: str) -> str:
+    s = (raw or "").strip()
+    if len(s) >= 4:
+        if s.startswith("**") and s.endswith("**"):
+            s = s[2:-2]
+        elif s.startswith("__") and s.endswith("__"):
+            s = s[2:-2]
+    if len(s) >= 2:
+        if s.startswith("*") and s.endswith("*") and not s.startswith("**"):
+            s = s[1:-1]
+        elif s.startswith("_") and s.endswith("_") and not s.startswith("__"):
+            s = s[1:-1]
+    return s.strip()
+
+
+def _parse_number(raw: str | None) -> float | None:
+    if raw is None:
+        return None
+    t = _normalize_cell(raw)
+    if not t or t in ("—", "–", "-", "−"):
+        return None
+    if "," in t and "." not in t:
+        t = t.replace(",", ".")
+    else:
+        t = t.replace(",", "")
+    try:
+        return float(t)
+    except ValueError:
+        return None
+
+
+def _parse_index(raw: str) -> int | None:
+    t = (raw or "").strip()
+    if not t or t in ("—", "–", "-", "−"):
+        return None
+    try:
+        return int(t)
+    except ValueError:
+        return None
+
+
+def _is_separator_row(line: str) -> bool:
+    """Markdown table separator like |---|-------|."""
+    s = line.strip()
+    if not s or "|" not in s:
+        return False
+    # Only dashes, colons, pipes, spaces
+    core = s.replace("|", "").replace("-", "").replace(":", "").replace(" ", "")
+    return core == "" and ("-" in s or ":" in s)
+
+
+def _parse_rows_preview(text: str) -> list[dict[str, Any]]:
+    """
+    Parse placeable bet rows from PLACE_THESE Markdown into object dicts.
+
+    Shape matches iOS PlaceTheseRowPreview / design § API:
+      index, match, selection, decimal_odds, stake_nok, ev, grade, band
+
+    Returns [] when no parseable placeable rows (missing table, NO BETS, garbage).
+    schema_version stays 1 — element type is object (iOS tolerant decode required first).
+    """
+    if not text:
+        return []
+    lines = text.replace("\r\n", "\n").replace("\r", "\n").split("\n")
+
+    header_idx: int | None = None
+    col: dict[str, int] = {}
+    for i, line in enumerate(lines):
+        if "|" not in line.strip():
+            continue
+        cells = [_normalize_cell(c) for c in _split_table_cells(line)]
+        match_i = next((j for j, h in enumerate(cells) if h.lower() == "match"), None)
+        sel_i = next((j for j, h in enumerate(cells) if h.lower() == "selection"), None)
+        if match_i is None or sel_i is None:
+            continue
+        col = {"match": match_i, "selection": sel_i}
+        for j, h in enumerate(cells):
+            lower = h.lower()
+            if lower in ("#", "index", "no", "no."):
+                col["index"] = j
+            elif "odds" in lower:
+                col["odds"] = j
+            elif "stake" in lower:
+                col["stake"] = j
+            elif lower == "ev":
+                col["ev"] = j
+            elif "grade" in lower:
+                col["grade"] = j
+            elif "band" in lower:
+                col["band"] = j
+        if "#" in cells:
+            col["index"] = cells.index("#")
+        header_idx = i
+        break
+
+    if header_idx is None:
+        return []
+
+    def cell_at(cells: list[str], key: str) -> str:
+        j = col.get(key)
+        if j is None or j < 0 or j >= len(cells):
+            return ""
+        return cells[j]
+
+    required = max(col["match"], col["selection"]) + 1
+    out: list[dict[str, Any]] = []
+    i = header_idx + 1
+    while i < len(lines) and _is_separator_row(lines[i]):
+        i += 1
+
+    while i < len(lines):
+        raw = lines[i]
+        trimmed = raw.strip()
+        if not trimmed:
+            i += 1
+            if i < len(lines) and lines[i].strip().startswith("##"):
+                break
+            continue
+        if trimmed.startswith("##"):
+            break
+        if _is_separator_row(raw):
+            i += 1
+            continue
+        if "|" not in trimmed:
+            break
+
+        cells = _split_table_cells(raw)
+        if len(cells) < required:
+            i += 1
+            continue
+
+        match_cell = _normalize_cell(cell_at(cells, "match"))
+        selection_cell = _normalize_cell(cell_at(cells, "selection"))
+
+        # Empty slip marker — not a placeable row
+        if "no bets" in match_cell.lower():
+            i += 1
+            continue
+
+        if not match_cell or not selection_cell:
+            i += 1
+            continue
+
+        index_raw = _normalize_cell(cell_at(cells, "index")) if "index" in col else ""
+        grade_raw = _normalize_cell(cell_at(cells, "grade")) if "grade" in col else ""
+        band_raw = _normalize_cell(cell_at(cells, "band")) if "band" in col else ""
+
+        row: dict[str, Any] = {
+            "index": _parse_index(index_raw),
+            "match": match_cell,
+            "selection": selection_cell,
+            "decimal_odds": _parse_number(cell_at(cells, "odds")) if "odds" in col else None,
+            "stake_nok": _parse_number(cell_at(cells, "stake")) if "stake" in col else None,
+            "ev": _parse_number(cell_at(cells, "ev")) if "ev" in col else None,
+            "grade": grade_raw or None,
+            "band": band_raw or None,
+        }
+        out.append(row)
+        i += 1
+
+    return out
+
+
 def _place_these(path: Path) -> dict[str, Any]:
     if not path.is_file():
         return {
@@ -104,17 +276,23 @@ def _place_these(path: Path) -> dict[str, Any]:
         mtime_s = mtime.replace(microsecond=0).isoformat().replace("+00:00", "Z")
     except OSError:
         mtime_s = None
-    text = _read_text(path, PLACE_EXCERPT_CHARS) or ""
+    # Full file for table parse (excerpt may truncate mid-table); excerpt still capped for payload.
+    full_text = _read_text(path) or ""
+    text = full_text
+    if len(text) > PLACE_EXCERPT_CHARS:
+        text = text[:PLACE_EXCERPT_CHARS] + "\n…(truncated)"
     lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
     title = lines[0].lstrip("# ").strip() if lines else path.name
     summary = next((ln for ln in lines[1:] if ln and not ln.startswith("#")), None)
+    # Prefer full file so late table rows are not lost to excerpt cap.
+    rows_preview = _parse_rows_preview(full_text)
     return {
         "exists": True,
         "mtime": mtime_s,
         "title": title,
         "summary_line": summary,
         "text_excerpt": text,
-        "rows_preview": [],  # v1: Slip uses text_excerpt only
+        "rows_preview": rows_preview,
     }
 
 

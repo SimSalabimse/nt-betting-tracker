@@ -73,6 +73,8 @@ def create_app(project_root: Path | None = None) -> FastAPI:
             "ok": True,
             "view_only": True,
             "project_root": str(root),
+            # Additive fingerprint for discovery (optional; clients key off ok / view_only).
+            "service": "nt-mobile-view",
         }
 
     @app.get("/api/desk")
