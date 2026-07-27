@@ -433,7 +433,8 @@ learning:
     explore_base_ev_min: 0.005
     sort:
       similar_penalty_weight: 1.0
-      macro_underrep_bonus: 0.004
+      # underrep detection not implemented — keep 0 until diversify macro lands
+      macro_underrep_bonus: 0.0
       explore_tiebreak: true
       continuity_penalty_weight: 1.0
     # Form continuity / anti-flip (PR2 portfolio wire-up — enabled true)

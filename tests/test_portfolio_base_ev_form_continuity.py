@@ -564,3 +564,71 @@ def test_base_ev_fields_on_recommendation_when_not_rejected():
     if rec.explore_boost_applied > 0:
         assert rec.explore is True
         assert float(rec.base_ev) + 1e-12 >= 0.005
+
+
+def test_explore_withheld_strips_explore_stake_floor():
+    """
+    Band A (explore_allowed=false): virgin explore EV is withheld, and
+    learning_stake_mult must NOT keep explore_stake_floor 0.92.
+
+    Repro from review Issue 1:
+      sport stake_mult 0.70 + virgin market → adj stake_mult would be 0.92
+      after withhold → stake tracks 0.70 (× band A stake_mult 0.95).
+    """
+    cfg = _cfg(fc_enabled=False)
+    # Band A short high-conf: 1.40–1.60, explore_allowed false, stake_mult 0.95
+    odds = 1.55
+    p = 0.78  # (0.78-0.05)*1.55-1 ≈ 0.1315 > band min_ev
+    cand = Candidate(
+        date="2026-07-26",
+        match="Short Band A vs Opp",
+        selection="Short Band A to Win",
+        decimal_odds=odds,
+        sport="baseball",
+        market_type="HUB",
+        p_model=p,
+        evidence=_pack(p, "clear form and ranking edge with multi-source confirmation"),
+        notes="band A short fav for unit test",
+    )
+    learn = {
+        "enabled": True,
+        "sports": {
+            "baseball": {
+                "n": 40,
+                "ev_boost": 0.0,
+                "stake_mult": 0.70,
+                "roi_blended": 0.02,
+                "blocked": False,
+            }
+        },
+        # empty markets → virgin explore would raise stake floor to 0.92
+        "markets": {},
+        "bands": {},
+    }
+    adj = learning_adjustments(
+        learn,
+        sport="baseball",
+        market="HUB",
+        selection=cand.selection,
+        band="1.4-1.6",
+        enabled=True,
+        learn_cfg=cfg["learning"],
+    )
+    assert adj["explored"] is True
+    assert float(adj["stake_mult"]) >= 0.92 - 1e-9  # explore floor applied in full adj
+    assert abs(float(adj["stake_mult_base"]) - 0.70) < 1e-9  # sport only
+
+    picked, rejects = build_portfolio(
+        cfg, [cand], _phase(), _risk(remaining=100.0), [], learning=learn
+    )
+    assert len(picked) == 1, f"expected placeable band-A line; rejects={rejects}"
+    rec = picked[0]
+    assert rec.explore_boost_applied == 0.0
+    assert rec.explore is False
+    # learning_stake_mult = stake_mult_base (0.70) × band A stake_mult (0.95)
+    assert abs(float(rec.learning_stake_mult) - 0.70 * 0.95) < 1e-6, (
+        f"expected 0.70×0.95 band haircut, got {rec.learning_stake_mult}; "
+        f"notes={rec.notes}"
+    )
+    assert "learn_stake×0.92" not in (rec.notes or "")
+    assert "explore_boost=withheld" in (rec.notes or "")

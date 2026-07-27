@@ -1019,6 +1019,7 @@ def learning_adjustments(
             "ev_boost_other": 0.0,
             "ev_boost_explore": 0.0,
             "stake_mult": 1.0,
+            "stake_mult_base": 1.0,  # sport/market only (no explore floor)
             "blocked": False,
             "block_reason": "",
             "notes": [],
@@ -1118,6 +1119,11 @@ def learning_adjustments(
             explored = True
             notes.append(f"explore {label} n={n}")
 
+    # Stake before explore floor (sport/market only) — portfolio uses this when
+    # explore EV is withheld (band_gate / base_ev_min) so explore_stake_floor
+    # cannot leak into learning_stake_mult.
+    stake_base = float(stake)
+
     if not blocked:
         if not mk or int(mk.get("n") or 0) <= exp_hi:
             _try_explore(mk if mk else None, f"market:{market_key or market or 'new'}", n_hint=0 if not mk else None)
@@ -1133,13 +1139,15 @@ def learning_adjustments(
     if ev_explore > headroom:
         ev_explore = headroom
     ev = float(ev_other) + float(ev_explore)
+    stake_base = _clamp(stake_base, 0.65, 1.25)
     stake = _clamp(stake, 0.65, 1.25)
 
     return {
         "ev_boost": round(ev, 4),  # sum — backward compatible
         "ev_boost_other": round(ev_other, 4),
         "ev_boost_explore": round(ev_explore, 4),
-        "stake_mult": round(stake, 3),
+        "stake_mult": round(stake, 3),  # includes explore_stake_floor when explored
+        "stake_mult_base": round(stake_base, 3),  # no explore floor
         "blocked": blocked,
         "block_reason": block_reason,
         "notes": notes,
@@ -1208,7 +1216,8 @@ def diversification_limits(cfg: dict[str, Any]) -> dict[str, Any]:
     sort_in = div.get("sort") if isinstance(div.get("sort"), dict) else {}
     sort_cfg = {
         "similar_penalty_weight": float(sort_in.get("similar_penalty_weight", 1.0)),
-        "macro_underrep_bonus": float(sort_in.get("macro_underrep_bonus", 0.004)),
+        # macro underrep not implemented yet — default 0 so ops does not expect a boost
+        "macro_underrep_bonus": float(sort_in.get("macro_underrep_bonus", 0.0)),
         "explore_tiebreak": bool(sort_in.get("explore_tiebreak", True)),
         "continuity_penalty_weight": float(sort_in.get("continuity_penalty_weight", 1.0)),
     }

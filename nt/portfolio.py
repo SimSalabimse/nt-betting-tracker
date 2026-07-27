@@ -599,6 +599,31 @@ def build_portfolio(
         adj["ev_boost"] = round(ev_boost_other + explore_boost_applied, 4)
         if not explored_effective:
             adj["explored"] = False
+            # Strip explore_stake_floor when explore EV was withheld (band_gate /
+            # base_ev_min). Match pre-split path that re-ran learning without explore.
+            base_sm = adj.get("stake_mult_base")
+            if base_sm is not None:
+                adj["stake_mult"] = float(base_sm)
+            else:
+                # Backward-compat fallback: re-run adj with explore disabled
+                learn_cfg_no_exp = dict(learn_cfg or {})
+                div_no = dict(learn_cfg_no_exp.get("diversification") or {})
+                div_no["explore_max_n"] = -1
+                div_no["explore_min_n"] = 999
+                learn_cfg_no_exp["diversification"] = div_no
+                adj_base = learning_adjustments(
+                    learn,
+                    sport=c.sport or "",
+                    market=c.market_type or "",
+                    selection=c.selection or "",
+                    band=band,
+                    enabled=learn_on,
+                    learn_cfg=learn_cfg_no_exp,
+                )
+                adj["stake_mult"] = float(adj_base.get("stake_mult") or 1.0)
+                adj["stake_mult_base"] = float(
+                    adj_base.get("stake_mult_base") or adj["stake_mult"]
+                )
 
         # Band-specific EV floor (stricter for short prices / core)
         if (
@@ -1216,9 +1241,10 @@ def build_portfolio(
                 pen_lessons = 0.0
                 why_les = ""
 
+        # macro_underrep_bonus reserved for diversify under-sample detection (not
+        # implemented yet). Keep hook at 0 so sort_ev stays true_ev − pens only.
+        _ = macro_bonus_amt  # config may set non-zero; ignore until underrep lands
         macro_bonus = 0.0
-        if macro_bonus_amt > 0:
-            macro_bonus = 0.0
 
         rec.sort_ev = compose_soft_sort_ev(
             true_ev,
@@ -1694,6 +1720,20 @@ def build_portfolio(
         open_ko_hours.append(cand_h)
         if rec.ranking_gap_hc:
             ranking_gap_counts += 1
+        # Drop prior RG soft-skip near-misses for this selection (Pass3 force-accept
+        # or later pass must not leave a false "rejected" row for a placed bet).
+        if rejects:
+            mm = (rec.match or "").strip()
+            ss = (rec.selection or "").strip()
+            rejects[:] = [
+                r
+                for r in rejects
+                if not (
+                    (r.get("match") or "").strip() == mm
+                    and (r.get("selection") or "").strip() == ss
+                    and "ranking_gap_hc" in str(r.get("reason") or "")
+                )
+            ]
         return "ok"
 
     picked_keys: set[tuple[str, str]] = set()

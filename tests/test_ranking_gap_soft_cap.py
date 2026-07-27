@@ -374,9 +374,16 @@ def test_pass3_force_accepts_second_rg_when_non_rg_exhausted_by_match_cap():
     n_non = sum(1 for p in picked if not p.ranking_gap_hc)
     assert n_rg == 2, f"Pass 3 should force 2nd RG: {[(p.selection, p.ranking_gap_hc) for p in picked]}"
     assert n_non == 1
-    reasons = [str(r.get("reason") or "") for r in rejects]
-    # Gate B soft-skipped the 2nd RG during Pass 1/2 before Pass 3 took it
-    assert any("soft cap 1 per slip" in x for x in reasons), reasons
+    # Pass3 force-accept clears prior RG soft-skip near-misses for placed lines
+    # so PLACE_THESE / REJECTS consumers do not see a false "rejected" for a pick.
+    placed_keys = {(p.match, p.selection) for p in picked}
+    residual_rg = [
+        r
+        for r in rejects
+        if (r.get("match"), r.get("selection")) in placed_keys
+        and "ranking_gap_hc" in str(r.get("reason") or "")
+    ]
+    assert not residual_rg, f"placed RG still in rejects: {residual_rg}"
 
 
 def test_ranking_gap_tag_present_on_scored_rg():
@@ -394,3 +401,37 @@ def test_ranking_gap_tag_present_on_scored_rg():
     tags = {p.match: p.ranking_gap_hc for p in picked}
     assert tags[match] is True
     assert tags["Team A vs Team B"] is False
+
+
+def test_pass3_force_accept_clears_soft_skip_reject():
+    """Placed after Pass3 force-accept must not remain in rejects as ranking_gap soft-skip."""
+    rg1 = _rg_hc(
+        "Milwaukee Brewers vs Colorado Rockies",
+        "Milwaukee Brewers",
+        p=0.64,
+        odds=1.80,
+    )
+    rg2 = _rg_hc(
+        "New York Mets vs Los Angeles Dodgers",
+        "Los Angeles Dodgers",
+        p=0.638,
+        odds=1.80,
+    )
+    non = _non_hc_ml(
+        "Texas Rangers vs Seattle Mariners",
+        "Seattle Mariners",
+        p=0.635,
+        odds=1.80,
+    )
+    cfg = _cfg()
+    phase = _phase(max_bets_per_round=3)
+    picked, rejects = build_portfolio(
+        cfg, [rg1, rg2, non], phase, _risk(), [], learning=_mature_learning()
+    )
+    assert len(picked) == 3
+    for p in picked:
+        for r in rejects:
+            if (r.get("match") == p.match and r.get("selection") == p.selection):
+                assert "ranking_gap_hc" not in str(r.get("reason") or ""), (
+                    f"placed {p.selection} still has RG soft-skip reject: {r}"
+                )
