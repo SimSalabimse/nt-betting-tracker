@@ -1,0 +1,21 @@
+{
+  "url": "https://www.flashscore.com/x/feed/summary",
+  "data": {
+    "tournament": {"name": "World Championship"},
+    "home": {
+      "name": "O'Sullivan Ronnie",
+      "form": ["W", "W", "W", "L", "W"],
+      "rank": 1
+    },
+    "away": {
+      "name": "Trump Judd",
+      "form": ["W", "L", "W", "W", "W"],
+      "rank": 2
+    },
+    "h2h": [
+      {"date": "2025-04-20", "score": "13-10", "competition": "World Championship"},
+      {"date": "2024-11-02", "score": "6-4", "competition": "Champion of Champions"},
+      {"date": "2024-05-05", "score": "18-15", "competition": "World Championship"}
+    ]
+  }
+}

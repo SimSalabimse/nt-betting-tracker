@@ -1,0 +1,24 @@
+{
+  "url": "https://www.flashscore.com/x/feed/summary",
+  "data": {
+    "tournament": {"name": "MLB"},
+    "league": "MLB",
+    "home": {
+      "name": "New York Yankees",
+      "form": ["W", "W", "L", "W", "L"],
+      "rank": 1,
+      "points": 92
+    },
+    "away": {
+      "name": "Boston Red Sox",
+      "form": ["L", "W", "W", "L", "W"],
+      "rank": 4,
+      "points": 78
+    },
+    "h2h": [
+      {"date": "2025-09-10", "score": "5-3", "competition": "MLB"},
+      {"date": "2025-07-04", "score": "4-2", "competition": "MLB"},
+      {"date": "2025-05-15", "score": "8-6", "competition": "MLB"}
+    ]
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "url": "https://www.flashscore.com/x/feed/summary",
+  "data": {
+    "tournament": {"name": "ESL Pro League"},
+    "game": "CS2",
+    "home": {
+      "name": "G2",
+      "form": ["W", "W", "L", "W", "W"],
+      "rank": 3
+    },
+    "away": {
+      "name": "Natus Vincere",
+      "form": ["L", "W", "W", "L", "W"],
+      "rank": 5
+    },
+    "rosterNote": "G2 full; NAVI full",
+    "h2h": [
+      {"date": "2025-11-12", "score": "2-1", "competition": "BLAST"},
+      {"date": "2025-08-03", "score": "2-0", "competition": "IEM"},
+      {"date": "2025-04-18", "score": "2-1", "competition": "Major"}
+    ]
+  }
+}

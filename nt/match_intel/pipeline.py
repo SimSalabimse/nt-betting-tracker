@@ -10,6 +10,7 @@ PR-2: URL discovery (aliases + Flashscore search) when allow_network and no expl
 PR-3: Football registry ready=True → after fetch+match, parse_football_bundle fills MIC;
       process_miss cleared when real form present; parse_empty when extract yields nothing.
 PR-4: Tennis registry ready=True + v1_sports; form n≥3 or rank clears process_miss.
+PR-5: esports / snooker / darts / baseball live parsers ready + v1_sports (KD-17).
 """
 from __future__ import annotations
 
@@ -485,7 +486,8 @@ def _has_usable_free_facts(card: dict[str, Any]) -> bool:
     """
     True when free facts are good enough to clear parse_empty / process_miss.
 
-    Football: form n≥3. Tennis: form n≥3 **or** rank on either side (form_or_rank).
+    Football/esports/baseball: form n≥3 (baseball also rank/standings).
+    Tennis/snooker/darts: form n≥3 **or** rank/rating on either side (form_or_rank).
     """
     if _has_real_form(card):
         return True

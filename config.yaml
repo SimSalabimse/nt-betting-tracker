@@ -593,7 +593,7 @@ research:
   # require_for_deep stays false until Exa/MIC exit criteria (PR6)
   match_intel:
     enabled: true
-    v1_sports: [football, tennis]
+    v1_sports: [football, tennis, esports, snooker, darts, baseball]
     require_for_deep: false
     require_for_deep_sports: null   # null → same as v1_sports
     min_coverage_grade_for_deep: C

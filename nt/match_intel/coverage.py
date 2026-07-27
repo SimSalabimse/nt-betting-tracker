@@ -15,6 +15,9 @@ CRITICAL: dict[str, list[str]] = {
     "football": ["form_home", "form_away", "competition", "standings_or_rank"],
     "tennis": ["form_or_rank_home", "form_or_rank_away", "competition"],
     "esports": ["form_home", "form_away", "competition"],
+    "snooker": ["form_or_rank_home", "form_or_rank_away", "competition"],
+    "darts": ["form_or_rank_home", "form_or_rank_away", "competition"],
+    "baseball": ["form_home", "form_away", "competition", "standings_or_rank"],
     "default": ["form_home", "form_away", "competition"],
 }
 
@@ -29,6 +32,9 @@ OPTIONAL: dict[str, list[str]] = {
     ],
     "tennis": ["h2h", "rest_days", "surface", "injuries"],
     "esports": ["h2h", "ranking_or_rating", "roster_notes"],
+    "snooker": ["h2h", "rest_days"],
+    "darts": ["h2h", "rest_days"],
+    "baseball": ["h2h", "injuries", "home_away_split", "rest_days"],
     "default": ["h2h", "standings_or_rank", "injuries", "motivation"],
 }
 

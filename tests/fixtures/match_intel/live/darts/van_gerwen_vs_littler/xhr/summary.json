@@ -1,0 +1,21 @@
+{
+  "url": "https://www.flashscore.com/x/feed/summary",
+  "data": {
+    "tournament": {"name": "PDC World Championship"},
+    "home": {
+      "name": "van Gerwen Michael",
+      "form": ["W", "L", "W", "W", "W"],
+      "rank": 3
+    },
+    "away": {
+      "name": "Littler Luke",
+      "form": ["W", "W", "W", "L", "W"],
+      "rank": 1
+    },
+    "h2h": [
+      {"date": "2025-01-03", "score": "7-3", "competition": "World Championship"},
+      {"date": "2024-10-15", "score": "6-4", "competition": "European Championship"},
+      {"date": "2024-07-20", "score": "8-6", "competition": "World Matchplay"}
+    ]
+  }
+}
