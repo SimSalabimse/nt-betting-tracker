@@ -64,6 +64,15 @@ class Recommendation:
     odds_confidence: dict[str, Any] | None = None
     # FEH audit snapshot for reasoning-chain schema v2 (PR5)
     feh: dict[str, Any] | None = None
+    # Form continuity / anti-flip (PR2): soft pens on sort_ev only; true EV honest
+    form_continuity_reason: str = ""
+    ranking_gap_hc: bool = False
+    base_ev: float | None = None  # haircut+prior+non-explore learning (score time)
+    explore_boost_applied: float = 0.0  # explore portion actually added (0 if withheld)
+    evidence_snapshot: dict | None = None  # lightweight pack fields for annotate
+    opposite_side_check_status: str = ""  # "evaluated" | "missing" | "n_a"
+    soft_demotion_reason: str = ""  # combined continuity (and peers when present)
+    sort_ev: float | None = None  # composite ranking EV; never rewrites rec.ev
 
 
 
@@ -95,6 +104,32 @@ def _stake_for(
     if stake < min_stake:
         return 0.0
     return stake
+
+
+def compose_soft_sort_ev(
+    true_ev: float,
+    *,
+    pen_similar: float = 0.0,
+    pen_lessons: float = 0.0,
+    pen_form_continuity: float = 0.0,
+    similar_weight: float = 1.0,
+    continuity_weight: float = 1.0,
+    macro_bonus: float = 0.0,
+) -> float:
+    """
+    Composite ranking EV for annotate (never rewrites place/true EV).
+
+    sort_ev = true_ev
+              − (pen_similar + pen_lessons) × similar_weight
+              − pen_form_continuity × continuity_weight
+              + macro_bonus
+
+    Named pens compose additively so similar_recent / lessons / form_continuity
+    merges cannot overwrite each other.
+    """
+    peer = (float(pen_similar) + float(pen_lessons)) * float(similar_weight)
+    cont = float(pen_form_continuity) * float(continuity_weight)
+    return round(float(true_ev) - peer - cont + float(macro_bonus), 6)
 
 
 def _capital_v2_enabled(cfg: dict[str, Any]) -> bool:
@@ -479,10 +514,22 @@ def build_portfolio(
             )
             continue
 
-        ev = ev_after_haircut(p_model, odds, haircut)
-        # soft prior from config band table + live learning
-        ev += float(priors.get(band, 0.0))
-        ev += float(adj.get("ev_boost") or 0.0)
+        haircut_ev = ev_after_haircut(p_model, odds, haircut)
+        prior = float(priors.get(band, 0.0))
+        # Split learning: non-explore vs explore (PR2 base_ev gate)
+        # Backward compat: if split keys missing, treat full boost as non-explore.
+        if "ev_boost_other" in adj or "ev_boost_explore" in adj:
+            ev_boost_other = float(adj.get("ev_boost_other") or 0.0)
+            ev_boost_explore = float(adj.get("ev_boost_explore") or 0.0)
+        else:
+            ev_boost_other = float(adj.get("ev_boost") or 0.0)
+            ev_boost_explore = 0.0
+        base_ev = float(haircut_ev) + prior + ev_boost_other
+        explore_base_min = float(div_lim.get("explore_base_ev_min", 0.005))
+        pre_gate_explore = float(ev_boost_explore)
+        explore_withhold_reason = ""  # "band_gate" | "base_ev_min" | ""
+        # Provisional EV (full) for band-gate near-miss reporting
+        ev = base_ev + max(0.0, ev_boost_explore)
 
         # High-Volume v2 EV floors after haircut (+ soft boosts already applied)
         standard_floor = float(sel.get("standard_min_ev", 0.02))
@@ -517,6 +564,7 @@ def build_portfolio(
                     "grade": grade,
                     "issues": issues,
                     "ev": round(ev, 4),
+                    "base_ev": round(base_ev, 6),
                     "odds_confidence_band": band_gate.band_id,
                     "odds_confidence": band_audit,
                     "near_miss": True,
@@ -524,26 +572,33 @@ def build_portfolio(
             )
             continue
 
-        # Explore / virgin boosts off in Bands A/B — recompute adj without explore
-        if not band_gate.explore_allowed and adj.get("explored"):
-            learn_cfg_no_exp = dict(learn_cfg or {})
-            div_no = dict(learn_cfg_no_exp.get("diversification") or {})
-            div_no["explore_max_n"] = -1
-            div_no["explore_min_n"] = 999
-            learn_cfg_no_exp["diversification"] = div_no
-            old_boost = float(adj.get("ev_boost") or 0.0)
-            adj = learning_adjustments(
-                learn,
-                sport=c.sport or "",
-                market=c.market_type or "",
-                selection=c.selection or "",
-                band=band,
-                enabled=learn_on,
-                learn_cfg=learn_cfg_no_exp,
-            )
-            new_boost = float(adj.get("ev_boost") or 0.0)
-            ev = float(ev) - old_boost + new_boost
-            adj = {**adj, "explored": False}
+        # Apply explore portion only when band allows AND base_ev clears floor
+        explore_boost_applied = 0.0
+        explored_effective = False
+        if not band_gate.explore_allowed:
+            ev_boost_explore = 0.0
+            if pre_gate_explore > 0:
+                explore_withhold_reason = "band_gate"
+        if (
+            band_gate.explore_allowed
+            and base_ev + 1e-12 >= explore_base_min
+            and ev_boost_explore > 0
+        ):
+            ev = base_ev + ev_boost_explore
+            explore_boost_applied = float(ev_boost_explore)
+            explored_effective = bool(adj.get("explored"))
+            explore_withhold_reason = ""
+        else:
+            ev = base_ev
+            explore_boost_applied = 0.0
+            explored_effective = False
+            if pre_gate_explore > 0 and not explore_withhold_reason:
+                explore_withhold_reason = "base_ev_min"
+        adj = dict(adj)
+        adj["ev_boost_explore"] = round(explore_boost_applied, 4)
+        adj["ev_boost"] = round(ev_boost_other + explore_boost_applied, 4)
+        if not explored_effective:
+            adj["explored"] = False
 
         # Band-specific EV floor (stricter for short prices / core)
         if (
@@ -553,8 +608,8 @@ def build_portfolio(
         ):
             min_ev = max(float(min_ev), float(band_gate.min_ev))
 
-        # Thin sport/market explore path — capped by band policy
-        if adj.get("explored") and band_gate.explore_allowed:
+        # Thin sport/market explore path — only when boost actually applied
+        if explored_effective and explore_boost_applied > 0 and band_gate.explore_allowed:
             explore_floor = float(div_lim.get("explore_min_ev", 0.012))
             if band_gate.explore_ev_cap is not None:
                 explore_floor = max(explore_floor, float(band_gate.explore_ev_cap))
@@ -746,6 +801,8 @@ def build_portfolio(
                     "reason": reason,
                     "grade": grade,
                     "high_odds": high,
+                    "ev": round(ev, 4),
+                    "base_ev": round(base_ev, 6),
                     "learning_ev_boost": adj.get("ev_boost"),
                     "process_gate_raise": pg_raise or None,
                     "temp_ev_relax_delta": relax_delta if used_ev_relax else None,
@@ -894,12 +951,27 @@ def build_portfolio(
         # Dual-write p_model into notes for forensic recovery if side-car is missing
         note_bits.append(f"p_model={float(p_model):.4f}")
         note_bits.append(f"EV={ev:.3f}")
+        # Dual EV: base vs explore (PR2) — distinguish band strip vs base floor
+        if explore_boost_applied > 0:
+            note_bits.append(
+                f"base_ev={base_ev:+.3f} · explore_boost={explore_boost_applied:+.3f} · "
+                f"placed_ev={ev:+.3f}"
+            )
+        elif pre_gate_explore > 0 and not explored_effective:
+            if explore_withhold_reason == "band_gate":
+                note_bits.append(
+                    f"explore_boost=withheld (band_gate; base_ev={base_ev:+.3f})"
+                )
+            else:
+                note_bits.append(
+                    f"explore_boost=withheld (base_ev={base_ev:+.3f}≤min)"
+                )
         if regime_explore:
             from nt.bankroll_regime import EXPLORE_REGIME_TAG
 
             note_bits.append(EXPLORE_REGIME_TAG)
             note_bits.append("explore")
-        elif adj.get("explored"):
+        elif explored_effective:
             note_bits.append("EXPLORE")
         if adj.get("stake_mult") and abs(float(adj["stake_mult"]) - 1.0) > 0.01:
             note_bits.append(f"learn_stake×{adj['stake_mult']}")
@@ -947,6 +1019,31 @@ def build_portfolio(
             market_key=str(mk or ""),
             evidence=c.evidence if isinstance(c.evidence, dict) else None,
         )
+        # Score-time evidence snapshot + ranking-gap tag (no pack reload at annotate)
+        from nt.form_continuity import build_evidence_snapshot, is_ranking_gap_hc
+
+        snap = build_evidence_snapshot(
+            c.evidence if isinstance(c.evidence, dict) else None,
+            grade,
+        )
+        opp = snap.get("opposite_side_check") if isinstance(snap, dict) else None
+        if opp:
+            opp_status = "evaluated"
+        elif c.evidence:
+            opp_status = "missing"
+        else:
+            opp_status = "n_a"
+        mf_key = str(mk or c.market_type or "")
+        if isinstance(c.evidence, dict) and c.evidence.get("market_family"):
+            mf_key = str(c.evidence.get("market_family") or mf_key)
+        rank_gap = is_ranking_gap_hc(
+            market_family=mf_key,
+            selection=c.selection or "",
+            notes=c.notes or "",
+            match=c.match or "",
+            evidence_snapshot=snap,
+            market_type=c.market_type or "",
+        )
         rec = Recommendation(
             match=c.match,
             selection=c.selection,
@@ -962,11 +1059,11 @@ def build_portfolio(
             p_model=p_model,
             notes="; ".join(note_bits)[:400],
             high_odds=high,
-            explore=bool(adj.get("explored") or regime_explore)
+            explore=bool(explored_effective or regime_explore)
             if band_gate.explore_allowed
             else False,
             learning_stake_mult=learn_mult,
-            learning_ev_boost=float(adj.get("ev_boost") or 0.0),
+            learning_ev_boost=float(ev_boost_other) + float(explore_boost_applied),
             market_key=mk,
             reasons=list(adj.get("notes") or [])[:6],
             evidence_path=(c.evidence_path or "").strip(),
@@ -978,12 +1075,195 @@ def build_portfolio(
             odds_confidence_band=band_gate.band_id,
             odds_confidence=band_audit,
             feh=feh_audit,
-
+            base_ev=round(base_ev, 6),
+            explore_boost_applied=float(explore_boost_applied),
+            evidence_snapshot=snap,
+            ranking_gap_hc=bool(rank_gap),
+            opposite_side_check_status=opp_status,
         )
         scored.append(rec)
 
-    # Sort by EV desc; optional explore-first reorder so thin sports get airtime
-    scored.sort(key=lambda r: (r.ev, 1 if r.explore else 0), reverse=True)
+    # --- Composite soft-demotion annotate (PR2) ---
+    # sort_ev = true_ev − (similar+lessons)×w_sim − form_continuity×w_cont + macro
+    # Named pens accumulate; filters stay orthogonal (form_continuity: soft-reject
+    # vs optional similar_recent hard count). Peers optional when modules present.
+    # INVARIANT: never rewrite rec.ev.
+    from nt.form_continuity import form_continuity_penalty
+
+    fc_cfg = dict(div_lim.get("form_continuity") or {})
+    sort_cfg = dict(div_lim.get("sort") or {})
+    cont_weight = float(sort_cfg.get("continuity_penalty_weight", 1.0) or 1.0)
+    sim_weight = float(sort_cfg.get("similar_penalty_weight", 1.0) or 1.0)
+    macro_bonus_amt = float(sort_cfg.get("macro_underrep_bonus", 0.0) or 0.0)
+    fc_on = bool(fc_cfg.get("enabled", False))
+
+    similar_on = False
+    sr_cfg: dict[str, Any] = {}
+    similar_recent_penalty_fn = None
+    recent_window_rows: list[dict[str, Any]] = []
+    try:
+        from nt.similar_recent import (  # type: ignore
+            live_recent_window,
+            similar_recent_penalty,
+        )
+
+        similar_recent_penalty_fn = similar_recent_penalty
+        sr_cfg = dict(div_lim.get("similar_recent") or {})
+        similar_on = bool(sr_cfg.get("enabled", True)) and similar_recent_penalty_fn is not None
+        if similar_on:
+            try:
+                recent_window_rows = live_recent_window(
+                    historical_rows,
+                    window=int(sr_cfg.get("window", 12) or 12),
+                    include_pending=bool(sr_cfg.get("include_pending", True)),
+                    live_ledger_only=bool(sr_cfg.get("live_ledger_only", True)),
+                )
+            except Exception:
+                recent_window_rows = list(historical_rows or [])
+    except ImportError:
+        similar_on = False
+        similar_recent_penalty_fn = None
+
+    lessons_soft_fn = None
+    try:
+        from nt.settlement_lessons import lessons_soft_adjustments  # type: ignore
+
+        lessons_soft_fn = lessons_soft_adjustments
+    except ImportError:
+        lessons_soft_fn = None
+
+    for rec in scored:
+        true_ev = float(rec.ev)
+        pre_annotate_ev = true_ev
+        pen_similar = 0.0
+        pen_lessons = 0.0
+        pen_fc = 0.0
+        why_sim = ""
+        why_les = ""
+        why_fc = ""
+        meta_fc: dict[str, Any] = {}
+
+        if similar_on and similar_recent_penalty_fn is not None:
+            try:
+                pen_similar, why_sim, _hits = similar_recent_penalty_fn(
+                    sport=rec.sport or "",
+                    selection=rec.selection or "",
+                    market_type=rec.market_type or "",
+                    market_key=rec.market_key or "",
+                    market_family_key=str(
+                        getattr(rec, "market_family", "") or rec.market_key or ""
+                    ),
+                    recent_rows=recent_window_rows,
+                    cfg=sr_cfg,
+                )
+                pen_similar = float(pen_similar or 0.0)
+                why_sim = str(why_sim or "")
+            except Exception:
+                pen_similar = 0.0
+                why_sim = ""
+
+        if fc_on:
+            pen_fc, why_fc, meta_fc = form_continuity_penalty(
+                match=rec.match,
+                selection=rec.selection,
+                sport=rec.sport or "",
+                market_type=rec.market_type or "",
+                market_family_key=str(rec.market_key or ""),
+                decimal_odds=rec.decimal_odds,
+                base_ev=rec.base_ev,
+                grade=rec.grade,
+                evidence_snapshot=rec.evidence_snapshot,
+                notes=rec.notes or "",
+                recent_rows=historical_rows,
+                cfg=fc_cfg,
+            )
+            pen_fc = float(pen_fc or 0.0)
+            rec.form_continuity_reason = why_fc or ""
+            if rec.ev != pre_annotate_ev:
+                rec.ev = pre_annotate_ev
+            if why_fc:
+                if why_fc not in (rec.notes or ""):
+                    rec.notes = f"{(rec.notes or '').rstrip('; ')}; {why_fc}".strip("; ")[:400]
+                if why_fc not in (rec.reasons or []):
+                    rec.reasons = list(rec.reasons or []) + [why_fc]
+            if meta_fc.get("soft_reject") and why_fc:
+                rec.reject_reason = (
+                    why_fc
+                    if why_fc.startswith("form_continuity:")
+                    else f"form_continuity: {why_fc}"
+                )
+
+        if lessons_soft_fn is not None:
+            try:
+                les = lessons_soft_fn(
+                    rec,
+                    cfg=cfg,
+                    historical_rows=historical_rows,
+                    form_continuity_soft_rejected=bool(
+                        meta_fc.get("soft_reject")
+                        or str(getattr(rec, "reject_reason", "") or "").startswith(
+                            "form_continuity:"
+                        )
+                    ),
+                )
+                if isinstance(les, tuple) and len(les) >= 2:
+                    pen_lessons = float(les[0] or 0.0)
+                    why_les = str(les[1] or "")
+                elif isinstance(les, dict):
+                    pen_lessons = float(les.get("penalty") or les.get("pen") or 0.0)
+                    why_les = str(les.get("reason") or "")
+            except Exception:
+                pen_lessons = 0.0
+                why_les = ""
+
+        macro_bonus = 0.0
+        if macro_bonus_amt > 0:
+            macro_bonus = 0.0
+
+        rec.sort_ev = compose_soft_sort_ev(
+            true_ev,
+            pen_similar=pen_similar,
+            pen_lessons=pen_lessons,
+            pen_form_continuity=pen_fc,
+            similar_weight=sim_weight,
+            continuity_weight=cont_weight,
+            macro_bonus=macro_bonus,
+        )
+        demotion_bits = [x for x in (why_sim, why_les, why_fc) if x]
+        if demotion_bits:
+            rec.soft_demotion_reason = "; ".join(demotion_bits)
+            for bit in demotion_bits:
+                if bit not in (rec.notes or "") and not bit.startswith("form_continuity:"):
+                    rec.notes = f"{(rec.notes or '').rstrip('; ')}; {bit}".strip("; ")[:400]
+                if bit not in (rec.reasons or []):
+                    rec.reasons = list(rec.reasons or []) + [bit]
+
+    if fc_on:
+        for rec in scored:
+            if (rec.reject_reason or "").startswith("form_continuity:"):
+                rejects.append(
+                    {
+                        "match": rec.match,
+                        "selection": rec.selection,
+                        "reason": rec.reject_reason,
+                        "near_miss": True,
+                        "form_continuity": True,
+                        "ev": rec.ev,
+                        "sort_ev": rec.sort_ev,
+                        "base_ev": rec.base_ev,
+                    }
+                )
+        scored = [
+            r
+            for r in scored
+            if not (r.reject_reason or "").startswith("form_continuity:")
+        ]
+
+    # Sort by sort_ev (fallback true EV) desc; optional explore-first reorder
+    def _rank_ev(r: Recommendation) -> float:
+        return float(r.sort_ev if r.sort_ev is not None else r.ev)
+
+    scored.sort(key=lambda r: (_rank_ev(r), 1 if r.explore else 0), reverse=True)
     # Early regime: soft-prefer mid-odds lower-variance lines (sort only, not hard ban)
     if risk.get("regime_prefer_mid_odds") and risk.get("bankroll_regime") in (
         "exploration",
@@ -1000,7 +1280,7 @@ def build_portfolio(
 
         def _mid_key(r: Recommendation) -> tuple:
             mid = 1 if is_mid_odds_preferred(float(r.decimal_odds), regime_blob) else 0
-            return (mid, r.ev, 1 if r.explore else 0)
+            return (mid, _rank_ev(r), 1 if r.explore else 0)
 
         scored.sort(key=_mid_key, reverse=True)
     if div_lim.get("prefer_explore_first"):
@@ -1009,7 +1289,7 @@ def build_portfolio(
             key=lambda r: (
                 0 if (r.explore and normalize_sport(r.sport) != "football") else 1,
                 0 if r.explore else 1,
-                -r.ev,
+                -_rank_ev(r),
             )
         )
 
@@ -1115,7 +1395,120 @@ def build_portfolio(
     def _is_football(sp: str) -> bool:
         return normalize_sport(sp, default="unknown") == "football"
 
-    def _try_accept(rec: Recommendation, *, soft_football_cap: bool = False) -> str:
+    # Ranking-gap HC soft cap (PR4 Rule 3.2): slip preference only; Pass 3 force-accept
+    rg_cfg = dict(div_lim.get("ranking_gap_hc") or {})
+    rg_soft_on = bool(rg_cfg.get("enabled", False))
+    max_rg = int(rg_cfg.get("max_per_slip", 1) or 1)
+    rg_ev_slack = float(rg_cfg.get("ev_slack", 0.015) or 0.015)
+    _rg_skip_base = str(
+        rg_cfg.get("soft_skip_reason")
+        or f"ranking_gap_hc: soft cap {max_rg} per slip"
+    ).strip()
+    if "prefer other" not in _rg_skip_base.lower():
+        rg_gate_b_reason = (
+            f"{_rg_skip_base} — prefer other market types / non-gap edges"
+        )
+    else:
+        rg_gate_b_reason = _rg_skip_base
+    ranking_gap_counts = 0
+
+    _SCRIPT_SOFT_RG = {
+        "totals_under",
+        "totals_over",
+        "btts_no",
+        "btts_yes",
+        "clean_sheet",
+        "handicap",
+    }
+
+    def _sort_ev_of(r: Recommendation) -> float:
+        return float(r.sort_ev if r.sort_ev is not None else r.ev)
+
+    def _would_clear_diversify_at_min_stake(other: Recommendation) -> bool:
+        """Peer snapshot: would still clear hard diversify blocks at min_stake."""
+        if (other.match, other.selection) in picked_keys:
+            return False
+        if (other.match, other.selection) in combo_leg_keys:
+            return False
+        if remaining < min_stake or len(picked) >= max_bets:
+            return False
+        om = (other.match or "").strip()
+        if match_counts.get(om, 0) >= max_match:
+            return False
+        if any(
+            is_open_risk(r.get("result"))
+            and (r.get("match") or "").strip() == other.match
+            and (r.get("selection") or "").strip() == other.selection
+            for r in (historical_rows or [])
+        ):
+            return False
+        sp_o = normalize_sport(other.sport, default="unknown")
+        mk_o = other.market_key or infer_market(other.selection, other.market_type)
+        bd_o = other.odds_band or ""
+        if sport_counts.get(sp_o, 0) >= max_sport:
+            return False
+        if market_counts.get(mk_o, 0) >= max_market:
+            return False
+        if bd_o and band_counts.get(bd_o, 0) >= max_band:
+            return False
+        if other.high_odds and high_odds_count >= max_high:
+            return False
+        lg_o = (other.league_key or "unknown").strip() or "unknown"
+        if lg_o != "unknown" and league_counts.get(lg_o, 0) >= max_league:
+            return False
+        sf_o = (other.script_family or "other").strip() or "other"
+        if sf_o in _SCRIPT_SOFT_RG and script_counts.get(sf_o, 0) >= max_script:
+            return False
+        cand_h_o = parse_kickoff_hour(other.kickoff or "")
+        if cand_h_o is not None:
+            n_ko_o = count_ko_window(
+                cand_h_o, open_ko_hours, window_hours=ko_window_h
+            )
+            if n_ko_o >= max_ko_window:
+                return False
+        return True
+
+    def _has_same_match_competitive_non_hc(cand: Recommendation) -> bool:
+        m = (cand.match or "").strip()
+        if not m:
+            return False
+        se_c = _sort_ev_of(cand)
+        for other in scored:
+            if other is cand or (other.match, other.selection) in picked_keys:
+                continue
+            if (other.match or "").strip() != m:
+                continue
+            if other.ranking_gap_hc:
+                continue
+            if (other.reject_reason or "").startswith("form_continuity:"):
+                continue
+            if _sort_ev_of(other) + 1e-12 < se_c - rg_ev_slack:
+                continue
+            if _would_clear_diversify_at_min_stake(other):
+                return True
+        return False
+
+    def _has_competitive_non_rg_peer(cand: Recommendation) -> bool:
+        se_c = _sort_ev_of(cand)
+        for other in scored:
+            if other is cand or (other.match, other.selection) in picked_keys:
+                continue
+            if other.ranking_gap_hc:
+                continue
+            if (other.reject_reason or "").startswith("form_continuity:"):
+                continue
+            if _sort_ev_of(other) + 1e-12 < se_c - rg_ev_slack:
+                continue
+            if _would_clear_diversify_at_min_stake(other):
+                return True
+        return False
+
+    def _try_accept(
+        rec: Recommendation,
+        *,
+        soft_football_cap: bool = False,
+        soft_ranking_gap_cap: bool = False,
+    ) -> str:
         """
         Try to add rec. Returns 'ok' | 'skip' | 'reject'.
 
@@ -1124,8 +1517,12 @@ def build_portfolio(
             (not reject) so the fill-up pass can still take good football
             (e.g. Racing BTTS Nei) when non-football cannot fill remaining seats.
             Hard ceiling remains max_per_sport (pending + this slip).
+
+        soft_ranking_gap_cap:
+            Soft-prefer ≤ max_per_slip ranking-gap HCs and same-match non-HC
+            over first RG seat (EV-slack peers). Pass 3 force-accepts with False.
         """
-        nonlocal remaining, high_odds_count
+        nonlocal remaining, high_odds_count, ranking_gap_counts
         if len(picked) >= max_bets or remaining < min_stake:
             return "skip"
         m = (rec.match or "").strip()
@@ -1254,6 +1651,29 @@ def build_portfolio(
                 )
                 return "reject"
 
+        # Ranking-gap soft cap (after hard diversify; skip so Pass 3 can force-accept)
+        if soft_ranking_gap_cap and rg_soft_on and rec.ranking_gap_hc:
+            if _has_same_match_competitive_non_hc(rec):
+                rejects.append(
+                    {
+                        "match": rec.match,
+                        "selection": rec.selection,
+                        "reason": "ranking_gap_hc: prefer same-match non-HC",
+                        "near_miss": True,
+                    }
+                )
+                return "skip"
+            if ranking_gap_counts >= max_rg and _has_competitive_non_rg_peer(rec):
+                rejects.append(
+                    {
+                        "match": rec.match,
+                        "selection": rec.selection,
+                        "reason": rg_gate_b_reason,
+                        "near_miss": True,
+                    }
+                )
+                return "skip"
+
         stake = min(rec.stake_nok, remaining)
         stake = float(int(stake))
         if stake < min_stake:
@@ -1272,19 +1692,30 @@ def build_portfolio(
             league_counts[lg] = league_counts.get(lg, 0) + 1
         script_counts[sf] = script_counts.get(sf, 0) + 1
         open_ko_hours.append(cand_h)
+        if rec.ranking_gap_hc:
+            ranking_gap_counts += 1
         return "ok"
 
     picked_keys: set[tuple[str, str]] = set()
     combo_leg_keys: set[tuple[str, str]] = set()
 
-    def _take(rec: Recommendation, *, soft_football_cap: bool = False) -> bool:
+    def _take(
+        rec: Recommendation,
+        *,
+        soft_football_cap: bool = False,
+        soft_ranking_gap_cap: bool = False,
+    ) -> bool:
         if (rec.match, rec.selection) in picked_keys:
             return False
         # Don't re-place legs already used in a combo this round
         if (rec.match, rec.selection) in combo_leg_keys:
             return False
         # Combo tickets skip diversify sport counts as multi
-        status = _try_accept(rec, soft_football_cap=soft_football_cap)
+        status = _try_accept(
+            rec,
+            soft_football_cap=soft_football_cap,
+            soft_ranking_gap_cap=soft_ranking_gap_cap,
+        )
         if status == "ok":
             picked_keys.add((rec.match, rec.selection))
             return True
@@ -1420,26 +1851,28 @@ def build_portfolio(
 
     def _fill_passes() -> None:
         # Pass 1: non-football first (build sample for thin sports)
+        # Ranking-gap soft cap active (A)+(B)
         for rec in scored:
             if len(picked) >= max_bets or remaining < min_stake:
                 break
             if _is_football(rec.sport or ""):
                 continue
-            _take(rec, soft_football_cap=False)
+            _take(rec, soft_football_cap=False, soft_ranking_gap_cap=True)
 
         # Pass 2: limited football first (max_football is a soft preference only)
+        # Ranking-gap soft cap still active (A)+(B)
         for rec in scored:
             if len(picked) >= max_bets or remaining < min_stake:
                 break
             if not _is_football(rec.sport or ""):
                 continue
-            _take(rec, soft_football_cap=True)
+            _take(rec, soft_football_cap=True, soft_ranking_gap_cap=True)
 
-        # Pass 3: fill remaining seats
+        # Pass 3: fill remaining seats — force-accept RG if peers gone / seats empty
         for rec in scored:
             if len(picked) >= max_bets or remaining < min_stake:
                 break
-            _take(rec, soft_football_cap=False)
+            _take(rec, soft_football_cap=False, soft_ranking_gap_cap=False)
 
     def _count_extra_eligible() -> int:
         """How many more scored candidates could still clear diversify at min_stake."""
