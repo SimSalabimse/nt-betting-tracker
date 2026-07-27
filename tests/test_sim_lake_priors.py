@@ -192,10 +192,11 @@ def test_simulate_match_never_auto_writes_evidence(tmp_path, monkeypatch):
     assert written == []
 
 
-def test_live_config_sim_features_default_off():
+def test_live_config_sim_features_keys_present():
     from nt.config import load_config
     from nt.defaults import data_platform_cfg
 
     dp = data_platform_cfg(load_config())
-    assert dp["sim_features"] is False
-    assert dp["enabled"] is False
+    assert isinstance(dp.get("sim_features"), bool)
+    assert isinstance(dp.get("enabled"), bool)
+    # Opt-in is operator choice; dual-gate still required for lake λ priors.

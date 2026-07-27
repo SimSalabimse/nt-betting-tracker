@@ -107,14 +107,20 @@ def test_get_client_none_when_enabled_but_package_missing(monkeypatch):
         sys.modules.update(removed)
 
 
-def test_live_config_defaults_off():
-    """config.yaml ships with data_platform disabled (desk without lake)."""
+def test_live_config_opt_in_shape():
+    """config.yaml may opt in; client still soft-fails without lake package/data."""
     from nt.config import load_config
 
     cfg = load_config()
     dp = data_platform_cfg(cfg)
-    assert dp["enabled"] is False
-    assert get_client(cfg) is None
+    assert "enabled" in dp
+    assert "sim_features" in dp
+    assert "allow_raw_sql" in dp
+    assert isinstance(dp["enabled"], bool)
+    assert isinstance(dp["sim_features"], bool)
+    # Soft contract: get_client never raises (returns client or None)
+    client = get_client(cfg)
+    assert client is None or hasattr(client, "api_version")
 
 
 def test_requirements_txt_has_no_lake_deps():
