@@ -14,8 +14,10 @@ import nt_bootstrap  # noqa: F401
 from nt.control_signals import emit_temp_ev_relax
 from nt.status import (
     collect_coverage_floor_status,
+    collect_esr_status,
     collect_feh_status,
     format_coverage_floor_section,
+    format_esr_section,
     format_feh_section,
     generate_status,
     write_status,
@@ -265,3 +267,47 @@ def test_status_includes_feh_section_template(tmp_path: Path):
     feh_block = md.split("## Forced Evidence Hierarchy", 1)[1].split("## ", 1)[0]
     assert "Equity" not in feh_block
     assert "baseline" not in feh_block
+
+
+def test_status_includes_esr_banner_when_feh_off(tmp_path: Path):
+    """PR5: ESR active banner when FEH place-owning is off (live default)."""
+    cfg = _minimal_cfg(tmp_path)
+    # ESR kill-switch shape
+    cfg["selection"]["evidence"] = {
+        "enabled": False,
+        "shadow_mode": True,
+        "fail_closed": False,
+        "forced_hierarchy": {
+            "enabled": False,
+            "anti_soft_underdog": False,
+        },
+    }
+    cfg["research"]["tiers"]["deep_min_preferred_share"] = 0.0
+    cfg["research"]["tiers"]["deep_max_short_main_share"] = 1.0
+    cfg["selection"]["test_stake_cap"] = {
+        "enabled": True,
+        "max_bets": 10,
+        "max_stake_nok": 10.0,
+        "system_tag": "esr_v1",
+        "state_path": str(tmp_path / "state" / "feh_test_cap.json"),
+    }
+
+    info = collect_esr_status(cfg)
+    assert info["active"] is True
+    assert info["philosophy"] == "esr_v1"
+    assert info["feh_place_owning"] is False
+    assert info["composition_off"] is True
+    section = format_esr_section(info)
+    assert "## Edge-Seeking Research (ESR)" in section
+    assert "ACTIVE" in section
+    assert "place_owning OFF" in section
+    assert "composition quotas **off**" in section
+
+    md = generate_status(cfg, _bankroll(), _phase(), _risk())
+    assert "## Edge-Seeking Research (ESR)" in md
+    assert "ACTIVE" in md
+    # ESR section appears before FEH block
+    assert md.index("## Edge-Seeking Research (ESR)") < md.index("## Forced Evidence Hierarchy")
+    feh_block = md.split("## Forced Evidence Hierarchy", 1)[1].split("## ", 1)[0]
+    assert "demoted" in feh_block.lower() or "shadow" in feh_block.lower()
+    assert "why · support · main risk" in md or "expansion_needed" in md

@@ -22,6 +22,7 @@ from nt.config import path_from_config
 from nt.paths import resolve
 
 SCHEMA_VERSION = 2
+PHILOSOPHY = "esr_v1"
 
 # Missed-audit mid band (prefer for near-miss volume cap)
 _MID_BAND_LO = 1.80
@@ -43,7 +44,9 @@ def reasoning_cfg(cfg: dict[str, Any]) -> dict[str, Any]:
         "near_miss_ev_slack": 0.04,  # include rejects within this of clearing EV
         "place_md_section": True,
         "join_light": True,
-        "feh_fields": True,  # schema v2 FEH / test-cap enrichment
+        "feh_fields": True,  # optional FEH shadow audit when present (not place law)
+        "philosophy": PHILOSOPHY,
+        "why_support_risk": True,  # PLACE_THESE ## Reasoning uses Why/Support/Main risk
     }
     return {**defaults, **raw}
 
@@ -222,15 +225,21 @@ def test_cap_snapshot(cfg: dict[str, Any] | None = None) -> dict[str, Any]:
 
 
 def _test_cap_applied_from_obj(obj: Any) -> bool:
-    """True when stake was clipped / tagged for FEH test cap."""
+    """True when stake was clipped / tagged for ESR/FEH test cap."""
     notes = str(_pick_attr(obj, "notes") or "")
-    if "FEH_TEST_CAP:10NOK" in notes or "feh_test_cap_10nok" in notes:
+    if (
+        "FEH_TEST_CAP:10NOK" in notes
+        or "feh_test_cap_10nok" in notes
+        or "TEST_CAP:esr_v1" in notes
+        or "TEST_CAP:feh_v1" in notes
+        or "TEST_CAP:" in notes
+    ):
         return True
     sd = _pick_attr(obj, "stake_decision")
     if isinstance(sd, dict):
         constraints = sd.get("constraints_applied") or []
         if isinstance(constraints, (list, tuple)) and any(
-            "feh_test_cap" in str(c) for c in constraints
+            ("feh_test_cap" in str(c) or "test_cap" in str(c).lower()) for c in constraints
         ):
             return True
         if sd.get("feh_test_cap_applied") or sd.get("test_cap_applied"):
@@ -385,6 +394,115 @@ def extract_feh_chain_fields(
     return fields
 
 
+def _place_uses_feh(cfg: dict[str, Any] | None) -> bool:
+    """True only when FEH still owns place (ESR default: False)."""
+    if not cfg:
+        return False
+    try:
+        from nt.evidence_hierarchy.score import place_uses_saef
+
+        return bool(place_uses_saef(cfg))
+    except Exception:
+        sel = dict((cfg or {}).get("selection") or {})
+        raw = dict(sel.get("evidence") or {})
+        fh = dict(raw.get("forced_hierarchy") or {})
+        return bool(raw.get("enabled") and not raw.get("shadow_mode", True) and fh.get("enabled"))
+
+
+def extract_why_support_risk(
+    source: Any,
+    *,
+    chain: dict[str, Any] | None = None,
+) -> dict[str, str]:
+    """
+    Build ESR Stage-4 Why / Support / Main risk from existing chain fields.
+
+    Never invents p_model. Soft-fails to short fallbacks from notes/reasons.
+    Does not act as a volume killer — missing fields → brief defaults only.
+    """
+    src = source
+    ch = chain or {}
+
+    def _s(*vals: Any, limit: int = 220) -> str:
+        for v in vals:
+            if v is None:
+                continue
+            t = str(v).strip()
+            if t:
+                return t[:limit]
+        return ""
+
+    why = _s(
+        _pick_attr(src, "why"),
+        ch.get("why"),
+        _pick_attr(src, "why_this_side_not_opposite"),
+        ch.get("why_this_side_not_opposite"),
+        _pick_attr(src, "summary"),
+        ch.get("summary"),
+    )
+    if not why:
+        reasons = _pick_attr(src, "reasons") or ch.get("reasons") or []
+        if isinstance(reasons, (list, tuple)) and reasons:
+            why = _s("; ".join(str(x) for x in reasons if str(x).strip())[:220])
+    if not why:
+        notes = _s(_pick_attr(src, "notes"), ch.get("notes"), limit=160)
+        # Strip mechanical noise tokens for human Why line
+        if notes:
+            clean = re.sub(
+                r"(p_model=[0-9.]+|EV=[+\-0-9.]+|promo_score=[0-9.]+|stake[×x][0-9.]+)",
+                "",
+                notes,
+                flags=re.I,
+            )
+            clean = re.sub(r"\s*;\s*", "; ", clean).strip(" ;")
+            why = clean[:160] if clean else notes[:160]
+
+    support = _s(
+        _pick_attr(src, "support"),
+        ch.get("support"),
+        _pick_attr(src, "strongest_positive"),
+        ch.get("strongest_positive"),
+    )
+    if not support:
+        primary = _pick_attr(src, "primary_factors") or ch.get("primary_factors") or []
+        if isinstance(primary, (list, tuple)) and primary:
+            support = _s(", ".join(str(x) for x in primary if str(x).strip())[:200])
+    if not support:
+        grade = _s(_pick_attr(src, "grade"), ch.get("grade"), ch.get("final_grade"))
+        ev = _pick_attr(src, "ev")
+        if ev is None:
+            ev = ch.get("ev_after_haircut") if ch.get("ev_after_haircut") is not None else ch.get("ev")
+        bits = []
+        if grade:
+            bits.append(f"grade {grade}")
+        if ev is not None:
+            try:
+                bits.append(f"EV {float(ev):+.1%}")
+            except (TypeError, ValueError):
+                pass
+        light = ch.get("light") if isinstance(ch.get("light"), dict) else {}
+        if light.get("promotion_score") is not None:
+            bits.append(f"promo {light['promotion_score']}")
+        support = _s("; ".join(bits) if bits else "Research pack + EV path (see notes)")
+
+    main_risk = _s(
+        _pick_attr(src, "main_risk"),
+        ch.get("main_risk"),
+        _pick_attr(src, "strongest_negative"),
+        ch.get("strongest_negative"),
+        _pick_attr(src, "failure_modes"),
+        ch.get("failure_modes"),
+    )
+    if not main_risk:
+        reject = _s(_pick_attr(src, "reject_reason"), ch.get("reject_reason"))
+        if reject:
+            main_risk = reject
+    if not main_risk:
+        main_risk = "Matchup variance / price move / research incompleteness"
+
+    return {"why": why, "support": support, "main_risk": main_risk}
+
+
 def apply_schema_v2_fields(
     chain: dict[str, Any],
     source: Any = None,
@@ -393,10 +511,13 @@ def apply_schema_v2_fields(
     feh_audit: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """
-    Mutate chain in place with schema v2 FEH / band / test-cap fields.
+    Mutate chain in place with schema v2 band / test-cap / optional FEH fields.
+    ESR: philosophy esr_v1; FEH audit only when present (not place law).
     Additive and backward-compatible for mobile readers.
     """
     chain["schema_version"] = SCHEMA_VERSION
+    rc = reasoning_cfg(cfg or {})
+    chain["philosophy"] = str(rc.get("philosophy") or PHILOSOPHY)
     src = source if source is not None else chain
 
     # Odds band + confidence band + final grade
@@ -418,13 +539,24 @@ def apply_schema_v2_fields(
     else:
         chain.setdefault("final_grade", "")
 
-    # FEH transparency
-    feh_fields = extract_feh_chain_fields(src, cfg=cfg, feh_audit=feh_audit)
-    for k, v in feh_fields.items():
-        if v is not None and v != "" and v != []:
-            chain[k] = v
-    if "final_grade" in feh_fields and feh_fields["final_grade"] and not chain.get("grade"):
-        chain["grade"] = feh_fields["final_grade"]
+    # FEH transparency — optional shadow audit; not a volume killer when absent
+    want_feh = bool(rc.get("feh_fields", True))
+    place_feh = _place_uses_feh(cfg)
+    if want_feh or place_feh or feh_audit is not None:
+        feh_fields = extract_feh_chain_fields(src, cfg=cfg, feh_audit=feh_audit)
+        for k, v in feh_fields.items():
+            if v is not None and v != "" and v != []:
+                chain[k] = v
+        if "final_grade" in feh_fields and feh_fields["final_grade"] and not chain.get("grade"):
+            chain["grade"] = feh_fields["final_grade"]
+    chain["feh_place_owning"] = bool(place_feh)
+
+    # Why / support / main risk (ESR Stage 4 — always when enabled)
+    if rc.get("why_support_risk", True):
+        wsr = extract_why_support_risk(src, chain=chain)
+        chain["why"] = wsr["why"]
+        chain["support"] = wsr["support"]
+        chain["main_risk"] = wsr["main_risk"]
 
     # Test cap snapshot (research/place audit only — not a stake invent)
     cap = test_cap_snapshot(cfg)
@@ -435,7 +567,10 @@ def apply_schema_v2_fields(
     sd = _pick_attr(src, "stake_decision")
     if isinstance(sd, dict):
         constraints = sd.get("constraints_applied") or []
-        if any("feh_test_cap" in str(c) for c in (constraints or [])):
+        if any(
+            ("feh_test_cap" in str(c) or "test_cap" in str(c).lower())
+            for c in (constraints or [])
+        ):
             cap["applied"] = True
     chain["test_cap_10nok"] = cap
 
@@ -1204,30 +1339,63 @@ def format_reasoning_md(chains: list[dict[str, Any]]) -> str:
 
 
 def _format_one_md(i: int, c: dict[str, Any]) -> list[str]:
+    """
+    One pick block for PLACE_THESE ## Reasoning.
+
+    ESR lead: **Why** · **Support** · **Main risk**. Mechanical EV/stake and
+    optional FEH shadow bits follow — never FEH gate archaeology as the lead.
+    """
     odds = c.get("decimal_odds")
     odds_s = f"{float(odds):.2f}" if odds is not None else "?"
-    title = f"{c.get('match') or '?'} / {c.get('selection') or '?'} @ {odds_s}"
+    grade = c.get("final_grade") or c.get("grade") or ""
+    ev = c.get("ev_after_haircut") if c.get("ev_after_haircut") is not None else c.get("ev")
+    stake = c.get("stake_nok")
+    # Header: Selection @ odds · Grade · EV · stake (ESR Stage 4 example shape)
+    head_bits = [f"{c.get('match') or '?'} / {c.get('selection') or '?'} @ {odds_s}"]
+    if grade:
+        head_bits.append(f"Grade {grade}")
+    if ev is not None:
+        try:
+            head_bits.append(f"EV {float(ev):+.1%}")
+        except (TypeError, ValueError):
+            head_bits.append(f"EV {ev}")
+    if stake is not None:
+        try:
+            head_bits.append(f"stake {float(stake):.0f} NOK")
+        except (TypeError, ValueError):
+            pass
+    title = " · ".join(head_bits)
+
+    # Ensure why/support/risk present (chains from older dumps may lack them)
+    wsr = extract_why_support_risk(c, chain=c)
+    why = c.get("why") or wsr["why"]
+    support = c.get("support") or wsr["support"]
+    main_risk = c.get("main_risk") or wsr["main_risk"]
+
     bits = []
     if c.get("p_model") is not None:
         bits.append(f"p_model={float(c['p_model']):.3f}")
     if c.get("haircut") is not None:
         bits.append(f"haircut={float(c['haircut']):.0%}")
-    ev = c.get("ev_after_haircut") if c.get("ev_after_haircut") is not None else c.get("ev")
     if ev is not None:
         bits.append(f"EV={float(ev):+.3f}")
-    if c.get("stake_nok") is not None:
-        bits.append(f"stake={float(c['stake_nok']):.0f}")
-    if c.get("grade") or c.get("final_grade"):
-        bits.append(f"grade={c.get('final_grade') or c.get('grade')}")
+    if stake is not None:
+        bits.append(f"stake={float(stake):.0f}")
+    if grade:
+        bits.append(f"grade={grade}")
     if c.get("odds_confidence_band"):
         bits.append(f"odds_conf={c['odds_confidence_band']}")
     if c.get("phase"):
         bits.append(f"phase={c['phase']}")
-    if c.get("odds_confidence_band"):
-        bits.append(f"odds_conf_band={c['odds_confidence_band']}")
+    if c.get("philosophy"):
+        bits.append(f"philosophy={c['philosophy']}")
     controls = c.get("controls") or {}
     light = c.get("light") or {}
     out = [f"### {i}. {title}", ""]
+    # ESR lead lines (always for picks)
+    out.append(f"- **Why:** {why}")
+    out.append(f"- **Support:** {support}")
+    out.append(f"- **Main risk:** {main_risk}")
     if bits:
         out.append("- " + " · ".join(bits))
     oc = c.get("odds_confidence")
@@ -1249,13 +1417,16 @@ def _format_one_md(i: int, c: dict[str, Any]) -> list[str]:
             oc_bits.append(f"stake_x{float(oc['stake_mult']):.2f}")
         if oc_bits:
             out.append(f"- odds_confidence: {' · '.join(oc_bits)}")
-    # Schema v2 FEH transparency (compact) - shared with format_near_miss_md
+    # Optional FEH shadow audit (not place law under ESR) — compact only when present
     feh_bits = _feh_compact_bits(c)
-    # Pick lines already show grade= in bits; drop redundant grade= from feh compact
     feh_bits = [b for b in feh_bits if not b.startswith("grade=")]
-    if feh_bits:
+    if feh_bits and c.get("feh_place_owning"):
         out.append("- feh: " + " · ".join(feh_bits))
-
+    elif feh_bits:
+        # Shadow: only surface codes / anti_soft when they exist (audit trail)
+        shadow = [b for b in feh_bits if b.startswith("codes=") or b.startswith("anti_soft=") or b.startswith("test_cap=")]
+        if shadow:
+            out.append("- feh_shadow: " + " · ".join(shadow))
 
     if controls:
         ctrl = ", ".join(f"{k}={v}" for k, v in controls.items())

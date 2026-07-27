@@ -200,7 +200,49 @@ def run_recommend(
     learning = load_learning(cfg)
     picked, rejects = build_portfolio(cfg, candidates, phase, risk, rows, learning=learning)
 
-    # FEH test stake cap: ensure notes tags + hard assert stake ≤ max when active
+    # ESR Stage 3b: expansion_needed + next_tier_keys when large board & picks < 2
+    expansion: dict[str, Any] = {
+        "expansion_needed": False,
+        "expansion_tier": 0,
+        "next_tier_keys": [],
+        "reason": "",
+    }
+    try:
+        from nt.deep_queue_state import (
+            compute_expansion_signal,
+            load_deep_queue_state,
+            write_expansion_signal,
+        )
+        from nt.reasoning_chain import load_light_payload
+
+        light_payload = load_light_payload(cfg)
+        dq_state = load_deep_queue_state(cfg)
+        dq_lines = None
+        if isinstance(dq_state, dict):
+            dq_lines = dq_state.get("deep_queue")
+        expansion = compute_expansion_signal(
+            n_picks=len(picked),
+            board_matches=int(coverage.get("n_matches") or 0),
+            board_lines=int(coverage.get("n_candidates") or 0),
+            light_payload=light_payload,
+            deep_queue=dq_lines,
+            cfg=cfg,
+        )
+        write_expansion_signal(
+            cfg,
+            expansion,
+            existing_state=dq_state,
+            source="recommend",
+        )
+    except Exception:
+        expansion = {
+            "expansion_needed": False,
+            "expansion_tier": 0,
+            "next_tier_keys": [],
+            "reason": "expansion_signal_error",
+        }
+
+    # FEH/ESR test stake cap: ensure notes tags + hard assert stake ≤ max when active
     # (portfolio already clips absolute-last; this is the Pending/PLACE_THESE guard).
     # Fail-closed when enabled — never bare-pass a missing ceiling.
     try:
@@ -236,7 +278,16 @@ def run_recommend(
         "|---|-------|-----------|------|-----------|----|-------|------|",
     ]
     if not picked:
-        lines.append("| — | **NO BETS** | empty slip is success (after research) | — | — | — | — | — |")
+        if expansion.get("expansion_needed"):
+            lines.append(
+                "| — | **NO BETS** | empty slip — **expansion_needed** (deep next tier before accept) "
+                "| — | — | — | — | — |"
+            )
+        else:
+            lines.append(
+                "| — | **NO BETS** | empty slip OK only after full deep + expansion + no +EV "
+                "| — | — | — | — | — |"
+            )
         if risk.get("reasons"):
             lines.append("")
             lines.append("Risk block: " + "; ".join(risk["reasons"]))
@@ -246,6 +297,30 @@ def run_recommend(
                 f"| {i} | {r.match} | {r.selection} | {r.decimal_odds:.2f} | "
                 f"{r.stake_nok:.0f} | {r.ev:.3f} | {r.grade} | {r.odds_band} |"
             )
+
+    if expansion.get("expansion_needed"):
+        keys = expansion.get("next_tier_keys") or []
+        lines.extend(
+            [
+                "",
+                "## Expansion (Stage 3b)",
+                "",
+                f"**expansion_needed: true** · tier {expansion.get('expansion_tier') or 2} · "
+                f"reason: `{expansion.get('reason') or 'large_board_low_picks'}`",
+                "",
+                "Deep next light-pass lines (by promo) before accepting empty / thin slip:",
+                "",
+            ]
+        )
+        for pair in keys[:12]:
+            if isinstance(pair, (list, tuple)) and len(pair) >= 2:
+                lines.append(f"- {pair[0]} / {pair[1]}")
+            else:
+                lines.append(f"- {pair}")
+        lines.append("")
+        lines.append(
+            "Empty slip with unresearched `next_tier_keys` is a **process miss**, not success."
+        )
 
     lines.extend(["", "## Notes", ""])
     for r in picked:
@@ -432,4 +507,8 @@ def run_recommend(
         "force_mechanical": force_mechanical,
         "n_reasoning_chains": len(reasoning_chains),
         "reasoning_chains_path": str(reasoning_path) if reasoning_path else None,
+        "expansion_needed": bool(expansion.get("expansion_needed")),
+        "expansion_tier": int(expansion.get("expansion_tier") or 0),
+        "next_tier_keys": list(expansion.get("next_tier_keys") or []),
+        "expansion_reason": str(expansion.get("reason") or ""),
     }

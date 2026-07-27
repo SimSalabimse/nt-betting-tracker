@@ -18,6 +18,7 @@ from nt.reasoning_chain import (
     build_recommend_chains,
     collect_near_miss_candidates,
     dump_reasoning_for_recommend,
+    extract_why_support_risk,
     format_reasoning_md,
     is_near_miss_reject,
     reasoning_cfg,
@@ -488,3 +489,50 @@ def test_append_and_cfg_defaults():
     rc = reasoning_cfg(cfg)
     assert rc["enabled"] is True
     assert rc["max_near_miss"] == 8
+    assert rc["philosophy"] == "esr_v1"
+    assert rc["why_support_risk"] is True
+
+
+def test_pick_chain_has_philosophy_and_why_support_risk():
+    """ESR Stage 4: chains carry philosophy + why/support/main_risk (not FEH volume killers)."""
+    pick = {
+        "match": "Humphries vs Price",
+        "selection": "Humphries -2.5",
+        "decimal_odds": 1.62,
+        "stake_nok": 12,
+        "ev": 0.031,
+        "grade": "B",
+        "sport": "darts",
+        "p_model": 0.66,
+        "notes": "p_model=0.6600; EV=0.031",
+        "reasons": ["ranking gap", "form last 5"],
+        "strongest_positive": "PDC ranking + H2H 4-1",
+        "strongest_negative": "Single-set variance / checkout swing",
+        "why_this_side_not_opposite": "Clear ranking + form gap; Price cold last 3",
+    }
+    chain = build_chain_from_pick(pick, haircut=0.03, phase_id="1A", cfg={"reasoning": {}})
+    assert chain.get("philosophy") == "esr_v1"
+    assert chain.get("feh_place_owning") is False
+    assert "ranking" in (chain.get("why") or "").lower() or "form" in (chain.get("why") or "").lower()
+    assert "H2H" in (chain.get("support") or "") or "ranking" in (chain.get("support") or "").lower()
+    assert "variance" in (chain.get("main_risk") or "").lower() or chain.get("main_risk")
+
+    md = format_reasoning_md([chain])
+    assert "## Reasoning" in md
+    assert "**Why:**" in md
+    assert "**Support:**" in md
+    assert "**Main risk:**" in md
+    # Lead with WSR — not FEH gate archaeology as primary
+    why_idx = md.index("**Why:**")
+    assert "p_model=" in md  # mechanical bits still present as support detail
+    assert why_idx < md.index("p_model=")
+
+
+def test_extract_why_support_risk_fallbacks_not_empty():
+    wsr = extract_why_support_risk(
+        {"notes": "p_model=0.55; mid band natural total", "ev": 0.04, "grade": "B"},
+        chain={},
+    )
+    assert wsr["why"]
+    assert wsr["support"]
+    assert wsr["main_risk"]

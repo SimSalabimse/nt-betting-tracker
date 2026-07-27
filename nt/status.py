@@ -371,10 +371,11 @@ def format_feh_section(info: dict[str, Any] | None) -> str:
     def _yn(v: Any) -> str:
         return "true" if bool(v) else "false"
 
+    place_owning = bool(info.get("place_owning"))
     lines.append(
         f"- enabled: {_yn(info.get('enabled'))} | fail_closed: {_yn(info.get('fail_closed'))} "
         f"| checklist_required: {_yn(info.get('checklist_required'))} "
-        f"| place_owning: {_yn(info.get('place_owning'))}"
+        f"| place_owning: {_yn(place_owning)}"
     )
     lines.append(
         f"- shadow_mode: {_yn(info.get('shadow_mode'))} | side_first: {_yn(info.get('side_first'))} "
@@ -394,10 +395,132 @@ def format_feh_section(info: dict[str, Any] | None) -> str:
     notes = info.get("notes") or []
     if notes:
         lines.append(f"- notes: {'; '.join(str(n) for n in notes[:3])}")
+    if place_owning:
+        lines.append(
+            "- law: preferred/mid band = research-rank only · empty slip beats weak soft dogs · "
+            "promo/explore/EV-relax cannot bypass FEH F"
+        )
+    else:
+        lines.append(
+            "- law: **demoted / shadow only** under ESR — place path is grade + research_gates "
+            "+ EV + odds_confidence; soft dogs not guilty by default"
+        )
+    lines.append("")
+    return "\n".join(lines)
+
+
+def collect_esr_status(cfg: dict[str, Any]) -> dict[str, Any]:
+    """
+    Compact Edge-Seeking Research (ESR) banner fields for status.md.
+
+    Soft-fail friendly. Active when FEH does not place-own (live default).
+    """
+    info: dict[str, Any] = {
+        "active": True,
+        "philosophy": "esr_v1",
+        "place_path": "grade + research_gates + EV + odds_confidence",
+        "feh_place_owning": False,
+        "feh_shadow": True,
+        "composition_off": True,
+        "deep_min_preferred_share": 0.0,
+        "deep_max_short_main_share": 1.0,
+        "short_fav_ok": "1.40–1.80",
+        "soft_dogs": "not guilty by default",
+        "empty_slip": "only after full deep + expansion + no +EV",
+        "expansion_needed": None,
+        "next_tier_n": None,
+        "test_cap_line": "test_cap: disabled",
+        "notes": [],
+    }
+    try:
+        feh = collect_feh_status(cfg)
+        place_owning = bool(feh.get("place_owning"))
+        info["feh_place_owning"] = place_owning
+        info["feh_shadow"] = bool(feh.get("shadow_mode", True)) or not place_owning
+        info["active"] = not place_owning
+        info["test_cap_line"] = feh.get("test_cap_line") or info["test_cap_line"]
+        if place_owning:
+            info["notes"].append("FEH place-owning ON — ESR banner demoted")
+    except Exception as exc:  # noqa: BLE001
+        info["notes"].append(f"feh_probe:{type(exc).__name__}")
+
+    try:
+        from nt.light_research import tiers_cfg
+
+        tcfg = tiers_cfg(cfg)
+        min_pref = float(tcfg.get("deep_min_preferred_share") or 0.0)
+        max_sm = float(tcfg.get("deep_max_short_main_share") if tcfg.get("deep_max_short_main_share") is not None else 1.0)
+        info["deep_min_preferred_share"] = min_pref
+        info["deep_max_short_main_share"] = max_sm
+        info["composition_off"] = min_pref <= 0 and max_sm + 1e-12 >= 1.0
+    except Exception as exc:  # noqa: BLE001
+        info["notes"].append(f"tiers:{type(exc).__name__}")
+
+    try:
+        from nt.deep_queue_state import load_deep_queue_state
+
+        dq = load_deep_queue_state(cfg)
+        if isinstance(dq, dict):
+            if "expansion_needed" in dq:
+                info["expansion_needed"] = bool(dq.get("expansion_needed"))
+            keys = dq.get("next_tier_keys") or []
+            if isinstance(keys, list):
+                info["next_tier_n"] = len(keys)
+            elif dq.get("next_tier_n") is not None:
+                info["next_tier_n"] = int(dq.get("next_tier_n") or 0)
+    except Exception as exc:  # noqa: BLE001
+        info["notes"].append(f"deep_queue:{type(exc).__name__}")
+
+    return info
+
+
+def format_esr_section(info: dict[str, Any] | None) -> str:
+    """Markdown ## Edge-Seeking Research (ESR) operator banner."""
+    lines = ["## Edge-Seeking Research (ESR)", ""]
+    if not info:
+        lines.append("_ESR status unavailable (soft-fail)._")
+        lines.append("")
+        return "\n".join(lines)
+
+    active = bool(info.get("active", True))
+    state = "**ACTIVE**" if active else "**INACTIVE** (FEH place-owning)"
+    lines.append(f"- **Status**: {state} · philosophy `{info.get('philosophy') or 'esr_v1'}`")
     lines.append(
-        "- law: preferred/mid band = research-rank only · empty slip beats weak soft dogs · "
-        "promo/explore/EV-relax cannot bypass FEH F"
+        f"- **Place path**: {info.get('place_path') or 'grade + research_gates + EV + odds_confidence'}"
     )
+    feh_own = "ON" if info.get("feh_place_owning") else "OFF"
+    shadow = "shadow/audit" if info.get("feh_shadow") else "n/a"
+    lines.append(f"- **FEH**: place_owning {feh_own} · {shadow}")
+    if info.get("composition_off"):
+        lines.append(
+            "- **Deep queue**: composition quotas **off** "
+            f"(min_pref={info.get('deep_min_preferred_share', 0)}, "
+            f"max_short={info.get('deep_max_short_main_share', 1.0)}) · pure promo rank"
+        )
+    else:
+        lines.append(
+            f"- **Deep queue**: composition on "
+            f"(min_pref={info.get('deep_min_preferred_share')}, "
+            f"max_short={info.get('deep_max_short_main_share')})"
+        )
+    lines.append(
+        f"- **Edges**: short favs {info.get('short_fav_ok') or '1.40–1.80'} OK · "
+        f"soft dogs {info.get('soft_dogs') or 'not guilty by default'}"
+    )
+    lines.append(f"- **Empty slip**: {info.get('empty_slip') or 'only after expansion + no +EV'}")
+    exp = info.get("expansion_needed")
+    if exp is True:
+        n_tier = info.get("next_tier_n")
+        tier_s = f" · next_tier_n={n_tier}" if n_tier is not None else ""
+        lines.append(f"- **Expansion**: **needed**{tier_s} — deep next tier before accepting empty slip")
+    elif exp is False:
+        lines.append("- **Expansion**: not flagged")
+    else:
+        lines.append("- **Expansion**: _(no recommend signal yet)_")
+    lines.append(f"- {info.get('test_cap_line') or 'test_cap: disabled'}")
+    notes = info.get("notes") or []
+    if notes:
+        lines.append(f"- notes: {'; '.join(str(n) for n in notes[:3])}")
     lines.append("")
     return "\n".join(lines)
 
@@ -436,7 +559,17 @@ def generate_status(
     except Exception:  # noqa: BLE001
         cov_section = "## Coverage floor\n\n_Coverage floor status unavailable (soft-fail)._\n\n"
 
-    # FEH flags + test cap (soft-fail; template only — no secrets)
+    # ESR banner first (FEH-off / place path under research_gates + EV)
+    try:
+        esr_info = collect_esr_status(cfg)
+        esr_section = format_esr_section(esr_info)
+    except Exception:  # noqa: BLE001
+        esr_section = (
+            "## Edge-Seeking Research (ESR)\n\n"
+            "_ESR status unavailable (soft-fail)._\n\n"
+        )
+
+    # FEH flags + test cap (soft-fail; template only — no secrets; demoted under ESR)
     try:
         feh_info = collect_feh_status(cfg)
         feh_section = format_feh_section(feh_info)
@@ -468,7 +601,7 @@ def generate_status(
 - Today P/L: {risk['today_realized_pl_nok']:+.2f} | Stop if ≤ -{risk['stop_day_loss_limit_nok']:.2f}
 - Can bet: **{risk['can_bet']}**
 
-{feh_section}{cov_section}## High odds policy
+{esr_section}{feh_section}{cov_section}## High odds policy
 - Odds **> {thr} are allowed** when evidence grade **A**, EV ≥ high-odds min after haircut, and stake uses high-odds multiplier.
 - Historical bad band ROI raises the EV bar further — it does not hard-ban the band.
 
@@ -481,10 +614,10 @@ def generate_status(
 {pend_lines}
 
 ## Your workflow
-1. Research → `evidence/*.json` (side-first FEH packs; see `nt research scaffold`)
+1. Research → `evidence/*.json` (ESR packs; grade + research_gates; see `nt research scaffold`)
 2. Put odds in `inbox/`
 3. `python run_nt.py recommend --odds inbox/YOURFILE.txt`
-4. Place bets from `outbox/PLACE_THESE.md` (empty slip OK; 10 NOK test cap when active)
+4. Place bets from `outbox/PLACE_THESE.md` (why · support · main risk; expand if `expansion_needed`)
 5. Put results in `inbox/` → `python run_nt.py settle --results …`
 6. Review: `python run_nt.py analyze` · `learn` · `edges`
 

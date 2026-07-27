@@ -13,11 +13,14 @@ from nt.deep_queue_state import (
     build_deep_queue_state,
     build_deep_queue_state_from_payload,
     composition_from_queue,
+    compute_expansion_signal,
     deep_queue_state_path,
     load_deep_queue_state,
+    merge_expansion_into_state,
     normalize_queue_line,
     write_deep_queue_from_light_payload,
     write_deep_queue_state,
+    write_expansion_signal,
 )
 
 
@@ -258,3 +261,151 @@ def test_composition_recount_when_engine_n_mismatch():
     assert state["deep_queue_composition"]["n"] == 2
     assert state["deep_queue_composition"]["preferred_n"] == 2
     assert state["deep_queue_composition"]["preferred_share"] == 1.0
+
+
+def test_compute_expansion_needed_large_board_low_picks():
+    """ESR K17: large board + n_picks < 2 + light-pass survivors → expansion_needed."""
+    records = []
+    for i in range(16):
+        records.append(
+            {
+                "match": f"Match {i} Home vs Away",
+                "selection": f"Home ML {i}",
+                "sport": "football",
+                "decimal_odds": 1.90 + (i % 5) * 0.05,
+                "verdict": "pass",
+                "has_p_model": False,
+                "has_deep_pack": False,
+                "promotion_score": 100 - i,
+                "reason": "light-pass",
+            }
+        )
+    # Primary deep_queue is only first 3
+    deep_queue = [
+        {
+            "match": records[0]["match"],
+            "selection": records[0]["selection"],
+            "decimal_odds": records[0]["decimal_odds"],
+        },
+        {
+            "match": records[1]["match"],
+            "selection": records[1]["selection"],
+            "decimal_odds": records[1]["decimal_odds"],
+        },
+        {
+            "match": records[2]["match"],
+            "selection": records[2]["selection"],
+            "decimal_odds": records[2]["decimal_odds"],
+        },
+    ]
+    payload = {"records": records, "deep_queue": deep_queue, "shortlist_n": len(records)}
+    sig = compute_expansion_signal(
+        n_picks=0,
+        board_matches=16,
+        board_lines=len(records),
+        light_payload=payload,
+        deep_queue=deep_queue,
+        cfg={},
+    )
+    assert sig["expansion_needed"] is True
+    assert sig["expansion_tier"] == 2
+    assert sig["reason"] == "large_board_low_picks"
+    assert sig["next_tier_keys"]
+    assert 5 <= len(sig["next_tier_keys"]) <= 8
+    # Next tier prefers lines outside primary queue (highest promo first among them)
+    first = sig["next_tier_keys"][0]
+    assert first[0] == records[3]["match"]  # promo 97, first outside queue
+
+
+def test_compute_expansion_not_needed_enough_picks():
+    records = [
+        {
+            "match": f"M{i}",
+            "selection": "ML",
+            "verdict": "pass",
+            "has_p_model": False,
+            "promotion_score": 50,
+        }
+        for i in range(20)
+    ]
+    sig = compute_expansion_signal(
+        n_picks=2,
+        board_matches=20,
+        light_payload={"records": records},
+        cfg={},
+    )
+    assert sig["expansion_needed"] is False
+    assert sig["reason"] == "enough_picks"
+
+
+def test_compute_expansion_not_needed_thin_board():
+    records = [
+        {
+            "match": "A vs B",
+            "selection": "ML",
+            "verdict": "pass",
+            "has_p_model": False,
+            "promotion_score": 80,
+        }
+    ]
+    sig = compute_expansion_signal(
+        n_picks=0,
+        board_matches=3,
+        board_lines=5,
+        light_payload={"records": records},
+        cfg={},
+    )
+    assert sig["expansion_needed"] is False
+    assert sig["reason"] == "board_not_large"
+
+
+def test_write_expansion_signal_merges_into_state(tmp_path: Path):
+    cfg = _cfg(tmp_path)
+    base = build_deep_queue_state(
+        queue=[
+            {
+                "match": "X vs Y",
+                "selection": "Over 2.5",
+                "decimal_odds": 2.0,
+                "preferred": True,
+                "short_main": False,
+            }
+        ],
+        composition={
+            "n": 1,
+            "preferred_n": 1,
+            "short_main_n": 0,
+            "preferred_share": 1.0,
+            "short_main_share": 0.0,
+            "meets_preferred_floor": True,
+            "meets_short_main_cap": True,
+        },
+        source="light_research",
+    )
+    write_deep_queue_state(cfg, base)
+    exp = {
+        "expansion_needed": True,
+        "expansion_tier": 2,
+        "next_tier_keys": [["A vs B", "HC +1.5"], ["C vs D", "ML"]],
+        "next_tier_n": 2,
+        "reason": "large_board_low_picks",
+        "large_board": True,
+        "n_picks": 0,
+        "board_matches": 18,
+        "board_lines": 90,
+    }
+    path = write_expansion_signal(cfg, exp, source="recommend")
+    loaded = load_deep_queue_state(cfg)
+    assert loaded is not None
+    assert loaded["expansion_needed"] is True
+    assert loaded["next_tier_keys"][0] == ["A vs B", "HC +1.5"]
+    assert loaded["deep_queue"][0]["match"] == "X vs Y"
+    assert loaded["expansion_source"] == "recommend"
+    assert path.name == "deep_queue.json"
+
+
+def test_merge_expansion_into_state_clear():
+    state = {"deep_queue": [], "preferred_share": 0.0}
+    merge_expansion_into_state(state, {"expansion_needed": False, "reason": "enough_picks"})
+    assert state["expansion_needed"] is False
+    assert state["next_tier_keys"] == []
