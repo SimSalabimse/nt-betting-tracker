@@ -100,6 +100,25 @@ python run_nt.py settle --results inbox/results_template.yaml
 
 Linux/macOS: `python -m nt status` also works after bootstrap.
 
+### Optional: historical data lake (`nt-data-platform`)
+
+The desk does **not** require the sibling lake package. Base `requirements.txt` stays **PyYAML only** (no pandas/pyarrow/duckdb). When you want lake-backed form / λ priors later:
+
+```powershell
+# Prefer a non-synced lake root
+$env:NT_DATA_LAKE = "C:\data\nt-lake"
+
+# Editable install of the sibling package (import name: nt_data — never `nt`)
+python -m pip install -e "C:\Users\Sander\Documents\GitHub\nt-data-platform"
+python -c "import nt_data; print('ok', nt_data.__file__)"
+
+# From tracker root — adapter is off until config enables it
+python -c "from nt.data_platform import is_available; print(is_available())"
+# → True once installed; get_client() still None while data_platform.enabled: false
+```
+
+Then set `data_platform.enabled: true` (and optional `lake_root`) in `config.yaml`. See [`docs/SOURCES.md`](docs/SOURCES.md).
+
 ---
 
 ## CLI command map
