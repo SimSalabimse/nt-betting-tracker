@@ -58,10 +58,31 @@ Invoke-Step "skill_list" {
         "Match Intelligence Cards when present",
         "mic:grade",
         "n=40",
-        "n=41"
+        "n=41",
+        # PR-6 MIC multi-sport free pipeline + process_miss polish
+        "process_miss_reason",
+        "thin_public",
+        "multi-sport free pipeline",
+        "FIRECRAWL_API_KEY",
+        "playwright install chromium",
+        "require_for_deep"
     )) {
         if ($dm -notmatch [regex]::Escape($needle)) {
             throw "daily-run mirror missing required phrase: $needle"
+        }
+    }
+    $deepMirror = Join-Path $Root "docs\skills_mirror_deep-research.md"
+    if (-not (Test-Path $deepMirror)) { throw "missing $deepMirror" }
+    $dpm = Get-Content $deepMirror -Raw
+    foreach ($needle in @(
+        "MIC primary",
+        "process_miss",
+        "thin_public",
+        "require_for_deep",
+        "v1_sports"
+    )) {
+        if ($dpm -notmatch [regex]::Escape($needle)) {
+            throw "deep-research mirror missing required phrase: $needle"
         }
     }
 }

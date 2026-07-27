@@ -28,7 +28,7 @@ Clean-restart **500 NOK** desk with capital_v2 live. Engines in `nt/` are law �
 
 1. Drop Oddsen dump into `inbox/odds_*.txt` (or pass an explicit path).
 2. In Grok (CWD = tracker root): **`/daily-run`**  
-   → settle → **assert-can-bet halt** → market-scan → board + light → **MIC (1x)** → **adaptive Stage 1b scan** (A/B/C + conditional D when any match has ≥41 lines) → deep packs (**MIC primary**) → **three Decision Agents** → **apply-quality-veto** → engine `recommend` (sole **positive** place set + stakes; KD-place-law) → annotate PLACE_THESE → expand once if needed → `place-ack` (`TEST_CAP:esr_data_v1` when active).
+   → settle → **assert-can-bet halt** → market-scan → board + light → **MIC (1x multi-sport free pipeline when allow_network; ≤15 live)** → **adaptive Stage 1b scan** (A/B/C + conditional D when any match has ≥41 lines) → deep packs (**MIC primary** + process_miss-aware) → **three Decision Agents** → **apply-quality-veto** → engine `recommend` (sole **positive** place set + stakes; KD-place-law) → annotate PLACE_THESE → expand once if needed → `place-ack` (`TEST_CAP:esr_data_v1` when active).
 3. Or CLI smoke (no ledger write):
 
 ```bash

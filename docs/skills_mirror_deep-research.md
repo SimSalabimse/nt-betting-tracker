@@ -37,14 +37,17 @@ Never bare `research write-pack` as the **final** pack step — always
    - Engine `deep_queue` head cap 15 **only** on multi-agent all-fail fallback.
 4. **REFUSE** full-board / dump-wide deep (“deep the whole odds file”, 40+ unfiltered board rows). Stop and ask for primary worklist.
 5. Force real tools: MIC load, optional Exa/HQ web, optional Firecrawl, CLI, helper script. Do not simulate packs.
-6. **MIC readiness:** for each worklist match, prefer `outbox/match_intel/{match_key}.json`. If missing and daily-run Stage 1x hard top-up was skipped, run:
+6. **MIC readiness (primary):** for each worklist match, prefer `outbox/match_intel/{match_key}.json`. Multi-sport free pipeline covers `v1_sports` (football, tennis, esports, snooker, darts, baseball) when `--allow-network`. If missing and daily-run Stage 1x hard top-up was skipped, run:
 
 ```powershell
-python run_nt.py research match-intel --match "Team A vs Team B" --sport football
-# or: python run_nt.py research match-intel --odds <odds_file>
+python run_nt.py research match-intel --match "Team A vs Team B" --sport football --allow-network
+# or worklist-sized batch (live guidance ≤15 matches):
+# python run_nt.py research match-intel --odds <odds_file> --allow-network
 ```
 
-Until `require_for_deep: true` (PR6, **v1_sports only**): missing MIC → soft note `mic:missing` and continue with free/HQ research. After PR6 for `sport ∈ v1_sports`: missing/D/F MIC → **do not** deep that seat.
+Until `require_for_deep: true` (only after exit criteria E1–E5 — **stays false** in skills/ops polish; **v1_sports only** when true): missing MIC → soft note `mic:missing` and continue with free/HQ research. When require_for_deep is true for `sport ∈ v1_sports`: missing/D/F MIC → **do not** deep that seat.
+
+Read card `extraction.process_miss` / `process_miss_reason` when present: fetch/ops failures grade **F** with `process_miss: true` (e.g. `fetch_failed`, `playwright_not_installed`); true empty board → `thin_public` + `process_miss: false`. **Never invent** form/H2H to escape F.
 
 7. **Live anchor recipe** (working-tree ledger only — never archives):
 
@@ -81,7 +84,7 @@ Practical steps:
 |-------|--------|
 | Wall-clock **per line** | ≤ **4 min** standard · ≤ 2.5 min tight · ≤ 3 min expansion |
 | Exa searches | **optional** 0–6 standard · 0–4 tight (prefer 0 when MIC grade ≥ B and free pages filled form/H2H) |
-| Free / Firecrawl scrape | **0–2** pages (MIC pipeline already used free sources; top-up only) |
+| Free / Firecrawl scrape | **0–2** pages (MIC multi-sport free pipeline already used free sources; top-up only). Firecrawl needs `FIRECRAWL_API_KEY`; Playwright SPA: `pip install playwright; python -m playwright install chromium` |
 | Stage 2 batch | **≤ 45 min** hard for primary pass (soft target ≤ 35 min if parallel) |
 | Stage 3.4 expansion | Separate ≤ 20 min; does not steal primary 45 |
 
@@ -98,10 +101,10 @@ Practical steps:
 ### Research method (MIC primary)
 
 1. Load candidate + opposite selection label.
-2. **Load MIC** `outbox/match_intel/{match_key}.json` when present — use form, H2H, standings, injuries, competition, coverage.grade/score as **primary structured facts**.
+2. **Load MIC** `outbox/match_intel/{match_key}.json` when present — use form, H2H, standings, injuries, competition, coverage.grade/score as **primary structured facts**. Note `process_miss` / `process_miss_reason` in `data_coverage.evidence_quality_notes` when hard_veto-relevant (F/D or thin).
 3. Live anchor check (status + live bets).
-4. **Optional Exa / HQ web** both sides when MIC thin (grade ≤ C, missing critical fields, or non-v1 sport skeleton): favourite **and** underdog / home **and** away — form, H2H, ranking, injuries/lineups.
-5. Optional Firecrawl scrape 0–2 HQ pages when snippets thin (never for inventing MIC body retroactively without card write).
+4. **Optional Exa / HQ web** both sides when MIC thin (grade ≤ C, missing critical fields, `process_miss: true` after failed free fetch, or non-v1 sport skeleton): favourite **and** underdog / home **and** away — form, H2H, ranking, injuries/lineups.
+5. Optional Firecrawl scrape 0–2 HQ pages when snippets thin (never for inventing MIC body retroactively without card write; never claim free MIC success when card is process_miss F).
 6. Assemble **8 sections** + honest `p_model` + full ESR payload + **`data_coverage` / `evidence_quality`**.
 7. **Atomic write only:**
 
@@ -126,6 +129,7 @@ python scripts/write_deep_research_pack.py --payload outbox/deep_research/<slug>
 | injuries / lineup notes | availability / lineup fields (gate-safe enums) |
 | `sources[]` | pack sources takeaways (cite free publishers) |
 | missing card | `data_coverage` notes `mic:missing`; evidence_quality thin/insufficient |
+| `extraction.process_miss` / `process_miss_reason` | notes for Quality (e.g. `process_miss_reason=fetch_failed` vs `thin_public`); does **not** change grade math (KD-16) |
 
 ### data_coverage / evidence_quality (required on serious packs)
 
@@ -153,7 +157,7 @@ Prefer helper shape (`nt.research_quality_gate.build_data_coverage` when availab
 | **thin** | MIC C or soft gaps |
 | **insufficient** | MIC D/F, no both sides, or Quality hard_veto reasons likely |
 
-Quality Challenger (Stage 3.1c) may hard_veto on closed-enum reasons including `evidence_quality_insufficient` / MIC grades — **CLI** applies mutation; this skill only writes honest coverage fields.
+Quality Challenger (Stage 3.1c) may hard_veto on closed-enum reasons including `evidence_quality_insufficient` / MIC grades — **CLI** applies mutation; this skill only writes honest coverage fields. When packs feed Quality, note **`process_miss_reason`** on grade F/D process misses (vs `thin_public`) so hard_veto notes can distinguish ops gap from empty public board.
 
 ### Eight research sections (map into `deep_research` + gates)
 
@@ -229,7 +233,7 @@ Full strong payload shape: design doc example in `docs/DEEP_RESEARCH_SKILL_ESR_2
 
 ## Hard rules
 
-- **MIC primary** structured evidence; Exa **optional** fill when MIC/free pages thin.
+- **MIC primary** structured evidence (multi-sport free pipeline for v1_sports when allow_network); Exa **optional** fill when MIC/free pages thin or process_miss.
 - Soft dogs not guilty; short 1.40–1.80 OK with form/rank support.
 - FEH checklist is **shadow only** — no FEH place reject codes.
 - form_continuity: engine soft-reject only; do not hand-override weak flips without structural why_flip.
@@ -237,8 +241,8 @@ Full strong payload shape: design doc example in `docs/DEEP_RESEARCH_SKILL_ESR_2
 - Live ledger only for continuity narrative anchors.
 - Never invent `p_model` or force Strong on timeout.
 - Refuse full-board deep.
-- Prefer pack `data_coverage` / `evidence_quality` for Quality Challenger consumption.
-- After PR6: `require_for_deep` hard-blocks **v1_sports only** on missing/D/F MIC — non-v1 remain Exa/HQ optional.
+- Prefer pack `data_coverage` / `evidence_quality` for Quality Challenger consumption; include `process_miss_reason` when MIC process_miss.
+- `require_for_deep` **stays false** until exit criteria E1–E5; when true, hard-blocks **v1_sports only** on missing/D/F MIC — non-v1 remain Exa/HQ optional.
 
 ## Deliverable paths
 

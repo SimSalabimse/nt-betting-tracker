@@ -90,7 +90,7 @@ then run the full ESR Stage 0–4 path.
 - Sport cards / SAEF may inform notes; they are **not** FEH place law.
 - Individual sports: H2H still high-value research — record polarity honestly.
 - New/thin sports: research carefully; do not invent edges.
-- MIC v1 full pipeline = **football** (`v1_sports`); other sports get schema/skeletons + soft pressure until they join v1_sports.
+- MIC v1 free pipeline = sports in `research.match_intel.v1_sports` (live: **football, tennis, esports, snooker, darts, baseball**) when **allow_network** / live parsers ready; non-v1 → skeleton + `process_miss` `parser_not_implemented`.
 
 ### C) Exa search — **optional** (not long-term required)
 
@@ -101,7 +101,7 @@ then run the full ESR Stage 0–4 path.
 | Never | MIC body extraction; hard FEH reject; re-arm FEH place law |
 | Both sides | When Exa/HQ is used: favourite **and** underdog |
 | Fallback | HQ web + sport sites; free NT → Flashscore → FotMob first |
-| `require_for_deep` | **false** until PR6; when true, **scoped to `v1_sports` only** (not all sports) — non-v1 seats are **not** hard-blocked by MIC alone |
+| `require_for_deep` | **false** until Exa/MIC exit criteria (E1–E5) — **do not flip** in skills/ops polish; when true, **scoped to `v1_sports` only** (not all sports) — non-v1 seats are **not** hard-blocked by MIC alone |
 
 See `docs/EXA_RESEARCH_USAGE.md`.
 
@@ -206,10 +206,14 @@ Queue rank = research priority signal, not automatic place pass.
 
 **Primary structured free facts** for every shortlist/deep match. Agents and decision logic consume MIC; they do not replace it.
 
+**Multi-sport free pipeline (when `allow_network`):** live parsers + URL discovery for all `v1_sports` — football, tennis, esports, snooker, darts, baseball. Committed config keeps `allow_network: false` for CI/offline; ops pass `--allow-network` (or set config for the live desk).
+
 ```powershell
 python run_nt.py research match-intel --odds <odds_file>
+# live multi-sport free pipeline (ops desk):
+# python run_nt.py research match-intel --odds <odds_file> --allow-network
 # single match / force rebuild:
-# python run_nt.py research match-intel --match "Team A vs Team B" --sport football
+# python run_nt.py research match-intel --match "Team A vs Team B" --sport football --allow-network
 # python run_nt.py research match-intel --odds <odds_file> --force
 ```
 
@@ -218,20 +222,45 @@ python run_nt.py research match-intel --odds <odds_file>
 | Rule | Detail |
 |------|--------|
 | Wall-clock | Stage **1x** ≤ **8 minutes** (separate from scan 12 min) |
-| Board-wide | If unique matches on dump ≤ `research.match_intel.max_matches_per_run` (default **40**) → board MIC after 1a |
+| Board-wide | If unique matches on dump ≤ `research.match_intel.max_matches_per_run` (default **40**) → board MIC after 1a (offline/fixture-friendly) |
+| **Live network guidance** | When `--allow-network` / live desk: prefer **≤15 matches** (primary worklist / highest-priority seats) — do **not** burn the 8 min budget on a full 40-match scrape. Config max stays 40 for offline/CI. |
 | Else | Defer full board; proceed 1b with `mic:missing` OK on scan rows |
-| After 1c | **Hard top-up** MIC for primary worklist gaps (still ≤ max; prioritize worklist order) |
+| After 1c | **Hard top-up** MIC for primary worklist gaps (still ≤ max; prioritize worklist order; live top-up is the main ≤15 path) |
 | Expansion 3.4 | MIC top-up for expansion matches before deep |
-| v1_sports | Default **`[football]`** — full free pipeline; other sports: skeleton / best-effort |
-| `require_for_deep` | **false** until exit criteria; when true → only seats with `sport ∈ v1_sports` hard-block on missing/D/F MIC |
+| v1_sports | Live: **`[football, tennis, esports, snooker, darts, baseball]`** — multi-sport free pipeline when allow_network; non-v1 → skeleton + `parser_not_implemented` |
+| `require_for_deep` | **false** until exit criteria E1–E5 (**do not flip** in skills/ops polish); when true → only seats with `sport ∈ v1_sports` hard-block on missing/D/F MIC |
 | Never | Exa for MIC body; invent form/injuries on fetch fail → grade **F** skeleton |
+
+### process_miss vs thin_public (KD-16)
+
+Grade stays from coverage only — **`process_miss` never changes grade math**.
+
+| Situation | Typical grade | `process_miss` | Meaning |
+|-----------|---------------|----------------|---------|
+| Fetch fail / timeout / blocked / url not found / playwright missing / parse_empty after fetch | **F** | **true** + reason (`fetch_failed`, `playwright_not_installed`, …) | **Pipeline/ops gap** — fix env or retry; do not invent facts |
+| True empty public board (parser marks thin) | **F** or **D** | **false**, reason **`thin_public`** | Real thin board — not a scraper bug |
+| Usable free facts (form n≥3 / rank / standings as sport requires) | ≥ **C** often | **false** | Good MIC — cite in scan/deep |
+
+Quality hard_veto still uses closed enum (`mic_grade_F` / `mic_grade_D` / `mic_missing`). When hard_veto on those, **notes must include `process_miss_reason`** from the card when `process_miss: true` (or note `thin_public` when false).
+
+### Live scrape ops one-liners
+
+```powershell
+# Firecrawl (preferred when key set; config fetch.prefer: firecrawl)
+$env:FIRECRAWL_API_KEY = "<key>"   # user env / session
+python run_nt.py research match-intel --odds <odds_file> --allow-network
+
+# Playwright Chromium for SPA hosts (Flashscore) — one-time
+pip install playwright; python -m playwright install chromium
+# missing install → process_miss_reason=playwright_not_installed, grade F (not silent empty)
+```
 
 | Artifact | Path |
 |----------|------|
 | MIC cards | `outbox/match_intel/{match_key}.json` |
-| Optional index | `outbox/match_intel/_index_YYYY-MM-DD.json` |
+| Optional index | `outbox/match_intel/_index_YYYY-MM-DD.json` (grades, `process_miss_n`, error histogram) |
 
-Scan agents A–D: when MIC present, **justify** the seat and **cite** `mic:grade` + form/H2H (or table) in `reason`; when missing after defer, tag `mic:missing`.
+Scan agents A–D: when MIC present, **justify** the seat and **cite** `mic:grade` + form/H2H (or table) in `reason`; when missing after defer, tag `mic:missing`. **Never invent** form/H2H when card is F / `process_miss: true`.
 
 ---
 
@@ -269,7 +298,7 @@ When a Match Intelligence Card exists for the match, **justify the shortlist sea
 | Rule | Detail |
 |------|--------|
 | **Required when MIC present** | In `reason`, cite **`mic:grade=X`** (A–F) **and** at least one structured fact from the card: **form** / **H2H** / table-rank / injury-context one-liner |
-| **When MIC missing** after 1x | Tag `mic:missing` (still may shortlist on board-only reason; soft pressure only until PR6 `require_for_deep`) |
+| **When MIC missing** after 1x | Tag `mic:missing` (still may shortlist on board-only reason; soft pressure only until exit criteria flip `require_for_deep`) |
 | **Never** | Invent form/H2H/injuries that contradict or ignore a present card; invent `p_model` from MIC grade alone |
 
 ### Agent A — Favourites & HUB (strengthened)
@@ -430,7 +459,7 @@ python run_nt.py research match-intel --odds <odds_file>
 # or per-match: --match "…" for each gap
 ```
 
-Hard for **v1_sports** worklist seats (intent); best-effort for other sports. Do not deep football (v1) seats that still lack MIC when `require_for_deep` is true (PR6+). Until then: soft pressure only.
+Hard for **v1_sports** worklist seats (intent); best-effort for other sports. Do not deep v1 seats that still lack MIC when `require_for_deep` is true (post exit criteria only). Until then: soft pressure only — **`require_for_deep` stays false**.
 
 ---
 
@@ -554,6 +583,10 @@ You do NOT place bets. Output: outbox/decision_agent_guardian_YYYY-MM-DD.md
 
 ```text
 Emit quality_veto JSON. hard_veto reasons ONLY from closed enum.
+When hard_veto on mic_grade_F / mic_grade_D / mic_missing: notes MUST include
+process_miss_reason from the MIC card when process_miss is true
+(e.g. process_miss_reason=fetch_failed); when process_miss false and thin board,
+note thin_public so ops can distinguish scraper gap vs empty public page.
 CLI apply-quality-veto nulls p_model (engine-aligned). You do not place or edit stakes.
 soft_demote is advisory only.
 Output: outbox/decision_agent_quality_YYYY-MM-DD.md + outbox/quality_veto_YYYY-MM-DD.json
@@ -568,7 +601,15 @@ opposite_side_thin | form_continuity_weak_flip | evidence_quality_insufficient
 
 Any other reason string → CLI **rejects** that veto row. soft_demote may use free-text notes.
 
-**Sport scope (PR6+):** `mic_missing` / `mic_grade_D` / `mic_grade_F` hard_veto only when seat `sport ∈ v1_sports`. Until then soft pressure is OK; CLI still accepts the enum.
+**process_miss in Quality notes (required when hard_veto on MIC grade/missing):**
+
+| Card state | hard_veto reason | Notes must say |
+|------------|------------------|----------------|
+| grade F/D + `process_miss: true` | `mic_grade_F` / `mic_grade_D` | `process_miss_reason=<taxonomy>` (e.g. `fetch_failed`, `playwright_not_installed`, `url_not_found`) |
+| grade F/D + `process_miss: false` | same | `thin_public` (or empty-board note) — **not** a pipeline bug |
+| missing card | `mic_missing` | `mic:missing` (+ whether Stage 1x ran / `network_disabled`) |
+
+**Sport scope (after exit criteria only):** `mic_missing` / `mic_grade_D` / `mic_grade_F` hard_veto only when seat `sport ∈ v1_sports` **and** `require_for_deep: true`. Until then soft pressure is OK; CLI still accepts the enum. **Do not flip `require_for_deep: true` in skills/ops polish.**
 
 **Outputs:**
 
@@ -741,7 +782,7 @@ When test cap active, notes carry `TEST_CAP:esr_data_v1`.
 - Engine `deep_queue.json` is light baseline SSOT — multi-agent merge never rewrites it.
 - Deep-research primary worklist (**MIC primary**); expand with MIC top-up before accepting empty on large boards.
 - **ESR** — soft dogs not guilty by default; short 1.40–1.80 OK with support.
-- **Exa optional** — free MIC/public pages first; sport-scoped `require_for_deep` only after exit criteria.
+- **Exa optional** — free multi-sport MIC/public pages first; sport-scoped `require_for_deep` only after exit criteria E1–E5 (**stays false** until then).
 - FEH is **not** place law (shadow only).
 - Empty slip only after expansion + no +EV.
 - Coverage Health **critical** → soft-gate unless explicit `--allow-low-coverage`.

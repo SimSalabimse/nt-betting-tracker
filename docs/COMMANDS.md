@@ -134,17 +134,25 @@ python run_desktop.py
 
 ### Match Intelligence Cards (MIC) — Stage 1x
 
+**Multi-sport free pipeline** for `research.match_intel.v1_sports` (live: football, tennis, esports, snooker, darts, baseball). Committed `allow_network: false` keeps CI offline; live desk uses `--allow-network`. **`require_for_deep` stays false** until exit criteria E1–E5 (do not flip early).
+
 ```bash
 # Build MICs for an odds board (offline by default; no network required)
 python run_nt.py research match-intel --odds inbox/odds_YYYY-MM-DD.txt --force
 python run_nt.py research match-intel --odds inbox/odds_YYYY-MM-DD.txt --force --json
 python run_nt.py research match-intel --match "Rosenborg vs Fredrikstad" --sport football --force
+
+# Live multi-sport free pipeline (ops)
+python run_nt.py research match-intel --odds inbox/odds_YYYY-MM-DD.txt --allow-network
+python run_nt.py research match-intel --match "G2 vs Natus Vincere" --sport esports --allow-network
 ```
+
+**Live max-matches guidance:** prefer **≤15** matches per live run (primary worklist / highest-priority seats). Config `max_matches_per_run` default **40** remains for offline/fixture board sweeps; do not burn the ≤8 min Stage 1x budget on a full 40-match live scrape.
 
 Cards land in `outbox/match_intel/{match_key}.json`. Batch also writes
 `outbox/match_intel/_index_YYYY-MM-DD.json` (grades histogram, `process_miss_n`, error counts).
 
-**Extraction diagnosis fields** (every card; do **not** change grade math):
+**Extraction diagnosis fields** (every card; do **not** change grade math — KD-16):
 
 | Field | Meaning |
 |-------|---------|
@@ -152,10 +160,21 @@ Cards land in `outbox/match_intel/{match_key}.json`. Batch also writes
 | `extraction.process_miss_reason` | Taxonomy reason (see below) when process_miss, else `""` |
 | `extraction.errors` | Structured error codes (may list multiple) |
 
-Common `process_miss_reason` / error codes: `no_source`, `network_disabled`, `parser_not_implemented`, `live_parser_not_ready`, `url_not_found`, `fetch_failed`, `timeout`, `blocked`, `budget_exhausted`, `playwright_not_installed`, `parse_empty`, `low_name_match`, `js_shell_empty`. **`thin_public`** → `process_miss: false` (real empty board, not a pipeline bug).
+Common `process_miss_reason` / error codes: `no_source`, `network_disabled`, `parser_not_implemented`, `live_parser_not_ready`, `url_not_found`, `fetch_failed`, `timeout`, `blocked`, `budget_exhausted`, `playwright_not_installed`, `parse_empty`, `low_name_match`, `js_shell_empty`. **`thin_public`** → `process_miss: false` (real empty board, not a pipeline bug). Fetch/ops failures → grade **F** + `process_miss: true`. Quality hard_veto notes should include `process_miss_reason` when true.
 
 Aliases: `data/state/match_aliases.json` (config `research.match_intel.alias_path`).
 When `--allow-network` and no `--url`, MIC runs **URL discovery** (aliases → Flashscore search → confidence gate ≥ `min_match_score` 0.85). Use `--write-aliases` to persist high-confidence hits. Explicit `--url` skips discovery.
+
+**Live scrape deps (one-liners):**
+
+```powershell
+# Firecrawl preferred when key set (config research.match_intel.fetch.prefer: firecrawl)
+$env:FIRECRAWL_API_KEY = "<key>"
+
+# Playwright Chromium for SPA hosts (Flashscore) — one-time
+pip install playwright; python -m playwright install chromium
+# missing → process_miss_reason=playwright_not_installed, grade F
+```
 
 Grok / skill launchers (Windows examples):
 
