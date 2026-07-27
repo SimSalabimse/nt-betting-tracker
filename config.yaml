@@ -606,8 +606,14 @@ research:
     timeout_s: 45
     circuit_break_failures: 5
     alias_path: data/state/match_aliases.json
+    write_aliases: false            # opt-in; CLI --write-aliases or discovery.write_aliases
+    min_match_score: 0.85           # discovery confidence gate (exact|alias|fuzzy ≥ score)
     sources_priority: [norsk_tipping, flashscore, fotmob, other_public]
     allow_network: false            # tests/CI: offline only; ops: --allow-network
+    discovery:
+      min_match_score: 0.85
+      flashscore_host: https://www.flashscore.com
+      write_aliases: false
     fetch:
       prefer: firecrawl             # firecrawl | playwright | http
       primary: firecrawl            # legacy alias of prefer

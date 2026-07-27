@@ -154,7 +154,8 @@ Cards land in `outbox/match_intel/{match_key}.json`. Batch also writes
 
 Common `process_miss_reason` / error codes: `no_source`, `network_disabled`, `parser_not_implemented`, `live_parser_not_ready`, `url_not_found`, `fetch_failed`, `timeout`, `blocked`, `budget_exhausted`, `playwright_not_installed`, `parse_empty`, `low_name_match`, `js_shell_empty`. **`thin_public`** → `process_miss: false` (real empty board, not a pipeline bug).
 
-Aliases scaffold: `data/state/match_aliases.json` (config `research.match_intel.alias_path`).
+Aliases: `data/state/match_aliases.json` (config `research.match_intel.alias_path`).
+When `--allow-network` and no `--url`, MIC runs **URL discovery** (aliases → Flashscore search → confidence gate ≥ `min_match_score` 0.85). Use `--write-aliases` to persist high-confidence hits. Explicit `--url` skips discovery.
 
 Grok / skill launchers (Windows examples):
 

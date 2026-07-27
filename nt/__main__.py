@@ -765,6 +765,7 @@ def cmd_research(args: argparse.Namespace) -> int:
             max_matches=getattr(args, "max_matches", None),
             url=getattr(args, "url", None) or None,
             allow_network=allow_net,
+            write_aliases=bool(getattr(args, "write_aliases", False)) or None,
         )
         if getattr(args, "json", False):
             slim = {
@@ -1733,13 +1734,19 @@ def main(argv: list[str] | None = None) -> int:
     rs_mi.add_argument(
         "--url",
         default=None,
-        help="Explicit match page URL (PR-1; skips discovery). Used for all matches in the run.",
+        help="Explicit match page URL (skips discovery). Used for all matches in the run.",
     )
     rs_mi.add_argument(
         "--fetch",
         default=None,
         choices=["firecrawl", "playwright", "http"],
         help="Override research.match_intel.fetch.prefer backend",
+    )
+    rs_mi.add_argument(
+        "--write-aliases",
+        action="store_true",
+        default=False,
+        help="Persist high-confidence discovered URLs to research.match_intel.alias_path",
     )
     rs_mi.add_argument("--json", action="store_true", help="Print JSON summary")
     rs_mi.set_defaults(func=cmd_research)

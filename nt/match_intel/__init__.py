@@ -15,6 +15,11 @@ from nt.match_intel.coverage import (
     key_credit,
 )
 from nt.match_intel.io import atomic_write_json, mic_path, write_mic
+from nt.match_intel.discovery import (
+    build_flashscore_search_url,
+    discover_match_url,
+    parse_flashscore_search_results,
+)
 from nt.match_intel.matching import (
     fuzzy_token_jaccard,
     load_aliases,
@@ -38,9 +43,11 @@ __all__ = [
     "PROCESS_MISS_REASONS",
     "apply_process_miss",
     "atomic_write_json",
+    "build_flashscore_search_url",
     "build_match_intel",
     "coverage_score",
     "critical_missing_count",
+    "discover_match_url",
     "empty_mic_skeleton",
     "finalize_coverage",
     "form_credit",
@@ -51,6 +58,7 @@ __all__ = [
     "match_confidence",
     "mic_match_key",
     "mic_path",
+    "parse_flashscore_search_results",
     "resolve_match",
     "run_match_intel_batch",
     "side_dict",
