@@ -5,6 +5,7 @@ from nt.match_intel.sources.flashscore import parse_flashscore_html
 from nt.match_intel.sources.flashscore_live import parse_football_bundle
 from nt.match_intel.sources.fotmob import parse_fotmob_html, parse_fotmob_live_content
 from nt.match_intel.sources.nt import parse_nt_context
+from nt.match_intel.sources.tennis_live import parse_tennis_bundle
 
 __all__ = [
     "parse_flashscore_html",
@@ -12,4 +13,5 @@ __all__ = [
     "parse_fotmob_html",
     "parse_fotmob_live_content",
     "parse_nt_context",
+    "parse_tennis_bundle",
 ]

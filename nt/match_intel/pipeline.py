@@ -9,6 +9,7 @@ Control flow (Appendix B / design §2.1):
 PR-2: URL discovery (aliases + Flashscore search) when allow_network and no explicit URL.
 PR-3: Football registry ready=True → after fetch+match, parse_football_bundle fills MIC;
       process_miss cleared when real form present; parse_empty when extract yields nothing.
+PR-4: Tennis registry ready=True + v1_sports; form n≥3 or rank clears process_miss.
 """
 from __future__ import annotations
 
@@ -441,7 +442,7 @@ def _live_network_path(
                     "low_name_match",
                 )
             ]
-            if _has_real_form(card):
+            if _has_usable_free_facts(card):
                 # Successful free facts → no process_miss (apply_process_miss clears)
                 ext["errors"] = [
                     e
@@ -457,7 +458,7 @@ def _live_network_path(
             ext["needs_review"] = True
         return card
 
-    # Sport registered but not ready (tennis interim, etc.)
+    # Sport in v1 but live parser not ready yet
     ext["errors"] = ["live_parser_not_ready"]
     ext["needs_review"] = True
     if matched_bundle.method:
@@ -466,7 +467,7 @@ def _live_network_path(
 
 
 def _has_real_form(card: dict[str, Any]) -> bool:
-    """True when at least one side has n≥3 form letters (process_miss should clear)."""
+    """True when at least one side has n≥3 form letters."""
     sides = card.get("sides") or {}
     for sk in ("home", "away"):
         rf = ((sides.get(sk) or {}).get("recent_form") or {})
@@ -476,6 +477,25 @@ def _has_real_form(card: dict[str, Any]) -> bool:
             n = 0
         results = rf.get("results") or []
         if n >= 3 and results:
+            return True
+    return False
+
+
+def _has_usable_free_facts(card: dict[str, Any]) -> bool:
+    """
+    True when free facts are good enough to clear parse_empty / process_miss.
+
+    Football: form n≥3. Tennis: form n≥3 **or** rank on either side (form_or_rank).
+    """
+    if _has_real_form(card):
+        return True
+    sides = card.get("sides") or {}
+    for sk in ("home", "away"):
+        st = (sides.get(sk) or {}).get("standings") or {}
+        if isinstance(st, dict) and st.get("rank") is not None:
+            return True
+        side = sides.get(sk) or {}
+        if side.get("rating") is not None:
             return True
     return False
 

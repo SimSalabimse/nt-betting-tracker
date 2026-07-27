@@ -2,7 +2,8 @@
 Sport → live parser registry.
 
 PR-3: football ready=True (Flashscore live + data-* fallback + FotMob secondary).
-Tennis / other sports join in later PRs with ready=True in the same PR (KD-17).
+PR-4: tennis ready=True + v1_sports append (KD-17).
+Other sports join later with ready=True in the same PR.
 """
 from __future__ import annotations
 
@@ -33,12 +34,30 @@ def _parse_football_live(
     return parse_football_bundle(bundle, match=match, sport=sport, cfg=cfg)
 
 
+def _parse_tennis_live(
+    bundle: Any,
+    *,
+    match: str = "",
+    sport: str = "tennis",
+    cfg: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    from nt.match_intel.sources.tennis_live import parse_tennis_bundle
+
+    return parse_tennis_bundle(bundle, match=match, sport=sport, cfg=cfg)
+
+
 LIVE_PARSERS: dict[str, LiveParserSpec] = {
     "football": LiveParserSpec(
         ready=True,
         parse=_parse_football_live,
         sources=["flashscore", "fotmob"],
         notes="PR-3: live Flashscore HTML/markdown/XHR + offline data-* fallback; FotMob secondary",
+    ),
+    "tennis": LiveParserSpec(
+        ready=True,
+        parse=_parse_tennis_live,
+        sources=["flashscore"],
+        notes="PR-4: live tennis form/rank/competition/surface/H2H from HTML/markdown/XHR",
     ),
 }
 
