@@ -785,7 +785,59 @@ def cmd_research(args: argparse.Namespace) -> int:
                     print(f"      → {c['_path']}")
         return 0 if payload.get("ok") else 1
 
+    if sub in ("apply-quality-veto", "apply_quality_veto"):
+        from nt.research_quality_gate import apply_quality_veto
+
+        day = getattr(args, "date", None) or date.today().isoformat()
+        veto_file = getattr(args, "veto_file", None) or None
+        dry_run = bool(getattr(args, "dry_run", False))
+        payload = apply_quality_veto(
+            cfg,
+            day,
+            dry_run=dry_run,
+            veto_file=veto_file,
+        )
+        print(json.dumps(payload, indent=2, default=str))
+        if payload.get("applied_path"):
+            print(f"\nApplied marker: {payload['applied_path']}")
+        return 0 if payload.get("ok") else 1
+
+    if sub in ("assert-can-bet", "assert_can_bet"):
+        return cmd_assert_can_bet(args)
+
     print(f"Unknown research subcommand: {sub}", file=sys.stderr)
+    return 2
+
+
+def cmd_assert_can_bet(args: argparse.Namespace) -> int:
+    """
+    Exit 0 if risk can_bet is true, else exit 1 and print reasons.
+
+    Default: refresh_state (same path as status). ``--no-refresh`` reads risk.json.
+    """
+    from nt.research_quality_gate import assert_can_bet_exit_code, assert_can_bet_snapshot
+
+    cfg = load_config()
+    refresh = not bool(getattr(args, "no_refresh", False))
+    snap = assert_can_bet_snapshot(cfg, refresh=refresh)
+    print(json.dumps(snap, indent=2, default=str))
+    code = assert_can_bet_exit_code(snap)
+    if code != 0:
+        reasons = snap.get("reasons") or []
+        print(
+            f"\n*** can_bet=false — halt research/place ***"
+            + (f"\nreasons: {reasons}" if reasons else ""),
+            file=sys.stderr,
+        )
+    return code
+
+
+def cmd_risk(args: argparse.Namespace) -> int:
+    """risk assert-can-bet (design §5.1 alias of research assert-can-bet)."""
+    sub = getattr(args, "risk_cmd", None)
+    if sub in ("assert-can-bet", "assert_can_bet"):
+        return cmd_assert_can_bet(args)
+    print(f"Unknown risk subcommand: {sub}", file=sys.stderr)
     return 2
 
 
@@ -1631,6 +1683,54 @@ def main(argv: list[str] | None = None) -> int:
     )
     rs_mi.add_argument("--json", action="store_true", help="Print JSON summary")
     rs_mi.set_defaults(func=cmd_research)
+
+    rs_aqv = rs.add_parser(
+        "apply-quality-veto",
+        help="Stage 3.1z: apply Quality Challenger hard_veto (null p_model on packs)",
+    )
+    rs_aqv.add_argument(
+        "--date",
+        default=None,
+        help="Calendar day YYYY-MM-DD (default: today); reads outbox/quality_veto_{date}.json",
+    )
+    rs_aqv.add_argument(
+        "--veto-file",
+        default=None,
+        help="Override path to quality_veto JSON (default: outbox/quality_veto_{date}.json)",
+    )
+    rs_aqv.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Resolve + report only; do not mutate packs or write applied marker",
+    )
+    rs_aqv.set_defaults(func=cmd_research)
+
+    rs_acb = rs.add_parser(
+        "assert-can-bet",
+        help="Exit 0 if can_bet true else 1; prints risk gate fields (SSOT risk.json)",
+    )
+    rs_acb.add_argument(
+        "--no-refresh",
+        action="store_true",
+        help="Read data/state/risk.json only (default: refresh_state like status)",
+    )
+    rs_acb.set_defaults(func=cmd_research)
+
+    p_risk = sub.add_parser(
+        "risk",
+        help="Risk gates (assert-can-bet early exit after settle/refresh)",
+    )
+    risk_sub = p_risk.add_subparsers(dest="risk_cmd", required=True)
+    risk_acb = risk_sub.add_parser(
+        "assert-can-bet",
+        help="Exit 0 if can_bet true else 1; same evaluate_risk path as status",
+    )
+    risk_acb.add_argument(
+        "--no-refresh",
+        action="store_true",
+        help="Read data/state/risk.json only (default: refresh_state like status)",
+    )
+    risk_acb.set_defaults(func=cmd_risk)
 
     p_ag = sub.add_parser("agent", help="Optional AI assist (never places bets)")
     ag = p_ag.add_subparsers(dest="agent_cmd", required=True)

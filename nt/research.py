@@ -331,12 +331,18 @@ def write_research_pack(
     notes: str = "",
     filename: str | None = None,
     overwrite: bool = True,
+    data_coverage: dict[str, Any] | None = None,
+    evidence_quality: str | None = None,
+    evidence_quality_notes: str = "",
 ) -> dict[str, Any]:
     """
     Phase 5: single write path for deep evidence packs (replaces ad-hoc scripts).
 
     Always writes under evidence/ with research-gate fields filled enough to
     pass domestic predicted boards when notes are present.
+
+    Optional ``data_coverage`` / ``evidence_quality`` (design §3.3) are advisory
+    pack fields; place removal still uses closed-enum hard_veto via apply-quality-veto.
     """
     from nt.sport_taxonomy import normalize_sport
 
@@ -399,6 +405,16 @@ def write_research_pack(
         pack["notes"] = notes
     if odds is not None:
         pack["decimal_odds_ref"] = odds
+    # Optional pack coverage block (MIC / evidence_quality) — see research_quality_gate
+    if data_coverage is not None:
+        pack["data_coverage"] = dict(data_coverage)
+    elif evidence_quality is not None:
+        from nt.research_quality_gate import build_data_coverage
+
+        pack["data_coverage"] = build_data_coverage(
+            evidence_quality=str(evidence_quality),
+            evidence_quality_notes=str(evidence_quality_notes or ""),
+        )
 
     evidence_dir = path_from_config(cfg, "evidence")
     evidence_dir.mkdir(parents=True, exist_ok=True)
