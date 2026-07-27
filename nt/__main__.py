@@ -662,6 +662,7 @@ def cmd_research(args: argparse.Namespace) -> int:
             agent_a=getattr(args, "agent_a", None) or None,
             agent_b=getattr(args, "agent_b", None) or None,
             agent_c=getattr(args, "agent_c", None) or None,
+            agent_d=getattr(args, "agent_d", None) or None,
             agents_dir=getattr(args, "agents_dir", None) or None,
             out=getattr(args, "out", None) or None,
             out_json=getattr(args, "out_json", None) or None,
@@ -677,6 +678,39 @@ def cmd_research(args: argparse.Namespace) -> int:
                 print(f"\nWrote: {payload['md_path']}")
             if payload.get("json_path"):
                 print(f"JSON:  {payload['json_path']}")
+        return 0
+
+    if sub in ("scan-depth", "scan_depth"):
+        from nt.scan_merge import run_scan_depth
+
+        odds = Path(args.odds)
+        if not odds.exists():
+            print(f"Odds file not found: {odds}", file=sys.stderr)
+            return 2
+        min_lines = getattr(args, "min_lines", None)
+        payload = run_scan_depth(
+            cfg,
+            odds,
+            min_lines=int(min_lines) if min_lines is not None else None,
+        )
+        if getattr(args, "json", False):
+            print(json.dumps(payload, indent=2, default=str))
+        else:
+            print(f"# scan-depth — {odds.name}")
+            print(f"total_lines: {payload.get('total_lines')}")
+            print(f"match_n: {payload.get('match_n')}")
+            print(f"max_lines_per_match: {payload.get('max_lines_per_match')}")
+            print(f"min_lines: {payload.get('min_lines')}")
+            print(f"spawn_agent_d: {payload.get('spawn_agent_d')}")
+            print(f"agent_d: {payload.get('agent_d')}")
+            over = payload.get("matches_over_threshold") or []
+            if over:
+                print("matches_over_threshold:")
+                per = payload.get("per_match") or {}
+                for m in over:
+                    print(f"  - {m}: {per.get(m)}")
+            else:
+                print("matches_over_threshold: (none)")
         return 0
 
     print(f"Unknown research subcommand: {sub}", file=sys.stderr)
@@ -1427,16 +1461,21 @@ def main(argv: list[str] | None = None) -> int:
 
     rs_sm = rs.add_parser(
         "scan-merge",
-        help="Stage 1b multi-agent scan merge (A/B/C → shortlist 8–15 + primary worklist)",
+        help="Stage 1b multi-agent scan merge (A/B/C/+D → shortlist 8–15 + primary worklist)",
     )
     rs_sm.add_argument("--odds", required=True, help="Odds dump path (full board)")
     rs_sm.add_argument("--agent-a", default=None, help="Agent A JSONL/JSON path")
     rs_sm.add_argument("--agent-b", default=None, help="Agent B JSONL/JSON path")
     rs_sm.add_argument("--agent-c", default=None, help="Agent C JSONL/JSON path")
     rs_sm.add_argument(
+        "--agent-d",
+        default=None,
+        help="Agent D JSONL/JSON path (long-tail; optional / conditional spawn)",
+    )
+    rs_sm.add_argument(
         "--agents-dir",
         default=None,
-        help="Directory with scan_agent_{a,b,c}* artifacts (auto-discover)",
+        help="Directory with scan_agent_{a,b,c,d}* artifacts (auto-discover)",
     )
     rs_sm.add_argument(
         "--out",
@@ -1456,6 +1495,20 @@ def main(argv: list[str] | None = None) -> int:
         help="Skip live ledger open-occupancy load",
     )
     rs_sm.set_defaults(func=cmd_research)
+
+    rs_sd = rs.add_parser(
+        "scan-depth",
+        help="Per-match odds line counts + Agent D spawn predicate (lines >= min_lines, default 41)",
+    )
+    rs_sd.add_argument("--odds", required=True, help="Odds dump path (full board)")
+    rs_sd.add_argument(
+        "--min-lines",
+        type=int,
+        default=None,
+        help="Override research.adaptive_scan_agent_d_min_lines (default 41)",
+    )
+    rs_sd.add_argument("--json", action="store_true", help="Print JSON payload")
+    rs_sd.set_defaults(func=cmd_research)
 
     p_ag = sub.add_parser("agent", help="Optional AI assist (never places bets)")
     ag = p_ag.add_subparsers(dest="agent_cmd", required=True)

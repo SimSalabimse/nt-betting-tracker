@@ -6,7 +6,7 @@ dedupe by evidence_pair_key, soft family/sport diversity, light-fail drop,
 emit MULTI_AGENT_SHORTLIST.md (+ optional JSON) with primary worklist hints.
 
 No place / p_model / ledger writes. Engine deep_queue.json is never rewritten.
-PR0 surface: agents A/B/C only (+ ENGINE top-up / fallback).
+PR3 surface: agents A/B/C + conditional D (+ ENGINE top-up / fallback).
 """
 from __future__ import annotations
 
@@ -21,6 +21,7 @@ from typing import Any, Iterable, Mapping, Sequence
 from nt.bets_io import is_open_risk
 from nt.config import path_from_config
 from nt.live_ledger import filter_live_rows
+from nt.market_coverage import TIER_1, TIER_2, TIER_3, TIER_4, assign_family, assign_tier
 from nt.market_family import market_family
 from nt.odds_common import evidence_pair_key, fnum
 from nt.odds_parse import parse_odds_file
@@ -37,12 +38,44 @@ AGENT_A_ODDS_LO = 1.40
 AGENT_A_ODDS_HI = 1.90
 FORCE_SCAN_TOKEN = "force_scan:"
 OPEN_FULL_READD_MAX = 1
+# Agent D spawn: strict product >40 ⇒ default min lines = 41 (n >= cfg only).
+DEFAULT_AGENT_D_MIN_LINES = 41
 COVERAGE_TAGS = (
     "coverage_floor:top_promo_scaffold",
     "coverage_floor:sport_rotation",
 )
 TOP_PROMO_SCAFFOLD_PCT = 0.2
-_AGENT_ORDER = ("A", "B", "C", "ENGINE")
+_AGENT_ORDER = ("A", "B", "C", "D", "ENGINE")
+_LONG_TAIL_FAMILIES = frozenset(
+    {
+        "goalscorer",
+        "player_stat",
+        "corners",
+        "cards",
+        "special",
+        "specials",
+        "prop",
+        "props",
+    }
+)
+_LONG_TAIL_BLOB_RE = re.compile(
+    r"prop|card|corner|shot|målscorer|hjørne|kort|special|spesial|180|"
+    r"anytime|player|booking|rødt|scorer",
+    re.I,
+)
+# Explicit main-board markers checked before long-tail (HUB often fails tier rules).
+_MAIN_BOARD_BLOB_RE = re.compile(
+    r"(?:^|\b)hub(?:\b|:)|"
+    r"^vinner(?:\s|\s*\(|:)|to win|"
+    r"^uavgjort|\bdraw\b|"
+    r"handikap|handicap|"
+    r"totalt antall mål\s*-\s*over/under\s*2\.5|"
+    r"over/under\s*2\.5|"
+    r"\bou\s*2\.5\b|"
+    r"dobbel sjanse|double chance|"
+    r"\bbtts\b|begge lag scorer(?!\s+og)",
+    re.I,
+)
 
 _MD_BLOCK_RE = re.compile(
     r"(?P<num>\d+)\.\s*\*\*Match:\*\*\s*(?P<match>.+?)\s*"
@@ -60,7 +93,7 @@ def _normalize_agent_id(raw: object, default: str = "") -> str:
     s = str(raw or "").strip().upper()
     if not s:
         return default
-    m = re.search(r"\b([ABC])\b", s)
+    m = re.search(r"\b([ABCD])\b", s)
     if m:
         return m.group(1)
     if s.startswith("AGENT_"):
@@ -69,6 +102,184 @@ def _normalize_agent_id(raw: object, default: str = "") -> str:
     if s in _AGENT_ORDER:
         return s
     return default or s[:8]
+
+
+def match_line_counts(odds_path: Path | str) -> dict[str, Any]:
+    """
+    Per-match Candidate counts from parse_odds_file (post parser de-dupe).
+
+    lines_count(M) = |{ Candidate rows with match == M }|
+    Never reuses market-scan high_volume bool.
+    """
+    path = Path(odds_path)
+    raw = parse_odds_file(path)
+    per_match: Counter[str] = Counter()
+    for c in raw:
+        m = str(getattr(c, "match", "") or "").strip()
+        if m:
+            per_match[m] += 1
+    per = dict(per_match)
+    max_n = max(per.values()) if per else 0
+    return {
+        "odds_file": str(path),
+        "per_match": per,
+        "max_lines_per_match": int(max_n),
+        "total_lines": int(sum(per.values())),
+        "match_n": len(per),
+    }
+
+
+def should_spawn_agent_d(
+    counts: Mapping[str, Any],
+    min_lines: int = DEFAULT_AGENT_D_MIN_LINES,
+) -> bool:
+    """
+    SPAWN_D := exists M such that lines_count(M) >= min_lines.
+
+    Implement as n >= cfg only — never reuse market-scan high_volume (n >= 40).
+    Default min_lines=41 so n=40 → false, n=41 → true.
+    """
+    per = counts.get("per_match") if isinstance(counts, Mapping) else None
+    if not isinstance(per, Mapping):
+        return False
+    thr = int(min_lines)
+    return any(int(n) >= thr for n in per.values())
+
+
+def agent_d_min_lines_from_cfg(cfg: Mapping[str, Any] | None) -> int:
+    """Read research.adaptive_scan_agent_d_min_lines (default 41)."""
+    if not cfg:
+        return DEFAULT_AGENT_D_MIN_LINES
+    research = cfg.get("research") if isinstance(cfg, Mapping) else None
+    if not isinstance(research, Mapping):
+        return DEFAULT_AGENT_D_MIN_LINES
+    raw = research.get("adaptive_scan_agent_d_min_lines")
+    if raw is None:
+        return DEFAULT_AGENT_D_MIN_LINES
+    try:
+        return int(raw)
+    except (TypeError, ValueError):
+        return DEFAULT_AGENT_D_MIN_LINES
+
+
+def _explicit_main_board(selection: str, market_type: str = "") -> bool:
+    """HUB / Vinner ML / main HC / primary O2.5 / bare draw — pattern pass."""
+    blob = f"{selection} {market_type}".strip()
+    return bool(_MAIN_BOARD_BLOB_RE.search(blob))
+
+
+def is_long_tail(
+    selection: str,
+    market_type: str = "",
+    market_family: str = "",
+) -> bool:
+    """Long-tail: T2–T4 / prop-family / props|cards|corners|shots|specials spirit."""
+    sel = str(selection or "")
+    mt = str(market_type or "")
+    fam = str(market_family or "").strip().lower()
+    # Main-board markers are never long-tail (HUB can fail tier rules → T4_specials).
+    if _explicit_main_board(sel, mt):
+        return False
+    if not fam:
+        fam = str(assign_family(sel, mt) or "").lower()
+    # Coarse diversify families that are clearly main.
+    if any(x in fam for x in ("_ml", "1x2", "moneyline", "handicap")) and not any(
+        x in fam for x in ("prop", "player", "corner", "card")
+    ):
+        return False
+    tier = assign_tier(sel, mt)
+    if tier in (TIER_2, TIER_3):
+        return True
+    if tier == TIER_4:
+        # T4 is also the unmatched fallback — require prop/special spirit.
+        if fam in _LONG_TAIL_FAMILIES or any(
+            x in fam for x in ("prop", "corner", "card", "goalscorer", "player", "special", "shot")
+        ):
+            return True
+        blob = f"{sel} {mt}".strip()
+        return bool(_LONG_TAIL_BLOB_RE.search(blob))
+    if fam in _LONG_TAIL_FAMILIES:
+        return True
+    if any(
+        x in fam
+        for x in ("prop", "corner", "card", "goalscorer", "player", "special", "shot")
+    ):
+        return True
+    blob = f"{sel} {mt}".strip()
+    return bool(_LONG_TAIL_BLOB_RE.search(blob))
+
+
+def is_main_board(
+    selection: str,
+    market_type: str = "",
+    market_family: str = "",
+) -> bool:
+    """
+    Main board: HUB / Vinner ML / main HC / primary O2.5 / bare draw — T1_main style.
+    Explicit main markers win; otherwise long-tail wins over weak T1 fallback.
+    """
+    sel = str(selection or "")
+    mt = str(market_type or "")
+    fam = str(market_family or "").strip().lower()
+    if _explicit_main_board(sel, mt):
+        return True
+    if is_long_tail(sel, mt, fam):
+        return False
+    tier = assign_tier(sel, mt)
+    if tier == TIER_1:
+        return True
+    if any(
+        x in fam
+        for x in (
+            "_ml",
+            "moneyline",
+            "1x2",
+            "handicap",
+            "ou_25",
+            "draw",
+            "btts",
+        )
+    ):
+        if "prop" in fam or "player" in fam:
+            return False
+        return True
+    # football_totals O2.5 only (not corners/cards mis-tagged as totals)
+    if "total" in fam and re.search(r"2\.5", f"{sel} {mt}"):
+        if not _LONG_TAIL_BLOB_RE.search(f"{sel} {mt}"):
+            return True
+    return False
+
+
+def run_scan_depth(
+    cfg: Mapping[str, Any] | None,
+    odds: Path | str,
+    *,
+    min_lines: int | None = None,
+) -> dict[str, Any]:
+    """
+    Compute per-match line counts and Agent D spawn flag for Stage 1b.
+    """
+    thr = int(min_lines) if min_lines is not None else agent_d_min_lines_from_cfg(cfg)
+    counts = match_line_counts(odds)
+    spawn = should_spawn_agent_d(counts, min_lines=thr)
+    over = sorted(
+        m for m, n in (counts.get("per_match") or {}).items() if int(n) >= thr
+    )
+    return {
+        **counts,
+        "min_lines": thr,
+        "spawn_agent_d": bool(spawn),
+        "matches_over_threshold": over,
+        "agent_d": (
+            f"spawned (max_lines_per_match={counts.get('max_lines_per_match')}, "
+            f"min_lines={thr})"
+            if spawn
+            else (
+                f"skipped (max_lines_per_match={counts.get('max_lines_per_match')}, "
+                f"min_lines={thr})"
+            )
+        ),
+    }
 
 
 def _agents_list(raw: object, default_agent: str = "") -> list[str]:
@@ -268,12 +479,12 @@ def parse_agent_file(
 
 
 def discover_agent_files(agents_dir: Path | str) -> dict[str, Path]:
-    """Find scan_agent_a/b/c* files under a directory (prefer jsonl > json > md)."""
+    """Find scan_agent_a/b/c/d* files under a directory (prefer jsonl > json > md)."""
     d = Path(agents_dir)
     found: dict[str, Path] = {}
     if not d.is_dir():
         return found
-    for letter in ("a", "b", "c"):
+    for letter in ("a", "b", "c", "d"):
         pats = [
             f"scan_agent_{letter}*.jsonl",
             f"scan_agent_{letter}*.json",
@@ -688,7 +899,12 @@ def _render_scan_agent(agents: Sequence[str]) -> str:
     return "+".join(ordered)
 
 
-def _priority_tuple(c: Mapping[str, Any], *, open_occ: Mapping[str, Any] | None = None) -> tuple:
+def _priority_tuple(
+    c: Mapping[str, Any],
+    *,
+    open_occ: Mapping[str, Any] | None = None,
+    prefer_d_longtail: bool = False,
+) -> tuple:
     """Higher is better (sort reverse=True)."""
     fam = str(c.get("market_family") or "")
     sp = str(c.get("sport") or "")
@@ -715,8 +931,29 @@ def _priority_tuple(c: Mapping[str, Any], *, open_occ: Mapping[str, Any] | None 
         role_score = 2
     elif role == "C" and any(x in fam_l for x in ("handicap", "hc")):
         role_score = 2
-    elif role in ("A", "B", "C"):
+    elif role == "D" and is_long_tail(
+        str(c.get("selection") or ""),
+        str(c.get("market_type") or ""),
+        fam,
+    ):
+        role_score = 2
+    elif role in ("A", "B", "C", "D"):
         role_score = 1
+    # When D-armed: prefer D over B on long-tail family collisions (soft sort key).
+    d_lt_boost = 0
+    if prefer_d_longtail and is_long_tail(
+        str(c.get("selection") or ""),
+        str(c.get("market_type") or ""),
+        fam,
+    ):
+        has_d = "D" in multi or role == "D"
+        has_b = "B" in multi or role == "B"
+        if has_d and not has_b:
+            d_lt_boost = 2
+        elif has_d:
+            d_lt_boost = 1
+        elif has_b:
+            d_lt_boost = 0
     agent_tie = min(
         (
             _AGENT_ORDER.index(a) if a in _AGENT_ORDER else 99
@@ -728,6 +965,7 @@ def _priority_tuple(c: Mapping[str, Any], *, open_occ: Mapping[str, Any] | None 
     return (
         0 if open_fam_full else 1,
         0 if open_sp_full else 1,
+        d_lt_boost,
         promo,
         in_q,
         role_score,
@@ -977,22 +1215,27 @@ def merge_candidates(
     odds_tol: float = ODDS_TOL_REL,
     coverage_floor_on: bool = False,
     agent_max: int = AGENT_MAX,
+    agent_d_armed: bool | None = None,
+    agent_d_min_lines: int = DEFAULT_AGENT_D_MIN_LINES,
 ) -> dict[str, Any]:
     """
-    Deterministic merge of multi-agent scan candidates.
+    Deterministic merge of multi-agent scan candidates (A/B/C + optional D).
 
     Returns payload with candidates, dropped, primary_worklist, counts.
     """
     dropped: list[dict[str, Any]] = []
     notes: list[str] = []
-    agent_raw_counts: dict[str, int] = {"A": 0, "B": 0, "C": 0}
+    agent_raw_counts: dict[str, int] = {"A": 0, "B": 0, "C": 0, "D": 0}
     by_ag: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    d_in_input = False
 
     if isinstance(agent_candidates, Mapping):
         for ag, rows in agent_candidates.items():
             ag_n = _normalize_agent_id(str(ag), default="")
             rows_list = [dict(r) for r in (rows or []) if isinstance(r, Mapping)]
-            if ag_n in ("A", "B", "C"):
+            if ag_n == "D":
+                d_in_input = True
+            if ag_n in ("A", "B", "C", "D"):
                 agent_raw_counts[ag_n] = len(rows_list)
             kept_rows, over = truncate_agent_rows(rows_list, max_n=agent_max)
             for r in over:
@@ -1021,9 +1264,11 @@ def merge_candidates(
                 agents = ["A"]
             c["scan_agents"] = agents
             for a in agents:
-                if a in ("A", "B", "C"):
+                if a in ("A", "B", "C", "D"):
                     by_ag[a].append(dict(c))
-        for ag_n in ("A", "B", "C"):
+                    if a == "D":
+                        d_in_input = True
+        for ag_n in ("A", "B", "C", "D"):
             rows_list = by_ag.get(ag_n) or []
             agent_raw_counts[ag_n] = len(rows_list)
             kept_rows, over = truncate_agent_rows(rows_list, max_n=agent_max)
@@ -1033,8 +1278,13 @@ def merge_candidates(
                 pub["drop_reason"] = "agent_max_5"
                 dropped.append(pub)
 
+    if agent_d_armed is None:
+        d_armed = bool(d_in_input) or agent_raw_counts.get("D", 0) > 0
+    else:
+        d_armed = bool(agent_d_armed)
+
     raw_list: list[dict[str, Any]] = []
-    for ag_n in ("A", "B", "C"):
+    for ag_n in ("A", "B", "C", "D"):
         raw_list.extend(by_ag.get(ag_n) or [])
     raw_n = sum(agent_raw_counts.values())
 
@@ -1045,6 +1295,24 @@ def merge_candidates(
     }
     sports_on_dump.discard("unknown")
     multi_sport_board = len(sports_on_dump) >= 3
+
+    # Depth header context (does not gate merge; spawn decision is scan-depth CLI).
+    try:
+        depth = match_line_counts(odds_path)
+        max_lines = int(depth.get("max_lines_per_match") or 0)
+    except Exception:
+        depth = {"per_match": {}, "max_lines_per_match": 0, "total_lines": 0}
+        max_lines = 0
+    min_lines = int(agent_d_min_lines)
+    spawn_from_depth = should_spawn_agent_d(depth, min_lines=min_lines)
+    if d_armed:
+        agent_d_header = (
+            f"spawned (max_lines_per_match={max_lines}, min_lines={min_lines})"
+        )
+    else:
+        agent_d_header = (
+            f"skipped (max_lines_per_match={max_lines}, min_lines={min_lines})"
+        )
 
     queue = list(deep_queue or [])
     queue_keys: set[tuple[str, str]] = set()
@@ -1065,6 +1333,10 @@ def merge_candidates(
         open_occ = open_occupancy_from_rows([])
     light_by_key: dict[tuple[str, str], str] = dict(light_verdicts or {})
 
+    expected_agents = ["A", "B", "C"]
+    if d_armed or d_in_input:
+        expected_agents.append("D")
+
     # ISS-2: all agents empty → engine deep_queue fallback
     if raw_n == 0:
         fb = _engine_queue_shortlist(
@@ -1077,7 +1349,7 @@ def merge_candidates(
             reason="engine_fallback",
         )
         notes.append("fallback: engine_deep_queue")
-        missing = [a for a in ("A", "B", "C") if agent_raw_counts.get(a, 0) == 0]
+        missing = [a for a in expected_agents if agent_raw_counts.get(a, 0) == 0]
         if missing:
             notes.append("scan_agent_missing: " + ",".join(missing))
         public_final = [_public(c) for c in fb]
@@ -1137,6 +1409,11 @@ def merge_candidates(
             "notes": notes,
             "fallback": "engine_deep_queue",
             "scan_agent_missing": missing,
+            "agent_d": agent_d_header,
+            "agent_d_armed": d_armed,
+            "spawn_agent_d_depth": spawn_from_depth,
+            "max_lines_per_match": max_lines,
+            "agent_d_min_lines": min_lines,
         }
 
     # Enrich + hard filters
@@ -1221,7 +1498,12 @@ def merge_candidates(
             reason = str(keep.get("scan_reason") or "")
             if other.get("scan_reason") and other.get("scan_reason") != reason:
                 reason = reason  # keep primary; secondary agents already unioned
-        keep = prev if _priority_tuple(prev, open_occ=open_occ) >= _priority_tuple(c, open_occ=open_occ) else c
+        keep = (
+            prev
+            if _priority_tuple(prev, open_occ=open_occ, prefer_d_longtail=d_armed)
+            >= _priority_tuple(c, open_occ=open_occ, prefer_d_longtail=d_armed)
+            else c
+        )
         other = c if keep is prev else prev
         keep = dict(keep)
         keep["scan_agents"] = agents
@@ -1239,11 +1521,50 @@ def merge_candidates(
         by_key[key] = keep  # type: ignore[index]
 
     deduped = list(by_key.values())
-    deduped.sort(key=lambda c: _priority_tuple(c, open_occ=open_occ), reverse=True)
+    deduped.sort(
+        key=lambda c: _priority_tuple(
+            c, open_occ=open_occ, prefer_d_longtail=d_armed
+        ),
+        reverse=True,
+    )
 
+    drops_before_family = len(dropped)
     after_family = _apply_family_cap(
         deduped, max_family=max_family, dropped=dropped
     )
+    # When D-armed: note B long-tail seats yielded to D on family collision.
+    if d_armed:
+        kept_d_lt_fams: set[str] = set()
+        for c in after_family:
+            agents_c = list(c.get("scan_agents") or [])
+            if "D" not in agents_c:
+                continue
+            if is_long_tail(
+                str(c.get("selection") or ""),
+                str(c.get("market_type") or ""),
+                str(c.get("market_family") or ""),
+            ):
+                kept_d_lt_fams.add(str(c.get("market_family") or "other"))
+        for drow in dropped[drops_before_family:]:
+            if drow.get("drop_reason") != "family_cap":
+                continue
+            agents_d = list(drow.get("scan_agents") or [])
+            if "B" not in agents_d:
+                continue
+            fam_d = str(drow.get("market_family") or "other")
+            if fam_d not in kept_d_lt_fams:
+                continue
+            if not is_long_tail(
+                str(drow.get("selection") or ""),
+                str(drow.get("market_type") or ""),
+                fam_d,
+            ):
+                continue
+            note = "b_yielded_longtail_to_d"
+            prev_notes = str(drow.get("notes") or "").strip()
+            drow["notes"] = f"{prev_notes}; {note}".strip("; ") if prev_notes else note
+            if note not in notes:
+                notes.append(note)
 
     # Soft open occupancy: defer open_family_full, readd up to OPEN_FULL_READD_MAX if thin
     after_open: list[dict[str, Any]] = []
@@ -1313,9 +1634,27 @@ def merge_candidates(
         if topup_n:
             notes.append(f"engine_topup: +{topup_n}")
 
-    missing = [a for a in ("A", "B", "C") if agent_raw_counts.get(a, 0) == 0]
+    missing = [a for a in expected_agents if agent_raw_counts.get(a, 0) == 0]
     if missing:
         notes.append("scan_agent_missing: " + ",".join(missing))
+
+    # Soft D role-drift: never hard-drop; annotate if ≥3 of D's kept rows are main_board.
+    d_kept_main: list[dict[str, Any]] = []
+    for c in final:
+        agents_c = list(c.get("scan_agents") or [])
+        if "D" not in agents_c:
+            continue
+        if is_main_board(
+            str(c.get("selection") or ""),
+            str(c.get("market_type") or ""),
+            str(c.get("market_family") or ""),
+        ):
+            d_kept_main.append(c)
+    if len(d_kept_main) >= 3:
+        main_desc = "; ".join(
+            f"{x.get('match')}|{x.get('selection')}" for x in d_kept_main[:5]
+        )
+        notes.append(f"process_miss: agent_d_role_drift ({main_desc})")
 
     public_final = [_public(c) for c in final]
 
@@ -1392,6 +1731,11 @@ def merge_candidates(
         "notes": notes,
         "fallback": "",
         "scan_agent_missing": missing,
+        "agent_d": agent_d_header,
+        "agent_d_armed": d_armed,
+        "spawn_agent_d_depth": spawn_from_depth,
+        "max_lines_per_match": max_lines,
+        "agent_d_min_lines": min_lines,
     }
     return out
 
@@ -1401,14 +1745,33 @@ def render_shortlist_markdown(payload: Mapping[str, Any]) -> str:
     a = int(agents.get("A") or 0)
     b = int(agents.get("B") or 0)
     c = int(agents.get("C") or 0)
+    d = int(agents.get("D") or 0)
     final_n = int(payload.get("final_n") or 0)
     created = str(payload.get("created_at") or "")
     day = created[:10] if created else "run"
+    if d > 0 or payload.get("agent_d_armed"):
+        source = f"A({a})+B({b})+C({c})+D({d}) → merge → {final_n} candidates"
+    else:
+        source = f"A({a})+B({b})+C({c}) → merge → {final_n} candidates"
     lines: list[str] = [
         f"# MULTI_AGENT_SHORTLIST — {day}",
-        f"# Source: A({a})+B({b})+C({c}) → merge → {final_n} candidates",
+        f"# Source: {source}",
         f"# Family rule: each market_family ≤{int(payload.get('max_per_family_after_merge') or 2)} after merge (drop at ≥3)",
     ]
+    agent_d_line = str(payload.get("agent_d") or "").strip()
+    if agent_d_line:
+        lines.append(f"# agent_d: {agent_d_line}")
+    else:
+        max_lines = payload.get("max_lines_per_match")
+        min_lines = payload.get("agent_d_min_lines") or DEFAULT_AGENT_D_MIN_LINES
+        if d > 0 or payload.get("agent_d_armed"):
+            lines.append(
+                f"# agent_d: spawned (max_lines_per_match={max_lines}, min_lines={min_lines})"
+            )
+        else:
+            lines.append(
+                f"# agent_d: skipped (max_lines_per_match={max_lines}, min_lines={min_lines})"
+            )
     occ = payload.get("open_occupancy") or {}
     lines.append(
         f"# Open occupancy: family={occ.get('family_counts') or {}} sport={occ.get('sport_counts') or {}}"
@@ -1504,6 +1867,7 @@ def run_scan_merge(
     agent_a: Path | str | None = None,
     agent_b: Path | str | None = None,
     agent_c: Path | str | None = None,
+    agent_d: Path | str | None = None,
     agents_dir: Path | str | None = None,
     out: Path | str | None = None,
     out_json: Path | str | None = None,
@@ -1512,6 +1876,7 @@ def run_scan_merge(
     light_verdicts: Mapping[tuple[str, str], str] | None = None,
     use_live_open: bool = True,
     write: bool = True,
+    agent_d_armed: bool | None = None,
 ) -> dict[str, Any]:
     """
     Load agents + odds, merge, optionally write outbox artifacts.
@@ -1527,12 +1892,17 @@ def run_scan_merge(
         paths["B"] = Path(agent_b)
     if agent_c is not None:
         paths["C"] = Path(agent_c)
+    if agent_d is not None:
+        paths["D"] = Path(agent_d)
 
     agent_map: dict[str, list[dict[str, Any]]] = {
         "A": parse_agent_file(paths.get("A"), default_agent="A"),
         "B": parse_agent_file(paths.get("B"), default_agent="B"),
         "C": parse_agent_file(paths.get("C"), default_agent="C"),
     }
+    d_expected = "D" in paths
+    if d_expected:
+        agent_map["D"] = parse_agent_file(paths.get("D"), default_agent="D")
 
     if use_live_open:
         open_occ = load_open_occupancy(cfg, live_rows=live_rows)
@@ -1545,6 +1915,10 @@ def run_scan_merge(
         if light_verdicts is not None
         else load_light_verdicts_map(cfg)
     )
+    min_lines = agent_d_min_lines_from_cfg(cfg)
+    d_armed_flag = agent_d_armed
+    if d_armed_flag is None and d_expected:
+        d_armed_flag = True
 
     payload = merge_candidates(
         agent_map,
@@ -1553,6 +1927,8 @@ def run_scan_merge(
         deep_queue=queue,
         light_verdicts=resolved_light,
         coverage_floor_on=coverage_floor_enabled(cfg),
+        agent_d_armed=d_armed_flag,
+        agent_d_min_lines=min_lines,
     )
     payload["agent_files"] = {k: str(v) for k, v in paths.items()}
     payload["markdown"] = render_shortlist_markdown(payload)

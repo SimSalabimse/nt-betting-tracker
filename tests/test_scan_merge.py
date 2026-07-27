@@ -12,9 +12,14 @@ import nt_bootstrap  # noqa: F401
 from nt.market_family import market_family
 from nt.odds_common import evidence_pair_key
 from nt.scan_merge import (
+    _normalize_agent_id,
+    discover_agent_files,
+    is_long_tail,
+    is_main_board,
     merge_candidates,
     open_occupancy_from_rows,
     parse_agent_file,
+    render_shortlist_markdown,
     run_scan_merge,
 )
 
@@ -766,3 +771,295 @@ def test_agent_a_odds_band(tmp_path: Path) -> None:
     assert "Long vs Shot" not in matches
     assert "Sinner vs Rune" in matches
     assert any(d.get("drop_reason") == "agent_a_odds_band" for d in payload["dropped"])
+
+
+def test_normalize_agent_id_includes_d() -> None:
+    assert _normalize_agent_id("D") == "D"
+    assert _normalize_agent_id("agent_d") == "D"
+    assert _normalize_agent_id("scan_agent: D") == "D"
+    assert _normalize_agent_id("B+D") in ("B", "D")  # first token path
+    assert _normalize_agent_id("A") == "A"
+    assert _normalize_agent_id("ENGINE") == "ENGINE"
+
+
+def test_discover_agent_files_includes_d(tmp_path: Path) -> None:
+    (tmp_path / "scan_agent_a_2026-07-27.jsonl").write_text("{}\n", encoding="utf-8")
+    (tmp_path / "scan_agent_b_2026-07-27.jsonl").write_text("{}\n", encoding="utf-8")
+    (tmp_path / "scan_agent_c_2026-07-27.jsonl").write_text("{}\n", encoding="utf-8")
+    (tmp_path / "scan_agent_d_2026-07-27.jsonl").write_text("{}\n", encoding="utf-8")
+    found = discover_agent_files(tmp_path)
+    assert set(found) == {"A", "B", "C", "D"}
+    assert found["D"].name.startswith("scan_agent_d")
+
+
+def test_agent_d_merge_and_markdown_header(tmp_path: Path) -> None:
+    rows = _base_odds_rows() + [
+        {
+            "match": "City vs United",
+            "selection": "Kampens 1. målscorer: Haaland",
+            "decimal_odds": 3.20,
+            "sport": "football",
+        }
+    ]
+    odds = _write_odds_csv(tmp_path / "odds.csv", rows)
+    agents = {
+        "A": [
+            {
+                "match": "Sinner vs Rune",
+                "selection": "Vinner: Sinner",
+                "decimal_odds": 1.42,
+                "sport": "tennis",
+                "scan_agents": ["A"],
+                "scan_reason": "Fav ML.",
+            }
+        ],
+        "B": [
+            {
+                "match": "City vs United",
+                "selection": "Totalt antall mål - over/under 2.5: Over 2.5",
+                "decimal_odds": 1.75,
+                "sport": "football",
+                "scan_agents": ["B"],
+                "scan_reason": "Main total.",
+            }
+        ],
+        "C": [
+            {
+                "match": "Alcaraz vs Zverev",
+                "selection": "Sett handikap: Zverev +3.5",
+                "decimal_odds": 1.92,
+                "sport": "tennis",
+                "scan_agents": ["C"],
+                "scan_reason": "Matchup dog HC.",
+            }
+        ],
+        "D": [
+            {
+                "match": "City vs United",
+                "selection": "Kampens 1. målscorer: Haaland",
+                "decimal_odds": 3.20,
+                "sport": "football",
+                "scan_agents": ["D"],
+                "scan_reason": "Long-tail goalscorer prop.",
+            }
+        ],
+    }
+    payload = merge_candidates(
+        agents,
+        odds,
+        open_occ=open_occupancy_from_rows([]),
+        shortlist_min=1,
+        agent_d_armed=True,
+    )
+    assert payload["agent_raw_counts"]["D"] == 1
+    assert payload.get("agent_d_armed") is True
+    assert any(
+        "D" in (r.get("scan_agents") or []) for r in payload["candidates"]
+    )
+    md = render_shortlist_markdown(payload)
+    assert "agent_d:" in md
+    assert "D(" in md or "spawned" in md
+
+
+def test_d_role_drift_soft_annotate_no_hard_drop(tmp_path: Path) -> None:
+    """≥3 of D's kept rows main_board → process_miss note; never hard-drop."""
+    # Distinct families so family-cap does not drop below 3 kept main rows.
+    rows = [
+        {
+            "match": "Sinner vs Rune",
+            "selection": "Vinner: Sinner",
+            "decimal_odds": 1.42,
+            "sport": "tennis",
+        },
+        {
+            "match": "City vs United",
+            "selection": "Totalt antall mål - over/under 2.5: Over 2.5",
+            "decimal_odds": 1.75,
+            "sport": "football",
+        },
+        {
+            "match": "Alcaraz vs Zverev",
+            "selection": "Sett handikap: Zverev +3.5",
+            "decimal_odds": 1.92,
+            "sport": "tennis",
+        },
+        {
+            "match": "Lakers vs Suns",
+            "selection": "Vinner (inkludert overtid/straffer): Lakers",
+            "decimal_odds": 1.70,
+            "sport": "basketball",
+        },
+    ]
+    odds = _write_odds_csv(tmp_path / "odds.csv", rows)
+    agents = {
+        "D": [
+            {
+                **r,
+                "scan_agents": ["D"],
+                "scan_reason": f"Drift main board {i}",
+                "promo_score": float(10 - i),
+            }
+            for i, r in enumerate(rows)
+        ]
+    }
+    payload = merge_candidates(
+        agents,
+        odds,
+        open_occ=open_occupancy_from_rows([]),
+        shortlist_min=1,
+        agent_d_armed=True,
+    )
+    # D main-board rows kept (soft only) — never hard-drop for role drift
+    assert payload["final_n"] >= 3
+    assert not any(
+        d.get("drop_reason") == "agent_d_role_drift" for d in payload["dropped"]
+    )
+    assert any(
+        "process_miss: agent_d_role_drift" in str(n) for n in payload.get("notes") or []
+    )
+
+
+def test_b_yields_longtail_to_d_when_armed(tmp_path: Path) -> None:
+    """When D-armed, long-tail family collision prefers D over B."""
+    rows = [
+        {
+            "match": "City vs United",
+            "selection": "Kampens 1. målscorer: Haaland",
+            "decimal_odds": 3.2,
+            "sport": "football",
+        },
+        {
+            "match": "City vs United",
+            "selection": "Kampens 1. målscorer: Foden",
+            "decimal_odds": 5.0,
+            "sport": "football",
+        },
+        {
+            "match": "City vs United",
+            "selection": "Kampens 1. målscorer: Alvarez",
+            "decimal_odds": 6.0,
+            "sport": "football",
+        },
+        {
+            "match": "City vs United",
+            "selection": "Spiller X scorer",
+            "decimal_odds": 4.0,
+            "sport": "football",
+        },
+    ]
+    odds = _write_odds_csv(tmp_path / "odds.csv", rows)
+    # Same market_family (player_props): 3 seats → cap 2. Prefer D's over B's.
+    agents = {
+        "B": [
+            {
+                "match": "City vs United",
+                "selection": "Kampens 1. målscorer: Alvarez",
+                "decimal_odds": 6.0,
+                "sport": "football",
+                "scan_agents": ["B"],
+                "scan_reason": "B long-tail seat.",
+                "promo_score": 100,  # high promo must still yield to D when armed
+            },
+            {
+                "match": "City vs United",
+                "selection": "Spiller X scorer",
+                "decimal_odds": 4.0,
+                "sport": "football",
+                "scan_agents": ["B"],
+                "scan_reason": "B second prop.",
+                "promo_score": 99,
+            },
+        ],
+        "D": [
+            {
+                "match": "City vs United",
+                "selection": "Kampens 1. målscorer: Haaland",
+                "decimal_odds": 3.2,
+                "sport": "football",
+                "scan_agents": ["D"],
+                "scan_reason": "D owns deep props.",
+                "promo_score": 1,
+            },
+            {
+                "match": "City vs United",
+                "selection": "Kampens 1. målscorer: Foden",
+                "decimal_odds": 5.0,
+                "sport": "football",
+                "scan_agents": ["D"],
+                "scan_reason": "D second prop.",
+                "promo_score": 1,
+            },
+        ],
+    }
+    payload = merge_candidates(
+        agents,
+        odds,
+        open_occ=open_occupancy_from_rows([]),
+        shortlist_min=1,
+        agent_d_armed=True,
+    )
+    kept = payload["candidates"]
+    fams = [r["market_family"] for r in kept]
+    assert fams.count("player_props") == 2
+    kept_agents = [set(r.get("scan_agents") or []) for r in kept]
+    assert any("D" in a for a in kept_agents)
+    # Both kept player_props should be D-preferred (not pure B)
+    prop_rows = [r for r in kept if r.get("market_family") == "player_props"]
+    assert all("D" in (r.get("scan_agents") or []) for r in prop_rows)
+    assert any(
+        "b_yielded_longtail_to_d" in str(n) for n in payload.get("notes") or []
+    ) or any(
+        "b_yielded_longtail_to_d" in str(d.get("notes") or "")
+        for d in payload.get("dropped") or []
+    )
+
+
+def test_run_scan_merge_agent_d_path(tmp_path: Path) -> None:
+    odds = _write_odds_csv(
+        tmp_path / "odds.csv",
+        _base_odds_rows()
+        + [
+            {
+                "match": "City vs United",
+                "selection": "Kampens 1. målscorer: Haaland",
+                "decimal_odds": 3.2,
+                "sport": "football",
+            }
+        ],
+    )
+    d = tmp_path / "scan_agent_d_2026-07-27.jsonl"
+    d.write_text(
+        json.dumps(
+            {
+                "match": "City vs United",
+                "selection": "Kampens 1. målscorer: Haaland",
+                "decimal_odds": 3.2,
+                "sport": "football",
+                "scan_agents": ["D"],
+                "scan_reason": "Long-tail from D file.",
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    payload = run_scan_merge(
+        None,
+        odds,
+        agent_d=d,
+        use_live_open=False,
+        write=False,
+    )
+    assert payload["agents"]["D"] == 1
+    assert payload.get("agent_d_armed") is True
+    assert any("D" in (r.get("scan_agents") or []) for r in payload["candidates"])
+    assert "agent_d:" in (payload.get("markdown") or "")
+
+
+def test_is_long_tail_and_main_board_helpers() -> None:
+    assert is_long_tail("Kampens 1. målscorer: Haaland", "", "player_props")
+    assert is_main_board(
+        "Totalt antall mål - over/under 2.5: Over 2.5", "", "football_totals"
+    )
+    assert is_main_board("HUB: Barcelona SC", "HUB", "football_1x2")
+    assert is_main_board("Vinner: Sinner", "", "tennis_ml")
+    assert not is_long_tail("Vinner: Sinner", "", "tennis_ml")
