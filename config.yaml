@@ -345,13 +345,14 @@ selection:
       stake_mult: 0.75
   # Temporary ESR test stake cap: max 10 NOK for first 10 place-acked bets under system_tag.
   # Absolute-last ceiling after rebalance + EXPLORE_REGIME clamp - does not change capital_v2 math.
-  # Counter resets on system_tag change (feh_v1 → esr_v1) — path keep is intentional; tag is SSOT.
+  # Counter resets on system_tag change (tag is SSOT). Soft-reset script also writes explicit n_placed=0.
+  # Operator soft reset (scripts/soft_reset_data_first_500.py) updates bankroll.era_start on --confirm.
   # NOTE_TAG_PREFIX → TEST_CAP: and optional path rename in PR2.
   test_stake_cap:
     enabled: true
     max_bets: 10
     max_stake_nok: 10.0
-    system_tag: esr_v1
+    system_tag: esr_data_v1
     state_path: data/state/feh_test_cap.json
 
   # If historical band ROI is terrible with enough sample, raise the bar further
