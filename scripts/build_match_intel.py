@@ -22,6 +22,9 @@ def main() -> int:
     p.add_argument("--out-dir", default=None)
     p.add_argument("--force", action="store_true")
     p.add_argument("--fixture-dir", default=None)
+    p.add_argument("--allow-network", action="store_true", default=False)
+    p.add_argument("--url", default=None, help="Explicit match page URL (PR-1)")
+    p.add_argument("--max-matches", type=int, default=None)
     p.add_argument("--json", action="store_true")
     args = p.parse_args()
 
@@ -42,6 +45,9 @@ def main() -> int:
         out_dir=args.out_dir,
         force=args.force,
         fixture_dir=args.fixture_dir,
+        allow_network=True if args.allow_network else None,
+        url=args.url,
+        max_matches=args.max_matches,
     )
     import json
 

@@ -58,3 +58,11 @@ data/odds/
 **/*.xcuserstate
 tools/ios-desk/build_unsigned/
 tools/ios-desk/**/DerivedData/
+
+# Firecrawl CLI local cache
+.firecrawl/
+
+
+# MIC fetch raw bundles
+data/cache/match_intel_fetch/
+

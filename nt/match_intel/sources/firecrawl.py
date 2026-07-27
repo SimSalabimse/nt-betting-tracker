@@ -1,62 +1,43 @@
 """
-Optional Firecrawl adapter.
+Deprecation shim → nt.match_intel.fetch.firecrawl_fetch.
 
-Not a hard dependency — import fails closed. Live fetch is never used in tests.
+Implementation lives only under fetch/; this module re-exports for backward imports.
 """
 from __future__ import annotations
 
 from typing import Any
 
+from nt.match_intel.fetch.firecrawl_fetch import (
+    fetch_firecrawl,
+    fetch_markdown as _fetch_markdown,
+    firecrawl_api_key,
+    firecrawl_cli_available,
+    firecrawl_configured,
+    firecrawl_sdk_available,
+)
+
 
 def firecrawl_available() -> bool:
-    try:
-        import firecrawl  # type: ignore  # noqa: F401
-
-        return True
-    except Exception:  # noqa: BLE001
-        return False
+    """True if SDK import works (legacy name). Prefer firecrawl_configured() for ops."""
+    return firecrawl_sdk_available()
 
 
 def fetch_markdown(url: str, *, timeout_s: float = 45.0) -> dict[str, Any]:
     """
     Attempt Firecrawl scrape → markdown/HTML.
 
-    Returns {ok, markdown, html, error, method}.
-    Never raises for missing package.
+    Returns {ok, markdown, html, error, method, ...}.
+    Real network when FIRECRAWL_API_KEY or CLI credentials work.
     """
-    if not url:
-        return {"ok": False, "markdown": "", "html": "", "error": "empty_url", "method": "firecrawl"}
-    try:
-        # Soft optional — several package names exist historically
-        client = None
-        try:
-            from firecrawl import FirecrawlApp  # type: ignore
+    return _fetch_markdown(url, timeout_s=timeout_s)
 
-            client = FirecrawlApp()
-        except Exception:  # noqa: BLE001
-            client = None
-        if client is None:
-            return {
-                "ok": False,
-                "markdown": "",
-                "html": "",
-                "error": "firecrawl_not_installed",
-                "method": "firecrawl",
-            }
-        # Do not call network from library defaults without explicit API key/env;
-        # leave a clear not-configured path for CI.
-        return {
-            "ok": False,
-            "markdown": "",
-            "html": "",
-            "error": "firecrawl_not_configured",
-            "method": "firecrawl",
-        }
-    except Exception as ex:  # noqa: BLE001
-        return {
-            "ok": False,
-            "markdown": "",
-            "html": "",
-            "error": str(ex),
-            "method": "firecrawl",
-        }
+
+__all__ = [
+    "fetch_firecrawl",
+    "fetch_markdown",
+    "firecrawl_api_key",
+    "firecrawl_available",
+    "firecrawl_cli_available",
+    "firecrawl_configured",
+    "firecrawl_sdk_available",
+]

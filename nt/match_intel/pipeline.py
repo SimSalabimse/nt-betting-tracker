@@ -1,8 +1,13 @@
 """
 Match Intelligence pipeline: build MIC cards for board matches.
 
-Football: offline HTML fixtures + optional Firecrawl (never required for tests).
-Non-football: skeleton cards with parser_not_implemented (grade F/C OK).
+Control flow (Appendix B):
+  fixtures/html → offline parse
+  else if not allow_network → network_disabled
+  else → fetch (+ optional URL) → match_confidence → live parse or live_parser_not_ready
+
+PR-1: football registry ready=False → after successful fetch+name match → live_parser_not_ready
+       (raw bundle still cached). No URL discovery (PR-2).
 """
 from __future__ import annotations
 
@@ -10,9 +15,11 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlparse
 
 from nt.match_intel.io import atomic_write_json, mic_path, read_mic, write_mic
-from nt.match_intel.matching import load_aliases, match_confidence
+from nt.match_intel.matching import match_confidence
+from nt.match_intel.registry import get_live_parser, is_live_parser_ready
 from nt.match_intel.schema import (
     apply_process_miss,
     empty_mic_skeleton,
@@ -181,6 +188,192 @@ def _apply_html_sources(
     return card
 
 
+def _split_sides_simple(match: str) -> tuple[str, str]:
+    m = (match or "").strip()
+    for sep in (" vs ", " v ", " - ", " – ", " — "):
+        if sep in m:
+            a, b = m.split(sep, 1)
+            return a.strip(), b.strip()
+    return m, ""
+
+
+def _name_match_from_bundle(match: str, bundle: Any) -> str:
+    """Return match_confidence label from fetch bundle identity / body tokens."""
+    page_teams = ""
+    try:
+        page_teams = bundle.identity_text() if bundle is not None else ""
+    except Exception:  # noqa: BLE001
+        page_teams = ""
+    if page_teams:
+        conf, _score = match_confidence(match, page_teams)
+        return conf
+
+    html = ""
+    try:
+        html = (bundle.summary_html or bundle.html or bundle.markdown or "").lower()
+    except Exception:  # noqa: BLE001
+        html = ""
+    if len(html) > 200:
+        home, away = _split_sides_simple(match)
+        if home and away and home.lower() in html and away.lower() in html:
+            return "fuzzy"
+    return "none"
+
+
+def _guess_source_from_url(url: str) -> str:
+    try:
+        host = (urlparse(url).netloc or "").lower()
+    except Exception:  # noqa: BLE001
+        return "other_public"
+    if "flashscore" in host:
+        return "flashscore"
+    if "fotmob" in host:
+        return "fotmob"
+    if "sofascore" in host:
+        return "sofascore"
+    return "other_public"
+
+
+def _record_fetch_source(card: dict[str, Any], *, url: str, method: str) -> None:
+    sources = list(card.get("sources") or [])
+    sources.append(
+        {
+            "url": url,
+            "publisher": _guess_source_from_url(url),
+            "fetched_at": _utc_now_iso(),
+            "method": method or "fetch",
+            "fields_contributed": [],
+        }
+    )
+    card["sources"] = sources
+
+
+def _live_network_path(
+    card: dict[str, Any],
+    *,
+    match: str,
+    sport_n: str,
+    mi: dict[str, Any],
+    key: str,
+    url: str | None,
+    force: bool,
+) -> dict[str, Any]:
+    """
+    Fetch → name match → live parse or live_parser_not_ready.
+
+    PR-1: requires explicit url (CLI --url); discovery is PR-2.
+    """
+    card.setdefault("extraction", {})
+    urls: list[str] = []
+    if url and str(url).strip():
+        urls.append(str(url).strip())
+
+    if not urls:
+        # No discovery in PR-1
+        card["extraction"]["primary_method"] = "failed"
+        card["extraction"]["errors"] = ["url_not_found"]
+        card["extraction"]["needs_review"] = True
+        return card
+
+    from nt.match_intel.fetch.router import fetch_match_bundle
+
+    last_errors: list[str] = []
+    matched_bundle = None
+    matched_conf = "none"
+
+    for u in urls:
+        bundle = fetch_match_bundle(
+            u,
+            mi_cfg=mi,
+            match_key=key,
+            source=_guess_source_from_url(u),
+            sport=sport_n,
+            use_cache=True,
+            force=force,
+        )
+        method = bundle.method or "fetch"
+        card["extraction"]["primary_method"] = method
+
+        if not bundle.ok:
+            err = bundle.error or "fetch_failed"
+            # Normalize taxonomy codes
+            if err in (
+                "timeout",
+                "circuit_open",
+                "blocked",
+                "playwright_not_installed",
+                "js_shell_empty",
+                "wrong_backend",
+                "firecrawl_not_installed",
+                "firecrawl_not_configured",
+            ):
+                # Map firecrawl-specific to fetch_failed for process_miss priority when needed
+                mapped = err
+                if err.startswith("firecrawl_"):
+                    mapped = "fetch_failed"
+                last_errors.append(mapped)
+            else:
+                last_errors.append("fetch_failed" if err == "empty_url" else err)
+            # Still record attempted source
+            _record_fetch_source(card, url=u, method=method)
+            continue
+
+        # Successful fetch — raw already in fetch cache via router
+        _record_fetch_source(card, url=bundle.final_url or u, method=method)
+        conf = _name_match_from_bundle(match, bundle)
+        card["extraction"]["match_confidence"] = conf
+        if conf == "none":
+            last_errors.append("low_name_match")
+            card["extraction"]["needs_review"] = True
+            continue
+
+        matched_bundle = bundle
+        matched_conf = conf
+        if conf == "fuzzy":
+            card["extraction"]["needs_review"] = True
+        elif conf in ("exact", "alias"):
+            card["extraction"]["needs_review"] = False
+        break
+
+    if matched_bundle is None:
+        card["extraction"]["primary_method"] = card["extraction"].get("primary_method") or "failed"
+        # Dedupe errors, prefer specific
+        errs = []
+        for e in last_errors:
+            if e not in errs:
+                errs.append(e)
+        card["extraction"]["errors"] = errs or ["fetch_failed"]
+        card["extraction"]["needs_review"] = True
+        return card
+
+    card["extraction"]["match_confidence"] = matched_conf
+    # Only AFTER successful fetch + name match → live parse or live_parser_not_ready
+    if is_live_parser_ready(sport_n):
+        spec = get_live_parser(sport_n)
+        assert spec is not None and callable(spec.parse)
+        try:
+            frag = spec.parse(matched_bundle, match=match, sport=sport_n, cfg=mi)
+            if frag:
+                card = merge_fragments(card, frag)
+            card["extraction"]["errors"] = [
+                e
+                for e in (card["extraction"].get("errors") or [])
+                if e not in ("no_source", "network_disabled", "url_not_found")
+            ]
+        except Exception:  # noqa: BLE001
+            card["extraction"]["errors"] = ["parse_empty"]
+            card["extraction"]["needs_review"] = True
+        return card
+
+    # PR-1/PR-2 football interim (ready=False)
+    card["extraction"]["errors"] = ["live_parser_not_ready"]
+    card["extraction"]["needs_review"] = True
+    # Attach fetch method for ops visibility
+    if matched_bundle.method:
+        card["extraction"]["primary_method"] = matched_bundle.method
+    return card
+
+
 def build_match_intel(
     match: str,
     *,
@@ -194,18 +387,26 @@ def build_match_intel(
     force: bool = False,
     write: bool = True,
     out_dir: Path | str | None = None,
+    url: str | None = None,
+    allow_network: bool | None = None,
 ) -> dict[str, Any]:
     """
     Build one MIC card for a match.
 
-    - football: parse offline HTML (html_by_source / fixture_dir) when provided
-    - non-v1 sports: skeleton with parser_not_implemented
+    - Offline html_by_source / fixture_dir always wins (tests).
+    - Network path when allow_network and URL (or later discovery).
+    - Non-v1 sports: skeleton with parser_not_implemented (no network).
     """
     t0 = time.perf_counter()
     mi = _mic_cfg(cfg)
     sport_n = normalize_sport(sport) or (sport or "football").strip().lower()
     v1 = [str(s).lower() for s in (mi.get("v1_sports") or ["football"])]
     out = Path(out_dir or mi.get("out_dir") or "outbox/match_intel")
+
+    # CLI / caller override for allow_network
+    if allow_network is not None:
+        mi = dict(mi)
+        mi["allow_network"] = bool(allow_network)
 
     # TTL cache
     key = mic_match_key(match)
@@ -249,9 +450,8 @@ def build_match_intel(
             card["_path"] = str(mic_path(out, match, match_key=key))
         return card
 
-    # Football free pipeline
+    # --- offline always wins (tests / operator paste) ---
     html_map: dict[str, str] = dict(html_by_source or {})
-    # Auto-load fixtures from fixture_dir if named by match_key
     if fixture_dir:
         fd = Path(fixture_dir)
         for src, name in (
@@ -273,35 +473,40 @@ def build_match_intel(
                 "match_confidence"
             ) not in ("exact", "alias")
             if card["extraction"].get("match_confidence") in ("exact", "alias", "fuzzy"):
-                # clear no_source
                 card["extraction"]["errors"] = [
                     e
                     for e in (card["extraction"].get("errors") or [])
                     if e not in ("no_source",)
                 ]
-    else:
-        # No offline HTML and no live fetch in default path (PR-0: no discovery yet)
+        card["match_key"] = key
+        _finalize_card(card, t0=t0)
+        if write:
+            path = write_mic(card, out, match_key=key)
+            card["_path"] = str(path)
+        return card
+
+    net_on = bool(mi.get("allow_network"))
+    if not net_on:
         card["extraction"]["primary_method"] = "failed"
-        # Prefer network_disabled when network is off; keep no_source as legacy alias.
-        if not bool(mi.get("allow_network")):
-            card["extraction"]["errors"] = ["network_disabled", "no_source"]
-        else:
-            card["extraction"]["errors"] = ["no_source"]
+        card["extraction"]["errors"] = ["network_disabled", "no_source"]
         card["extraction"]["needs_review"] = True
+        card["match_key"] = key
+        _finalize_card(card, t0=t0)
+        if write:
+            path = write_mic(card, out, match_key=key)
+            card["_path"] = str(path)
+        return card
 
-    # Optional Firecrawl only when explicitly allowed via cfg and no html
-    if (
-        not html_map
-        and bool(mi.get("allow_network"))
-        and str((mi.get("fetch") or {}).get("primary") or "firecrawl") == "firecrawl"
-    ):
-        try:
-            from nt.match_intel.sources.firecrawl import fetch_markdown
-
-            # No URL discovery in v1 without search — leave failed
-            _ = fetch_markdown  # imported for optional wiring
-        except Exception:  # noqa: BLE001
-            pass
+    # --- live path: always fetch + match for v1 sports when network on ---
+    card = _live_network_path(
+        card,
+        match=match,
+        sport_n=sport_n,
+        mi=mi,
+        key=key,
+        url=url,
+        force=force,
+    )
 
     card["match_key"] = key
     _finalize_card(card, t0=t0)
@@ -358,6 +563,9 @@ def run_match_intel_batch(
     html_by_source: dict[str, dict[str, str]] | None = None,
     fixture_dir: Path | str | None = None,
     max_matches: int | None = None,
+    url: str | None = None,
+    allow_network: bool | None = None,
+    urls_by_match: dict[str, str] | None = None,
 ) -> dict[str, Any]:
     """
     Build MICs for an odds board or explicit match list.
@@ -365,6 +573,17 @@ def run_match_intel_batch(
     Returns summary with grades and paths.
     """
     mi = _mic_cfg(cfg)
+    # Apply CLI overrides into a shallow cfg copy for builders
+    if allow_network is not None or url is not None:
+        cfg = dict(cfg or {})
+        research = dict(cfg.get("research") or {})
+        mi2 = dict(research.get("match_intel") or {})
+        if allow_network is not None:
+            mi2["allow_network"] = bool(allow_network)
+        research["match_intel"] = mi2
+        cfg["research"] = research
+        mi = mi2
+
     out = Path(out_dir or mi.get("out_dir") or "outbox/match_intel")
     cap = max_matches or int(mi.get("max_board_matches") or mi.get("max_matches_per_run") or 40)
 
@@ -380,6 +599,9 @@ def run_match_intel_batch(
                     "match_key": mic_match_key(m),
                     "sport": sport or mi.get("default_sport") or "football",
                     "competition": None,
+                    "url": (urls_by_match or {}).get(mic_match_key(m))
+                    or (urls_by_match or {}).get(m)
+                    or url,
                 }
             )
     elif odds_path:
@@ -388,13 +610,12 @@ def run_match_intel_batch(
             sport_filter=sport if sport and sport != "all" else None,
             max_matches=cap,
         )
-        # If sport filter left board empty, fall back to all unique (still capped)
         if not work and sport and sport != "all":
             work = unique_matches_from_odds(odds_path, max_matches=cap)
-            if sport:
-                for w in work:
-                    # leave inferred sports
-                    pass
+        for w in work:
+            w["url"] = (urls_by_match or {}).get(w.get("match_key") or "") or (
+                urls_by_match or {}
+            ).get(w.get("match") or "") or url
     else:
         return {"ok": False, "error": "odds_or_matches_required", "cards": [], "summary": {}}
 
@@ -406,6 +627,7 @@ def run_match_intel_batch(
     process_miss_n = 0
     budget_exhausted_n = 0
     playwright_missing = False
+    fetched_ok_n = 0
 
     for item in work:
         m = item["match"]
@@ -425,6 +647,8 @@ def run_match_intel_batch(
             force=force,
             write=write,
             out_dir=out,
+            url=item.get("url") or url,
+            allow_network=allow_network,
         )
         cards.append(card)
         g = str((card.get("coverage") or {}).get("grade") or "F")
@@ -434,6 +658,11 @@ def run_match_intel_batch(
         ext = card.get("extraction") or {}
         if ext.get("process_miss"):
             process_miss_n += 1
+        method = str(ext.get("primary_method") or "")
+        if method in ("firecrawl", "playwright", "http", "cache") and "live_parser_not_ready" in (
+            ext.get("errors") or []
+        ):
+            fetched_ok_n += 1
         for err in ext.get("errors") or []:
             e = str(err)
             error_counts[e] = error_counts.get(e, 0) + 1
@@ -448,6 +677,7 @@ def run_match_intel_batch(
         "grades": grade_counts,
         "process_miss_n": process_miss_n,
         "budget_exhausted_n": budget_exhausted_n,
+        "fetched_ok_n": fetched_ok_n,
         "errors": error_counts,
         "sports": sport_counts,
         "playwright_missing": playwright_missing,
@@ -463,6 +693,7 @@ def run_match_intel_batch(
             "grades": grade_counts,
             "process_miss_n": process_miss_n,
             "budget_exhausted_n": budget_exhausted_n,
+            "fetched_ok_n": fetched_ok_n,
             "matched_n": sum(
                 1
                 for c in cards

@@ -607,10 +607,28 @@ research:
     circuit_break_failures: 5
     alias_path: data/state/match_aliases.json
     sources_priority: [norsk_tipping, flashscore, fotmob, other_public]
-    allow_network: false            # tests/CI: offline only; operator may enable
+    allow_network: false            # tests/CI: offline only; ops: --allow-network
     fetch:
-      primary: firecrawl
-      fallback: playwright_bs4
+      prefer: firecrawl             # firecrawl | playwright | http
+      primary: firecrawl            # legacy alias of prefer
+      fallback: http
+      allow_firecrawl: true
+      cache_dir: data/cache/match_intel_fetch
+      cache_ttl_hours: 6
+      timeout_s: 45
+      min_interval_ms_per_host: 1200
+      circuit_open_seconds: 300
+      playwright_hosts:
+        - flashscore.com
+        - www.flashscore.com
+        - sofascore.com
+        - www.sofascore.com
+      wait_selector_ms: 12000
+      h2h_wait_ms: 8000
+      fetch_h2h_tab: true
+      max_xhr_bytes: 1500000
+      max_bytes: 2500000
+      use_browser_default_ua: true
     exa_fill: false
   exa_mode: optional                # optional | off — narrative fill only; never MIC body
   # Refuse recommend when odds file has zero p_model/evidence (wrong path)

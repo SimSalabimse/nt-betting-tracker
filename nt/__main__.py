@@ -736,6 +736,23 @@ def cmd_research(args: argparse.Namespace) -> int:
             print("--odds or --matches required", file=sys.stderr)
             return 2
         out_dir = getattr(args, "out_dir", None) or None
+        # CLI network / URL overrides (PR-1); committed config stays allow_network: false
+        allow_net = None
+        if bool(getattr(args, "allow_network", False)):
+            allow_net = True
+        elif bool(getattr(args, "no_network", False)):
+            allow_net = False
+        # Optional fetch prefer override
+        fetch_prefer = getattr(args, "fetch", None)
+        if fetch_prefer:
+            research = dict(cfg.get("research") or {})
+            mi_cfg = dict(research.get("match_intel") or {})
+            fetch_cfg = dict(mi_cfg.get("fetch") or {})
+            fetch_cfg["prefer"] = str(fetch_prefer).strip().lower()
+            mi_cfg["fetch"] = fetch_cfg
+            research["match_intel"] = mi_cfg
+            cfg = dict(cfg)
+            cfg["research"] = research
         payload = run_match_intel_batch(
             cfg,
             odds_path=odds,
@@ -746,6 +763,8 @@ def cmd_research(args: argparse.Namespace) -> int:
             write=not bool(getattr(args, "no_write", False)),
             fixture_dir=getattr(args, "fixture_dir", None) or None,
             max_matches=getattr(args, "max_matches", None),
+            url=getattr(args, "url", None) or None,
+            allow_network=allow_net,
         )
         if getattr(args, "json", False):
             slim = {
@@ -1698,6 +1717,29 @@ def main(argv: list[str] | None = None) -> int:
         type=int,
         default=None,
         help="Cap board matches (default: config max_board_matches)",
+    )
+    rs_mi.add_argument(
+        "--allow-network",
+        action="store_true",
+        default=False,
+        help="Enable live fetch (overrides research.match_intel.allow_network=false)",
+    )
+    rs_mi.add_argument(
+        "--no-network",
+        action="store_true",
+        default=False,
+        help="Force offline (ignore config allow_network if true)",
+    )
+    rs_mi.add_argument(
+        "--url",
+        default=None,
+        help="Explicit match page URL (PR-1; skips discovery). Used for all matches in the run.",
+    )
+    rs_mi.add_argument(
+        "--fetch",
+        default=None,
+        choices=["firecrawl", "playwright", "http"],
+        help="Override research.match_intel.fetch.prefer backend",
     )
     rs_mi.add_argument("--json", action="store_true", help="Print JSON summary")
     rs_mi.set_defaults(func=cmd_research)
