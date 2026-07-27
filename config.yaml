@@ -580,9 +580,9 @@ simulation:
 # Install (Windows): pip install -e path\to\nt-data-platform — see README.
 # Never invents p_model; does not enter ESR/MIC critical path. Base requirements stay PyYAML-only.
 data_platform:
-  enabled: false
-  lake_root: null          # absolute path; env NT_DATA_LAKE wins at resolve
-  sim_features: false      # lake-backed λ priors only when true (future hook)
+  enabled: true            # opt-in: sibling nt-data-platform lake
+  lake_root: null          # absolute path; env NT_DATA_LAKE wins at resolve (prefer C:\data\nt-lake)
+  sim_features: true       # lake-backed λ priors for football sim (suggest_lambdas)
   allow_raw_sql: false     # adapter does not expose DataClient.sql unless true
 
 git:

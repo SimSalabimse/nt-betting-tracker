@@ -20,13 +20,13 @@ Not a multi-sport simulator. Extend only after calibration proves value.
 
 import json
 import math
-from dataclasses import asdict, dataclass, field, fields
+from dataclasses import asdict, dataclass, field, fields, replace
 from pathlib import Path
 from typing import Any
 
 from nt.bets_io import utc_now
 from nt.config import path_from_config
-from nt.defaults import simulation_cfg
+from nt.defaults import data_platform_cfg, simulation_cfg
 from nt.evidence import ev_after_haircut
 
 
@@ -121,6 +121,120 @@ class SimResult:
 
     def p(self, key: str) -> float | None:
         return self.markets.get(key)
+
+
+def _home_away_names(inp: SimInputs) -> tuple[str, str]:
+    home = (inp.home or "").strip()
+    away = (inp.away or "").strip()
+    if (not home or not away) and " vs " in (inp.match or ""):
+        parts = (inp.match or "").split(" vs ", 1)
+        if not home:
+            home = parts[0].strip()
+        if not away and len(parts) > 1:
+            away = parts[1].strip()
+    return home, away
+
+
+def try_lake_lambda_priors(
+    inp: SimInputs,
+    cfg: dict[str, Any] | None = None,
+    *,
+    data_client: Any | None = None,
+) -> tuple[SimInputs, list[str], dict[str, Any] | None]:
+    """
+    Optionally fill λ from ``DataClient.suggest_lambdas`` (nt-data-platform).
+
+    Gated by ``data_platform.enabled`` **and** ``data_platform.sim_features``
+    (both default **false**). Never overrides explicit ``lambda_home``/``lambda_away``.
+    Never invents λ when the lake returns null (thin sample). Never writes evidence.
+
+    Returns ``(inputs, warnings, raw_suggestion_or_None)``. Warnings always include
+    ``goals_based_proxy`` (substring) when a lake suggestion is consumed.
+    """
+    warnings: list[str] = []
+    dp = data_platform_cfg(cfg or {})
+    if not dp.get("enabled") or not dp.get("sim_features"):
+        return inp, warnings, None
+
+    # Explicit lambdas win — do not call the lake.
+    if inp.lambda_home is not None and inp.lambda_away is not None:
+        return inp, warnings, None
+
+    client = data_client
+    if client is None:
+        try:
+            from nt.data_platform import get_client
+
+            client = get_client(cfg)
+        except Exception as e:  # pragma: no cover - defensive
+            warnings.append(f"lake_lambda_prior_unavailable: {e}")
+            return inp, warnings, None
+    if client is None:
+        return inp, warnings, None
+
+    home, away = _home_away_names(inp)
+    if not home or not away:
+        warnings.append("lake_lambda_prior_skipped: need home and away team names")
+        return inp, warnings, None
+
+    league = (inp.league or "").strip() or None
+    try:
+        suggestion = client.suggest_lambdas(home, away, league=league)
+    except Exception as e:
+        warnings.append(f"lake_lambda_prior_error: {e}")
+        return inp, warnings, None
+
+    if not isinstance(suggestion, dict):
+        warnings.append("lake_lambda_prior_error: non-dict response")
+        return inp, warnings, None
+
+    lake_warnings = [str(w) for w in (suggestion.get("warnings") or []) if w is not None]
+    if not any("goals_based_proxy" in w for w in lake_warnings):
+        lake_warnings.append("goals_based_proxy_not_xg")
+    warnings.extend(lake_warnings)
+    warnings.append("lake_lambda_prior")
+
+    compat = suggestion.get("sim_inputs_compat")
+    if not isinstance(compat, dict):
+        compat = {}
+
+    def _pick(key: str) -> Any:
+        if suggestion.get(key) is not None:
+            return suggestion.get(key)
+        return compat.get(key)
+
+    updates: dict[str, Any] = {}
+    lh = _pick("lambda_home")
+    la = _pick("lambda_away")
+    if lh is not None and la is not None:
+        updates["lambda_home"] = float(lh)
+        updates["lambda_away"] = float(la)
+    else:
+        # Thin / missing — keep nulls; do not invent. Operator must supply λ/xG.
+        warnings.append("lake_lambda_prior_thin_or_null: no λ applied; supply λ or xG manually")
+
+    lg = _pick("league_avg_xg")
+    if lg is not None:
+        updates["league_avg_xg"] = float(lg)
+    ha = _pick("home_advantage")
+    if ha is not None:
+        updates["home_advantage"] = float(ha)
+
+    sq = suggestion.get("source_quality")
+    if isinstance(sq, str) and sq.strip():
+        # Only fill when operator left default medium and lake has a view
+        if inp.source_quality == "medium" or sq == "low":
+            updates["source_quality"] = sq.strip()
+
+    if not (inp.home or "").strip() and suggestion.get("home"):
+        updates["home"] = str(suggestion["home"])
+    if not (inp.away or "").strip() and suggestion.get("away"):
+        updates["away"] = str(suggestion["away"])
+    if not (inp.match or "").strip() and suggestion.get("match"):
+        updates["match"] = str(suggestion["match"])
+
+    new_inp = replace(inp, **updates) if updates else inp
+    return new_inp, warnings, suggestion
 
 
 def resolve_lambdas(inp: SimInputs, cfg: dict[str, Any] | None = None) -> tuple[float, float, list[str]]:
@@ -310,14 +424,33 @@ def _summary(inp: SimInputs, lam_h: float, lam_a: float, markets: dict[str, floa
     )
 
 
-def simulate_match(inp: SimInputs, cfg: dict[str, Any] | None = None) -> SimResult:
+def simulate_match(
+    inp: SimInputs,
+    cfg: dict[str, Any] | None = None,
+    *,
+    data_client: Any | None = None,
+) -> SimResult:
+    """
+    Run football Poisson/DC sim.
+
+    Optional lake-backed λ priors (``data_platform.sim_features``) fill missing
+    lambdas via ``DataClient.suggest_lambdas`` only — never auto-writes evidence.
+    Pass ``data_client`` in tests to inject a mock.
+    """
     sc = simulation_cfg(cfg or {})
     if not sc.get("enabled", True):
         raise RuntimeError("simulation.football disabled in config (simulation.enabled=false)")
 
+    lake_warnings: list[str] = []
+    lake_meta: dict[str, Any] | None = None
+    inp, lake_warnings, lake_meta = try_lake_lambda_priors(inp, cfg, data_client=data_client)
+
     rho = float(inp.rho if inp.rho is not None else sc.get("default_rho", -0.05))
     max_g = int(inp.max_goals or sc.get("max_goals", 10))
     lam_h, lam_a, warnings = resolve_lambdas(inp, cfg)
+    if lake_warnings:
+        # Lake warnings first so goals_based_proxy is visible in reports/audits
+        warnings = list(lake_warnings) + [w for w in warnings if w not in lake_warnings]
     mat = score_matrix(lam_h, lam_a, rho=rho, max_goals=max_g)
     markets = markets_from_matrix(mat)
     conf = _confidence(inp, warnings)
@@ -371,6 +504,15 @@ def simulate_match(inp: SimInputs, cfg: dict[str, Any] | None = None) -> SimResu
         "sim_warnings": warnings,
         "disclaimer": "Simulation is not ground truth. Human research still required.",
     }
+    if lake_meta is not None:
+        evidence_snippet["lake_lambda_prior"] = {
+            "api_version": lake_meta.get("api_version"),
+            "source_quality": lake_meta.get("source_quality"),
+            "confidence": lake_meta.get("confidence"),
+            "warnings": list(lake_meta.get("warnings") or []),
+            "n_home": lake_meta.get("n_home"),
+            "n_away": lake_meta.get("n_away"),
+        }
 
     return SimResult(
         match=match,
@@ -410,6 +552,7 @@ def simulate_match(inp: SimInputs, cfg: dict[str, Any] | None = None) -> SimResu
             "source_quality": inp.source_quality,
             "league": inp.league,
             "nt_selection_map": nt_map,
+            "lake_lambda_prior": bool(lake_meta is not None),
         },
         generated_at=utc_now(),
     )
