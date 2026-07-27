@@ -1,12 +1,24 @@
 # Adaptive Multi-Agent Scan + Dual Decision Agents (ESR)
 
+> ## SUPERSESSION BANNER (PR4 / data-first ESR — 2026-07-27)
+>
+> **Stage 3 Dual Decision (2 arguers + main annotator) is superseded** as the sole Stage 3 protocol by **three Decision Agents** (Edge Maximiser ∥ Portfolio Guardian ∥ Research Quality & Continuity Challenger) + **Stage 3.1z** `research apply-quality-veto` under **KD-place-law**.
+>
+> | Still valid (this document) | Superseded (use daily-run skill + TRI template) |
+> |-----------------------------|--------------------------------------------------|
+> | Stage **1b** adaptive scan A/B/C(+D) role cards, spawn D n=40/41, merge, shortlist 8–15 | Stage **3.1 Dual Decision ARGUE** as sole Stage 3 |
+> | Scan budgets, KD-scan-*, engine SSOT deep_queue | Dual-as-only place-narrative protocol |
+> | Form-continuity / capital math freeze | `DUAL_DECISION_*.md` as primary Stage 3 artifact |
+>
+> **Authoritative Stage 3 now:** `docs/templates/TRI_DECISION_TEMPLATE.md` · `docs/skills_mirror_daily-run.md` · root `AGENTS.md` (KD-place-law + Quality hard_veto exception). Dual template kept for archive only.
+
 | Field | Value |
 |-------|--------|
 | **PLAN_ID** | `adaptive-scan-and-dual-decision-2026-07-27` |
 | **Author** | desk / Grok Build |
 | **Date** | 2026-07-27 |
-| **Revised** | 2026-07-27 (post design review ISS-01–ISS-14) |
-| **Status** | **Accepted** · **Implemented-in-progress** (PR1 docs persist; skill/code land in PR0–PR5) |
+| **Revised** | 2026-07-27 (post design review ISS-01–ISS-14); **Stage 3 Dual superseded 2026-07-27 (KD-DD-supersede / PR4)** |
+| **Status** | **Accepted** · Stage 1b adaptive scan **live**; Stage 3 Dual **superseded** by data-first three-agent + 3.1z |
 | **Repository** | `nt-betting-tracker` |
 | **Related (live)** | `docs/skills_mirror_daily-run.md` · `~/.grok/skills/daily-run/SKILL.md` · `docs/DEEP_RESEARCH_SKILL_ESR_2026-07-26.md` · `docs/skills_mirror_deep-research.md` · `docs/DIVERSITY_AND_EXPLORE.md` · `docs/MARKET_COVERAGE.md` · `docs/FORM_CONTINUITY_AND_ANTI_FLIP_HARDENING_2026-07-26.md` · `AGENTS.md` (Stage 1b / Dual Decision sections land in **PR2/PR4** — not yet claimed here) |
 | **Related (code)** | `nt/market_coverage.py` (`DEFAULT_HIGH_VOLUME_THRESHOLD = 40`) · `nt/odds_parse.py` · `nt/board.py` · `nt/recommend.py` · `nt/portfolio.py` · `nt/light_research.py` · `scripts/write_deep_research_pack.py` · pycache: `scan_merge` · `market_family` · `live_ledger` · `form_continuity` (sources may be missing until PR0 / PR-H) |

@@ -1,5 +1,6 @@
 # Desk-skill smoke: coverage floor, MC phase progression, taxonomy weights,
-# adaptive scan-merge / scan-depth (ESR), dual-decision template.
+# adaptive scan-merge / scan-depth (ESR), data-first MIC / can-bet / quality-veto,
+# TRI decision template (Stage 3 Dual superseded).
 # Usage (from tracker root): .\scripts\skill_smoke.ps1
 
 $ErrorActionPreference = "Continue"
@@ -36,10 +37,27 @@ Write-Host "Python: $(python --version 2>&1)"
 # 0) Skills installed
 Invoke-Step "skill_list" {
     & "$PSScriptRoot\skill_list.ps1"
-    $names = @("daily-run","missed-audit","chain-explain","bankroll-tune","learning-rootcause")
+    $names = @("daily-run","deep-research","missed-audit","chain-explain","bankroll-tune","learning-rootcause")
     foreach ($n in $names) {
         $p = Join-Path $env:USERPROFILE ".grok\skills\$n\SKILL.md"
         if (-not (Test-Path $p)) { throw "missing $p" }
+    }
+    # Data-first skill phrases (repo mirrors byte-synced with live)
+    $dailyMirror = Join-Path $Root "docs\skills_mirror_daily-run.md"
+    if (-not (Test-Path $dailyMirror)) { throw "missing $dailyMirror" }
+    $dm = Get-Content $dailyMirror -Raw
+    foreach ($needle in @(
+        "assert-can-bet",
+        "match-intel",
+        "apply-quality-veto",
+        "KD-place-law",
+        "esr_data_v1",
+        "re_expand_once",
+        "TRI_DECISION"
+    )) {
+        if ($dm -notmatch [regex]::Escape($needle)) {
+            throw "daily-run mirror missing required phrase: $needle"
+        }
     }
 }
 
@@ -72,24 +90,40 @@ print('taxonomy weight smoke PASS')
 "@
 }
 
-# 4) Dual Decision golden template present (KD-DD-wire skill law)
-Invoke-Step "dual_decision_template_present" {
-    $p = Join-Path $Root "docs\templates\DUAL_DECISION_TEMPLATE.md"
+# 4) TRI Decision golden template present (KD-place-law; Dual Stage 3 superseded)
+Invoke-Step "tri_decision_template_present" {
+    $p = Join-Path $Root "docs\templates\TRI_DECISION_TEMPLATE.md"
     if (-not (Test-Path $p)) { throw "missing $p" }
     $txt = Get-Content $p -Raw
     foreach ($needle in @(
-        "KD-DD-wire",
+        "KD-place-law",
         "decision_agent_edge",
         "decision_agent_guardian",
-        "SOLE place set",
-        "decision:",
-        "engine_only"
+        "decision_agent_quality",
+        "apply-quality-veto",
+        "quality_veto_applied",
+        "re_expand_once",
+        "assert-can-bet"
     )) {
         if ($txt -notmatch [regex]::Escape($needle)) {
-            throw "template missing required phrase: $needle"
+            throw "TRI template missing required phrase: $needle"
         }
     }
-    Write-Host "dual-decision template OK: $p"
+    Write-Host "tri-decision template OK: $p"
+}
+
+# 4b) CLI help: match-intel / assert-can-bet / apply-quality-veto
+Invoke-Step "cli_help match-intel" {
+    python run_nt.py research match-intel --help | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw "match-intel --help exit $LASTEXITCODE" }
+}
+Invoke-Step "cli_help assert-can-bet" {
+    python run_nt.py research assert-can-bet --help | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw "assert-can-bet --help exit $LASTEXITCODE" }
+}
+Invoke-Step "cli_help apply-quality-veto" {
+    python run_nt.py research apply-quality-veto --help | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw "apply-quality-veto --help exit $LASTEXITCODE" }
 }
 
 # 5) scan-merge one-agent-missing path (pytest contract from PR0)

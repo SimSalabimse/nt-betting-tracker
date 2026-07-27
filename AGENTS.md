@@ -8,8 +8,11 @@ Real-money capital desk. Engines in `nt/` are law. UI (LuminaNT, Flet desktop) p
 > | **500 NOK** clean-restart era · capital_v2 ON | Equity = baseline + Σ terminal P/L on `data/bets.csv` only |
 > | **Hybrid phases** `1A/1A+/1B/1B+` + continuous unit | [`docs/CAPITAL_HYBRID_PROGRESSION.md`](docs/CAPITAL_HYBRID_PROGRESSION.md) |
 > | **Secure Variant A** soft 1.25×/15% · hard 1.50×/30% | Hard replaces soft — never stacked |
-> | **Edge-Seeking Research (ESR)** Stage 0–4 | Find best +EV edges · soft dogs not guilty by default · short 1.40–1.80 OK · empty only after scan + expansion |
-> | **Stage 1b adaptive multi-agent scan** | A/B/C always + conditional **D** (≥41 Candidate lines/match); merge shortlist 8–15 → primary worklist ≤15 drives Stage 2 when present ([`docs/ESR_ADAPTIVE_SCAN_AND_DUAL_DECISION_2026-07-27.md`](docs/ESR_ADAPTIVE_SCAN_AND_DUAL_DECISION_2026-07-27.md)) |
+> | **Edge-Seeking Research (ESR)** Stage 0–4 data-first | Find best +EV edges · soft dogs not guilty by default · short 1.40–1.80 OK · empty only after scan + expansion |
+> | **Stage 0b can-bet halt** | After settle/refresh: `research assert-can-bet` / `risk.json` `can_bet` — halt if false |
+> | **Stage 1x MIC** | Match Intelligence Cards primary free facts (budget ≤8 min; hard top-up on worklist) |
+> | **Stage 1b adaptive multi-agent scan** | A/B/C always + conditional **D** (≥41 Candidate lines/match); merge shortlist 8–15 → primary worklist ≤15 drives Stage 2 when present ([`docs/ESR_ADAPTIVE_SCAN_AND_DUAL_DECISION_2026-07-27.md`](docs/ESR_ADAPTIVE_SCAN_AND_DUAL_DECISION_2026-07-27.md) — scan still valid; Stage 3 Dual **superseded**) |
+> | **Stage 3 three agents + 3.1z** | Edge ∥ Guardian ∥ Quality → `apply-quality-veto` → engine recommend (**KD-place-law**); template [`docs/templates/TRI_DECISION_TEMPLATE.md`](docs/templates/TRI_DECISION_TEMPLATE.md) |
 > | **FEH** | **Demoted / shadow only** — not place law ([`docs/RESEARCH_RESET_SIMPLE_EFFECTIVE_2026-07-25.md`](docs/RESEARCH_RESET_SIMPLE_EFFECTIVE_2026-07-25.md)) |
 > | **Coverage floor (A)** + **`temp_ev_relax` (B)** | Floor expands research; never invents `p_model`; relax is rare safety net |
 > | **Settlement taxonomy** `learning_weight` · CS gate ≥**0.5** | [`docs/SETTLEMENT_LEARNING.md`](docs/SETTLEMENT_LEARNING.md) |
@@ -49,15 +52,29 @@ Full design: **`docs/RESEARCH_RESET_SIMPLE_EFFECTIVE_2026-07-25.md`**.
 
 **You are the Research + Recommendation Agent.** Follow **ESR Stage 0–4** every time — do not skip to mechanical recommend, and do not invent `p_model`.
 
-### Mandatory workflow — Stage 0–4
+### Mandatory workflow — Stage 0–4 (data-first)
 
 ```
-0 Collect → 1a Engine baseline → 1b Adaptive multi-agent scan → 1c Primary worklist
-  → 2 Deep (primary only) → 3.1 Dual Decision ARGUE → 3.2 engine recommend
-  → 3.3 annotate PLACE_THESE → 3.4 expand once if needed → 4 Output
+0a settle → 0b assert-can-bet halt → 0c odds → 1a board/light → 1x MIC
+  → 1b A/B/C(+D) → 1c shortlist → 1x MIC hard top-up → 2 deep (MIC primary)
+  → 3.1 three agents → 3.1z apply-quality-veto → 3.2 recommend
+  → 3.3 annotate → 3.4 expand once → 4 place-ack
 ```
 
-#### Stage 0 — Collect
+#### Stage 0a — Settle / abandon + refresh
+
+Settle open risk when outcomes known; abandon unplaceable Pending; `python run_nt.py refresh`.
+
+#### Stage 0b — Can-bet early exit (**hard halt**)
+
+```bash
+python run_nt.py research assert-can-bet
+# alias: python run_nt.py risk assert-can-bet
+```
+
+If `data/state/risk.json` **`can_bet: false`** → write PLACE_THESE capital halt; **stop** — no odds/MIC/scan/deep/recommend. Live fields: `can_bet`, `remaining_risk_nok`, `stopped` (not `remaining_today`).
+
+#### Stage 0c — Collect odds
 
 Identify the odds file: path the user named, or **newest** `inbox/odds*.txt` by mtime. Write/dump Oddsen for the user timeframe when asked. Odds collection pipeline behaviour unchanged.
 
@@ -133,6 +150,21 @@ cap = 15
 
 Stage 2 deep-researches **this list only**. Full-board deep is **refused**.
 
+#### Stage 1x — Match Intelligence Cards (MIC)
+
+**Primary structured free facts** before deep and Decision Agents. Full skill: `docs/skills_mirror_daily-run.md` · CLI: `python run_nt.py research match-intel`.
+
+| Rule | Detail |
+|------|--------|
+| After 1a | Board-wide MIC if unique matches ≤ `research.match_intel.max_matches_per_run` (default 40); else defer |
+| Budget | ≤ **8 min** wall-clock (separate from scan 12 min) |
+| After 1c | **Hard top-up** for worklist gaps |
+| Expansion 3.4 | MIC top-up before expansion deep |
+| Artifacts | `outbox/match_intel/{match_key}.json` |
+| v1_sports | Default **`[football]`** full pipeline; other sports best-effort skeletons |
+| `require_for_deep` | **false** until exit criteria; when true → **scoped to v1_sports only** (non-v1 not hard-blocked by MIC alone) |
+| Exa | **Never** for MIC body; `exa_mode: optional` for pack narrative fill |
+
 ### Coverage floor + temp_ev_relax (permanent)
 
 Two orthogonal mechanisms. Operators see both on **`data/state/status.md`** → **Coverage floor** section.
@@ -163,24 +195,28 @@ Two orthogonal mechanisms. Operators see both on **`data/state/status.md`** → 
 
 **Agent mandate:** Do not invent `p_model`. Do not manually lower min_EV outside ControlSignals. Prefer Mechanism A (more deep research).
 
-#### Stage 2 — Deep research (primary worklist)
+#### Stage 2 — Deep research (primary worklist; MIC primary)
 
-Work the **primary worklist** (multi-agent shortlist ∪ coverage_critical, cap 15). When multi-agent shortlist is missing/all-fail, fall back to engine **deep_queue** head (cap 15). Prefer **`/deep-research`** skill + atomic `scripts/write_deep_research_pack.py`. Use **Exa** (primary) + sport sites (Sofascore, FBref, HLTV, ATP/WTA, Flashscore, etc.). See **`docs/EXA_RESEARCH_USAGE.md`**.
+Work the **primary worklist** (multi-agent shortlist ∪ coverage_critical, cap 15). When multi-agent shortlist is missing/all-fail, fall back to engine **deep_queue** head (cap 15). Prefer **`/deep-research`** skill + atomic `scripts/write_deep_research_pack.py`.
+
+**MIC is primary input** — load `outbox/match_intel/*` first. **Exa is optional** narrative fill when MIC/free pages are thin. Free public sources (NT → Flashscore → FotMob) preferred long-term. See **`docs/EXA_RESEARCH_USAGE.md`**.
 
 **Refuse full-board deep.**
 
 For each line:
 
-1. **Both sides** form and recent results  
-2. **H2H** — record polarity honestly; **mixed is allowed**  
-3. Ranking / strength  
-4. Motivation, rest, injuries, style matchup  
-5. Natural markets that fit the profile — elevate candidates; do not hard-F HC only for imperfect natural eval  
-6. Honest `p_model` under `selection.probability_haircut: 0.03`  
+1. **Load MIC** (grade/score/form/H2H/standings) when present  
+2. **Both sides** form and recent results  
+3. **H2H** — record polarity honestly; **mixed is allowed**  
+4. Ranking / strength  
+5. Motivation, rest, injuries, style matchup  
+6. Natural markets that fit the profile — elevate candidates; do not hard-F HC only for imperfect natural eval  
+7. Honest `p_model` under `selection.probability_haircut: 0.03`  
+8. Pack **`data_coverage` / `evidence_quality`** for Quality Challenger  
 
 **Side and matchup first, price second** — but do **not** treat soft underdogs as automatic rejects. Short favourites **1.40–1.80** are welcome when form/rank support them.
 
-**Pack minimum (not F):** `p_model` · `summary` · `failure_modes` · real sources (ESR default **4**). Soft/recommended: structured H2H/form/rank.
+**Pack minimum (not F):** `p_model` · `summary` · `failure_modes` · real sources (ESR default **4**). Soft/recommended: structured H2H/form/rank + `data_coverage`.
 
 ### FEH — demoted / shadow only (not place law)
 
@@ -192,7 +228,7 @@ For each line:
 | Anti-soft hard F | **Off** — matchup + EV judge soft dogs |
 | Checklist incomplete → F | Soft note / lower grade path only |
 | Empty slip over weak soft B | Empty only after expansion + no +EV |
-| `FEH_TEST_CAP:feh_v1` | **`TEST_CAP:esr_v1`** 10 NOK first 10 placed |
+| `FEH_TEST_CAP:feh_v1` | **`TEST_CAP:esr_data_v1`** 10 NOK first 10 placed (post data-first soft reset) |
 
 Historical design (do not follow for place): `docs/FORCED_EVIDENCE_HIERARCHY_FULL_CLEANUP_AND_10NOK_TEST_2026-07-24.md` (**SUPERSEDED**).
 
@@ -221,26 +257,48 @@ Full design: **`docs/RESEARCH_GATES.md`**. These block **real nonsense**, not vo
 - Gate fields on sensitive markets  
 - No mechanical filler; no inventing edge from price band alone  
 
-#### Stage 3 — Dual Decision ARGUE → engine recommend → annotate
+#### Stage 3 — Three Decision Agents → apply-quality-veto → engine recommend → annotate
 
-**KD-DD-wire (normative):** Dual Decision artifacts are **non-binding advisory ranking only**. **PLACE_THESE content and stakes come exclusively from engine `recommend` / `build_portfolio`.** Judge never publishes a preferred 2–6 as a place list. **Never** hand-remove engine picks because Guardian challenged them.
+**KD-place-law (normative — highest risk):** Engine `recommend` / `build_portfolio` is the sole authority for the **positive** place set and all stakes. Decision Agents do **not** publish a competing positive place list. Main is narrative judge only — never invents, adds, removes, or re-stakes after recommend.
+
+| Action | Binding? | Who / how |
+|--------|----------|-----------|
+| Positive place set + stakes | **Yes — engine only** | `recommend` / `build_portfolio` |
+| **hard_veto** remove placeability **before** recommend | **Yes — Quality only** | `outbox/quality_veto_*.json` + CLI `apply-quality-veto` (null `p_model`; closed enum) |
+| soft_demote / Edge ranks / Guardian challenges | **No — advisory** | Markdown artifacts; near-miss notes |
+| Main invents extra vetoes / hand-edits packs | **Forbidden** | CLI only for pack mutation |
+| Post-recommend hand delete / add / restake | **Forbidden** | — |
+
+Supersedes Dual Decision as sole Stage 3 protocol (**KD-DD-supersede**). Adaptive scan A/B/C(+D) unchanged. Template: **`docs/templates/TRI_DECISION_TEMPLATE.md`**.
 
 | ID | Name | Action |
 |----|------|--------|
-| **3.1** | Dual Decision ARGUE | Edge Maximiser ∥ Portfolio Guardian — advisory artifacts only (≤8 min; no new Exa) |
-| **3.2** | Engine recommend | `research ready` → `recommend` — **sole place-set law** |
-| **3.3** | Annotate | PLACE_THESE from **engine picks** + dual-decision cards (`decision:` tags **post-engine only**) |
-| **3.4** | Expansion (optional once) | Large board & &lt;2 picks → deep 5–8 → re-run **3.1–3.3 once** |
+| **3.1** | Three agents ARGUE | Edge Maximiser ∥ Portfolio Guardian ∥ Quality Challenger (≤10 min; no new Exa) |
+| **3.1z** | apply-quality-veto | CLI pack mutation — **required**; `quality_veto_applied_*.json` always |
+| **3.2** | Engine recommend | `research ready` → `recommend` — **sole positive place-set law** |
+| **3.3** | Annotate | PLACE_THESE from **engine picks** + agent cards (`decision:` / `agents:` tags **post-engine only**) |
+| **3.4** | Expansion (optional once) | Large board & &lt;2 picks → **MIC top-up** → deep → re-run **3.1–3.3 once** (`re_expand_once`) |
 
-**Skip Dual Decision argue:** recommend-only sessions; empty deep-ready set. Full `/daily-run` runs 3.1–3.3.
+**Skip three-agent argue:** recommend-only sessions; empty deep-ready set. If `quality_veto_{today}.json` exists, still run **3.1z** before recommend. Full `/daily-run` runs 3.1 → 3.1z → 3.2 → 3.3.
 
-##### Stage 3.1 — Dual Decision ARGUE (advisory)
+##### Stage 3.1 — Three Decision Agents ARGUE
 
 - **Edge Maximiser:** rank 3–6 wants by honest +EV → `outbox/decision_agent_edge_YYYY-MM-DD.md` — **does not place**.
 - **Portfolio Guardian:** challenge family concentration, max_per_match, sport pile; form_continuity / ranking-gap **only when engine notes present** → `outbox/decision_agent_guardian_YYYY-MM-DD.md` — **does not place**.
-- Draft `outbox/DUAL_DECISION_YYYY-MM-DD.md` wants/challenges only (not a place list). Template: `docs/templates/DUAL_DECISION_TEMPLATE.md`.
+- **Quality Challenger:** emit `outbox/quality_veto_YYYY-MM-DD.json` (closed-enum hard_veto only) + `outbox/decision_agent_quality_YYYY-MM-DD.md` — **does not place**; does not hand-edit packs.
+- Draft `outbox/TRI_DECISION_YYYY-MM-DD.md` wants/challenges/vetoes only (not a place list). Template: `docs/templates/TRI_DECISION_TEMPLATE.md`.
 
-##### Stage 3.2 — Engine recommend (sole place set)
+**Closed-enum hard_veto reasons:** `mic_missing` · `mic_grade_D` · `mic_grade_F` · `opposite_side_thin` · `form_continuity_weak_flip` · `evidence_quality_insufficient`.
+
+##### Stage 3.1z — apply-quality-veto (CLI; required)
+
+```bash
+python run_nt.py research apply-quality-veto --date YYYY-MM-DD
+```
+
+Writes `outbox/quality_veto_applied_YYYY-MM-DD.json` **even if n_vetoes=0**. Main **never** hand-mutates packs.
+
+##### Stage 3.2 — Engine recommend (sole positive place set)
 
 ```bash
 python run_nt.py research ready --odds <odds_file>
@@ -264,17 +322,17 @@ python run_nt.py recommend --odds <odds_file> --allow-low-coverage
 - Recommend lines that clear **research_gates + grade + EV** (odds_confidence soft/band floors). Soft underdog OK with matchup + EV; short 1.40–1.80 OK with support.  
 - **Target 2–6 picks** on large boards when honest EV exists (phase `max_bets` binds).  
 - **Empty slip** only if truly no +EV after Stage 2–3 **and expansion** (below). Empty because promising lines were never researched = **process miss**.  
-- **10 NOK test cap (when active):** seats clipped to **10 NOK** after stake mutations; notes carry `TEST_CAP:esr_v1` (legacy `FEH_TEST_CAP:` still counted). Does **not** change capital_v2.  
+- **10 NOK test cap (when active):** seats clipped to **10 NOK** after stake mutations; notes carry `TEST_CAP:esr_data_v1` (legacy tags may still count). Does **not** change capital_v2.  
 - **Reasoning (always):** even empty/blocked recommend, write chains + `## Reasoning` + `## Near-miss / Rejected` in `PLACE_THESE.md`.
 
 ##### Stage 3.3 — Annotate from engine picks
 
 Main is **annotator**, not a second place list:
 
-1. Tag each **engine pick**: `decision: both | edge_only | guardian_only | edge_over_guardian | engine_only`.  
-2. Dual wants not picked → near-miss with **engine reject reason** (not dual veto).  
+1. Tag each **engine pick**: `decision: both | edge_only | guardian_only | edge_over_guardian | engine_only | …` + `agents:` ranks/quality.  
+2. Agent wants not picked → near-miss with **engine reject reason**. Hard_vetoes → near-miss with closed-enum reason.  
 3. **Never** hand-remove or hand-add vs engine output.  
-4. Finalize reconciliation table in `DUAL_DECISION_*.md`.
+4. Finalize reconciliation table in `TRI_DECISION_*.md`.
 
 ##### Reasoning format (every pick)
 
@@ -283,25 +341,29 @@ Main is **annotator**, not a second place list:
 
 ### 1. {Selection} @ {odds} · Grade · EV · stake
 - **Why:** …
-- **Support:** …
+- **Support:** … (cite MIC)
 - **Main risk:** …
+- **MIC:** grade · score · ref
+- **Evidence quality:** adequate | thin | insufficient
 - **scan_agent:** A|B|C|D|…   # when multi-agent shortlist used
-- **decision:** both | edge_only | guardian_only | edge_over_guardian | engine_only
-- **dual_decision:** maximiser_rank=#k · guardian_rank=#j · note: …
+- **decision:** both | edge_only | guardian_only | edge_over_guardian | engine_only | …
+- **agents:** maximiser_rank=#k · guardian_rank=#j · quality=pass|demote|veto
 
 ## Near-miss / Rejected
-- {line} — short reason (EV / gates / thin research / dual want not in engine set)
+- {line} — short reason (EV / gates / quality hard_veto / thin research / agent want not in engine set)
 ```
 
 Near-misses short. Prefer mid-band + light-pass for near-miss sources. Light LATEST is SSOT for promo join. Write `decision:` **only after** recommend. Verify: `python scripts/verify_chain_residuals.py`.
 
-##### Stage 3.4 — Expansion (large board, once)
+##### Stage 3.4 — Expansion (large board, once) — MIC + `re_expand_once`
 
-If board is large (≥15 matches or ≥80 lines) **and** recommend yields **&lt; 2** picks after full deep of primary queue:
+If board is large (≥15 matches or ≥80 lines) **and** recommend yields **&lt; 2** picks after full deep of primary queue **and** `re_expand_once == unused`:
 
-1. Deep next **5–8** light-pass lines by promo score (or engine `expansion_needed` / `next_tier_keys` in `deep_queue.json` when present).  
-2. Re-run **3.1 → 3.2 → 3.3 exactly once** (`re_dual_once` consumed).  
-3. **Do not** accept empty slip while next tier is unresearched — that is a process miss.
+1. Select next **5–8** light-pass lines by promo score (or engine `expansion_needed` / `next_tier_keys`).  
+2. **MIC top-up** for those expansion matches.  
+3. Deep those lines.  
+4. Re-run **3.1 → 3.1z → 3.2 → 3.3 exactly once**; set **`re_expand_once = consumed`** (even if still &lt;2 picks).  
+5. **Do not** accept empty slip while next tier is unresearched — that is a process miss.
 
 ##### ControlSignals
 
@@ -504,7 +566,7 @@ python run_nt.py simulate --sport basketball --home H --away A ...
 | Prefilter discards noise; prior is rank-only | Use classical prior as recommend `p_model` |
 | Trust Mechanism A floor for research pressure | Soften min_EV by hand or invent p_model |
 | Let engine emit `temp_ev_relax` only under safety-net conditions | Manually lower min_EV or stack relax over process_gate |
-| Respect **10 NOK** test cap (`TEST_CAP:esr_v1`) when active | Raise stakes above cap; change capital_v2 for the test |
+| Respect **10 NOK** test cap (`TEST_CAP:esr_data_v1`) when active | Raise stakes above cap; change capital_v2 for the test |
 | Respect Exploration/Survival min-EV + open cap + EXPLORE_REGIME | Soften haircut or invent thin EV beyond quota |
 | Sports equal at zero data | Hardcode sport edges from thin history |
 | Totalgrense residual ≥ buffer when limits set | place-ack when residual already &lt; buffer |
@@ -537,7 +599,7 @@ User-scope skills in `%USERPROFILE%\.grok\skills\` — load **this file first**,
 
 | Slash | Skill | When |
 |-------|--------|------|
-| `/daily-run` | Full day desk | settle → odds → 1a baseline → 1b adaptive A/B/C(+D) → primary worklist ≤15 → `/deep-research` → Dual Decision ARGUE (advisory) → engine recommend (sole place set) → annotate PLACE_THESE → expand once if needed → place-ack (10 NOK cap when active) |
+| `/daily-run` | Full day desk | settle → assert-can-bet halt → odds → 1a → **1x MIC** → 1b adaptive A/B/C(+D) → primary ≤15 → MIC top-up → `/deep-research` (MIC primary) → **three agents** → **apply-quality-veto** → engine recommend (sole positive place set) → annotate PLACE_THESE → expand once (MIC + `re_expand_once`) → place-ack (`TEST_CAP:esr_data_v1` when active) |
 | `/missed-audit` | Missed edges | promising lines out of deep; promo components; cheapest fix — **not** soft-dog guilt |
 | `/chain-explain` | Reasoning | **why · support · main risk** for one match/selection (or whole slip) |
 | `/bankroll-tune` | Capital tune | secure/phase/unit/regime proposal → MC + capital CLI |
@@ -563,13 +625,15 @@ User-scope skills in `%USERPROFILE%\.grok\skills\` — load **this file first**,
 | Doc | Role |
 |-----|------|
 | `docs/RESEARCH_RESET_SIMPLE_EFFECTIVE_2026-07-25.md` | **ESR authoritative philosophy** |
-| `docs/ESR_ADAPTIVE_SCAN_AND_DUAL_DECISION_2026-07-27.md` | Adaptive Stage 1b + Dual Decision design (KD-DD-wire; skill + Stage 3.1–3.4 landed) |
-| `docs/templates/DUAL_DECISION_TEMPLATE.md` | Golden Dual Decision artifact shape |
+| `docs/ESR_ADAPTIVE_SCAN_AND_DUAL_DECISION_2026-07-27.md` | Adaptive Stage 1b (still valid); Stage 3 Dual **superseded** by three agents + 3.1z |
+| `docs/templates/TRI_DECISION_TEMPLATE.md` | Golden three-agent / KD-place-law Stage 3 artifact |
+| `docs/templates/DUAL_DECISION_TEMPLATE.md` | Legacy Dual template (archive; skill uses TRI) |
 | `docs/RESEARCH_WORKFLOW.md` | Stage 0–4 map + CLI |
 | `docs/RESEARCH_GATES.md` | Hard nonsense vs soft checks |
-| `docs/EXA_RESEARCH_USAGE.md` | Exa feeds research (not FEH hard reject) |
+| `docs/EXA_RESEARCH_USAGE.md` | Exa **optional** pack fill (not FEH hard reject; MIC primary) |
 | `docs/DESK_SKILLS.md` | Grok desk skills install + invoke |
 | `docs/skills_mirror_daily-run.md` | Repo mirror of daily-run skill |
+| `docs/skills_mirror_deep-research.md` | Repo mirror of deep-research skill |
 | `docs/FORCED_EVIDENCE_HIERARCHY_FULL_CLEANUP_AND_10NOK_TEST_2026-07-24.md` | **SUPERSEDED** FEH design |
 | `docs/BANKROLL_PLAN.md` | Clean 500 + multi-year |
 | `docs/PHASE_PLAN.md` | Phase ladder 1A–5 + v5 multi-factor |
