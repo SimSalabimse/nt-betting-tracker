@@ -127,6 +127,30 @@ simulation:
 
 Set `enabled: false` to hard-disable simulate.
 
+### Optional lake-backed λ priors (`data_platform.sim_features`)
+
+When the sibling **`nt-data-platform`** package is installed and both flags are on:
+
+```yaml
+data_platform:
+  enabled: true
+  lake_root: null          # or absolute path; env NT_DATA_LAKE wins
+  sim_features: true       # default false — required for lake λ
+```
+
+then `nt/sim_football.py` may call `DataClient.suggest_lambdas` to fill **missing** `lambda_home` / `lambda_away` from goals-based form + league rates (`sim_inputs_compat`).
+
+| Rule | Behaviour |
+|------|-----------|
+| Default | **Off** (`enabled: false`, `sim_features: false`) — no lake call |
+| Explicit λ | User-supplied `lambda_home`/`lambda_away` **win**; lake not called |
+| Thin sample | Lake returns null λ → no invent; still need manual λ/xG |
+| Warnings | Include **`goals_based_proxy`** (goals rates proxy, not true xG) + `lake_lambda_prior` |
+| Evidence | **Never** auto-written — still needs `--write-evidence` + human sources |
+| Tennis / basketball | **Untouched** — no lake priors in those modules |
+
+See also `docs/SOURCES.md` (adapter) and the platform design for `suggest_lambdas` contracts.
+
 ---
 
 ## LuminaNT GUI
@@ -144,7 +168,8 @@ Safe surfaces:
 
 - Tennis Elo sim — only after football calibration n≥50 and process is stable  
 - Full bivariate Poisson estimation from league data dumps  
-- Auto λ from scraped FBref (ToS/legal review required)
+- Auto λ from scraped FBref (ToS/legal review required)  
+- Tennis/basketball lake auto-priors (only after football `sim_features` path is proven)
 
 ---
 
