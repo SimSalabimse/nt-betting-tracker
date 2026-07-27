@@ -87,6 +87,26 @@ python run_nt.py agent ask "Given this evidence pack path, critique p_model cali
 
 Agent may suggest a range; **you** write the final p_model into evidence.
 
+## Optional: local historical lake (`nt-data-platform`)
+
+Sibling package **`nt-data-platform`** (import name **`nt_data`**) owns bulk multi-sport ingestion → Parquet/DuckDB features. The tracker integrates via a **thin optional adapter** only:
+
+| Piece | Role |
+|-------|------|
+| `nt/data_platform/` | `is_available()` / `get_client()` — never raises if package missing |
+| `config.yaml` → `data_platform:` | Defaults **off** (`enabled: false`, `sim_features: false`, `allow_raw_sql: false`) |
+| `nt.defaults.data_platform_cfg` | Safe defaults for old configs without the section |
+
+**Not** on the ESR / MIC daily critical path. Does **not** invent `p_model` or write settle/recommend into the lake. Install is editable and out-of-band (see README PowerShell snippet); platform deps stay **out** of tracker `requirements.txt`.
+
+```powershell
+python -m pip install -e "C:\Users\Sander\Documents\GitHub\nt-data-platform"
+python -c "from nt.data_platform import is_available, get_client; print(is_available(), get_client())"
+# without enabled:true → True, None
+```
+
+Research sources above remain primary for evidence packs; the lake is a research data plane, not a substitute for honest sources.
+
 ## Bookmarks folder template
 
 ```

@@ -227,3 +227,35 @@ def simulation_cfg(cfg: dict[str, Any]) -> dict[str, Any]:
     if football.get("enabled") is False:
         out["enabled"] = False
     return out
+
+
+def data_platform_cfg(cfg: dict[str, Any] | None = None) -> dict[str, Any]:
+    """
+    Optional sibling ``nt-data-platform`` adapter (package import name: ``nt_data``).
+
+    Defaults off so the desk runs without the platform installed. Never invents
+    lake paths; ``lake_root`` may be null (env ``NT_DATA_LAKE`` wins at resolve).
+    """
+    root = cfg if isinstance(cfg, dict) else {}
+    raw = dict(root.get("data_platform") or {}) if isinstance(root.get("data_platform"), dict) else {}
+    defaults: dict[str, Any] = {
+        "enabled": False,
+        "lake_root": None,  # absolute path optional; env NT_DATA_LAKE preferred
+        "sim_features": False,  # simulate --from-lake / auto λ only when true (PR10+)
+        "allow_raw_sql": False,  # adapter must not expose DataClient.sql unless true
+    }
+    out = {**defaults, **raw}
+    # explicit enabled:false always wins; coerce booleans
+    if raw.get("enabled") is False:
+        out["enabled"] = False
+    else:
+        out["enabled"] = bool(out.get("enabled"))
+    out["sim_features"] = bool(out.get("sim_features"))
+    out["allow_raw_sql"] = bool(out.get("allow_raw_sql"))
+    # preserve None / empty lake_root as None
+    lr = out.get("lake_root")
+    if lr is None or (isinstance(lr, str) and not lr.strip()):
+        out["lake_root"] = None
+    else:
+        out["lake_root"] = str(lr)
+    return out
