@@ -4,15 +4,16 @@ description: >
   Full NT betting-desk daily run under Edge-Seeking Research (ESR) Stage 0–4:
   settle → odds dump → market-scan → board+light (1a) → adaptive multi-agent
   scan A/B/C(+D) → merge shortlist 8–15 → primary worklist ≤15 →
-  /deep-research once → recommend best +EV (soft dogs not guilty by default;
-  short 1.40–1.80 OK) → expand if large board & <2 picks →
-  Reasoning (why · support · main risk) → PLACE_THESE.md → place-ack
+  /deep-research once → Dual Decision ARGUE (advisory) → engine recommend
+  (sole place set; soft dogs not guilty by default; short 1.40–1.80 OK) →
+  annotate PLACE_THESE from engine picks → expand once if large board & <2 picks
+  (re-argue → re-recommend → re-annotate) → place-ack
   (10 NOK TEST_CAP:esr_v1 when active). Use when the user runs /daily-run,
   says "daily run", "run the day", "today's desk", "full research day",
   or drops a new inbox/odds file for a complete session.
   Accepts optional kick-off window and odds filename.
 metadata:
-  short-description: "Full day ESR Stage 0–4 — adaptive 1b scan, expand before empty"
+  short-description: "Full day ESR Stage 0–4 — adaptive 1b + Dual Decision advisory Stage 3"
 ---
 
 # /daily-run — Full desk day (Edge-Seeking Research)
@@ -58,14 +59,16 @@ then run the full ESR Stage 0–4 path.
 | **1b Adaptive multi-agent scan** | A∥B∥C always (+ **D** when any match has ≥41 Candidate lines) → merge → shortlist **8–15** |
 | **1c Primary worklist** | shortlist ∪ `coverage_critical` · cap **15** |
 | **2 Deep** | `/deep-research` **once** on primary worklist only (not full board) |
-| **3 Select** | ready → recommend best +EV (gates + grade + EV) |
-| **3b Expand** | Large board & **&lt;2** picks → deep next 5–8 → re-recommend |
+| **3.1 Dual Decision ARGUE** | Edge Maximiser ∥ Portfolio Guardian — **advisory artifacts only** (≤8 min; no new Exa) |
+| **3.2 Engine recommend** | `research ready` → `recommend` — **sole place set + stakes** |
+| **3.3 Annotate** | PLACE_THESE from **engine picks** + dual-decision cards (`decision:` / `dual_decision:` tags **post-engine only**) |
+| **3.4 Expand (optional once)** | Large board & **&lt;2** picks → deep next 5–8 → re-run **3.1–3.3 once** |
 | **4 Output** | PLACE_THESE + why/support/risk → place-ack |
 
 - Soft underdog HC: place when **matchup + EV** support — mixed H2H is not automatic reject.
 - Short **1.40–1.80**: welcome with form/rank support (Grade B + core + EV).
 - Prefer **finding honest edges** over empty-slip culture. Empty only after expansion + no +EV.
-- **No Dual Decision layer yet** (Stage 3 remains ready + recommend only).
+- **KD-DD-wire:** Dual Decision is **non-binding advisory ranking only**. Place set comes **exclusively** from engine `recommend` / `build_portfolio`. Never hand-remove engine picks because Guardian challenged them.
 
 ### B) Sport research (cards optional aid)
 
@@ -105,9 +108,12 @@ Fallback if Exa unavailable: HQ web search + sport sites; note fallback in pack.
 - **Why:** …
 - **Support:** …
 - **Main risk:** …
+- **scan_agent:** A|B|C|D|…   # when multi-agent shortlist used
+- **decision:** both | edge_only | guardian_only | edge_over_guardian | engine_only
+- **dual_decision:** maximiser_rank=#k · guardian_rank=#j · note: …
 ```
 
-Near-misses: one short line each (why not / what would change).
+Near-misses: one short line each (why not / what would change). Write `decision:` / `dual_decision:` **only after** engine recommend (KD-prov).
 
 ## 1) Results first (if any open risk)
 
@@ -341,9 +347,83 @@ Optional critique:
 python run_nt.py research critique evidence/<file>.json --odds 1.95
 ```
 
-## 5) Stage 3 — Ready + recommend (+ expand)
+## 5) Stage 3 — Dual Decision ARGUE → engine recommend → annotate (+ expand once)
 
-**No Dual Decision layer in this skill revision** (still Stage 3 = ready + recommend). Dual Decision (advisory Stage 3.1–3.3) lands in a later PR.
+### KD-DD-wire (normative — do not violate)
+
+> Dual Decision artifacts are **non-binding advisory ranking only**.  
+> **PLACE_THESE content and stakes come exclusively from engine `recommend` / `build_portfolio`.**  
+> The judge **never** publishes a preferred 2–6 as a place list.  
+> **Never** hand-remove engine picks because Guardian challenged them.
+
+| Conflict | Rule |
+|----------|------|
+| Engine **drops** a dual-decision want | Near-miss with **engine reject reason**; do not hand-force place |
+| Engine **includes** a dual-decision **drop** | **Still place** the engine pick; annotate `decision: engine_only` or `edge_over_guardian` — **do not hand-remove** |
+| Dual agents agree on X, engine picks Y | Place **Y**; narrative explains disagreement |
+| No dual artifacts (skip path) | PLACE_THESE as today; omit dual tags |
+
+**Order law:**
+
+```text
+deep packs ready
+  → 3.1 Dual Decision ARGUE (advisory artifacts only)
+  → 3.2 engine recommend (SOLE place set)
+  → 3.3 annotate PLACE_THESE from engine picks + dual cards
+  → (optional once) 3.4 expansion deep → re-run 3.1–3.3 once
+```
+
+### Skip rules (KD-dd-skip)
+
+| Session type | Dual Decision |
+|--------------|---------------|
+| Full `/daily-run` | Run **3.1–3.3** |
+| Recommend-only / already-researched packs only | **Skip 3.1** (same spirit as Stage 1b skip) |
+| Empty deep-ready set | **Skip argue**; still run recommend path (may empty) |
+| Skill kill-switch | Comment out Stage 3.1 in this skill + mirror (no YAML flag) |
+
+### Stage 3.1 — Dual Decision ARGUE (before recommend)
+
+**Speed law:** ≤ **8 minutes** wall-clock. Prefer Edge Maximiser **∥** Portfolio Guardian.  
+**Inputs only:** deep packs + shortlist reasons + open occupancy + Settlement Lessons soft notes.  
+**Hard bans:** no new Exa · no new packs · no invent `p_model` · no soften min_EV · **no place** · no ledger write · no re-open full board.
+
+#### Decision Agent 1 — Edge Maximiser
+
+**Mission:** Rank **3–6 wants** by honest +EV from deep-ready cards. Advisory only.
+
+```text
+Advisory only. Packs exist. No new research. Rank 3–6 wants by honest +EV.
+You do NOT place bets. Output: outbox/decision_agent_edge_YYYY-MM-DD.md
+```
+
+**Output:** `outbox/decision_agent_edge_YYYY-MM-DD.md` — ranked wants + one-line why each. **Does NOT place.**
+
+#### Decision Agent 2 — Portfolio Guardian
+
+**Mission:** Balanced argument + challenges. Advisory only.
+
+```text
+Advisory only. Challenge family concentration, max_per_match stacks, sport pile-ups;
+also ranking-gap HC / form_continuity when engine notes present — do not invent engine soft-rejects.
+You do NOT place bets. Output: outbox/decision_agent_guardian_YYYY-MM-DD.md
+```
+
+**Challenge keys (branch-aware):**
+
+| Priority | Challenge using | When |
+|----------|-----------------|------|
+| **P0 live always** | `max_per_market` / market_family concentration, **max_per_match**, sport caps, correlation / same-match stacks | Always |
+| **P1 when present** | `form_continuity:` soft-reject notes, ranking-gap HC soft cap signals | Only if engine/portfolio or pack notes emit them |
+| Soft | lessons_soft pile-ons; explore-boost-only thin base_ev | When notes available |
+
+**Output:** `outbox/decision_agent_guardian_YYYY-MM-DD.md` — ranked wants + challenges. **Does NOT place.**
+
+#### Draft reconciliation (pre-engine)
+
+Write draft `outbox/DUAL_DECISION_YYYY-MM-DD.md` with **wants / challenges only** — **not** a place list. Golden shape: `docs/templates/DUAL_DECISION_TEMPLATE.md`.
+
+### Stage 3.2 — Engine recommend (SOLE place set)
 
 ```powershell
 python run_nt.py research ready --odds <odds_file>
@@ -353,12 +433,61 @@ python run_nt.py recommend --odds <odds_file>
 # dry-run ONLY if user asks
 ```
 
+- Engine output = **sole** picked set + stakes + rejects.  
 - Target **2–6** picks on large boards when honest EV exists.  
-- If large board and **&lt;2** picks: deep next **5–8** light-pass by promo / `next_tier_keys` → **re-recommend**.  
-- Present slip with **why · support · main risk**.  
 - When test cap active, expect ≤ **10 NOK** and `TEST_CAP:…` in notes.  
 - Do not re-advise already open tickets.  
-- Provenance: note `scan_agent:` on PLACE_THESE when multi-agent shortlist was used.
+- **No** `--prefer-keys` / dual-decision pin in v1 — recommend API unchanged.
+
+### Stage 3.3 — Annotate PLACE_THESE (post-engine only)
+
+Main agent is **annotator**, not a second place list:
+
+1. For each **engine-picked** row:
+   - On both E1 and E2 top lists → `decision: both`
+   - Only E1 → `decision: edge_only` (or `edge_over_guardian` if E2 challenged)
+   - Only E2 → `decision: guardian_only`
+   - On neither → `decision: engine_only`
+2. For each E1/E2 want **not** picked → near-miss with **engine reject reason** (not dual veto).
+3. **Never** hand-remove an engine pick because Guardian challenged it.
+4. **Never** hand-add a dual want the engine did not pick.
+5. Finalize PLACE_THESE reasoning + `outbox/DUAL_DECISION_YYYY-MM-DD.md` **reconciliation** section (post-engine match table).
+6. Provenance: `scan_agent:` when multi-agent shortlist was used; `decision:` / `dual_decision:` **only after** recommend.
+
+```markdown
+### N. {Selection} @ {odds} · Grade · EV · stake
+- **Why:** …
+- **Support:** …
+- **Main risk:** …
+- **Opposite side:** …
+- **Form continuity:** …
+- **EV split:** …
+- **Diversity:** …
+- **scan_agent:** A+D
+- **decision:** both | edge_only | guardian_only | edge_over_guardian | engine_only
+- **dual_decision:** maximiser_rank=#k · guardian_rank=#j · note: …
+```
+
+**Integrity (KD-prov):** Any claim of `both` requires the pick on **both** agent want lists **and** in engine picks. No pre-recommend `decision:` tags.
+
+### Stage 3.4 — Expansion (optional, once)
+
+If board is large (≥15 matches or ≥80 lines) **and** recommend yields **&lt; 2** picks after full deep of primary worklist:
+
+1. Deep next **5–8** light-pass by promo / `next_tier_keys` / `expansion_needed`.  
+2. Re-run **3.1 → 3.2 → 3.3 exactly once** (`re_dual_once` consumed).  
+3. Do **not** loop expansion further.  
+4. Do not accept empty slip while next tier is unresearched — that is a process miss.
+
+### What Dual Decision must not do
+
+- Invent or edit `p_model`  
+- Soften min_EV / haircut  
+- Publish a place list separate from engine picks  
+- Hand-remove or hand-add bets vs engine output  
+- Re-open full odds board  
+- Replace `build_portfolio`  
+- Run &gt; ~8 minutes or nest deep-research inside argue
 
 ## 6) Stage 4 — Place session
 
@@ -379,7 +508,8 @@ python run_nt.py status
 | Research 1a | `research market-scan` · `board` · `light` · `ready` · `scaffold` · `critique` |
 | Research 1b | `research scan-merge` (when present) · `research scan-depth` (**when available**; else manual line-count for D) |
 | Stage 2 packs | `python scripts/write_deep_research_pack.py` · `/deep-research` skill |
-| Decision | `recommend` · `place-ack` · `abandon` |
+| Decision 3.1 | Dual Decision argue → `outbox/decision_agent_{edge,guardian}_*.md` · `outbox/DUAL_DECISION_*.md` (advisory) |
+| Decision 3.2–4 | `recommend` · `place-ack` · `abandon` |
 | Sims | `simulate --sport tennis\|football\|basketball …` (suggest only) |
 
 ## Deliverables (list paths in final reply)
@@ -391,12 +521,13 @@ python run_nt.py status
 5. Multi-agent shortlist / primary worklist: `outbox/MULTI_AGENT_SHORTLIST.md`
 6. Evidence packs: `evidence/*.json`
 7. Coverage Health: `data/state/coverage_health.json`
-8. Slip: **`outbox/PLACE_THESE.md`**
-9. Status: `data/state/status.md` · `risk.json`
-10. Reasoning: why · support · main risk (+ near-misses)
-11. Expansion done? (if large board &lt;2 initially)
-12. place-ack / abandon ids if place session ran
-13. Agent D: spawned / skipped (max lines, budget) note
+8. Dual Decision: `outbox/decision_agent_edge_YYYY-MM-DD.md` · `outbox/decision_agent_guardian_YYYY-MM-DD.md` · `outbox/DUAL_DECISION_YYYY-MM-DD.md` (or skip note)
+9. Slip: **`outbox/PLACE_THESE.md`** (engine picks only; post-engine `decision:` tags)
+10. Status: `data/state/status.md` · `risk.json`
+11. Reasoning: why · support · main risk (+ near-misses + dual tags when dual ran)
+12. Expansion done? (if large board &lt;2 initially; re_dual_once consumed?)
+13. place-ack / abandon ids if place session ran
+14. Agent D: spawned / skipped (max lines, budget) note
 
 ## Hard rules (do not break)
 
@@ -416,4 +547,5 @@ python run_nt.py status
 - Form-continuity / anti-flip engine math unchanged; scan notes are soft annotations after merge.
 - After place session: place-ack new Pending unless user says missed → abandon.
 - Learning: no permanent hard-reject list growth.
-- **No Dual Decision** invent place set — Stage 3 = engine recommend only (this revision).
+- **KD-DD-wire:** Dual Decision is advisory only; place set + stakes **only** from engine `recommend`; never hand-remove engine picks; never publish judge preferred set as place list; `decision:` tags **post-engine only**.
+- Dual Decision argue ≤8 min; no new Exa; skip on recommend-only / empty deep-ready.

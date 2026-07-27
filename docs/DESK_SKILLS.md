@@ -4,17 +4,17 @@ User-scope Grok skills for the NT capital desk. Skills live under **`%USERPROFIL
 
 Engines in `nt/` remain law. Skills encode **workflows**; they never invent `p_model`, bankroll equity, or hand-softened min_EV.
 
-**Edge-Seeking Research (ESR)** is the research + recommend philosophy. Stage 0–4: Collect → **1a** engine baseline → **1b** adaptive multi-agent scan (A/B/C always + conditional D) → primary worklist ≤15 → deep research → pick best +EV → expand if needed. Soft underdogs are **not** guilty by default. Short favourites **1.40–1.80** allowed. Empty slip only after full scan + expansion. FEH is **demoted / shadow only** — not place law.
+**Edge-Seeking Research (ESR)** is the research + recommend philosophy. Stage 0–4: Collect → **1a** engine baseline → **1b** adaptive multi-agent scan (A/B/C always + conditional D) → primary worklist ≤15 → deep research → **Dual Decision ARGUE (advisory)** → engine `recommend` (sole place set) → annotate PLACE_THESE → expand once if needed. Soft underdogs are **not** guilty by default. Short favourites **1.40–1.80** allowed. Empty slip only after full scan + expansion. FEH is **demoted / shadow only** — not place law.
 
 Authoritative: [`RESEARCH_RESET_SIMPLE_EFFECTIVE_2026-07-25.md`](./RESEARCH_RESET_SIMPLE_EFFECTIVE_2026-07-25.md) · Workflow: [`RESEARCH_WORKFLOW.md`](./RESEARCH_WORKFLOW.md) · Repo mirror of daily-run: [`skills_mirror_daily-run.md`](./skills_mirror_daily-run.md).
 
-**Adaptive scan (skill + AGENTS landed):** Stage 1b A/B/C + conditional Agent D — see live `/daily-run` skill + root `AGENTS.md`. Design: [`ESR_ADAPTIVE_SCAN_AND_DUAL_DECISION_2026-07-27.md`](./ESR_ADAPTIVE_SCAN_AND_DUAL_DECISION_2026-07-27.md). **Dual Decision** (advisory Stage 3.1–3.3, KD-DD-wire) is **not** in skill yet (later PR). Multi-agent stub pointer: [`ESR_MULTI_AGENT_SCAN_2026-07-25.md`](./ESR_MULTI_AGENT_SCAN_2026-07-25.md).
+**Adaptive scan + Dual Decision (skill + AGENTS landed):** Stage 1b A/B/C + conditional Agent D; Stage **3.1–3.3** Dual Decision advisory (KD-DD-wire) — see live `/daily-run` skill + root `AGENTS.md`. Design: [`ESR_ADAPTIVE_SCAN_AND_DUAL_DECISION_2026-07-27.md`](./ESR_ADAPTIVE_SCAN_AND_DUAL_DECISION_2026-07-27.md). Golden template: [`templates/DUAL_DECISION_TEMPLATE.md`](./templates/DUAL_DECISION_TEMPLATE.md). Multi-agent stub pointer: [`ESR_MULTI_AGENT_SCAN_2026-07-25.md`](./ESR_MULTI_AGENT_SCAN_2026-07-25.md).
 
 ## Installed skills
 
 | Slash | Directory | Role |
 |-------|-----------|------|
-| `/daily-run` | `~/.grok/skills/daily-run/` | Full day: results → odds → 1a baseline → **1b adaptive A/B/C(+D)** → primary worklist ≤15 → `/deep-research` packs → expand if &lt;2 on large board → recommend + **why · support · main risk** → `PLACE_THESE.md` → place-ack (10 NOK cap when active) |
+| `/daily-run` | `~/.grok/skills/daily-run/` | Full day: results → odds → 1a baseline → **1b adaptive A/B/C(+D)** → primary worklist ≤15 → `/deep-research` packs → **Dual Decision ARGUE (advisory)** → engine recommend (sole place set) → annotate PLACE_THESE → expand once if &lt;2 on large board → place-ack (10 NOK cap when active) |
 | `/missed-audit` | `~/.grok/skills/missed-audit/` | Promising lines out of deep; promo components; cheapest fix — **edge-seeking, not soft-dog guilt** |
 | `/chain-explain` | `~/.grok/skills/chain-explain/` | Simple chain: why · strongest support · main risk (+ EV/stake when useful) |
 | `/bankroll-tune` | `~/.grok/skills/bankroll-tune/` | Secure/phase/unit/regime proposal → MC + capital tools |
@@ -104,7 +104,7 @@ python scripts/backfill_settlement_taxonomy.py --n 30 --apply   # after review
 
 | Rule | Detail |
 |------|--------|
-| Stage 0–4 | Collect → 1a baseline → 1b A/B/C(+D) → primary ≤15 → deep → best +EV → expand if needed |
+| Stage 0–4 | Collect → 1a baseline → 1b A/B/C(+D) → primary ≤15 → deep → Dual Decision ARGUE → engine recommend → annotate → expand once if needed |
 | Stage 1b | A favourites/HUB · B totals/props · C HC/matchup · D long-tail if any match ≥41 Candidate lines |
 | Agent D | Manual line-count OK until `scan-depth` available; skip if sequential A+B+C ≥10 min of 12 min budget |
 | Primary worklist | shortlist ∪ coverage_critical, cap 15 — drives Stage 2 when multi-agent shortlist exists |
@@ -112,15 +112,16 @@ python scripts/backfill_settlement_taxonomy.py --n 30 --apply   # after review
 | Short 1.40–1.80 | Allowed when research supports (Grade B + core + EV); Agent A prefers ≥1.70 + HUB mandate |
 | Empty slip | Only after full deep + expansion + no +EV — process miss if next tier unresearched |
 | FEH | Shadow/demoted — not place law |
-| Dual Decision | **Not live yet** — Stage 3 remains ready + recommend only |
+| Dual Decision (KD-DD-wire) | **Live** Stage **3.1–3.3**: advisory argue → engine recommend (sole place set) → annotate; never hand-remove engine picks; skip on recommend-only |
 | Coverage / temp_ev_relax | Expand research or rare EV soften — never invent p_model |
 | 10 NOK test cap | First 10 place-acked `TEST_CAP:esr_v1` seats ≤ 10 NOK |
 
 ### `/daily-run` reasoning output
 
-After `recommend`, always check:
+After Dual Decision argue + `recommend`, always check:
 
-- `outbox/PLACE_THESE.md` → `## Reasoning` (**why · support · main risk**) **and** `## Near-miss / Rejected` (short)
+- `outbox/decision_agent_edge_*.md` · `outbox/decision_agent_guardian_*.md` · `outbox/DUAL_DECISION_*.md` (or skip note)
+- `outbox/PLACE_THESE.md` → `## Reasoning` (**why · support · main risk**) + post-engine **`decision:` / `dual_decision:`** tags **and** `## Near-miss / Rejected` (short)
 - `data/state/reasoning_chains.jsonl`
 - `data/state/status.md` → ESR / coverage floor sections
 - `data/state/deep_queue.json` → `expansion_needed` if present
@@ -152,6 +153,8 @@ Taxonomy + weights + temp ControlSignals. **Forbidden:** proposing permanent har
 | Artifact | Path |
 |----------|------|
 | Place slip | `outbox/PLACE_THESE.md` |
+| Dual Decision | `outbox/decision_agent_{edge,guardian}_*.md` · `outbox/DUAL_DECISION_*.md` |
+| Dual Decision template | `docs/templates/DUAL_DECISION_TEMPLATE.md` |
 | Reasoning chains | `data/state/reasoning_chains.jsonl` |
 | Light research | `outbox/light_research/` |
 | Deep queue SSOT | `data/state/deep_queue.json` |
@@ -168,9 +171,10 @@ Taxonomy + weights + temp ControlSignals. **Forbidden:** proposing permanent har
 
 | Doc | Role |
 |-----|------|
-| `AGENTS.md` | Desk law + ESR Stage 0–4 + **Stage 1b skeleton** (Dual Decision Stage 3.x lands later) |
+| `AGENTS.md` | Desk law + ESR Stage 0–4 + Stage 1b + **Dual Decision Stage 3.1–3.4 (KD-DD-wire)** |
 | `docs/RESEARCH_RESET_SIMPLE_EFFECTIVE_2026-07-25.md` | ESR philosophy |
-| `docs/ESR_ADAPTIVE_SCAN_AND_DUAL_DECISION_2026-07-27.md` | **Adaptive multi-agent scan + Dual Decision design** (Dual Decision skill not landed; KD-DD-wire advisory) |
+| `docs/ESR_ADAPTIVE_SCAN_AND_DUAL_DECISION_2026-07-27.md` | **Adaptive multi-agent scan + Dual Decision design** (KD-DD-wire advisory; skill + AGENTS landed) |
+| `docs/templates/DUAL_DECISION_TEMPLATE.md` | Golden Dual Decision artifact shape |
 | `docs/ESR_MULTI_AGENT_SCAN_2026-07-25.md` | Stub → adaptive design + live skill |
 | `docs/RESEARCH_WORKFLOW.md` | Stage map |
 | `docs/EXA_RESEARCH_USAGE.md` | Exa feeds research |

@@ -53,7 +53,8 @@ Full design: **`docs/RESEARCH_RESET_SIMPLE_EFFECTIVE_2026-07-25.md`**.
 
 ```
 0 Collect → 1a Engine baseline → 1b Adaptive multi-agent scan → 1c Primary worklist
-  → 2 Deep (primary only) → 3 Select (+ expand) → 4 Output
+  → 2 Deep (primary only) → 3.1 Dual Decision ARGUE → 3.2 engine recommend
+  → 3.3 annotate PLACE_THESE → 3.4 expand once if needed → 4 Output
 ```
 
 #### Stage 0 — Collect
@@ -220,9 +221,26 @@ Full design: **`docs/RESEARCH_GATES.md`**. These block **real nonsense**, not vo
 - Gate fields on sensitive markets  
 - No mechanical filler; no inventing edge from price band alone  
 
-#### Stage 3 — Ready + select
+#### Stage 3 — Dual Decision ARGUE → engine recommend → annotate
 
-**No Dual Decision layer yet** (advisory Stage 3.1–3.3 is a later skill/AGENTS amendment). Stage 3 = engine ready + recommend only.
+**KD-DD-wire (normative):** Dual Decision artifacts are **non-binding advisory ranking only**. **PLACE_THESE content and stakes come exclusively from engine `recommend` / `build_portfolio`.** Judge never publishes a preferred 2–6 as a place list. **Never** hand-remove engine picks because Guardian challenged them.
+
+| ID | Name | Action |
+|----|------|--------|
+| **3.1** | Dual Decision ARGUE | Edge Maximiser ∥ Portfolio Guardian — advisory artifacts only (≤8 min; no new Exa) |
+| **3.2** | Engine recommend | `research ready` → `recommend` — **sole place-set law** |
+| **3.3** | Annotate | PLACE_THESE from **engine picks** + dual-decision cards (`decision:` tags **post-engine only**) |
+| **3.4** | Expansion (optional once) | Large board & &lt;2 picks → deep 5–8 → re-run **3.1–3.3 once** |
+
+**Skip Dual Decision argue:** recommend-only sessions; empty deep-ready set. Full `/daily-run` runs 3.1–3.3.
+
+##### Stage 3.1 — Dual Decision ARGUE (advisory)
+
+- **Edge Maximiser:** rank 3–6 wants by honest +EV → `outbox/decision_agent_edge_YYYY-MM-DD.md` — **does not place**.
+- **Portfolio Guardian:** challenge family concentration, max_per_match, sport pile; form_continuity / ranking-gap **only when engine notes present** → `outbox/decision_agent_guardian_YYYY-MM-DD.md` — **does not place**.
+- Draft `outbox/DUAL_DECISION_YYYY-MM-DD.md` wants/challenges only (not a place list). Template: `docs/templates/DUAL_DECISION_TEMPLATE.md`.
+
+##### Stage 3.2 — Engine recommend (sole place set)
 
 ```bash
 python run_nt.py research ready --odds <odds_file>
@@ -238,8 +256,6 @@ python run_nt.py recommend --odds <odds_file>
 python run_nt.py recommend --odds <odds_file> --allow-low-coverage
 ```
 
-Present the slip with reasoning.
-
 - **Default = live recommend** — writes **Pending** when the engine picks bets.  
 - **Coverage soft gate:** critical Coverage Health **blocks** recommend unless `--allow-low-coverage`.  
 - **Pending = intent, not NT confirmation.** Open risk until `place-ack`, settle, or `abandon`.  
@@ -251,6 +267,15 @@ Present the slip with reasoning.
 - **10 NOK test cap (when active):** seats clipped to **10 NOK** after stake mutations; notes carry `TEST_CAP:esr_v1` (legacy `FEH_TEST_CAP:` still counted). Does **not** change capital_v2.  
 - **Reasoning (always):** even empty/blocked recommend, write chains + `## Reasoning` + `## Near-miss / Rejected` in `PLACE_THESE.md`.
 
+##### Stage 3.3 — Annotate from engine picks
+
+Main is **annotator**, not a second place list:
+
+1. Tag each **engine pick**: `decision: both | edge_only | guardian_only | edge_over_guardian | engine_only`.  
+2. Dual wants not picked → near-miss with **engine reject reason** (not dual veto).  
+3. **Never** hand-remove or hand-add vs engine output.  
+4. Finalize reconciliation table in `DUAL_DECISION_*.md`.
+
 ##### Reasoning format (every pick)
 
 ```markdown
@@ -260,19 +285,22 @@ Present the slip with reasoning.
 - **Why:** …
 - **Support:** …
 - **Main risk:** …
+- **scan_agent:** A|B|C|D|…   # when multi-agent shortlist used
+- **decision:** both | edge_only | guardian_only | edge_over_guardian | engine_only
+- **dual_decision:** maximiser_rank=#k · guardian_rank=#j · note: …
 
 ## Near-miss / Rejected
-- {line} — short reason (EV / gates / thin research)
+- {line} — short reason (EV / gates / thin research / dual want not in engine set)
 ```
 
-Near-misses short. Prefer mid-band + light-pass for near-miss sources. Light LATEST is SSOT for promo join. Verify: `python scripts/verify_chain_residuals.py`.
+Near-misses short. Prefer mid-band + light-pass for near-miss sources. Light LATEST is SSOT for promo join. Write `decision:` **only after** recommend. Verify: `python scripts/verify_chain_residuals.py`.
 
-##### Stage 3b — Expansion (large board)
+##### Stage 3.4 — Expansion (large board, once)
 
 If board is large (≥15 matches or ≥80 lines) **and** recommend yields **&lt; 2** picks after full deep of primary queue:
 
 1. Deep next **5–8** light-pass lines by promo score (or engine `expansion_needed` / `next_tier_keys` in `deep_queue.json` when present).  
-2. Re-run recommend.  
+2. Re-run **3.1 → 3.2 → 3.3 exactly once** (`re_dual_once` consumed).  
 3. **Do not** accept empty slip while next tier is unresearched — that is a process miss.
 
 ##### ControlSignals
@@ -509,7 +537,7 @@ User-scope skills in `%USERPROFILE%\.grok\skills\` — load **this file first**,
 
 | Slash | Skill | When |
 |-------|--------|------|
-| `/daily-run` | Full day desk | settle → odds → 1a baseline → 1b adaptive A/B/C(+D) → primary worklist ≤15 → `/deep-research` → recommend + why/support/risk → `PLACE_THESE.md` → place-ack (10 NOK cap when active) |
+| `/daily-run` | Full day desk | settle → odds → 1a baseline → 1b adaptive A/B/C(+D) → primary worklist ≤15 → `/deep-research` → Dual Decision ARGUE (advisory) → engine recommend (sole place set) → annotate PLACE_THESE → expand once if needed → place-ack (10 NOK cap when active) |
 | `/missed-audit` | Missed edges | promising lines out of deep; promo components; cheapest fix — **not** soft-dog guilt |
 | `/chain-explain` | Reasoning | **why · support · main risk** for one match/selection (or whole slip) |
 | `/bankroll-tune` | Capital tune | secure/phase/unit/regime proposal → MC + capital CLI |
@@ -535,7 +563,8 @@ User-scope skills in `%USERPROFILE%\.grok\skills\` — load **this file first**,
 | Doc | Role |
 |-----|------|
 | `docs/RESEARCH_RESET_SIMPLE_EFFECTIVE_2026-07-25.md` | **ESR authoritative philosophy** |
-| `docs/ESR_ADAPTIVE_SCAN_AND_DUAL_DECISION_2026-07-27.md` | Adaptive Stage 1b + Dual Decision design (Dual Decision skill not landed yet) |
+| `docs/ESR_ADAPTIVE_SCAN_AND_DUAL_DECISION_2026-07-27.md` | Adaptive Stage 1b + Dual Decision design (KD-DD-wire; skill + Stage 3.1–3.4 landed) |
+| `docs/templates/DUAL_DECISION_TEMPLATE.md` | Golden Dual Decision artifact shape |
 | `docs/RESEARCH_WORKFLOW.md` | Stage 0–4 map + CLI |
 | `docs/RESEARCH_GATES.md` | Hard nonsense vs soft checks |
 | `docs/EXA_RESEARCH_USAGE.md` | Exa feeds research (not FEH hard reject) |

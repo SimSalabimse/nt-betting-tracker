@@ -71,6 +71,26 @@ print('taxonomy weight smoke PASS')
 "@
 }
 
+# 4) Dual Decision golden template present (KD-DD-wire skill law)
+Invoke-Step "dual_decision_template_present" {
+    $p = Join-Path $Root "docs\templates\DUAL_DECISION_TEMPLATE.md"
+    if (-not (Test-Path $p)) { throw "missing $p" }
+    $txt = Get-Content $p -Raw
+    foreach ($needle in @(
+        "KD-DD-wire",
+        "decision_agent_edge",
+        "decision_agent_guardian",
+        "SOLE place set",
+        "decision:",
+        "engine_only"
+    )) {
+        if ($txt -notmatch [regex]::Escape($needle)) {
+            throw "template missing required phrase: $needle"
+        }
+    }
+    Write-Host "dual-decision template OK: $p"
+}
+
 Write-Host ""
 Write-Host "=== SMOKE SUMMARY ==="
 $log | ForEach-Object { Write-Host $_ }
