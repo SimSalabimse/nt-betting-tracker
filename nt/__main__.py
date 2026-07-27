@@ -649,6 +649,36 @@ def cmd_research(args: argparse.Namespace) -> int:
                 print(f"\nWrote: {payload['md_path']}")
         return 0 if payload.get("coverage_ok", True) else 1
 
+    if sub in ("scan-merge", "scan_merge"):
+        from nt.scan_merge import run_scan_merge
+
+        odds = Path(args.odds)
+        if not odds.exists():
+            print(f"Odds file not found: {odds}", file=sys.stderr)
+            return 2
+        payload = run_scan_merge(
+            cfg,
+            odds,
+            agent_a=getattr(args, "agent_a", None) or None,
+            agent_b=getattr(args, "agent_b", None) or None,
+            agent_c=getattr(args, "agent_c", None) or None,
+            agents_dir=getattr(args, "agents_dir", None) or None,
+            out=getattr(args, "out", None) or None,
+            out_json=getattr(args, "out_json", None) or None,
+            use_live_open=not bool(getattr(args, "no_live_open", False)),
+            write=not bool(getattr(args, "no_write", False)),
+        )
+        if getattr(args, "json", False):
+            slim = {k: v for k, v in payload.items() if k != "markdown"}
+            print(json.dumps(slim, indent=2, default=str))
+        else:
+            print(payload.get("markdown") or json.dumps(payload, indent=2, default=str))
+            if payload.get("md_path"):
+                print(f"\nWrote: {payload['md_path']}")
+            if payload.get("json_path"):
+                print(f"JSON:  {payload['json_path']}")
+        return 0
+
     print(f"Unknown research subcommand: {sub}", file=sys.stderr)
     return 2
 
@@ -1394,6 +1424,38 @@ def main(argv: list[str] | None = None) -> int:
 
     rs_co = rs.add_parser("combo-policy", help="Show combo/singles policy for current phase")
     rs_co.set_defaults(func=cmd_research)
+
+    rs_sm = rs.add_parser(
+        "scan-merge",
+        help="Stage 1b multi-agent scan merge (A/B/C → shortlist 8–15 + primary worklist)",
+    )
+    rs_sm.add_argument("--odds", required=True, help="Odds dump path (full board)")
+    rs_sm.add_argument("--agent-a", default=None, help="Agent A JSONL/JSON path")
+    rs_sm.add_argument("--agent-b", default=None, help="Agent B JSONL/JSON path")
+    rs_sm.add_argument("--agent-c", default=None, help="Agent C JSONL/JSON path")
+    rs_sm.add_argument(
+        "--agents-dir",
+        default=None,
+        help="Directory with scan_agent_{a,b,c}* artifacts (auto-discover)",
+    )
+    rs_sm.add_argument(
+        "--out",
+        default=None,
+        help="Write MULTI_AGENT_SHORTLIST.md here (default: outbox/)",
+    )
+    rs_sm.add_argument(
+        "--out-json",
+        default=None,
+        help="Optional JSON payload path (default: alongside --out)",
+    )
+    rs_sm.add_argument("--json", action="store_true", help="Print full JSON payload")
+    rs_sm.add_argument("--no-write", action="store_true", help="Do not write outbox artifacts")
+    rs_sm.add_argument(
+        "--no-live-open",
+        action="store_true",
+        help="Skip live ledger open-occupancy load",
+    )
+    rs_sm.set_defaults(func=cmd_research)
 
     p_ag = sub.add_parser("agent", help="Optional AI assist (never places bets)")
     ag = p_ag.add_subparsers(dest="agent_cmd", required=True)
