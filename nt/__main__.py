@@ -759,6 +759,11 @@ def cmd_research(args: argparse.Namespace) -> int:
                         "coverage": c.get("coverage"),
                         "path": c.get("_path"),
                         "errors": (c.get("extraction") or {}).get("errors"),
+                        "process_miss": (c.get("extraction") or {}).get("process_miss"),
+                        "process_miss_reason": (c.get("extraction") or {}).get(
+                            "process_miss_reason"
+                        ),
+                        "kickoff_local": c.get("kickoff_local"),
                     }
                     for c in (payload.get("cards") or [])
                 ],
@@ -773,13 +778,26 @@ def cmd_research(args: argparse.Namespace) -> int:
                 "grades: "
                 + " ".join(f"{g}={grades.get(g, 0)}" for g in ("A", "B", "C", "D", "F"))
             )
+            print(f"process_miss_n: {summary.get('process_miss_n', 0)}")
+            errs = summary.get("errors") or {}
+            if errs:
+                print(
+                    "errors: "
+                    + " ".join(f"{k}={v}" for k, v in sorted(errs.items(), key=lambda x: (-x[1], x[0])))
+                )
             if summary.get("out_dir"):
                 print(f"out_dir: {summary['out_dir']}")
+            if summary.get("index_path"):
+                print(f"index: {summary['index_path']}")
             for c in payload.get("cards") or []:
                 cov = c.get("coverage") or {}
+                ext = c.get("extraction") or {}
+                pm = " process_miss" if ext.get("process_miss") else ""
+                reason = ext.get("process_miss_reason") or ""
+                pm_s = f"{pm}({reason})" if pm and reason else pm
                 print(
                     f"  {cov.get('grade', '?')}  score={cov.get('score', 0):.2f}  "
-                    f"{c.get('match')}  [{c.get('sport')}]"
+                    f"{c.get('match')}  [{c.get('sport')}]{pm_s}"
                 )
                 if c.get("_path"):
                     print(f"      → {c['_path']}")

@@ -132,6 +132,30 @@ python run_nt.py settle --results inbox/results.txt
 python run_desktop.py
 ```
 
+### Match Intelligence Cards (MIC) — Stage 1x
+
+```bash
+# Build MICs for an odds board (offline by default; no network required)
+python run_nt.py research match-intel --odds inbox/odds_YYYY-MM-DD.txt --force
+python run_nt.py research match-intel --odds inbox/odds_YYYY-MM-DD.txt --force --json
+python run_nt.py research match-intel --match "Rosenborg vs Fredrikstad" --sport football --force
+```
+
+Cards land in `outbox/match_intel/{match_key}.json`. Batch also writes
+`outbox/match_intel/_index_YYYY-MM-DD.json` (grades histogram, `process_miss_n`, error counts).
+
+**Extraction diagnosis fields** (every card; do **not** change grade math):
+
+| Field | Meaning |
+|-------|---------|
+| `extraction.process_miss` | `true` = pipeline/ops gap; `false` = ok extract or true thin public board |
+| `extraction.process_miss_reason` | Taxonomy reason (see below) when process_miss, else `""` |
+| `extraction.errors` | Structured error codes (may list multiple) |
+
+Common `process_miss_reason` / error codes: `no_source`, `network_disabled`, `parser_not_implemented`, `live_parser_not_ready`, `url_not_found`, `fetch_failed`, `timeout`, `blocked`, `budget_exhausted`, `playwright_not_installed`, `parse_empty`, `low_name_match`, `js_shell_empty`. **`thin_public`** → `process_miss: false` (real empty board, not a pipeline bug).
+
+Aliases scaffold: `data/state/match_aliases.json` (config `research.match_intel.alias_path`).
+
 Grok / skill launchers (Windows examples):
 
 ```powershell

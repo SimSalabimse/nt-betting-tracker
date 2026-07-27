@@ -11,9 +11,15 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from nt.match_intel.io import mic_path, read_mic, write_mic
+from nt.match_intel.io import atomic_write_json, mic_path, read_mic, write_mic
 from nt.match_intel.matching import load_aliases, match_confidence
-from nt.match_intel.schema import empty_mic_skeleton, finalize_coverage, mic_match_key, side_dict
+from nt.match_intel.schema import (
+    apply_process_miss,
+    empty_mic_skeleton,
+    finalize_coverage,
+    mic_match_key,
+    side_dict,
+)
 from nt.match_intel.sources.flashscore import parse_flashscore_html
 from nt.match_intel.sources.fotmob import parse_fotmob_html
 from nt.match_intel.sources.nt import parse_nt_context
@@ -22,6 +28,15 @@ from nt.sport_taxonomy import normalize_sport
 
 def _utc_now_iso() -> str:
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+
+
+def _finalize_card(card: dict[str, Any], *, t0: float) -> dict[str, Any]:
+    """Coverage grade + process_miss taxonomy + duration (grade math unchanged)."""
+    finalize_coverage(card)
+    apply_process_miss(card)
+    card["extraction"]["duration_ms"] = int((time.perf_counter() - t0) * 1000)
+    card["updated_at"] = _utc_now_iso()
+    return card
 
 
 def _mic_cfg(cfg: dict[str, Any] | None) -> dict[str, Any]:
@@ -228,9 +243,7 @@ def build_match_intel(
         card["extraction"]["primary_method"] = "stub"
         card["extraction"]["errors"] = ["parser_not_implemented"]
         card["extraction"]["needs_review"] = True
-        finalize_coverage(card)
-        card["extraction"]["duration_ms"] = int((time.perf_counter() - t0) * 1000)
-        card["updated_at"] = _utc_now_iso()
+        _finalize_card(card, t0=t0)
         if write:
             write_mic(card, out, match_key=key)
             card["_path"] = str(mic_path(out, match, match_key=key))
@@ -267,9 +280,13 @@ def build_match_intel(
                     if e not in ("no_source",)
                 ]
     else:
-        # No offline HTML and no live fetch in default path
+        # No offline HTML and no live fetch in default path (PR-0: no discovery yet)
         card["extraction"]["primary_method"] = "failed"
-        card["extraction"]["errors"] = ["no_source"]
+        # Prefer network_disabled when network is off; keep no_source as legacy alias.
+        if not bool(mi.get("allow_network")):
+            card["extraction"]["errors"] = ["network_disabled", "no_source"]
+        else:
+            card["extraction"]["errors"] = ["no_source"]
         card["extraction"]["needs_review"] = True
 
     # Optional Firecrawl only when explicitly allowed via cfg and no html
@@ -286,10 +303,8 @@ def build_match_intel(
         except Exception:  # noqa: BLE001
             pass
 
-    finalize_coverage(card)
-    card["extraction"]["duration_ms"] = int((time.perf_counter() - t0) * 1000)
-    card["updated_at"] = _utc_now_iso()
     card["match_key"] = key
+    _finalize_card(card, t0=t0)
 
     if write:
         path = write_mic(card, out, match_key=key)
@@ -386,6 +401,11 @@ def run_match_intel_batch(
     work = work[:cap]
     cards: list[dict[str, Any]] = []
     grade_counts: dict[str, int] = {"A": 0, "B": 0, "C": 0, "D": 0, "F": 0}
+    error_counts: dict[str, int] = {}
+    sport_counts: dict[str, int] = {}
+    process_miss_n = 0
+    budget_exhausted_n = 0
+    playwright_missing = False
 
     for item in work:
         m = item["match"]
@@ -399,6 +419,7 @@ def run_match_intel_batch(
             cfg=cfg,
             odds_file=str(odds_path) if odds_path else None,
             competition=item.get("competition"),
+            kickoff=item.get("kickoff"),
             html_by_source=html_map,
             fixture_dir=fixture_dir,
             force=force,
@@ -408,11 +429,54 @@ def run_match_intel_batch(
         cards.append(card)
         g = str((card.get("coverage") or {}).get("grade") or "F")
         grade_counts[g] = grade_counts.get(g, 0) + 1
+        sp_c = str(card.get("sport") or sp or "unknown")
+        sport_counts[sp_c] = sport_counts.get(sp_c, 0) + 1
+        ext = card.get("extraction") or {}
+        if ext.get("process_miss"):
+            process_miss_n += 1
+        for err in ext.get("errors") or []:
+            e = str(err)
+            error_counts[e] = error_counts.get(e, 0) + 1
+            if e == "budget_exhausted":
+                budget_exhausted_n += 1
+            if e == "playwright_not_installed":
+                playwright_missing = True
 
-    summary = {
+    day = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    summary: dict[str, Any] = {
         "n": len(cards),
         "grades": grade_counts,
+        "process_miss_n": process_miss_n,
+        "budget_exhausted_n": budget_exhausted_n,
+        "errors": error_counts,
+        "sports": sport_counts,
+        "playwright_missing": playwright_missing,
         "out_dir": str(out),
         "odds": str(odds_path) if odds_path else None,
+        "index_day": day,
     }
+
+    if write:
+        index_path = Path(out) / f"_index_{day}.json"
+        index_payload = {
+            "n": summary["n"],
+            "grades": grade_counts,
+            "process_miss_n": process_miss_n,
+            "budget_exhausted_n": budget_exhausted_n,
+            "matched_n": sum(
+                1
+                for c in cards
+                if str((c.get("extraction") or {}).get("match_confidence") or "")
+                in ("exact", "alias", "fuzzy")
+            ),
+            "errors": error_counts,
+            "sports": sport_counts,
+            "playwright_missing": playwright_missing,
+        }
+        try:
+            atomic_write_json(index_path, index_payload)
+            summary["index_path"] = str(index_path)
+        except OSError:
+            pass
+
     return {"ok": True, "cards": cards, "summary": summary}

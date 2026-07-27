@@ -23,6 +23,8 @@ from nt.match_intel.coverage import (
     key_credit,
 )
 from nt.match_intel.schema import (
+    PROCESS_MISS_REASONS,
+    apply_process_miss,
     empty_mic_skeleton,
     finalize_coverage,
     mic_match_key,
@@ -280,3 +282,39 @@ def test_esports_default_sets():
     }
     g = grade_card(card)
     assert g["grade"] in ("F", "D")  # skeleton unusable → F preferred
+
+
+def test_apply_process_miss_maps_taxonomy():
+    assert "no_source" in PROCESS_MISS_REASONS
+    assert "parser_not_implemented" in PROCESS_MISS_REASONS
+    assert "fetch_failed" in PROCESS_MISS_REASONS
+
+    card = empty_mic_skeleton("A vs B", errors=["no_source"])
+    apply_process_miss(card)
+    assert card["extraction"]["process_miss"] is True
+    assert card["extraction"]["process_miss_reason"] == "no_source"
+
+    card2 = empty_mic_skeleton("A vs B", errors=[])
+    card2["extraction"]["errors"] = ["parser_not_implemented"]
+    apply_process_miss(card2)
+    assert card2["extraction"]["process_miss"] is True
+    assert card2["extraction"]["process_miss_reason"] == "parser_not_implemented"
+
+    card3 = empty_mic_skeleton("A vs B", errors=[])
+    card3["extraction"]["errors"] = []
+    card3["extraction"]["primary_method"] = "bs4"
+    apply_process_miss(card3)
+    assert card3["extraction"]["process_miss"] is False
+    assert card3["extraction"]["process_miss_reason"] == ""
+
+    # Priority: network_disabled over no_source
+    card4 = empty_mic_skeleton("A vs B", errors=[])
+    card4["extraction"]["errors"] = ["network_disabled", "no_source"]
+    apply_process_miss(card4)
+    assert card4["extraction"]["process_miss"] is True
+    assert card4["extraction"]["process_miss_reason"] == "network_disabled"
+
+    # process_miss does not change grade
+    before = grade_card(card)["grade"]
+    apply_process_miss(card)
+    assert grade_card(card)["grade"] == before

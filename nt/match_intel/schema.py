@@ -10,6 +10,49 @@ from nt.odds_common import normalize_match_key
 
 SCHEMA_VERSION = 1
 
+# Error taxonomy (§2.7 design) — process_miss mapping.
+# process_miss=true means pipeline/ops gap; false + thin_public means real empty board.
+PROCESS_MISS_REASONS: frozenset[str] = frozenset(
+    {
+        "parser_not_implemented",
+        "live_parser_not_ready",
+        "url_not_found",
+        "fetch_failed",
+        "timeout",
+        "circuit_open",
+        "budget_exhausted",
+        "playwright_not_installed",
+        "wrong_backend",
+        "js_shell_empty",
+        "blocked",
+        "low_name_match",
+        "parse_empty",
+        "network_disabled",
+        "no_source",
+    }
+)
+
+# Prefer more-specific reasons when multiple errors are present.
+PROCESS_MISS_REASON_PRIORITY: tuple[str, ...] = (
+    "playwright_not_installed",
+    "budget_exhausted",
+    "circuit_open",
+    "blocked",
+    "timeout",
+    "fetch_failed",
+    "js_shell_empty",
+    "wrong_backend",
+    "url_not_found",
+    "low_name_match",
+    "live_parser_not_ready",
+    "parse_empty",
+    "parser_not_implemented",
+    "network_disabled",
+    "no_source",
+)
+
+THIN_PUBLIC_REASON = "thin_public"
+
 
 def mic_match_key(match: str) -> str:
     """Filesystem-safe key for outbox/match_intel/{key}.json."""
@@ -113,6 +156,9 @@ def empty_mic_skeleton(
             "needs_review": needs_review,
             "duration_ms": 0,
             "errors": list(errors or ["no_source"]),
+            # process_miss: pipeline/ops gap vs true thin public board (does not affect grade).
+            "process_miss": True,
+            "process_miss_reason": "no_source",
         },
         "created_at": now,
         "updated_at": now,
@@ -145,6 +191,40 @@ def validate_mic_shape(card: dict[str, Any]) -> list[str]:
     else:
         issues.append("missing:sides")
     return issues
+
+
+def apply_process_miss(card: dict[str, Any]) -> dict[str, Any]:
+    """
+    Set extraction.process_miss + process_miss_reason from errors / thin_public flag.
+
+    Does **not** change coverage grade (KD-16). Call after errors are finalized.
+    """
+    extraction = card.setdefault("extraction", {})
+    if not isinstance(extraction, dict):
+        extraction = {}
+        card["extraction"] = extraction
+    errors = [str(e) for e in (extraction.get("errors") or []) if e]
+    thin_confirmed = bool(extraction.get("thin_public_confirmed"))
+
+    # True thin public board: parser ran, sections empty for real → not a process miss.
+    if thin_confirmed or THIN_PUBLIC_REASON in errors:
+        # If a hard process error coexists, process_miss wins.
+        hard = [e for e in errors if e in PROCESS_MISS_REASONS]
+        if not hard or thin_confirmed:
+            extraction["process_miss"] = False
+            extraction["process_miss_reason"] = THIN_PUBLIC_REASON
+            return card
+
+    for reason in PROCESS_MISS_REASON_PRIORITY:
+        if reason in errors:
+            extraction["process_miss"] = True
+            extraction["process_miss_reason"] = reason
+            return card
+
+    # No taxonomy error → successful (or empty-error) extraction path.
+    extraction["process_miss"] = False
+    extraction["process_miss_reason"] = ""
+    return card
 
 
 def finalize_coverage(card: dict[str, Any]) -> dict[str, Any]:

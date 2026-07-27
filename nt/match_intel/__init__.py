@@ -23,6 +23,8 @@ from nt.match_intel.matching import (
 )
 from nt.match_intel.pipeline import build_match_intel, run_match_intel_batch
 from nt.match_intel.schema import (
+    PROCESS_MISS_REASONS,
+    apply_process_miss,
     empty_mic_skeleton,
     finalize_coverage,
     mic_match_key,
@@ -33,6 +35,8 @@ from nt.match_intel.schema import (
 __all__ = [
     "CRITICAL",
     "OPTIONAL",
+    "PROCESS_MISS_REASONS",
+    "apply_process_miss",
     "atomic_write_json",
     "build_match_intel",
     "coverage_score",
