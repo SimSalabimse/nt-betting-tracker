@@ -1,5 +1,9 @@
 # Dual Decision — golden template (KD-DD-wire)
 
+> **ARCHIVE / SUPERSEDED (Stage 3 SSOT):** Dual Decision is **no longer** the sole Stage 3 path.  
+> **Use instead:** [`docs/templates/TRI_DECISION_TEMPLATE.md`](TRI_DECISION_TEMPLATE.md) — three Decision Agents (Edge ∥ Guardian ∥ Quality) + **3.1z** `apply-quality-veto` + **KD-place-law**.  
+> Keep this file as historical KD-DD-wire reference only (scan Stage 1b A/B/C(+D) is unchanged and still live).
+
 | Field | Value |
 |-------|--------|
 | **Date** | YYYY-MM-DD |
@@ -11,7 +15,7 @@
 > **Do not** hand-remove engine picks because Guardian challenged them.  
 > Write `decision:` tags **only after** recommend.
 
-Related: `docs/ESR_ADAPTIVE_SCAN_AND_DUAL_DECISION_2026-07-27.md` · `/daily-run` skill Stage 3 · `AGENTS.md` Stage 3.1–3.4.
+Related: `docs/ESR_ADAPTIVE_SCAN_AND_DUAL_DECISION_2026-07-27.md` · `/daily-run` skill Stage 3 · `AGENTS.md` Stage 3.1–3.4 · **live Stage 3 template:** `docs/templates/TRI_DECISION_TEMPLATE.md`.
 
 ---
 

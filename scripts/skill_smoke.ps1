@@ -53,7 +53,12 @@ Invoke-Step "skill_list" {
         "KD-place-law",
         "esr_data_v1",
         "re_expand_once",
-        "TRI_DECISION"
+        "TRI_DECISION",
+        # PR5: A–D MIC justification + Agent D spawn contract
+        "Match Intelligence Cards when present",
+        "mic:grade",
+        "n=40",
+        "n=41"
     )) {
         if ($dm -notmatch [regex]::Escape($needle)) {
             throw "daily-run mirror missing required phrase: $needle"
@@ -124,6 +129,30 @@ Invoke-Step "cli_help assert-can-bet" {
 Invoke-Step "cli_help apply-quality-veto" {
     python run_nt.py research apply-quality-veto --help | Out-Null
     if ($LASTEXITCODE -ne 0) { throw "apply-quality-veto --help exit $LASTEXITCODE" }
+}
+
+# 4c) Soft-reset script: --help + --dry-run (plan only; never write)
+Invoke-Step "soft_reset --help + dry-run" {
+    $help = python scripts/soft_reset_data_first_500.py --help 2>&1 | Out-String
+    if ($LASTEXITCODE -ne 0) { throw "soft_reset --help exit $LASTEXITCODE" }
+    foreach ($needle in @("--dry-run", "--confirm", "esr_data_v1", "500")) {
+        if ($help -notmatch [regex]::Escape($needle)) {
+            throw "soft_reset help missing: $needle"
+        }
+    }
+    # Dry-run must not mutate; may exit non-zero if pending open risk (script aborts) —
+    # accept exit 0 (plan printed) or a clear pending-abort message.
+    $dry = python scripts/soft_reset_data_first_500.py --dry-run 2>&1 | Out-String
+    $code = $LASTEXITCODE
+    if ($code -eq 0) {
+        Write-Host "soft_reset --dry-run plan OK"
+    } elseif ($dry -match "pending|open risk|Refusing|abort") {
+        Write-Host "soft_reset --dry-run pending/abort path OK (exit $code)"
+    } else {
+        throw "soft_reset --dry-run unexpected exit $code : $dry"
+    }
+    # Invoke-Step treats leftover LASTEXITCODE as failure — clear after accepted paths.
+    $global:LASTEXITCODE = 0
 }
 
 # 5) scan-merge one-agent-missing path (pytest contract from PR0)

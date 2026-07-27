@@ -231,7 +231,7 @@ python run_nt.py research match-intel --odds <odds_file>
 | MIC cards | `outbox/match_intel/{match_key}.json` |
 | Optional index | `outbox/match_intel/_index_YYYY-MM-DD.json` |
 
-Scan agents: when MIC present, **cite** grade/score/one fact in `reason`; when missing after defer, tag `mic:missing`.
+Scan agents A–D: when MIC present, **justify** the seat and **cite** `mic:grade` + form/H2H (or table) in `reason`; when missing after defer, tag `mic:missing`.
 
 ---
 
@@ -254,12 +254,23 @@ Shallow scan agents only. **Hard bans (all scan agents):** no Exa pack · no `wr
 
 ```text
 lines_count(M) = |{ Candidate rows from parse_odds_file with match == M }|
-SPAWN_D := exists M such that lines_count(M) >= 41   # n=40 → false; n=41 → true
+SPAWN_D := exists M such that lines_count(M) >= 41
+# Contract (unit-tested): n=40 → false; n=41 → true. Never spawn on n=40.
 ```
 
 - **Never** reuse market-scan `high_volume` bool for spawn_d.
 - **Must run `research scan-depth` when available.** Else manual line-count is OK. Log: `agent_d: spawned | skipped (max_lines_per_match=N, min_lines=41)`.
 - **Sequential D budget:** if sequential and wall-clock after A+B+C is **≥10 minutes**, **skip D** even if spawn true; note `scan_agent_missing: D (budget)`.
+
+### MIC justification (all scan agents A–D)
+
+When a Match Intelligence Card exists for the match, **justify the shortlist seat with it** — do not invent form/H2H when MIC already has facts:
+
+| Rule | Detail |
+|------|--------|
+| **Required when MIC present** | In `reason`, cite **`mic:grade=X`** (A–F) **and** at least one structured fact from the card: **form** / **H2H** / table-rank / injury-context one-liner |
+| **When MIC missing** after 1x | Tag `mic:missing` (still may shortlist on board-only reason; soft pressure only until PR6 `require_for_deep`) |
+| **Never** | Invent form/H2H/injuries that contradict or ignore a present card; invent `p_model` from MIC grade alone |
 
 ### Agent A — Favourites & HUB (strengthened)
 
@@ -276,7 +287,7 @@ SPAWN_D := exists M such that lines_count(M) >= 41   # n=40 → false; n=41 → 
    - Allow **1.40–1.69** only with an **explicit structural one-liner** (form/rank/H2H/table/MIC) **and** prefix reason with `force_scan:` when the edge is real enough to justify Stage 2 cost despite light fail risk.
    - Prefer mid-band **1.70–1.90** football HUB over 1.40–1.55 chalk that will be process-theater.
 6. Soft `form_continuity_risk:` when live ledger shows recent heavy-fav Win on opposite side (scan note only).
-7. When MIC present: cite `mic:grade=X` or one MIC fact; else `mic:missing`.
+7. **MIC justification:** when Match Intelligence Card present — **justify** the seat and cite **`mic:grade=…` + form and/or H2H** (or table) from the card; else `mic:missing`.
 
 **Must not:**
 
@@ -284,7 +295,7 @@ SPAWN_D := exists M such that lines_count(M) >= 41   # n=40 → false; n=41 → 
 - Treat “longshot ML” as A territory.
 - Skip HUB entirely on a football-heavy board to fill seats with non-football chalk.
 
-**Self-check:** odds ∈ [1.40, 1.90]; ≥1 football HUB/1X2 when such lines in band exist; clear 1X2 not replaced by HC without one-line justification; if odds &lt; 1.70: structural why + `force_scan:` when intending Stage 2; non-empty reason.
+**Self-check:** odds ∈ [1.40, 1.90]; ≥1 football HUB/1X2 when such lines in band exist; clear 1X2 not replaced by HC without one-line justification; if odds &lt; 1.70: structural why + `force_scan:` when intending Stage 2; non-empty reason; MIC cite when present.
 
 **Output:** `outbox/scan_agent_a_YYYY-MM-DD.jsonl` (max 5 rows).
 
@@ -293,7 +304,8 @@ You are ESR Scan Agent A — Favourites & HUB (max 5).
 Odds band 1.40–1.90. Prefer ≥1.70 (short_chalk_odds) so seats survive light/KD16.
 MUST search football HUB/1X2. MUST NOT ignore clear 1X2 for HC.
 If 1.40–1.69: structural one-liner + force_scan: when Stage 2 intended.
-Cite MIC when present. No p_model, packs, place. Output: outbox/scan_agent_a_YYYY-MM-DD.jsonl
+Justify seats with Match Intelligence Cards when present: cite mic:grade=X + form/H2H (or table).
+If no MIC: mic:missing. No p_model, packs, place. Output: outbox/scan_agent_a_YYYY-MM-DD.jsonl
 ```
 
 ### Agent B — Totals & Props (strengthened)
@@ -301,6 +313,8 @@ Cite MIC when present. No p_model, packs, place. Output: outbox/scan_agent_a_YYY
 **Must actively consider (when present on dump):** match totals / maps / runs; **team totals**; **player props**; **cards**; **corners**; other specials with a one-sentence natural story.
 
 **Self-limit:** ≤**2** same coarse `market_family` in B’s own five.
+
+**MIC justification:** when card present — **justify** totals/props seats with **`mic:grade=…` + form/H2H/tempo-relevant fact** from the card; else `mic:missing`.
 
 **Coordination with D (when `spawn_agent_d=true`):**
 
@@ -317,23 +331,28 @@ You are ESR Scan Agent B — Totals & Props (max 5).
 Team totals, player props, cards, corners, specials, natural totals.
 Self-limit ≤2 same market_family.
 If spawn_agent_d=true: bias main totals; at most 1 long-tail seat (D owns deep props).
-Cite MIC when present. No p_model, packs, place. Output: outbox/scan_agent_b_YYYY-MM-DD.jsonl
+Justify seats with Match Intelligence Cards when present: cite mic:grade=X + form/H2H (or tempo).
+If no MIC: mic:missing. No p_model, packs, place. Output: outbox/scan_agent_b_YYYY-MM-DD.jsonl
 ```
 
 ### Agent C — Handicaps & Matchup
 
-HC + matchup dogs with **real reasons**; `force_scan:` only for real matchup vs light-fail risk; soft `form_continuity_risk:`; not “long odds = value.” Do not steal clear HUB 1X2 edges that belong in A without a distinct HC thesis. Cite MIC when present. Max **5**.
+HC + matchup dogs with **real reasons**; `force_scan:` only for real matchup vs light-fail risk; soft `form_continuity_risk:`; not “long odds = value.” Do not steal clear HUB 1X2 edges that belong in A without a distinct HC thesis. Max **5**.
+
+**MIC justification:** when card present — **justify** HC/matchup seats with **`mic:grade=…` + form and/or H2H** (matchup-relevant) from the card; else `mic:missing`.
 
 ```text
 You are ESR Scan Agent C — Handicaps & Matchup (max 5).
 Real matchup reasons only. force_scan: only when justified.
-Cite MIC when present. No p_model, packs, place. Output: outbox/scan_agent_c_YYYY-MM-DD.jsonl
+Justify seats with Match Intelligence Cards when present: cite mic:grade=X + form/H2H.
+If no MIC: mic:missing. No p_model, packs, place. Output: outbox/scan_agent_c_YYYY-MM-DD.jsonl
 ```
 
 ### Agent D — Deep Props & Specials (conditional)
 
 | Rule | Detail |
 |------|--------|
+| **Spawn** | **Only** when `SPAWN_D` true: max `lines_count(M) ≥ 41` (**n=40 → false; n=41 → true**). Never spawn on n=40. |
 | Focus | Long-tail **only**: player props, cards, corners, shots, specials, exotic team stats |
 | Avoid | Pure HUB/1X2, main ML, main HC, primary O2.5 |
 | Prefer | High-volume matches (≥3 of 5 bias — soft, not merge-hard in v1) |
@@ -342,12 +361,14 @@ Cite MIC when present. No p_model, packs, place. Output: outbox/scan_agent_c_YYY
 | Hints | `outbox/market_scans/*` interesting/review when present |
 | Self-limit | ≤2 same `market_family` |
 | Role-drift | Soft annotate only if ≥3/5 kept rows are main-board — **never hard-drop** D for role drift in v1 |
+| **MIC justification** | When card present — **justify** long-tail seats with **`mic:grade=…` + form/H2H** (or card-relevant fact); else `mic:missing` |
 
 ```text
 You are ESR Scan Agent D — Deep Props & Specials (max 5).
-Spawned only because a match has ≥41 parseable lines. Long-tail ONLY (props/cards/corners/shots/specials).
+Spawn only when a match has ≥41 parseable lines (n=40 false / n=41 true). Long-tail ONLY.
 Bias to high-volume matches. Avoid pure HUB/main HC/main O2.5.
-No p_model, packs, place. Output: outbox/scan_agent_d_YYYY-MM-DD.jsonl
+Justify seats with Match Intelligence Cards when present: cite mic:grade=X + form/H2H.
+If no MIC: mic:missing. No p_model, packs, place. Output: outbox/scan_agent_d_YYYY-MM-DD.jsonl
 ```
 
 ### Merge (A+B+C + D when active)
