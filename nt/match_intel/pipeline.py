@@ -4,11 +4,11 @@ Match Intelligence pipeline: build MIC cards for board matches.
 Control flow (Appendix B / design §2.1):
   fixtures/html → offline parse
   else if not allow_network → network_disabled
-  else → discover (unless --url) → fetch → match_confidence → live parse or live_parser_not_ready
+  else → discover (unless --url) → fetch → match_confidence → live parse (if registry ready)
 
 PR-2: URL discovery (aliases + Flashscore search) when allow_network and no explicit URL.
-      Football registry ready=False → after successful fetch+name match → live_parser_not_ready
-      (raw bundle still cached). Live field parse is PR-3.
+PR-3: Football registry ready=True → after fetch+match, parse_football_bundle fills MIC;
+      process_miss cleared when real form present; parse_empty when extract yields nothing.
 """
 from __future__ import annotations
 
@@ -423,22 +423,73 @@ def _live_network_path(
             frag = spec.parse(matched_bundle, match=match, sport=sport_n, cfg=mi)
             if frag:
                 card = merge_fragments(card, frag)
+                # Prefer live parse method on extraction when fragment contributed fields
+                if frag.get("method") and frag.get("fields_contributed"):
+                    ext["primary_method"] = str(frag.get("method") or matched_bundle.method)
+                elif matched_bundle.method:
+                    ext["primary_method"] = matched_bundle.method
+            # Clear process-style pre-parse errors; decide parse_empty vs success
             ext["errors"] = [
                 e
                 for e in (ext.get("errors") or [])
-                if e not in ("no_source", "network_disabled", "url_not_found")
+                if e
+                not in (
+                    "no_source",
+                    "network_disabled",
+                    "url_not_found",
+                    "live_parser_not_ready",
+                    "low_name_match",
+                )
             ]
+            if _has_real_form(card):
+                # Successful free facts → no process_miss (apply_process_miss clears)
+                ext["errors"] = [
+                    e
+                    for e in (ext.get("errors") or [])
+                    if e not in ("parse_empty", "thin_public")
+                ]
+            elif not _live_frag_useful(frag):
+                if "parse_empty" not in (ext.get("errors") or []):
+                    ext.setdefault("errors", []).append("parse_empty")
+                ext["needs_review"] = True
         except Exception:  # noqa: BLE001
             ext["errors"] = ["parse_empty"]
             ext["needs_review"] = True
         return card
 
-    # PR-1/PR-2 football interim (ready=False)
+    # Sport registered but not ready (tennis interim, etc.)
     ext["errors"] = ["live_parser_not_ready"]
     ext["needs_review"] = True
     if matched_bundle.method:
         ext["primary_method"] = matched_bundle.method
     return card
+
+
+def _has_real_form(card: dict[str, Any]) -> bool:
+    """True when at least one side has n≥3 form letters (process_miss should clear)."""
+    sides = card.get("sides") or {}
+    for sk in ("home", "away"):
+        rf = ((sides.get(sk) or {}).get("recent_form") or {})
+        try:
+            n = int(rf.get("n") or 0)
+        except (TypeError, ValueError):
+            n = 0
+        results = rf.get("results") or []
+        if n >= 3 and results:
+            return True
+    return False
+
+
+def _live_frag_useful(frag: dict[str, Any] | None) -> bool:
+    if not frag:
+        return False
+    fields = frag.get("fields_contributed") or []
+    if fields:
+        return True
+    # competition-only still useful
+    if str((frag.get("competition") or {}).get("name") or "").strip():
+        return True
+    return False
 
 
 def build_match_intel(

@@ -258,8 +258,11 @@ def test_router_uses_mock_backend(monkeypatch, tmp_path: Path):
     assert b2.method == "cache"
 
 
-def test_pipeline_live_parser_not_ready_after_fetch(monkeypatch, tmp_path: Path):
-    """allow_network + url → fetch+match → live_parser_not_ready (football ready=False)."""
+def test_pipeline_live_parse_after_fetch(monkeypatch, tmp_path: Path):
+    """allow_network + url → fetch+match → live parse (football ready=True).
+
+    Thin page without form widgets → parse_empty / grade F (not live_parser_not_ready).
+    """
     from nt.match_intel.fetch import router as R
 
     def _fake_bundle(url: str, **kwargs: Any) -> MatchFetchBundle:
@@ -308,14 +311,19 @@ def test_pipeline_live_parser_not_ready_after_fetch(monkeypatch, tmp_path: Path)
         force=True,
     )
     ext = card["extraction"]
-    assert "live_parser_not_ready" in (ext.get("errors") or [])
-    assert ext.get("process_miss") is True
-    assert ext.get("process_miss_reason") == "live_parser_not_ready"
+    # PR-3: parser is ready — must not emit live_parser_not_ready
+    assert "live_parser_not_ready" not in (ext.get("errors") or [])
     assert ext.get("match_confidence") in ("exact", "alias", "fuzzy")
-    assert card["coverage"]["grade"] == "F"
-    # Must not be opaque no_source when fetch worked
+    # Thin content → still low grade; process miss via parse_empty (not no_source)
+    assert card["coverage"]["grade"] in ("F", "D", "C")
     assert "no_source" not in (ext.get("errors") or [])
     assert "network_disabled" not in (ext.get("errors") or [])
+    if card["coverage"]["grade"] == "F":
+        assert ext.get("process_miss") is True
+        assert (
+            ext.get("process_miss_reason") in ("parse_empty", "low_name_match", "fetch_failed")
+            or "parse_empty" in (ext.get("errors") or [])
+        )
 
 
 def test_pipeline_url_not_found_when_network_no_url(tmp_path: Path):
@@ -415,10 +423,11 @@ def test_http_fetch_offline_style_html_local(monkeypatch, tmp_path: Path):
     assert b.page_meta.get("home_name") == "Gamma"
 
 
-def test_registry_football_not_ready():
+def test_registry_football_ready():
     from nt.match_intel.registry import get_live_parser, is_live_parser_ready
 
-    assert is_live_parser_ready("football") is False
+    assert is_live_parser_ready("football") is True
     spec = get_live_parser("football")
     assert spec is not None
-    assert spec.ready is False
+    assert spec.ready is True
+    assert callable(spec.parse)

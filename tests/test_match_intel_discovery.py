@@ -185,20 +185,26 @@ def test_discover_no_network_no_fixture_url_not_found():
     assert res.error == "url_not_found"
 
 
-def test_pipeline_discovery_then_live_parser_not_ready(monkeypatch, tmp_path: Path):
-    """discover (fixture search) → fetch mock → live_parser_not_ready."""
+def test_pipeline_discovery_then_live_parse(monkeypatch, tmp_path: Path):
+    """discover (fixture search) → fetch mock → live parse (ready=True)."""
     from nt.match_intel.fetch import router as R
+
+    live_html = (
+        ROOT / "tests" / "fixtures" / "match_intel" / "live" / "football"
+        / "rosenborg_vs_fredrikstad" / "summary.html"
+    )
+    html = live_html.read_text(encoding="utf-8") if live_html.is_file() else (
+        "<html><title>Rosenborg vs Fredrikstad | Eliteserien</title>"
+        "<body>Rosenborg vs Fredrikstad preview content enough text</body></html>"
+    )
 
     def _fake_bundle(url: str, **kwargs: Any) -> MatchFetchBundle:
         return MatchFetchBundle(
             ok=True,
             url=url,
             method="firecrawl",
-            html=(
-                "<html><title>Rosenborg vs Fredrikstad | Eliteserien</title>"
-                "<body>Rosenborg vs Fredrikstad preview content enough text</body></html>"
-            ),
-            markdown="# Rosenborg vs Fredrikstad",
+            html=html,
+            markdown="# Rosenborg vs Fredrikstad\n\nEliteserien\nHome form: W W D L W\nAway form: L W D W L\n",
             duration_ms=2,
             page_meta={
                 "title": "Rosenborg vs Fredrikstad | Eliteserien",
@@ -237,11 +243,13 @@ def test_pipeline_discovery_then_live_parser_not_ready(monkeypatch, tmp_path: Pa
         search_html=SEARCH_HTML,
     )
     ext = card["extraction"]
-    assert "live_parser_not_ready" in (ext.get("errors") or [])
+    assert "live_parser_not_ready" not in (ext.get("errors") or [])
     assert ext.get("match_confidence") in ("exact", "alias", "fuzzy")
     assert ext.get("discovery_source") == "search"
     assert "url_not_found" not in (ext.get("errors") or [])
     assert "no_source" not in (ext.get("errors") or [])
+    # Rich fixture should grade
+    assert card["coverage"]["grade"] in ("A", "B", "C")
 
 
 def test_pipeline_skips_discovery_when_url(monkeypatch, tmp_path: Path):
@@ -294,7 +302,8 @@ def test_pipeline_skips_discovery_when_url(monkeypatch, tmp_path: Path):
     )
     assert called["discover"] == 0
     assert card["extraction"].get("discovery_source") == "cli_url"
-    assert "live_parser_not_ready" in card["extraction"]["errors"]
+    # PR-3: ready parser runs; thin mock page → not live_parser_not_ready
+    assert "live_parser_not_ready" not in (card["extraction"].get("errors") or [])
 
 
 def test_pipeline_url_not_found_when_network_no_discovery(tmp_path: Path):

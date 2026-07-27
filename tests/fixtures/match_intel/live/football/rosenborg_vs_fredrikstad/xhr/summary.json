@@ -1,0 +1,23 @@
+{
+  "url": "https://www.flashscore.com/x/feed/summary",
+  "data": {
+    "tournament": {"name": "Eliteserien"},
+    "home": {
+      "name": "Rosenborg",
+      "form": ["W", "W", "D", "L", "W"],
+      "rank": 2,
+      "points": 40
+    },
+    "away": {
+      "name": "Fredrikstad",
+      "form": ["L", "W", "D", "W", "L"],
+      "rank": 7,
+      "points": 28
+    },
+    "h2h": [
+      {"date": "2025-09-12", "score": "2-1", "competition": "Eliteserien"},
+      {"date": "2025-04-06", "score": "1-1", "competition": "Eliteserien"},
+      {"date": "2024-10-20", "score": "0-2", "competition": "Eliteserien"}
+    ]
+  }
+}

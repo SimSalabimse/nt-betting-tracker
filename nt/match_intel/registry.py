@@ -1,8 +1,8 @@
 """
 Sport → live parser registry.
 
-PR-1/PR-2: football may be in v1_sports with ready=False (fetch-for-instrumentation).
-Live parse (ready=True) ships in PR-3+.
+PR-3: football ready=True (Flashscore live + data-* fallback + FotMob secondary).
+Tennis / other sports join in later PRs with ready=True in the same PR (KD-17).
 """
 from __future__ import annotations
 
@@ -21,13 +21,24 @@ class LiveParserSpec:
     notes: str = ""
 
 
-# Interim: football registered but not ready (PR-1 instrumentation path).
+def _parse_football_live(
+    bundle: Any,
+    *,
+    match: str = "",
+    sport: str = "football",
+    cfg: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    from nt.match_intel.sources.flashscore_live import parse_football_bundle
+
+    return parse_football_bundle(bundle, match=match, sport=sport, cfg=cfg)
+
+
 LIVE_PARSERS: dict[str, LiveParserSpec] = {
     "football": LiveParserSpec(
-        ready=False,
-        parse=None,
+        ready=True,
+        parse=_parse_football_live,
         sources=["flashscore", "fotmob"],
-        notes="PR-1/PR-2: fetch+match only; live parse in PR-3",
+        notes="PR-3: live Flashscore HTML/markdown/XHR + offline data-* fallback; FotMob secondary",
     ),
 }
 
