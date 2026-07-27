@@ -9,6 +9,7 @@ Real-money capital desk. Engines in `nt/` are law. UI (LuminaNT, Flet desktop) p
 > | **Hybrid phases** `1A/1A+/1B/1B+` + continuous unit | [`docs/CAPITAL_HYBRID_PROGRESSION.md`](docs/CAPITAL_HYBRID_PROGRESSION.md) |
 > | **Secure Variant A** soft 1.25×/15% · hard 1.50×/30% | Hard replaces soft — never stacked |
 > | **Edge-Seeking Research (ESR)** Stage 0–4 | Find best +EV edges · soft dogs not guilty by default · short 1.40–1.80 OK · empty only after scan + expansion |
+> | **Stage 1b adaptive multi-agent scan** | A/B/C always + conditional **D** (≥41 Candidate lines/match); merge shortlist 8–15 → primary worklist ≤15 drives Stage 2 when present ([`docs/ESR_ADAPTIVE_SCAN_AND_DUAL_DECISION_2026-07-27.md`](docs/ESR_ADAPTIVE_SCAN_AND_DUAL_DECISION_2026-07-27.md)) |
 > | **FEH** | **Demoted / shadow only** — not place law ([`docs/RESEARCH_RESET_SIMPLE_EFFECTIVE_2026-07-25.md`](docs/RESEARCH_RESET_SIMPLE_EFFECTIVE_2026-07-25.md)) |
 > | **Coverage floor (A)** + **`temp_ev_relax` (B)** | Floor expands research; never invents `p_model`; relax is rare safety net |
 > | **Settlement taxonomy** `learning_weight` · CS gate ≥**0.5** | [`docs/SETTLEMENT_LEARNING.md`](docs/SETTLEMENT_LEARNING.md) |
@@ -19,7 +20,7 @@ Real-money capital desk. Engines in `nt/` are law. UI (LuminaNT, Flet desktop) p
 
 **Status (permanent package):** clean-restart **500 NOK** era · capital_v2 live · **hybrid half-steps (1A+/1B+) + continuous unit** · **secure bucket Variant A** · **Exploration→Survival→Normal** bankroll regimes · multi-stage quant prefilter · engine deep queue (**edge-seeking promise score**; preferred composition quotas **off**) · **ESR place path** (legacy grade + research_gates + EV + soft odds bands; FEH shadow) · Coverage Health + soft gate · `force_coverage_priority` · totalgrense residual buffer · closed-loop ControlSignals · PhaseState v5 · **neutral sport start at zero data** · **find best edges** (empty slip only after full scan + expansion).
 
-Docs: `docs/RESEARCH_RESET_SIMPLE_EFFECTIVE_2026-07-25.md` · `docs/RESEARCH_WORKFLOW.md` · `docs/RESEARCH_GATES.md` · `docs/EXA_RESEARCH_USAGE.md` · `docs/DESK_SKILLS.md` · `docs/BANKROLL_PLAN.md` · `docs/CAPITAL_HYBRID_PROGRESSION.md` · `docs/SETTLEMENT_LEARNING.md` · `docs/RESIDUAL_RISKS.md` · `docs/LUMINA_INTEGRATION.md` · `docs/FORCED_EVIDENCE_HIERARCHY_FULL_CLEANUP_AND_10NOK_TEST_2026-07-24.md` (**SUPERSEDED**).
+Docs: `docs/RESEARCH_RESET_SIMPLE_EFFECTIVE_2026-07-25.md` · `docs/ESR_ADAPTIVE_SCAN_AND_DUAL_DECISION_2026-07-27.md` · `docs/RESEARCH_WORKFLOW.md` · `docs/RESEARCH_GATES.md` · `docs/EXA_RESEARCH_USAGE.md` · `docs/DESK_SKILLS.md` · `docs/BANKROLL_PLAN.md` · `docs/CAPITAL_HYBRID_PROGRESSION.md` · `docs/SETTLEMENT_LEARNING.md` · `docs/RESIDUAL_RISKS.md` · `docs/LUMINA_INTEGRATION.md` · `docs/FORCED_EVIDENCE_HIERARCHY_FULL_CLEANUP_AND_10NOK_TEST_2026-07-24.md` (**SUPERSEDED**).
 
 ---
 
@@ -51,14 +52,15 @@ Full design: **`docs/RESEARCH_RESET_SIMPLE_EFFECTIVE_2026-07-25.md`**.
 ### Mandatory workflow — Stage 0–4
 
 ```
-0 Collect  →  1 Broad Scan  →  2 Deep  →  3 Select (+ expand)  →  4 Output
+0 Collect → 1a Engine baseline → 1b Adaptive multi-agent scan → 1c Primary worklist
+  → 2 Deep (primary only) → 3 Select (+ expand) → 4 Output
 ```
 
 #### Stage 0 — Collect
 
 Identify the odds file: path the user named, or **newest** `inbox/odds*.txt` by mtime. Write/dump Oddsen for the user timeframe when asked. Odds collection pipeline behaviour unchanged.
 
-#### Stage 1 — Broad Scan (all lines → promising 8–15)
+#### Stage 1a — Engine baseline (market-scan → board → light)
 
 ```bash
 python run_nt.py research market-scan --odds <odds_file>
@@ -69,18 +71,17 @@ python run_nt.py research light --odds <odds_file>   # if board did not auto-lig
 | Step | Scope | Output | Can recommend? |
 |------|--------|--------|----------------|
 | **Prefilter** | Stage1 screens + classical prior on light assess | discard noise/hopeless; `prior_ev` **rank-only** | **No** |
-| **Light** | ≥70–85% of shortlist; sports with ≥5 lines get ≥3 light | verdict pass/fail + notes | **No** |
-| **Deep queue** | Engine-built worklist (`engine_deep_queue: true`) from light-pass | ranked **promising** list (~8–15) | **No** until packs |
-| **Deep packs** | Agent writes `evidence/*.json` + honest `p_model` | gradeable packs | **Yes** |
+| **Light** | ≥70–85% of board shortlist; sports with ≥5 lines get ≥3 light | verdict pass/fail + notes | **No** |
+| **Deep queue SSOT** | Engine-built (`engine_deep_queue: true`) from light-pass | ranked **promising** list (~8–15) in `data/state/deep_queue.json` | **No** until packs |
+| **Deep packs** | Agent writes `evidence/*.json` + honest `p_model` on **primary worklist** | gradeable packs | **Yes** |
 
 - **Assess never auto-promotes** (`auto_promote_to_deep: false`).
 - **Engine fills deep_queue** via **edge-seeking** `promotion_score` (prior_ev / soft value / natural / light signal — **not** anti-soft, not heavy short-chalk moralization).
 - Preferred composition quotas **disabled** under ESR (`deep_min_preferred_share: 0`, `deep_max_short_main_share: 1.0`); coverage **must not** re-arm preferred floor.
-- You **must** deep-research the deep queue — queue alone does not invent `p_model` or place bets.
 - Light is quick/heuristic; Deep stays high quality (sources, script honesty, both sides).
 - **No anti-underdog filters at Stage 1.** Soft dogs are candidates like anything else with signal.
 
-### Engine deep queue (ESR — inherit every session)
+### Engine deep queue (ESR — light baseline SSOT)
 
 **Code:** `nt/light_research.py` (`promotion_score`, `build_deep_queue`) · config `research.tiers`.
 
@@ -94,7 +95,42 @@ python run_nt.py research light --odds <odds_file>   # if board did not auto-lig
 | Target size | Dynamic ~**8–15** (`deep_target_dynamic`) |
 | Coverage re-arm | **Forbidden** when `deep_min_preferred_share <= 0` |
 
-> **Queue rank ≠ place quality.** High promo gets researched. Place still needs honest pack + research_gates + EV.
+> **Queue rank ≠ place quality.** High promo is a research signal. Place still needs honest pack + research_gates + EV.
+
+**Primary-worklist supersede (when multi-agent shortlist exists):**
+
+| Source | Role |
+|--------|------|
+| `data/state/deep_queue.json` | **Engine SSOT** for light baseline, coverage floor, top-up, all-fail fallback. Multi-agent merge **never rewrites** it. |
+| Multi-agent shortlist 8–15 | Prefer this for Stage 2 seat selection when present |
+| **Primary worklist** | `shortlist ∪ coverage_critical`, hard cap **15** — **drives Stage 2** when multi-agent shortlist exists |
+| All-fail fallback | Stage 2 uses engine `deep_queue` head (cap 15); never silent-skip deep |
+
+#### Stage 1b — Adaptive multi-agent scan (skeleton)
+
+Full role cards and merge rules: **`docs/skills_mirror_daily-run.md`** / `~/.grok/skills/daily-run/SKILL.md` · design: **`docs/ESR_ADAPTIVE_SCAN_AND_DUAL_DECISION_2026-07-27.md`**.
+
+| Agent | Role | Max | Spawn |
+|-------|------|-----|--------|
+| **A** | Favourites & HUB — odds **1.40–1.90**; prefer **≥1.70**; **MUST** search football HUB/1X2; **MUST NOT** ignore clear 1X2 for HC; 1.40–1.69 needs structural one-liner + `force_scan:` when Stage 2 intended | 5 | Always |
+| **B** | Totals & props (team totals, player props, cards, corners, specials); self-limit ≤2 same `market_family`; if D armed → bias main totals (≤1 long-tail) | 5 | Always |
+| **C** | HC + matchup dogs; `force_scan:` only when justified | 5 | Always |
+| **D** | Long-tail only (props/cards/corners/shots/specials) | 5 | **Conditional:** any match with **≥41** parseable Candidate lines (`n=40` false, `n=41` true) |
+
+- **Scan-only:** no Exa packs, no `p_model`, no recommend, no ledger write.
+- **Budget:** entire scan layer ≤**12 min**. Sequential host: **skip D** if A+B+C already used ≥**10 min** (`scan_agent_missing: D (budget)`).
+- **D depth count:** run `research scan-depth` **when available**; else **manual line-count** of Candidates per match is OK until that CLI lands.
+- **Merge:** A+B+C(+D when active); family ≤2; shortlist **8–15**; light-fail drop unless `force_scan:`; engine top-up if &lt;8; form-continuity / anti-flip notes remain **soft annotations** after merge (engine math unchanged). Use `research scan-merge` when present.
+- Artifacts: `outbox/scan_agent_{a,b,c[,d]}_YYYY-MM-DD.jsonl`, `outbox/MULTI_AGENT_SHORTLIST.md`.
+
+#### Stage 1c — Primary worklist
+
+```text
+primary_worklist = multi_agent_shortlist ∪ coverage_critical
+cap = 15
+```
+
+Stage 2 deep-researches **this list only**. Full-board deep is **refused**.
 
 ### Coverage floor + temp_ev_relax (permanent)
 
@@ -126,9 +162,11 @@ Two orthogonal mechanisms. Operators see both on **`data/state/status.md`** → 
 
 **Agent mandate:** Do not invent `p_model`. Do not manually lower min_EV outside ControlSignals. Prefer Mechanism A (more deep research).
 
-#### Stage 2 — Deep research (shortlist / deep queue)
+#### Stage 2 — Deep research (primary worklist)
 
-Work the **Deep queue**. Use **Exa** (primary) + sport sites (Sofascore, FBref, HLTV, ATP/WTA, Flashscore, etc.). See **`docs/EXA_RESEARCH_USAGE.md`**.
+Work the **primary worklist** (multi-agent shortlist ∪ coverage_critical, cap 15). When multi-agent shortlist is missing/all-fail, fall back to engine **deep_queue** head (cap 15). Prefer **`/deep-research`** skill + atomic `scripts/write_deep_research_pack.py`. Use **Exa** (primary) + sport sites (Sofascore, FBref, HLTV, ATP/WTA, Flashscore, etc.). See **`docs/EXA_RESEARCH_USAGE.md`**.
+
+**Refuse full-board deep.**
 
 For each line:
 
@@ -183,6 +221,8 @@ Full design: **`docs/RESEARCH_GATES.md`**. These block **real nonsense**, not vo
 - No mechanical filler; no inventing edge from price band alone  
 
 #### Stage 3 — Ready + select
+
+**No Dual Decision layer yet** (advisory Stage 3.1–3.3 is a later skill/AGENTS amendment). Stage 3 = engine ready + recommend only.
 
 ```bash
 python run_nt.py research ready --odds <odds_file>
@@ -416,7 +456,7 @@ python run_nt.py simulate --sport basketball --home H --away A ...
 
 | Do | Don’t |
 |----|--------|
-| Research board first (Stage 1 scan **all** lines) | Jump straight to `recommend` with empty packs |
+| Research board first (Stage 1a all lines + Stage 1b multi-agent → primary worklist) | Jump straight to `recommend` with empty packs |
 | Honest p_model from research | Invent p_model unless user orders emergency force |
 | Live recommend by default | Assume dry-run unless user asks |
 | Dry-run only when asked | Use dry-run as the silent default |
@@ -429,7 +469,7 @@ python run_nt.py simulate --sport basketball --home H --away A ...
 | Short favourites **1.40–1.80** when research supports | Demand Grade A + 8 sources only for every short price |
 | Empty slip **only after** full deep + expansion + no +EV | Celebrate empty slip while next tier unresearched |
 | **Auto-apply learning proposals** after settle | Ask the user to accept/reject learnings |
-| Deep-research engine **deep_queue** (promise score) | Deep-dive only 2–3 lines while ignoring queue |
+| Deep-research **primary worklist** (multi-agent shortlist when present; else deep_queue head) | Deep-dive only 2–3 lines while ignoring shortlist/queue; full-board deep |
 | Treat Coverage Health **critical** as process miss | Silent empty slip while promising lines unresearched |
 | Respect recommend soft gate / use `--allow-low-coverage` only explicitly | Bypass coverage with `--force-mechanical` casually |
 | Light assess never promotes; engine builds deep_queue | Expect assess-time auto-promote |
@@ -469,7 +509,7 @@ User-scope skills in `%USERPROFILE%\.grok\skills\` — load **this file first**,
 
 | Slash | Skill | When |
 |-------|--------|------|
-| `/daily-run` | Full day desk | settle → odds → Stage 1 scan → deep queue → ESR packs → expand if needed → recommend + why/support/risk → `PLACE_THESE.md` → place-ack (10 NOK cap when active) |
+| `/daily-run` | Full day desk | settle → odds → 1a baseline → 1b adaptive A/B/C(+D) → primary worklist ≤15 → `/deep-research` → recommend + why/support/risk → `PLACE_THESE.md` → place-ack (10 NOK cap when active) |
 | `/missed-audit` | Missed edges | promising lines out of deep; promo components; cheapest fix — **not** soft-dog guilt |
 | `/chain-explain` | Reasoning | **why · support · main risk** for one match/selection (or whole slip) |
 | `/bankroll-tune` | Capital tune | secure/phase/unit/regime proposal → MC + capital CLI |
@@ -495,6 +535,7 @@ User-scope skills in `%USERPROFILE%\.grok\skills\` — load **this file first**,
 | Doc | Role |
 |-----|------|
 | `docs/RESEARCH_RESET_SIMPLE_EFFECTIVE_2026-07-25.md` | **ESR authoritative philosophy** |
+| `docs/ESR_ADAPTIVE_SCAN_AND_DUAL_DECISION_2026-07-27.md` | Adaptive Stage 1b + Dual Decision design (Dual Decision skill not landed yet) |
 | `docs/RESEARCH_WORKFLOW.md` | Stage 0–4 map + CLI |
 | `docs/RESEARCH_GATES.md` | Hard nonsense vs soft checks |
 | `docs/EXA_RESEARCH_USAGE.md` | Exa feeds research (not FEH hard reject) |
