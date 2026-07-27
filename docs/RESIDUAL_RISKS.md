@@ -1,6 +1,6 @@
 # Residual Risks — Final Honest List
 
-**As of:** 2026-07-21 (after closed-loop ControlSignals + multi-factor PhaseState + Lumina surfaces + validation)  
+**As of:** 2026-07-27 (after ESR adaptive scan PR0–PR5 landings + closed-loop ControlSignals / PhaseState baseline)  
 **Purpose:** What can still lose real money or mislead process — not a feature backlog.
 
 Severity: **S0** bankroll/settlement truth · **S1** size/select wrong · **S2** process/ops · **S3** visibility/docs.
@@ -48,9 +48,9 @@ Severity: **S0** bankroll/settlement truth · **S1** size/select wrong · **S2**
 | R-S2-7 | Sport tag drift | Taxonomy normalize | Wrong diversify/learning bucket |
 | R-S2-8 | settlement_reviews pollution | Ops hygiene (test rows removed once) | Future tests must not write live state paths |
 | R-S2-9 | ControlSignal JSONL growth | Append-only + revoke tombstones | No compaction job |
-| R-S2-11 | Dual Decision becomes place theater (LLM preferred slate treated as place list) | **KD-DD-wire:** Dual Decision is **advisory-only**; place set + stakes only from engine `recommend` / `build_portfolio`; never hand-remove engine picks; `decision:` tags only post-recommend | Skill/agent discipline until PR4 lands fully; residual if operators ignore KD-DD-wire |
-| R-S2-12 | Agent D spawn / role drift (wrong threshold, main-board seats on high-volume boards) | Spawn only when any match `lines_count >= 41` (not market-scan `high_volume` bool); D long-tail soft role-drift annotate only; sequential skip if A/B/C already ≥10 min | Until PR3 CLI, manual line-count can mis-arm D; soft drift may still pollute shortlist |
-| R-S2-13 | Branch hygiene: missing `scan_merge` / `market_family` / `live_ledger` / `form_continuity` sources vs pycache | PR0 restores A/B/C merge deps; PR-H restores form_continuity + portfolio wiring without math redesign | Skill mandates code before restore → 404/import fail; Guardian must not claim absent soft-rejects until PR-H |
+| R-S2-11 | Dual Decision becomes place theater (LLM preferred slate treated as place list) | **Mitigated (PR4):** KD-DD-wire in skill + AGENTS Stage 3.1–3.4 + golden `docs/templates/DUAL_DECISION_TEMPLATE.md`; place set + stakes only from engine `recommend` / `build_portfolio`; never hand-remove engine picks; `decision:` tags only post-recommend; skill_smoke gates template phrases | **Residual:** skill/agent discipline — operators who ignore KD-DD-wire can still treat advisory ranks as a place list (no code-level place lock) |
+| R-S2-12 | Agent D spawn / role drift (wrong threshold, main-board seats on high-volume boards) | **Mitigated (PR3):** `research scan-depth` + `should_spawn_agent_d` with `adaptive_scan_agent_d_min_lines=41` (n=40 false / n=41 true); D long-tail soft role-drift annotate only; sequential skip if A/B/C already ≥10 min; skill_smoke pytest 40/41 | **Residual:** soft drift may still pollute shortlist; manual line-count fallback if CLI skipped; sequential budget is skill-only |
+| R-S2-13 | Branch hygiene: missing `scan_merge` / `market_family` / `live_ledger` / `form_continuity` sources vs pycache | **Mitigated (PR0 + PR-H):** sources restored — A/B/C(+D) merge + CLI; form_continuity + portfolio base_ev / ranking-gap soft-cap wiring without math redesign; skill_smoke covers one-agent-missing merge path | **Residual:** low — re-check after merge conflicts / Syncthing; Guardian soft-reject claims now match live portfolio wiring on this stack |
 
 ---
 

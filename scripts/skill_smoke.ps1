@@ -1,4 +1,5 @@
-# Desk-skill smoke: coverage floor, MC phase progression, taxonomy weights.
+# Desk-skill smoke: coverage floor, MC phase progression, taxonomy weights,
+# adaptive scan-merge / scan-depth (ESR), dual-decision template.
 # Usage (from tracker root): .\scripts\skill_smoke.ps1
 
 $ErrorActionPreference = "Continue"
@@ -89,6 +90,16 @@ Invoke-Step "dual_decision_template_present" {
         }
     }
     Write-Host "dual-decision template OK: $p"
+}
+
+# 5) scan-merge one-agent-missing path (pytest contract from PR0)
+Invoke-Step "pytest scan-merge one-agent-missing" {
+    python -m pytest tests/test_scan_merge.py::test_empty_agent_file_tolerated -q --tb=line
+}
+
+# 6) scan-depth 40/41 spawn fixture (pytest contract from PR3)
+Invoke-Step "pytest scan-depth 40/41" {
+    python -m pytest tests/test_scan_depth.py::test_should_spawn_agent_d_n40_false_n41_true -q --tb=line
 }
 
 Write-Host ""

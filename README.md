@@ -28,7 +28,7 @@ Clean-restart **500 NOK** desk with capital_v2 live. Engines in `nt/` are law �
 
 1. Drop Oddsen dump into `inbox/odds_*.txt` (or pass an explicit path).
 2. In Grok (CWD = tracker root): **`/daily-run`**  
-   → results draft → market-scan → board + light → engine deep queue → deep packs → `recommend` + **Reasoning Chains** → `outbox/PLACE_THESE.md` → `place-ack`.
+   → results draft → market-scan → board + light → engine deep queue → **adaptive Stage 1b scan** (A/B/C + conditional D when any match has ≥41 lines) → deep packs → **Dual Decision argue** (Edge Maximiser ∥ Portfolio Guardian — **advisory only**) → engine `recommend` (sole place set + stakes) → annotate PLACE_THESE → `place-ack`.
 3. Or CLI smoke (no ledger write):
 
 ```bash
