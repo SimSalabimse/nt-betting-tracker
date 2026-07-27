@@ -48,6 +48,9 @@ Severity: **S0** bankroll/settlement truth · **S1** size/select wrong · **S2**
 | R-S2-7 | Sport tag drift | Taxonomy normalize | Wrong diversify/learning bucket |
 | R-S2-8 | settlement_reviews pollution | Ops hygiene (test rows removed once) | Future tests must not write live state paths |
 | R-S2-9 | ControlSignal JSONL growth | Append-only + revoke tombstones | No compaction job |
+| R-S2-11 | Dual Decision becomes place theater (LLM preferred slate treated as place list) | **KD-DD-wire:** Dual Decision is **advisory-only**; place set + stakes only from engine `recommend` / `build_portfolio`; never hand-remove engine picks; `decision:` tags only post-recommend | Skill/agent discipline until PR4 lands fully; residual if operators ignore KD-DD-wire |
+| R-S2-12 | Agent D spawn / role drift (wrong threshold, main-board seats on high-volume boards) | Spawn only when any match `lines_count >= 41` (not market-scan `high_volume` bool); D long-tail soft role-drift annotate only; sequential skip if A/B/C already ≥10 min | Until PR3 CLI, manual line-count can mis-arm D; soft drift may still pollute shortlist |
+| R-S2-13 | Branch hygiene: missing `scan_merge` / `market_family` / `live_ledger` / `form_continuity` sources vs pycache | PR0 restores A/B/C merge deps; PR-H restores form_continuity + portfolio wiring without math redesign | Skill mandates code before restore → 404/import fail; Guardian must not claim absent soft-rejects until PR-H |
 
 ---
 

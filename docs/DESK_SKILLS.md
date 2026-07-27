@@ -8,6 +8,8 @@ Engines in `nt/` remain law. Skills encode **workflows**; they never invent `p_m
 
 Authoritative: [`RESEARCH_RESET_SIMPLE_EFFECTIVE_2026-07-25.md`](./RESEARCH_RESET_SIMPLE_EFFECTIVE_2026-07-25.md) · Workflow: [`RESEARCH_WORKFLOW.md`](./RESEARCH_WORKFLOW.md) · Repo mirror of daily-run: [`skills_mirror_daily-run.md`](./skills_mirror_daily-run.md).
 
+**Adaptive scan + Dual Decision (design, Accepted / in-progress):** [`ESR_ADAPTIVE_SCAN_AND_DUAL_DECISION_2026-07-27.md`](./ESR_ADAPTIVE_SCAN_AND_DUAL_DECISION_2026-07-27.md) — Stage 1b A/B/C + conditional Agent D; Dual Decision is **advisory-only** (KD-DD-wire: place set + stakes from engine `recommend` only). Multi-agent stub: [`ESR_MULTI_AGENT_SCAN_2026-07-25.md`](./ESR_MULTI_AGENT_SCAN_2026-07-25.md).
+
 ## Installed skills
 
 | Slash | Directory | Role |
@@ -159,8 +161,10 @@ Taxonomy + weights + temp ControlSignals. **Forbidden:** proposing permanent har
 
 | Doc | Role |
 |-----|------|
-| `AGENTS.md` | Desk law + ESR Stage 0–4 |
+| `AGENTS.md` | Desk law + ESR Stage 0–4 (Stage 1b / Dual Decision sections land in later PRs) |
 | `docs/RESEARCH_RESET_SIMPLE_EFFECTIVE_2026-07-25.md` | ESR philosophy |
+| `docs/ESR_ADAPTIVE_SCAN_AND_DUAL_DECISION_2026-07-27.md` | **Adaptive multi-agent scan + Dual Decision design** (KD-DD-wire advisory) |
+| `docs/ESR_MULTI_AGENT_SCAN_2026-07-25.md` | Stub → adaptive design + live skill |
 | `docs/RESEARCH_WORKFLOW.md` | Stage map |
 | `docs/EXA_RESEARCH_USAGE.md` | Exa feeds research |
 | `docs/skills_mirror_daily-run.md` | Committed daily-run skill text |

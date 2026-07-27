@@ -11,6 +11,8 @@
 
 **Design source:** Edge-Seeking Research (ESR) Stage 0–4. Related engine/config work: PR1 config kill-switch · PR2 residual engines · PR3 tests · **PR4 this docs/skills rewrite**.
 
+**Stage 1b / Dual Decision (later plan):** Adaptive multi-agent scan (A/B/C + conditional D) and Dual Decision advisory ranking are **not** redefined here. Normative design: [`ESR_ADAPTIVE_SCAN_AND_DUAL_DECISION_2026-07-27.md`](./ESR_ADAPTIVE_SCAN_AND_DUAL_DECISION_2026-07-27.md). Historical multi-agent link stub: [`ESR_MULTI_AGENT_SCAN_2026-07-25.md`](./ESR_MULTI_AGENT_SCAN_2026-07-25.md). Live skill: `docs/skills_mirror_daily-run.md` · `~/.grok/skills/daily-run/SKILL.md`.
+
 ---
 
 ## Tagline
