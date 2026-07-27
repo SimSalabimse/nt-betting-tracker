@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from datetime import date
 from pathlib import Path
@@ -712,6 +713,77 @@ def cmd_research(args: argparse.Namespace) -> int:
             else:
                 print("matches_over_threshold: (none)")
         return 0
+
+    if sub in ("match-intel", "match_intel"):
+        from nt.match_intel.pipeline import run_match_intel_batch
+
+        odds = Path(args.odds) if getattr(args, "odds", None) else None
+        if odds is not None and not odds.exists():
+            print(f"Odds file not found: {odds}", file=sys.stderr)
+            return 2
+        match_list: list[str] = []
+        raw_matches = getattr(args, "matches", None) or getattr(args, "match", None)
+        if raw_matches:
+            if isinstance(raw_matches, list):
+                match_list = [str(x).strip() for x in raw_matches if str(x).strip()]
+            else:
+                # support "A vs B" or "A vs B; C vs D"
+                for part in re.split(r"[;|]", str(raw_matches)):
+                    part = part.strip()
+                    if part:
+                        match_list.append(part)
+        if not odds and not match_list:
+            print("--odds or --matches required", file=sys.stderr)
+            return 2
+        out_dir = getattr(args, "out_dir", None) or None
+        payload = run_match_intel_batch(
+            cfg,
+            odds_path=odds,
+            matches=match_list or None,
+            sport=getattr(args, "sport", None) or None,
+            out_dir=out_dir,
+            force=bool(getattr(args, "force", False)),
+            write=not bool(getattr(args, "no_write", False)),
+            fixture_dir=getattr(args, "fixture_dir", None) or None,
+            max_matches=getattr(args, "max_matches", None),
+        )
+        if getattr(args, "json", False):
+            slim = {
+                "ok": payload.get("ok"),
+                "summary": payload.get("summary"),
+                "cards": [
+                    {
+                        "match": c.get("match"),
+                        "match_key": c.get("match_key"),
+                        "sport": c.get("sport"),
+                        "coverage": c.get("coverage"),
+                        "path": c.get("_path"),
+                        "errors": (c.get("extraction") or {}).get("errors"),
+                    }
+                    for c in (payload.get("cards") or [])
+                ],
+            }
+            print(json.dumps(slim, indent=2, default=str))
+        else:
+            summary = payload.get("summary") or {}
+            grades = summary.get("grades") or {}
+            print("# match-intel")
+            print(f"n: {summary.get('n', 0)}")
+            print(
+                "grades: "
+                + " ".join(f"{g}={grades.get(g, 0)}" for g in ("A", "B", "C", "D", "F"))
+            )
+            if summary.get("out_dir"):
+                print(f"out_dir: {summary['out_dir']}")
+            for c in payload.get("cards") or []:
+                cov = c.get("coverage") or {}
+                print(
+                    f"  {cov.get('grade', '?')}  score={cov.get('score', 0):.2f}  "
+                    f"{c.get('match')}  [{c.get('sport')}]"
+                )
+                if c.get("_path"):
+                    print(f"      → {c['_path']}")
+        return 0 if payload.get("ok") else 1
 
     print(f"Unknown research subcommand: {sub}", file=sys.stderr)
     return 2
@@ -1509,6 +1581,56 @@ def main(argv: list[str] | None = None) -> int:
     )
     rs_sd.add_argument("--json", action="store_true", help="Print JSON payload")
     rs_sd.set_defaults(func=cmd_research)
+
+    rs_mi = rs.add_parser(
+        "match-intel",
+        help="Build Match Intelligence Cards (MIC) from odds board / match list (free sources)",
+    )
+    rs_mi.add_argument(
+        "--odds",
+        default=None,
+        help="Odds dump path (unique matches become MIC worklist)",
+    )
+    rs_mi.add_argument(
+        "--matches",
+        "--match",
+        dest="matches",
+        default=None,
+        help='Explicit match(es), e.g. "Team A vs Team B" or "A vs B; C vs D"',
+    )
+    rs_mi.add_argument(
+        "--sport",
+        default=None,
+        help="Sport filter / override (default: inferred per match; v1 full pipeline = football)",
+    )
+    rs_mi.add_argument(
+        "--out-dir",
+        default=None,
+        help="Output directory (default: research.match_intel.out_dir)",
+    )
+    rs_mi.add_argument(
+        "--force",
+        action="store_true",
+        help="Ignore TTL cache and rebuild cards",
+    )
+    rs_mi.add_argument(
+        "--no-write",
+        action="store_true",
+        help="Do not write outbox/match_intel JSON",
+    )
+    rs_mi.add_argument(
+        "--fixture-dir",
+        default=None,
+        help="Offline HTML fixture directory (tests / operator paste)",
+    )
+    rs_mi.add_argument(
+        "--max-matches",
+        type=int,
+        default=None,
+        help="Cap board matches (default: config max_board_matches)",
+    )
+    rs_mi.add_argument("--json", action="store_true", help="Print JSON summary")
+    rs_mi.set_defaults(func=cmd_research)
 
     p_ag = sub.add_parser("agent", help="Optional AI assist (never places bets)")
     ag = p_ag.add_subparsers(dest="agent_cmd", required=True)

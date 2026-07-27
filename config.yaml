@@ -589,6 +589,30 @@ research:
   default_sport: football
   min_summary_chars: 20
   min_failure_modes_chars: 10
+  # Match Intelligence Cards (MIC) — free structured facts before deep research
+  # require_for_deep stays false until Exa/MIC exit criteria (PR6)
+  match_intel:
+    enabled: true
+    v1_sports: [football]
+    require_for_deep: false
+    require_for_deep_sports: null   # null → same as v1_sports
+    min_coverage_grade_for_deep: C
+    out_dir: outbox/match_intel
+    max_board_matches: 40
+    max_matches_per_run: 40
+    budget_seconds: 480
+    ttl_hours: 6
+    concurrency: 1
+    timeout_s: 45
+    circuit_break_failures: 5
+    alias_path: data/state/match_aliases.json
+    sources_priority: [norsk_tipping, flashscore, fotmob, other_public]
+    allow_network: false            # tests/CI: offline only; operator may enable
+    fetch:
+      primary: firecrawl
+      fallback: playwright_bs4
+    exa_fill: false
+  exa_mode: optional                # optional | off — narrative fill only; never MIC body
   # Refuse recommend when odds file has zero p_model/evidence (wrong path)
   require_research_for_recommend: true
   board_max_per_match: 6
